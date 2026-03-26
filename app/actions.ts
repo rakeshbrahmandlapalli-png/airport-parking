@@ -1,33 +1,73 @@
 "use server";
 import { PrismaClient } from "@prisma/client";
 import { redirect } from "next/navigation";
+import Stripe from "stripe";
 
 const prisma = new PrismaClient();
 
-export async function createBooking(formData: FormData) {
-  // 1. Grab the data the user typed into the form
-  const name = formData.get("name") as string;
-  const plate = formData.get("plate") as string;
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
-  // 2. Find our Economy lot in the database
-  const lot = await prisma.parkingLot.findFirst();
+export async function createCheckoutSession(formData: FormData) {
+  // 1. Extract the data
+  const customerName = formData.get("customerName") as string;
+  const licensePlate = formData.get("licensePlate") as string;
+  const totalPrice = parseFloat(formData.get("totalPrice") as string);
+  const parkingType = formData.get("parkingType") as string;
+
+  const dropoffDate = new Date();
+  const pickupDate = new Date();
+  pickupDate.setDate(pickupDate.getDate() + 4);
+
+  // 2. THE FIX: Make sure we have a Parking Lot to put the car in!
+  // First, we look for any existing parking lot
+  let defaultLot = await prisma.parkingLot.findFirst();
   
-  if (!lot) {
-    throw new Error("No parking lots found in the database!");
+  // If no lot exists in the database yet, we create a default one on the fly
+  if (!defaultLot) {
+    defaultLot = await prisma.parkingLot.create({
+      data: {
+        name: "Main Premium Lot",
+        pricePerDay: 15.00,
+        capacity: 100
+      }
+    });
   }
 
-  // 3. Save the actual booking to Neon!
+  // 3. Save the booking to your Neon database and connect it to the lot
   await prisma.booking.create({
     data: {
-      customerName: name,
-      licensePlate: plate,
-      lotId: lot.id,
-      dropoffDate: new Date(), // Using today for simplicity
-      pickupDate: new Date(Date.now() + 86400000), // Adding 1 day
-      totalPrice: lot.pricePerDay,
+      customerName,
+      licensePlate,
+      totalPrice,
+      dropoffDate,
+      pickupDate,
+      lotId: defaultLot.id, // <--- We tell the database exactly which lot it is!
     },
   });
 
-  // 4. Send the user to a sleek success page
-  redirect("/success");
+  // 4. Talk to Stripe
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ["card"],
+    line_items: [
+      {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: `Airport Parking - ${parkingType}`,
+            description: `Vehicle: ${licensePlate}`,
+          },
+          unit_amount: Math.round(totalPrice * 100), 
+        },
+        quantity: 1,
+      },
+    ],
+    mode: "payment",
+    success_url: "http://localhost:3000/success",
+    cancel_url: "http://localhost:3000/checkout",
+  });
+
+  // 5. Send the user to the Stripe page!
+  if (session.url) {
+    redirect(session.url);
+  }
 }

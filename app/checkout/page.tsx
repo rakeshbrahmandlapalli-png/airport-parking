@@ -1,55 +1,92 @@
-import { Car, User, CalendarCheck } from "lucide-react";
-import { createBooking } from "../actions"; // This is the magic link to your backend!
+"use client";
+import { useSearchParams } from "next/navigation";
+import { createCheckoutSession } from "../actions";
+import { motion } from "framer-motion";
+import { CreditCard, Calendar, Car, ShieldCheck } from "lucide-react";
 
-export default function CheckoutPage() {
+const PRICES = {
+  budget: { name: "Economy Outdoor", price: 9.99 },
+  silver: { name: "Park & Ride Premium", price: 15.50 },
+  gold: { name: "Meet & Greet VIP", price: 29.00 },
+};
+
+export default function Checkout() {
+  const searchParams = useSearchParams();
+  const type = (searchParams.get("type") as keyof typeof PRICES) || "silver";
+  const selected = PRICES[type];
+
   return (
-    <main className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="bg-white max-w-md w-full rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
-        
-        <div className="bg-blue-900 p-6 text-white">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <CalendarCheck className="w-6 h-6" />
-            Complete Your Booking
-          </h1>
-          <p className="text-blue-200 text-sm mt-1">Economy North Lot • $15.50/day</p>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-3xl shadow-xl overflow-hidden max-w-4xl w-full flex flex-col md:flex-row border border-gray-100"
+      >
+        {/* Left Side: Summary */}
+        <div className="bg-blue-600 p-10 text-white md:w-2/5">
+          <h2 className="text-2xl font-bold mb-6">Booking Summary</h2>
+          <div className="space-y-6 opacity-90">
+            <div className="flex items-center gap-3">
+              <Car className="w-5 h-5 text-blue-200" />
+              <div>
+                <p className="text-xs text-blue-200 uppercase font-bold tracking-wider">Option Selected</p>
+                <p className="font-semibold text-lg text-white">{selected.name}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Calendar className="w-5 h-5 text-blue-200" />
+              <div>
+                <p className="text-xs text-blue-200 uppercase font-bold tracking-wider">Price per stay</p>
+                <p className="font-semibold text-lg text-white">${selected.price.toFixed(2)}</p>
+              </div>
+            </div>
+            <div className="pt-6 border-t border-blue-400/30">
+              <div className="flex items-center gap-2 text-blue-100 text-sm">
+                <ShieldCheck className="w-4 h-4" /> Secure & Encrypted
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* BIG CHANGE HERE: We use action={createBooking} to talk to the database */}
-        <form action={createBooking} className="p-6 space-y-6">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-              <User className="w-4 h-4 text-blue-600" /> Full Name
-            </label>
-            <input 
-              type="text" 
-              name="name" // The backend needs this name to read what you type
-              required
-              placeholder="John Doe"
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none"
-            />
-          </div>
+        {/* Right Side: Form */}
+        <div className="p-10 md:w-3/5">
+          <h2 className="text-2xl font-bold text-gray-800 mb-8">Confirm Your Spot</h2>
+          
+          <form action={createCheckoutSession} className="space-y-6">
+            {/* THE FIX: These two hidden inputs pass the data securely to actions.ts */}
+            <input type="hidden" name="totalPrice" value={selected.price} />
+            <input type="hidden" name="parkingType" value={selected.name} />
+            
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Full Name</label>
+              <input 
+                name="customerName" 
+                required 
+                placeholder="John Doe"
+                className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-600 outline-none transition-all"
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-              <Car className="w-4 h-4 text-blue-600" /> License Plate
-            </label>
-            <input 
-              type="text" 
-              name="plate" // The backend needs this name to read what you type
-              required
-              placeholder="ABC-1234"
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none uppercase"
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">License Plate Number</label>
+              <input 
+                name="licensePlate" 
+                required 
+                placeholder="XYZ 1234"
+                className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-600 outline-none transition-all uppercase"
+              />
+            </div>
 
-          <button 
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition duration-300 transform hover:shadow-lg hover:-translate-y-0.5"
-          >
-            Confirm Reservation
-          </button>
-        </form>
-      </div>
-    </main>
+            <button 
+              type="submit" 
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-5 rounded-2xl shadow-lg transition duration-300 flex items-center justify-center gap-2 text-lg"
+            >
+              <CreditCard className="w-6 h-6" />
+              Pay Securely
+            </button>
+          </form>
+        </div>
+      </motion.div>
+    </div>
   );
 }
