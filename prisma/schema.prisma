@@ -1,0 +1,30 @@
+// This tells Prisma to create the "Client" engine
+generator client {
+  provider = "prisma-client-js"
+}
+
+// This tells Prisma where your Neon database is
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// These are your database tables (The "Parking Lot" and "Bookings")
+model ParkingLot {
+  id          String    @id @default(cuid())
+  name        String
+  pricePerDay Float
+  capacity    Int
+  bookings    Booking[]
+}
+
+model Booking {
+  id           String     @id @default(cuid())
+  lotId        String
+  lot          ParkingLot @relation(fields: [lotId], references: [id])
+  customerName String
+  licensePlate String
+  dropoffDate  DateTime
+  pickupDate   DateTime
+  totalPrice   Float
+}
