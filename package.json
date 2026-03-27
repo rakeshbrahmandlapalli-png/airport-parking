@@ -2,12 +2,12 @@
   "name": "airport-parking",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
+"scripts": {
+  "dev": "next dev",
+  "build": "prisma generate && next build",
+  "start": "next start",
+  "lint": "next lint"
+},
   "dependencies": {
     "@stripe/stripe-js": "^9.0.0",
     "framer-motion": "^12.38.0",

@@ -16,8 +16,9 @@ export async function createCheckoutSession(formData: FormData) {
   const parkingType = formData.get("parkingType") as string;
   const totalPrice = parseFloat(formData.get("totalPrice") as string);
 
-  // 3. SAVE TO DATABASE (So you can see it in your Admin Dashboard)
+  // 3. SAVE TO DATABASE
   try {
+    // @ts-ignore
     await prismadb.booking.create({
       data: {
         customerName,

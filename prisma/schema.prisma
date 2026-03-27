@@ -21,9 +21,9 @@ model ParkingLot {
 model Booking {
   id            String   @id @default(cuid())
   customerName  String
-  customerEmail String   // Ensure this is here
-  customerPhone String   // Ensure this is here
-  flightNumber  String   // Ensure this is here
+  customerEmail String
+  customerPhone String
+  flightNumber  String
   licensePlate  String
   parkingType   String
   totalPrice    Float
