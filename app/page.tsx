@@ -1,13 +1,12 @@
 "use client";
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, Clock, Search, Car, ShieldCheck, Star, Zap } from 'lucide-react';
+import { Calendar, Clock, Search, ShieldCheck, Star, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function HomePage() {
   const router = useRouter();
   
-  // 1. Logic to prevent "Time Travel" (Validation)
   const today = new Date().toISOString().split('T')[0];
   const [dropoffDate, setDropoffDate] = useState(today);
   const [pickupDate, setPickupDate] = useState(today);
@@ -16,7 +15,6 @@ export default function HomePage() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
-    // Create the search URL with all our parameters
     const params = new URLSearchParams({
       dropoffDate: formData.get('dropoffDate') as string,
       dropoffTime: formData.get('dropoffTime') as string,
@@ -31,12 +29,6 @@ export default function HomePage() {
     <div className="min-h-screen bg-white">
       {/* HERO SECTION */}
       <div className="relative bg-blue-900 pt-20 pb-40 px-4 overflow-hidden">
-        {/* Background Decoration */}
-        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-400 rounded-full blur-[120px]" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600 rounded-full blur-[120px]" />
-        </div>
-
         <div className="max-w-6xl mx-auto text-center relative z-10">
           <motion.h1 
             initial={{ opacity: 0, y: -20 }}
@@ -55,9 +47,71 @@ export default function HomePage() {
             animate={{ opacity: 1, scale: 1 }}
             className="max-w-5xl mx-auto"
           >
-            <form onSubmit={handleSearch} className="bg-white p-4 md:p-8 rounded-[32px] shadow-2xl border border-blue-100/50 flex flex-col lg:flex-row items-end gap-4">
+            <form onSubmit={handleSearch} className="bg-white p-4 md:p-8 rounded-[32px] shadow-2xl border border-blue-100/50 flex flex-col lg:flex-row items-end gap-4 text-left">
               
               {/* DROP OFF GROUP */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 w-full">
-                <div className="space-y-2 text-left">
-                  <label className="text-[10px] font-black text-blue-900/40 uppercase tracking-
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-blue-900/40 uppercase tracking-widest flex items-center gap-1 ml-1">
+                    <Calendar size={14} className="text-blue-600" /> Drop-off Date
+                  </label>
+                  <input 
+                    type="date" 
+                    name="dropoffDate"
+                    min={today}
+                    value={dropoffDate}
+                    onChange={(e) => {
+                      setDropoffDate(e.target.value);
+                      if (e.target.value > pickupDate) setPickupDate(e.target.value);
+                    }}
+                    required
+                    className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-600 outline-none transition-all font-medium text-gray-900" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-blue-900/40 uppercase tracking-widest flex items-center gap-1 ml-1">
+                    <Clock size={14} className="text-blue-600" /> Time
+                  </label>
+                  <input 
+                    type="time" 
+                    name="dropoffTime"
+                    defaultValue="10:00"
+                    required
+                    className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-600 outline-none transition-all font-medium text-gray-900" 
+                  />
+                </div>
+              </div>
+
+              {/* PICK UP GROUP */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 w-full">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-blue-900/40 uppercase tracking-widest flex items-center gap-1 ml-1">
+                    <Calendar size={14} className="text-blue-600" /> Pick-up Date
+                  </label>
+                  <input 
+                    type="date" 
+                    name="pickupDate"
+                    min={dropoffDate}
+                    value={pickupDate}
+                    onChange={(e) => setPickupDate(e.target.value)}
+                    required
+                    className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-600 outline-none transition-all font-medium text-gray-900" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-blue-900/40 uppercase tracking-widest flex items-center gap-1 ml-1">
+                    <Clock size={14} className="text-blue-600" /> Time
+                  </label>
+                  <input 
+                    type="time" 
+                    name="pickupTime"
+                    defaultValue="18:00"
+                    required
+                    className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-600 outline-none transition-all font-medium text-gray-900" 
+                  />
+                </div>
+              </div>
+
+              <button 
+                type="submit"
+                className="w-full lg:w-auto h-[60px] px-10 bg-blue-600 hover:bg-blue-700
