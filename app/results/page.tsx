@@ -1,102 +1,119 @@
 "use client";
-import { motion } from "framer-motion";
-import { Shield, Zap, Car, Check, Star } from "lucide-react";
-import Link from "next/link";
+import React from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Car, ShieldCheck, Crown, Star, CheckCircle2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const PARKING_OPTIONS = [
   {
-    id: "budget",
-    name: "Economy Outdoor",
+    id: 'budget',
+    name: '1. ABC MEET & GREET',
     price: 9.99,
-    description: "5-min shuttle ride, fenced perimeter.",
+    originalPrice: 15.00,
+    description: 'Most affordable VIP service. Secure perimeter.',
+    features: ['Free Cancellation', 'Valet Service'],
     icon: <Car className="w-6 h-6 text-gray-500" />,
-    tag: "Best Value",
-    color: "gray"
+    tag: 'BEST VALUE',
+    rating: 4
   },
   {
-    id: "silver",
-    name: "Park & Ride Premium",
+    id: 'silver',
+    name: '2. XYZ MEET & GREET',
     price: 15.50,
-    description: "On-demand shuttle, 24/7 CCTV, closer to terminal.",
-    icon: <Shield className="w-6 h-6 text-blue-500" />,
-    tag: "Most Popular",
-    color: "blue"
+    originalPrice: 25.00,
+    description: 'Premium terminal drop-off with 24/7 CCTV.',
+    features: ['Free Cancellation', 'Valet Service', 'Priority Return'],
+    icon: <ShieldCheck className="w-6 h-6 text-blue-500" />,
+    tag: 'MOST POPULAR',
+    rating: 5,
+    popular: true
   },
   {
-    id: "gold",
-    name: "Meet & Greet VIP",
+    id: 'gold',
+    name: '3. 123 MEET & GREET',
     price: 29.00,
-    description: "Drop your car at the terminal. We park it for you.",
-    icon: <Zap className="w-6 h-6 text-yellow-500" />,
-    tag: "Ultimate Comfort",
-    color: "indigo"
+    originalPrice: 45.00,
+    description: 'The ultimate VIP experience. Terminal 1, 2, & 3.',
+    features: ['Free Cancellation', 'Valet Service', 'Car Wash Included'],
+    icon: <Crown className="w-6 h-6 text-amber-500" />,
+    tag: 'ULTIMATE COMFORT',
+    rating: 5
   }
 ];
 
-export default function Results() {
+export default function ResultsPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const handleBookNow = (type: string) => {
+    router.push(`/checkout?type=${type}`);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Search Summary Header */}
-      <div className="bg-blue-900 text-white py-6 px-4 shadow-lg">
-        <div className="max-w-5xl mx-auto flex justify-between items-center">
+    <div className="min-h-screen bg-slate-50 pb-20">
+      <div className="bg-blue-900 text-white p-6 shadow-lg">
+        <div className="max-w-6xl mx-auto flex justify-between items-end">
           <div>
-            <h2 className="text-xl font-bold">Available Spots</h2>
-            <p className="text-blue-200 text-sm">March 26 - March 30 • 1 Car</p>
+            <h1 className="text-2xl font-bold">Available Meet & Greet Spots</h1>
+            <p className="text-blue-200 text-sm mt-1">March 26 - March 30 • 1 Car</p>
           </div>
-          <Link href="/" className="text-sm underline opacity-80 hover:opacity-100">Change Dates</Link>
+          <button onClick={() => router.push('/')} className="text-sm underline hover:text-white text-blue-200">
+            Change Dates
+          </button>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 mt-12">
-        <div className="grid grid-cols-1 gap-6">
-          {PARKING_OPTIONS.map((option, index) => (
-            <motion.div
-              key={option.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
-              whileHover={{ scale: 1.01 }}
-              className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-6"
-            >
-              {/* Left Side: Info */}
-              <div className="flex items-center gap-6 w-full md:w-2/3">
-                <div className={`p-5 bg-gray-50 rounded-2xl`}>
-                  {option.icon}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="bg-blue-100 text-blue-700 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full">
-                      {option.tag}
-                    </span>
-                    <div className="flex text-yellow-400"><Star className="w-3 h-3 fill-current"/><Star className="w-3 h-3 fill-current"/><Star className="w-3 h-3 fill-current"/><Star className="w-3 h-3 fill-current"/><Star className="w-3 h-3 fill-current"/></div>
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900">{option.name}</h3>
-                  <p className="text-gray-500 text-sm mt-1">{option.description}</p>
-                  
-                  <div className="flex gap-4 mt-3 text-xs text-green-600 font-semibold">
-                    <div className="flex items-center gap-1"><Check className="w-3 h-3"/> Free Cancellation</div>
-                    <div className="flex items-center gap-1"><Check className="w-3 h-3"/> Self-Park</div>
-                  </div>
-                </div>
-              </div>
+      <div className="max-w-5xl mx-auto mt-10 px-4 space-y-6">
+        {PARKING_OPTIONS.map((option, index) => (
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: index * 0.1 }}
+            key={option.id}
+            className={`bg-white rounded-3xl p-8 flex flex-col md:flex-row items-center gap-8 shadow-sm border-2 transition-all hover:shadow-md ${option.popular ? 'border-blue-500 ring-4 ring-blue-50' : 'border-transparent'}`}
+          >
+            <div className="bg-gray-50 p-6 rounded-2xl">
+              {option.icon}
+            </div>
 
-              {/* Right Side: Price & CTA */}
-              <div className="w-full md:w-1/3 flex md:flex-col items-center justify-between md:items-end border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-6">
-                <div className="text-right">
-                  <p className="text-gray-400 text-xs line-through">$45.00</p>
-                  <p className="text-3xl font-black text-gray-900">${option.price.toFixed(2)}</p>
-                  <p className="text-gray-500 text-[10px]">Total for 4 days</p>
+            <div className="flex-1 text-center md:text-left">
+              <div className="flex flex-col md:flex-row items-center gap-3 mb-2">
+                <span className={`text-[10px] font-black px-3 py-1 rounded-full ${option.id === 'gold' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                  {option.tag}
+                </span>
+                <div className="flex text-amber-400">
+                  {[...Array(option.rating)].map((_, i) => <Star key={i} size={14} fill="currentColor" />)}
                 </div>
-                <Link 
-                  href={`/checkout?type=${option.id}`}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-2xl transition shadow-lg mt-4 text-center"
-                >
-                  Book Now
-                </Link>
               </div>
-            </motion.div>
-          ))}
-        </div>
+              
+              <h3 className="text-2xl font-bold text-gray-900 mb-1">{option.name}</h3>
+              <p className="text-gray-500 mb-4">{option.description}</p>
+              
+              <div className="flex flex-wrap justify-center md:justify-start gap-4">
+                {option.features.map(feat => (
+                  <div key={feat} className="flex items-center gap-1 text-xs font-bold text-emerald-600">
+                    <CheckCircle2 size={14} /> {feat}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="md:w-48 text-center md:text-right border-t md:border-t-0 md:border-l border-gray-100 pt-6 md:pt-0 md:pl-8">
+              <p className="text-gray-400 line-through text-sm">£{option.originalPrice.toFixed(2)}</p>
+              <div className="flex items-center justify-center md:justify-end gap-1 mb-4">
+                <span className="text-4xl font-black text-gray-900">£{option.price.toFixed(2)}</span>
+              </div>
+              <p className="text-[10px] text-gray-400 mb-6 uppercase tracking-widest font-bold">Total for 4 days</p>
+              
+              <button 
+                onClick={() => handleBookNow(option.id)}
+                className={`w-full py-4 rounded-xl font-bold transition-all transform active:scale-95 ${option.popular ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200' : 'bg-blue-50 text-blue-700 hover:bg-blue-100 shadow-none'} shadow-lg`}
+              >
+                Book Now
+              </button>
+            </div>
+          </motion.div>
+        ))}
       </div>
     </div>
   );

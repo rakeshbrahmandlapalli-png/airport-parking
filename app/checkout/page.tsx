@@ -6,9 +6,9 @@ import { CreditCard, Calendar, Car, ShieldCheck } from "lucide-react";
 import { Suspense } from "react";
 
 const PRICES = {
-  budget: { name: "Economy Outdoor", price: 7.99 },
-  silver: { name: "Park & Ride Premium", price: 12.50 },
-  gold: { name: "Meet & Greet VIP", price: 24.00 },
+  budget: { name: "1. ABC MEET & GREET", price: 9.99 },
+  silver: { name: "2. XYZ MEET & GREET", price: 15.50 },
+  gold: { name: "3. 123 MEET & GREET", price: 29.00 },
 };
 
 function CheckoutContent() {
