@@ -18,11 +18,9 @@ export async function createCheckoutSession(formData: FormData) {
   const pickupDate = new Date();
   pickupDate.setDate(pickupDate.getDate() + 4);
 
-  // 2. THE FIX: Make sure we have a Parking Lot to put the car in!
-  // First, we look for any existing parking lot
+  // 2. Database Relation Logic
   let defaultLot = await prisma.parkingLot.findFirst();
   
-  // If no lot exists in the database yet, we create a default one on the fly
   if (!defaultLot) {
     defaultLot = await prisma.parkingLot.create({
       data: {
@@ -33,7 +31,7 @@ export async function createCheckoutSession(formData: FormData) {
     });
   }
 
-  // 3. Save the booking to your Neon database and connect it to the lot
+  // 3. Save to Neon
   await prisma.booking.create({
     data: {
       customerName,
@@ -41,11 +39,11 @@ export async function createCheckoutSession(formData: FormData) {
       totalPrice,
       dropoffDate,
       pickupDate,
-      lotId: defaultLot.id, // <--- We tell the database exactly which lot it is!
+      lotId: defaultLot.id,
     },
   });
 
-  // 4. Talk to Stripe
+  // 4. Stripe Session
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ["card"],
     line_items: [
@@ -62,10 +60,11 @@ export async function createCheckoutSession(formData: FormData) {
       },
     ],
     mode: "payment",
-   success_url: "https://airport-parking-ochre.vercel.app/success",
+    success_url: "https://airport-parking-ochre.vercel.app/success",
     cancel_url: "https://airport-parking-ochre.vercel.app/checkout",
+  });
 
-  // 5. Send the user to the Stripe page!
+  // 5. Redirect
   if (session.url) {
     redirect(session.url);
   }
