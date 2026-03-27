@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import prismadb from "../prismadb";
 import { Table, Calendar, User, Phone, Plane, CreditCard } from "lucide-react";
 
