@@ -45,13 +45,13 @@ export async function createCheckoutSession(formData: FormData) {
     },
   });
 
-  // 4. Stripe Session
+ // 4. Stripe Session
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ["card"],
     line_items: [
       {
         price_data: {
-          currency: "usd",
+          currency: "gbp", // <--- CHANGE THIS FROM "usd" TO "gbp"
           product_data: {
             name: `Airport Parking - ${parkingType}`,
             description: `Vehicle: ${licensePlate}`,

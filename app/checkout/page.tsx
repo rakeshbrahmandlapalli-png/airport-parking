@@ -6,10 +6,13 @@ import { CreditCard, Calendar, Car, ShieldCheck } from "lucide-react";
 import { Suspense } from "react"; // <-- We added this!
 
 const PRICES = {
-  budget: { name: "Economy Outdoor", price: 9.99 },
-  silver: { name: "Park & Ride Premium", price: 15.50 },
-  gold: { name: "Meet & Greet VIP", price: 29.00 },
+  budget: { name: "Economy Outdoor", price: 7.99 }, // Changed to GBP equivalent
+  silver: { name: "Park & Ride Premium", price: 12.50 },
+  gold: { name: "Meet & Greet VIP", price: 24.00 },
 };
+
+// ... inside the Summary section, change the $ to £:
+<p className="font-semibold text-lg text-white">£{selected.price.toFixed(2)}</p>
 
 // 1. We moved your checkout design into this internal component
 function CheckoutContent() {
