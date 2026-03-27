@@ -1,41 +1,63 @@
 "use client";
-import SearchBar from "../components/SearchBar";
-import { motion } from "framer-motion";
-import { ShieldCheck, Star, Clock } from "lucide-react";
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Calendar, Clock, Search, Car, ShieldCheck, Star, Zap } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-export default function Home() {
+export default function HomePage() {
+  const router = useRouter();
+  
+  // 1. Logic to prevent "Time Travel" (Validation)
+  const today = new Date().toISOString().split('T')[0];
+  const [dropoffDate, setDropoffDate] = useState(today);
+  const [pickupDate, setPickupDate] = useState(today);
+
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    
+    // Create the search URL with all our parameters
+    const params = new URLSearchParams({
+      dropoffDate: formData.get('dropoffDate') as string,
+      dropoffTime: formData.get('dropoffTime') as string,
+      pickupDate: formData.get('pickupDate') as string,
+      pickupTime: formData.get('pickupTime') as string,
+    });
+
+    router.push(`/results?${params.toString()}`);
+  };
+
   return (
-    <main className="min-h-screen bg-gray-50">
-      {/* Premium Hero Section */}
-      <div className="relative bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-950 text-white pt-32 pb-40 px-4 text-center overflow-hidden">
-        
-        {/* Smooth Intro Animation */}
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="relative z-10 max-w-4xl mx-auto"
-        >
-          <h1 className="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight">
-            Smarter Airport Parking.
-          </h1>
-          <p className="text-xl md:text-2xl text-blue-200 mb-10 font-light">
-            Book secure, top-rated spots in seconds. Save up to 60% compared to drive-up rates.
+    <div className="min-h-screen bg-white">
+      {/* HERO SECTION */}
+      <div className="relative bg-blue-900 pt-20 pb-40 px-4 overflow-hidden">
+        {/* Background Decoration */}
+        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-400 rounded-full blur-[120px]" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600 rounded-full blur-[120px]" />
+        </div>
+
+        <div className="max-w-6xl mx-auto text-center relative z-10">
+          <motion.h1 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-5xl md:text-7xl font-black text-white mb-6 tracking-tight"
+          >
+            Smarter Airport <span className="text-blue-400">Parking.</span>
+          </motion.h1>
+          <p className="text-xl text-blue-100 max-w-2xl mx-auto mb-12">
+            Premium Meet & Greet services. Drop your car at the terminal and fly away. Secure, fast, and reliable.
           </p>
 
-          {/* Holiday Extras Style Trust Badges */}
-          <div className="flex flex-wrap justify-center gap-8 text-sm font-medium text-blue-100 mt-8">
-            <div className="flex items-center gap-2"><ShieldCheck className="w-6 h-6 text-green-400"/> Secure & Patrolled</div>
-            <div className="flex items-center gap-2"><Star className="w-6 h-6 text-yellow-400"/> 5-Star Rated</div>
-            <div className="flex items-center gap-2"><Clock className="w-6 h-6 text-blue-300"/> 24/7 Fast Shuttle</div>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* The floating Search Bar (Pulled up over the background) */}
-      <div className="relative z-20 -mt-24 px-4 pb-20">
-        <SearchBar />
-      </div>
-    </main>
-  );
-}
+          {/* THE SEARCH BOX */}
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-w-5xl mx-auto"
+          >
+            <form onSubmit={handleSearch} className="bg-white p-4 md:p-8 rounded-[32px] shadow-2xl border border-blue-100/50 flex flex-col lg:flex-row items-end gap-4">
+              
+              {/* DROP OFF GROUP */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 w-full">
+                <div className="space-y-2 text-left">
+                  <label className="text-[10px] font-black text-blue-900/40 uppercase tracking-
