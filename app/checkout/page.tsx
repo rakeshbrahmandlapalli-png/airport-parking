@@ -3,18 +3,14 @@ import { useSearchParams } from "next/navigation";
 import { createCheckoutSession } from "../actions";
 import { motion } from "framer-motion";
 import { CreditCard, Calendar, Car, ShieldCheck } from "lucide-react";
-import { Suspense } from "react"; // <-- We added this!
+import { Suspense } from "react";
 
 const PRICES = {
-  budget: { name: "Economy Outdoor", price: 7.99 }, // Changed to GBP equivalent
+  budget: { name: "Economy Outdoor", price: 7.99 },
   silver: { name: "Park & Ride Premium", price: 12.50 },
   gold: { name: "Meet & Greet VIP", price: 24.00 },
 };
 
-// ... inside the Summary section, change the $ to £:
-<p className="font-semibold text-lg text-white">£{selected.price.toFixed(2)}</p>
-
-// 1. We moved your checkout design into this internal component
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const type = (searchParams.get("type") as keyof typeof PRICES) || "silver";
@@ -42,7 +38,8 @@ function CheckoutContent() {
               <Calendar className="w-5 h-5 text-blue-200" />
               <div>
                 <p className="text-xs text-blue-200 uppercase font-bold tracking-wider">Price per stay</p>
-                <p className="font-semibold text-lg text-white">${selected.price.toFixed(2)}</p>
+                {/* FIXED: The £ symbol is now safely inside the function */}
+                <p className="font-semibold text-lg text-white">£{selected.price.toFixed(2)}</p>
               </div>
             </div>
             <div className="pt-6 border-t border-blue-400/30">
@@ -95,7 +92,6 @@ function CheckoutContent() {
   );
 }
 
-// 2. We wrap it in Suspense to make Vercel happy!
 export default function Checkout() {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-xl font-bold text-blue-600">Loading Secure Checkout...</div>}>
