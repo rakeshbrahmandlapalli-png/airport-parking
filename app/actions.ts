@@ -5,9 +5,11 @@ import Stripe from "stripe";
 
 const prisma = new PrismaClient();
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
-
 export async function createCheckoutSession(formData: FormData) {
+  // THE FIX: We moved Stripe initialization INSIDE the function!
+  // Now it waits for the button click to look for the secret key.
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
+
   // 1. Extract the data
   const customerName = formData.get("customerName") as string;
   const licensePlate = formData.get("licensePlate") as string;
