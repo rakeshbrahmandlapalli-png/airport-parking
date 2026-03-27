@@ -62,9 +62,8 @@ export async function createCheckoutSession(formData: FormData) {
       },
     ],
     mode: "payment",
-    success_url: "http://localhost:3000/success",
-    cancel_url: "http://localhost:3000/checkout",
-  });
+   success_url: "https://airport-parking-ochre.vercel.app/success",
+    cancel_url: "https://airport-parking-ochre.vercel.app/checkout",
 
   // 5. Send the user to the Stripe page!
   if (session.url) {
