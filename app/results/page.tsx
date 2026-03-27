@@ -1,5 +1,5 @@
 "use client";
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Car, ShieldCheck, Crown, Star, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -41,7 +41,8 @@ const PARKING_OPTIONS = [
   }
 ];
 
-export default function ResultsPage() {
+// This internal component handles the actual logic
+function ResultsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -116,5 +117,14 @@ export default function ResultsPage() {
         ))}
       </div>
     </div>
+  );
+}
+
+// The main page component exports the content wrapped in Suspense
+export default function ResultsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-xl font-bold text-blue-900">Finding the best spots...</div>}>
+      <ResultsContent />
+    </Suspense>
   );
 }
