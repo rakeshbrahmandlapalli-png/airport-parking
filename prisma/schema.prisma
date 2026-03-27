@@ -19,12 +19,14 @@ model ParkingLot {
 }
 
 model Booking {
-  id           String     @id @default(cuid())
-  lotId        String
-  lot          ParkingLot @relation(fields: [lotId], references: [id])
-  customerName String
-  licensePlate String
-  dropoffDate  DateTime
-  pickupDate   DateTime
-  totalPrice   Float
+  id            String   @id @default(cuid())
+  customerName  String
+  customerEmail String   // NEW
+  customerPhone String   // NEW
+  flightNumber  String   // NEW
+  licensePlate  String
+  parkingType   String
+  totalPrice    Float
+  status        String   @default("pending")
+  createdAt     DateTime @default(now())
 }
