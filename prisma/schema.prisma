@@ -1,12 +1,15 @@
+// 1. GENERATOR - This creates the code that lets your app talk to the DB
 generator client {
-  provider = "prisma-client-node"
+  provider = "prisma-client-js"
 }
 
+// 2. DATASOURCE - This connects to your Supabase/PostgreSQL database
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
+// 3. BOOKING MODEL - This saves all your customer and flight data
 model Booking {
   id            String   @id @default(cuid())
   customerName  String
