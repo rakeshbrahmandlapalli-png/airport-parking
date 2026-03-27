@@ -5,90 +5,53 @@
 :root {
   --primary-blue: #2563eb;
   --dark-navy: #0f172a;
-  --soft-bg: #f8fafc;
-}
-
-/* 1. Global Reset & Smoothness */
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
-}
-
-html {
-  scroll-behavior: smooth;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--soft-bg);
-  color: var(--dark-navy);
-  overflow-x: hidden;
+  background: #f8fafc;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* 2. Custom Scrollbar (Premium Finish) */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 10px;
+  width: 8px;
 }
-
 ::-webkit-scrollbar-track {
   background: #f1f5f9;
 }
-
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 20px;
-  border: 3px solid #f1f5f9;
+  border-radius: 10px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-/* 3. Input Styling (Dates & Times) */
-/* This makes the calendar and clock icons look cleaner */
-input[type="date"], 
-input[type="time"], 
-input[type="email"], 
-input[type="tel"], 
-input[type="text"] {
-  appearance: none;
-  -webkit-appearance: none;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: inherit;
-}
-
-/* Removing the default 'blue' glow from Chrome for a custom one */
+/* Input & Button Polish */
 input:focus {
   outline: none;
-  border-color: var(--primary-blue);
+  border-color: #2563eb;
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
 }
 
-/* 4. Button & Interaction Effects */
 button {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 button:active {
-  transform: scale(0.96);
+  transform: scale(0.97);
 }
 
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+/* Fix for mobile zoom */
+@media (max-width: 640px) {
+  input {
+    font-size: 16px !important;
+  }
 }
 
-/* 5. Custom Utility Classes */
-@layer components {
-  .glass-card {
-    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-xl;
-  }
-  
-  .vip-gradient {
-    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
-  }
-
-  .text-shadow-sm {
+/* Success Animation */
+@keyframes check-bounce {
+  0% { transform: scale(0); }
+  100% { transform: scale(1); }
+}
+.animate-check {
+  animation: check-bounce 0.4s ease-out forwards;
+}
