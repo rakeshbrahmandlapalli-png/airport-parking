@@ -3,6 +3,7 @@ import { useSearchParams } from "next/navigation";
 import { createCheckoutSession } from "../actions";
 import { motion } from "framer-motion";
 import { CreditCard, Calendar, Car, ShieldCheck } from "lucide-react";
+import { Suspense } from "react"; // <-- We added this!
 
 const PRICES = {
   budget: { name: "Economy Outdoor", price: 9.99 },
@@ -10,7 +11,8 @@ const PRICES = {
   gold: { name: "Meet & Greet VIP", price: 29.00 },
 };
 
-export default function Checkout() {
+// 1. We moved your checkout design into this internal component
+function CheckoutContent() {
   const searchParams = useSearchParams();
   const type = (searchParams.get("type") as keyof typeof PRICES) || "silver";
   const selected = PRICES[type];
@@ -53,7 +55,6 @@ export default function Checkout() {
           <h2 className="text-2xl font-bold text-gray-800 mb-8">Confirm Your Spot</h2>
           
           <form action={createCheckoutSession} className="space-y-6">
-            {/* THE FIX: These two hidden inputs pass the data securely to actions.ts */}
             <input type="hidden" name="totalPrice" value={selected.price} />
             <input type="hidden" name="parkingType" value={selected.name} />
             
@@ -62,7 +63,7 @@ export default function Checkout() {
               <input 
                 name="customerName" 
                 required 
-                placeholder="John Doe"
+                placeholder="Rakesh..."
                 className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-600 outline-none transition-all"
               />
             </div>
@@ -88,5 +89,14 @@ export default function Checkout() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+// 2. We wrap it in Suspense to make Vercel happy!
+export default function Checkout() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-xl font-bold text-blue-600">Loading Secure Checkout...</div>}>
+      <CheckoutContent />
+    </Suspense>
   );
 }
