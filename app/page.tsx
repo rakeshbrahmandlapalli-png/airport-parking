@@ -114,12 +114,12 @@ export default function HomePage() {
               </div>
 
               <button 
-                type="submit"
-                className="w-full lg:w-auto h-[60px] px-10 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-xl flex items-center justify-center gap-2"
-              >
-                <Search size={20} />
-                Find Parking
-              </button>
+  type="submit"
+  className="w-full lg:w-48 h-[60px] bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-xl transition-all"
+>
+  <Search size={20} />
+  <span>Find Parking</span>
+</button>
             </form>
           </motion.div>
         </div>
