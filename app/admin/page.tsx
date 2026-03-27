@@ -1,4 +1,4 @@
-import prismadb from "../../lib/prismadb";
+import prismadb from "../prismadb";
 import { Table, Calendar, User, Phone, Plane, CreditCard } from "lucide-react";
 
 export default async function AdminPage() {
