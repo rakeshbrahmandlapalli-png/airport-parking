@@ -1,7 +1,9 @@
 "use server";
+
 import { redirect } from "next/navigation";
 import Stripe from "stripe";
-import prismadb from "./prismadb"; // Importing from the same folder
+import prismadb from "./prismadb"; 
+import { sendBookingReceipt } from "./lib/mail"; 
 
 export async function createCheckoutSession(formData: FormData) {
   // 1. Initialise Stripe
@@ -13,12 +15,14 @@ export async function createCheckoutSession(formData: FormData) {
   const customerPhone = formData.get("customerPhone") as string;
   const flightNumber = formData.get("flightNumber") as string;
   const licensePlate = formData.get("licensePlate") as string;
-  const parkingType = formData.get("parkingType") as string;
-  const totalPrice = parseFloat(formData.get("totalPrice") as string);
+  const parkingType = formData.get("parkingType") as string || "standard";
+  const totalPrice = parseFloat(formData.get("totalPrice") as string) || 0;
 
-  // 3. SAVE TO DATABASE
+  let sessionUrl = "";
+
+  // 3. DATABASE, EMAIL & STRIPE LOGIC
   try {
-    // @ts-ignore
+    // A. Save the booking to Neon Database
     await prismadb.booking.create({
       data: {
         customerName,
@@ -31,38 +35,44 @@ export async function createCheckoutSession(formData: FormData) {
         status: "pending",
       },
     });
+
+    // B. Fire off the email receipt via Resend ✈️
+    if (customerEmail) {
+      await sendBookingReceipt(customerEmail, flightNumber, parkingType);
+    }
+
+    // C. Create the Stripe Checkout Session 💳
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency: "gbp",
+            product_data: {
+              name: `AIRPORT VIP: ${parkingType.toUpperCase()} PARKING`,
+              description: `Flight: ${flightNumber} | License: ${licensePlate}`,
+            },
+            unit_amount: Math.round(totalPrice * 100),
+          },
+          quantity: 1,
+        },
+      ],
+      mode: "payment",
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout?type=${parkingType}`,
+      customer_email: customerEmail,
+    });
+
+    sessionUrl = session.url as string;
+
   } catch (error) {
-    console.error("Database Error:", error);
-    // Even if database fails, we usually let the payment proceed 
-    // but in a real app you might want to handle this differently.
+    // Log the actual error for debugging
+    console.error("Critical Error in createCheckoutSession:", error);
+    return; // Stop execution if there's a real error
   }
 
-  // 4. Create Stripe Session
-  const session = await stripe.checkout.sessions.create({
-    payment_method_types: ["card"],
-    customer_email: customerEmail,
-    line_items: [
-      {
-        price_data: {
-          currency: "gbp",
-          product_data: {
-            name: `${parkingType} - ${licensePlate}`,
-            description: `Flight: ${flightNumber} | Phone: ${customerPhone}`,
-          },
-          unit_amount: Math.round(totalPrice * 100),
-        },
-        quantity: 1,
-      },
-    ],
-    mode: "payment",
-    success_url: "https://airport-parking-ochre.vercel.app/success",
-    cancel_url: "https://airport-parking-ochre.vercel.app/checkout",
-    metadata: {
-      customerPhone,
-      flightNumber,
-      licensePlate,
-    },
-  });
-
-  redirect(session.url as string);
+  // 4. THE REDIRECT (Move this OUTSIDE the try/catch block)
+  if (sessionUrl) {
+    redirect(sessionUrl);
+  }
 }
