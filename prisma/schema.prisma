@@ -6,7 +6,7 @@ generator client {
 // 2. DATASOURCE - This connects to your Supabase/PostgreSQL database
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL_NEW")
+  url      = env("DATABASE_URL")
 }
 
 // 3. BOOKING MODEL - This saves all your customer and flight data
