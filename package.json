@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "private": true,
 "scripts": {
-  "dev": "next dev",
-  "build": "prisma generate && next build",
-  "start": "next start",
-  "lint": "next lint"
-},
+    "dev": "next dev",
+    "build": "npx prisma generate && npx prisma db push && next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
   "dependencies": {
     "@stripe/stripe-js": "^9.0.0",
     "framer-motion": "^12.38.0",
