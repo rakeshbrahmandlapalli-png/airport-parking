@@ -1,10 +1,13 @@
 import { PrismaClient } from "@prisma/client";
 
 const prismaClientSingleton = () => {
+  // This line tells Prisma: "Use NEW, if that's empty, use the old one"
+  const connectionString = process.env.DATABASE_URL_NEW || process.env.DATABASE_URL;
+
   return new PrismaClient({
     datasources: {
       db: {
-        url: process.env.DATABASE_URL_NEW, // Make sure this has _NEW
+        url: connectionString,
       },
     },
   });
