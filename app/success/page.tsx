@@ -1,116 +1,94 @@
 "use client";
-import React from 'react';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { CheckCircle2, Plane, Calendar, Phone, Car, ArrowRight, Printer } from 'lucide-react';
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { 
+  CheckCircle2, 
+  Printer, 
+  Mail, 
+  MapPin, 
+  Calendar, 
+  ArrowRight,
+  Download
+} from "lucide-react";
 
 export default function SuccessPage() {
+  const [bookingId, setBookingId] = useState("");
+
+  useEffect(() => {
+    // Generate a random premium-looking Booking ID
+    setBookingId("AVP-" + Math.random().toString(36).substr(2, 9).toUpperCase());
+  }, []);
+
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 py-20">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="max-w-2xl w-full bg-white rounded-[40px] shadow-2xl overflow-hidden border border-slate-100"
-      >
-        {/* Top Celebration Bar */}
-        <div className="bg-emerald-500 p-12 text-center text-white relative">
-          <motion.div 
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
-            className="inline-flex bg-white/20 p-4 rounded-full mb-6"
-          >
-            <CheckCircle2 size={48} className="text-white" />
-          </motion.div>
-          <h1 className="text-4xl font-black tracking-tight mb-2">Booking Confirmed!</h1>
-          <p className="text-emerald-100 font-medium text-lg">Your VIP parking spot is ready for you.</p>
-        </div>
+    <main className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+      {/* AMBIENT LIGHTING */}
+      <div className="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-blue-600/10 to-transparent"></div>
+      
+      <div className="relative z-10 max-w-2xl w-full">
+        <div className="bg-white rounded-[4rem] p-12 shadow-2xl border border-slate-100 text-center relative overflow-hidden">
+          
+          {/* DECORATIVE ELEMENTS */}
+          <div className="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/5 rounded-full blur-3xl"></div>
+          
+          <div className="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 animate-bounce duration-1000">
+            <CheckCircle2 className="w-12 h-12" strokeWidth={2.5} />
+          </div>
 
-        {/* The "Ticket" Content */}
-        <div className="p-10">
-          <div className="bg-slate-50 rounded-3xl p-8 border border-slate-100 space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Vehicle & Flight */}
-              <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="bg-white p-2 rounded-xl shadow-sm text-blue-600"><Car size={20}/></div>
-                  <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Vehicle Plate</p>
-                    <p className="font-bold text-slate-900">Check Email for Receipt</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="bg-white p-2 rounded-xl shadow-sm text-blue-600"><Plane size={20}/></div>
-                  <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Return Flight</p>
-                    <p className="font-bold text-slate-900">Tracking Enabled</p>
-                  </div>
-                </div>
+          <h1 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">Booking Confirmed!</h1>
+          <p className="text-slate-500 font-bold mb-10 text-lg">Your space is secured. See you at the terminal.</p>
+
+          {/* VOUCHER CARD */}
+          <div className="bg-slate-900 rounded-[2.5rem] p-8 text-left text-white mb-10 relative group">
+            <div className="flex justify-between items-start mb-8">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Booking Reference</p>
+                <p className="text-2xl font-black text-blue-400">{bookingId}</p>
               </div>
-
-              {/* Status & Support */}
-              <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="bg-white p-2 rounded-xl shadow-sm text-blue-600"><Calendar size={20}/></div>
-                  <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Service Type</p>
-                    <p className="font-bold text-slate-900">Premium Meet & Greet</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="bg-white p-2 rounded-xl shadow-sm text-blue-600"><Phone size={20}/></div>
-                  <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Support Line</p>
-                    <p className="font-bold text-slate-900">0800-PARK-VIP</p>
-                  </div>
-                </div>
+              <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center border border-white/10">
+                <Printer className="w-5 h-5 text-white" />
               </div>
             </div>
 
-            {/* Next Steps */}
-            <div className="pt-8 border-t border-slate-200">
-              <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                What happens next?
-              </h3>
-              <ul className="space-y-3">
-                <li className="flex gap-3 text-sm text-slate-600">
-                  <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0">1</span>
-                  Call our driver 20 minutes before arriving at the terminal.
-                </li>
-                <li className="flex gap-3 text-sm text-slate-600">
-                  <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0">2</span>
-                  Hand over your keys at the designated Meet & Greet bay.
-                </li>
-                <li className="flex gap-3 text-sm text-slate-600">
-                  <span className="bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0">3</span>
-                  Your car will be waiting for you outside the terminal when you land.
-                </li>
-              </ul>
+            <div className="grid grid-cols-2 gap-6 border-t border-white/10 pt-6">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <MapPin className="w-3 h-3 text-slate-500" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Location</span>
+                </div>
+                <p className="text-sm font-bold">Terminal 5 VIP Zone</p>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Mail className="w-3 h-3 text-slate-500" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Email Sent</span>
+                </div>
+                <p className="text-sm font-bold truncate">Check your inbox</p>
+              </div>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="mt-10 flex flex-col md:flex-row gap-4">
+          {/* ACTION BUTTONS */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button 
               onClick={() => window.print()}
-              className="flex-1 bg-white border-2 border-slate-100 hover:border-slate-200 py-4 rounded-2xl font-bold text-slate-600 flex items-center justify-center gap-2 transition-all"
+              className="py-5 bg-slate-900 text-white font-black rounded-3xl flex items-center justify-center gap-3 hover:bg-black transition-all active:scale-95"
             >
-              <Printer size={18} /> Print Receipt
+              <Download className="w-5 h-5" /> Download PDF
             </button>
             <Link 
-              href="/" 
-              className="flex-1 bg-blue-600 hover:bg-blue-700 py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2 transition-all shadow-xl shadow-blue-100"
+              href="/"
+              className="py-5 bg-blue-600 text-white font-black rounded-3xl flex items-center justify-center gap-3 hover:bg-blue-700 shadow-xl shadow-blue-500/30 transition-all active:scale-95"
             >
-              Back to Home <ArrowRight size={18} />
+              Back to Home <ArrowRight className="w-5 h-5" />
             </Link>
           </div>
         </div>
 
-        {/* Footer Note */}
-        <div className="p-6 bg-slate-50 text-center text-[11px] text-slate-400 font-medium uppercase tracking-widest">
-          A confirmation email has been sent to your inbox.
-        </div>
-      </motion.div>
-    </div>
+        <p className="mt-8 text-center text-slate-400 font-bold text-sm">
+          Need help? Contact our 24/7 VIP Concierge at support@airportvip.com
+        </p>
+      </div>
+    </main>
   );
 }
