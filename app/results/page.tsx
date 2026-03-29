@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react"; // 🔥 Added Suspense
 import { useSearchParams, useRouter } from "next/navigation";
 import { 
   Check, 
@@ -14,7 +14,8 @@ import {
   Loader2
 } from "lucide-react";
 
-export default function ResultsPage() {
+// 1. Rename the main function to ResultsContent (Remove 'export default')
+function ResultsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -22,7 +23,7 @@ export default function ResultsPage() {
   const dropoffDate = searchParams.get("dropoffDate") || "2026-03-28";
   const pickupDate = searchParams.get("pickupDate") || "2026-03-31";
 
-  // 1. UPDATED TIERS WITH NEW BRANDING
+  // UPDATED TIERS WITH NEW BRANDING
   const tiers = [
     { 
       id: "abc", 
@@ -53,7 +54,7 @@ export default function ResultsPage() {
     },
   ];
 
-  // 2. UPDATED FUNCTION TO PASS tierName INSTEAD OF tierId
+  // FUNCTION TO PASS tierName INSTEAD OF tierId
   const handleSelect = (tierId: string, tierName: string, price: number) => {
     setLoadingId(tierId);
     setTimeout(() => {
@@ -64,7 +65,7 @@ export default function ResultsPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 pb-24">
-      {/* 1. INTERACTIVE HEADER */}
+      {/* INTERACTIVE HEADER */}
       <div className="bg-slate-900/95 backdrop-blur-md text-white py-6 px-6 sticky top-0 z-50 border-b border-white/10 shadow-2xl">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex gap-8 items-center bg-white/5 px-6 py-2 rounded-2xl border border-white/10">
@@ -98,12 +99,12 @@ export default function ResultsPage() {
               <div className={`absolute -inset-4 bg-gradient-to-tr ${tier.glow} rounded-[4rem] blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none`}></div>
 
               <div className={`relative bg-white rounded-[3.2rem] p-10 shadow-xl border transition-all duration-500 h-full flex flex-col hover:-translate-y-2 ${
-                tier.id === 'xyz' ? 'border-blue-500/20 scale-105 z-10' : 'border-slate-100' // Updated to match 'xyz' as the middle tier
+                tier.id === 'xyz' ? 'border-blue-500/20 scale-105 z-10' : 'border-slate-100' 
               }`}>
                 
                 <div className="flex justify-between items-start mb-10">
                   <div className={`px-5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                    tier.id === 'xyz' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'bg-slate-100 text-slate-500' // Updated to match 'xyz'
+                    tier.id === 'xyz' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'bg-slate-100 text-slate-500' 
                   }`}>
                     {tier.tag}
                   </div>
@@ -113,12 +114,11 @@ export default function ResultsPage() {
                 </div>
 
                 <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center mb-8 shadow-inner transition-transform group-hover:rotate-6 duration-500 ${
-                  tier.id === 'xyz' ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400' // Updated to match 'xyz'
+                  tier.id === 'xyz' ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400' 
                 }`}>
                   <tier.icon className="w-8 h-8" />
                 </div>
 
-                {/* Added 'capitalize' so "abc" looks like "Abc meet & greet" or adjust as needed */}
                 <h2 className="text-2xl font-black text-slate-900 mb-2 capitalize">{tier.name}</h2>
                 <div className="flex items-baseline gap-1 mb-10">
                   <span className="text-6xl font-black text-slate-900 tracking-tighter">£{tier.price}</span>
@@ -139,7 +139,7 @@ export default function ResultsPage() {
 
                 {/* THE DYNAMIC INTERACTIVE BUTTON */}
                 <button 
-                  onClick={() => handleSelect(tier.id, tier.name, tier.price)} // Updated to pass tier.name
+                  onClick={() => handleSelect(tier.id, tier.name, tier.price)} 
                   disabled={loadingId !== null}
                   className={`
                     relative overflow-hidden w-full py-6 rounded-[2rem] font-black text-xl shadow-2xl 
@@ -169,5 +169,19 @@ export default function ResultsPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+// 2. 🔥 EXPORT THE WRAPPER COMPONENT WITH SUSPENSE
+export default function ResultsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-400">
+        <Loader2 className="w-10 h-10 animate-spin mb-4 text-blue-600" />
+        <p className="font-bold tracking-widest uppercase text-xs">Loading available spaces...</p>
+      </div>
+    }>
+      <ResultsContent />
+    </Suspense>
   );
 }
