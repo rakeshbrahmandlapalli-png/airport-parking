@@ -7,20 +7,20 @@ export const sendBookingReceipt = async (
   flightNumber: string, 
   parkingType: string,
   bookingRef: string,
-  customerPhone: string, // 🔥 NEW
-  carDetails: string,    // 🔥 NEW
-  notes: string          // 🔥 NEW
+  customerPhone: string, 
+  carDetails: string,    
+  notes: string          
 ) => {
   try {
     const { data, error } = await resend.emails.send({
       from: 'Airport VIP Parking <onboarding@resend.dev>',
       to: [customerEmail],
-      // 🔥 Automatically alert the operator (Swift) of the new booking
+      // 🔥 Automatically alert Swift Airport Parking
       bcc: ['ops@swiftairportparking.co.uk'], 
-      subject: `✈️ Booking Confirmed: ${bookingRef} (${carDetails})`,
+      subject: `✈️ Booking Confirmed: ${bookingRef} [${carDetails.split(' - ')[0]}]`,
       html: `
         <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #1e293b; line-height: 1.6; background-color: #f1f5f9;">
-          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 24px; overflow: hidden; shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
             
             <div style="background-color: #2563eb; padding: 30px; text-align: center;">
               <h1 style="color: #ffffff; margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; font-weight: 900;">Booking Confirmed</h1>
@@ -37,19 +37,26 @@ export const sendBookingReceipt = async (
                   <p style="margin: 0; font-size: 20px; font-weight: 900; color: #2563eb;">${bookingRef}</p>
                 </div>
 
-                <div style="display: grid; grid-template-cols: 1fr 1fr; gap: 20px;">
-                  <div style="margin-bottom: 15px;">
-                    <p style="margin: 0; font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: bold;">Vehicle Details</p>
-                    <p style="margin: 0; font-size: 15px; font-weight: bold;">${carDetails}</p>
-                  </div>
-                  <div style="margin-bottom: 15px;">
-                    <p style="margin: 0; font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: bold;">Contact Number</p>
-                    <p style="margin: 0; font-size: 15px; font-weight: bold;">${customerPhone}</p>
-                  </div>
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
+                  <tr>
+                    <td width="50%" style="vertical-align: top;">
+                      <p style="margin: 0; font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: bold;">Vehicle Registration</p>
+                      <p style="margin: 0; font-size: 16px; font-weight: bold; color: #0f172a;">${carDetails.split(' - ')[0]}</p>
+                    </td>
+                    <td width="50%" style="vertical-align: top;">
+                      <p style="margin: 0; font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: bold;">Contact Number</p>
+                      <p style="margin: 0; font-size: 16px; font-weight: bold; color: #0f172a;">${customerPhone}</p>
+                    </td>
+                  </tr>
+                </table>
+
+                <div style="margin-bottom: 20px;">
+                  <p style="margin: 0; font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: bold;">Make & Color</p>
+                  <p style="margin: 0; font-size: 15px; font-weight: 500;">${carDetails.split(' - ')[1] || 'Details provided at terminal'}</p>
                 </div>
 
-                <div style="margin-top: 15px; border-top: 1px solid #e2e8f0; pt: 15px;">
-                  <p style="margin: 10px 0 0 0; font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: bold;">Trip Information</p>
+                <div style="margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
+                  <p style="margin: 0; font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: bold;">Trip Information</p>
                   <p style="margin: 0; font-size: 14px;"><strong>Flight:</strong> ${flightNumber} | <strong>Service:</strong> ${parkingType}</p>
                 </div>
 
@@ -61,9 +68,9 @@ export const sendBookingReceipt = async (
                 ` : ''}
               </div>
               
-              <p style="font-size: 13px; color: #64748b; background-color: #fff7ed; padding: 15px; border-radius: 12px; border-left: 4px solid #f97316;">
+              <div style="font-size: 13px; color: #64748b; background-color: #fff7ed; padding: 15px; border-radius: 12px; border-left: 4px solid #f97316;">
                 <strong>Arrival Tip:</strong> Call the driver 20 minutes before you arrive at the Luton terminal to ensure a priority handover.
-              </p>
+              </div>
               
               <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #f1f5f9; text-align: center;">
                 <p style="margin: 0; font-weight: bold; color: #0f172a;">Safe travels!</p>

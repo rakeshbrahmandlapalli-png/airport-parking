@@ -27,6 +27,7 @@ function CheckoutContent() {
   const [email, setEmail] = useState(""); 
   const [phone, setPhone] = useState("");
   const [flightNumber, setFlightNumber] = useState("");
+  const [registration, setRegistration] = useState(""); // 🔥 NEW
   const [carMake, setCarMake] = useState("");
   const [carColor, setCarColor] = useState("");
   const [notes, setNotes] = useState("");
@@ -51,8 +52,8 @@ function CheckoutContent() {
   const booking = calculateTotal();
 
   const handlePayment = async () => {
-    if (!fullName || !email || !phone || !carMake) {
-      alert("Please fill in your Name, Email, Phone, and Car Make to continue.");
+    if (!fullName || !email || !phone || !registration || !carMake) {
+      alert("Please fill in your Name, Phone, Registration, and Car Details to continue.");
       return;
     }
 
@@ -70,6 +71,7 @@ function CheckoutContent() {
             full_name: fullName, 
             email: email,
             phone_number: phone,
+            license_plate: registration.toUpperCase(), // 🔥 NEW
             car_make: carMake,
             car_color: carColor,
             additional_notes: notes,
@@ -91,7 +93,7 @@ function CheckoutContent() {
           body: JSON.stringify({
             customerEmail: email,
             customerPhone: phone,
-            carDetails: `${carColor} ${carMake}`,
+            carDetails: `${registration.toUpperCase()} - ${carColor} ${carMake}`, // 🔥 INCLUDED REG
             flightNumber: flightNumber.toUpperCase().trim() || "TBA",
             parkingType: type,
             bookingRef: shortId,
@@ -183,6 +185,18 @@ function CheckoutContent() {
                   <div className="flex items-center gap-2 mb-4">
                     <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
                     <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Vehicle & Trip Details</h4>
+                  </div>
+
+                  {/* REGISTRATION - FULL WIDTH TO HIGHLIGHT IT */}
+                  <div className="flex flex-col gap-2 pb-2">
+                    <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest ml-1">Vehicle Registration (Required)</label>
+                    <input 
+                      type="text" 
+                      value={registration}
+                      onChange={(e) => setRegistration(e.target.value.toUpperCase())}
+                      placeholder="e.g. AB12 CDE" 
+                      className="w-full p-4 bg-blue-50/50 border border-blue-100 rounded-2xl font-black outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900 uppercase text-lg" 
+                    />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
