@@ -1,7 +1,4 @@
-"use client";
 
-import { useState } from "react";
-import { supabase } from "../lib/supabase";
 import { 
   Ticket, 
   Calendar, 
@@ -10,7 +7,8 @@ import {
   Printer, 
   User, 
   MapPin, 
-  CheckCircle2 
+  CheckCircle2,
+  Car // <--- Add this one!
 } from "lucide-react";
 
 export default function ManageBooking() {
