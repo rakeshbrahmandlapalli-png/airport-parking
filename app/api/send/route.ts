@@ -14,34 +14,40 @@ export async function POST(req: Request) {
       notes 
     } = body;
 
-    // Clean the email address
+    // 1. Normalize the email (Remove spaces and force lowercase)
     const targetEmail = customerEmail?.trim().toLowerCase();
 
+    // 2. Log exactly what we are sending to Resend for debugging
+    console.log(`📤 Sending to: "${targetEmail}" | Ref: ${bookingRef}`);
+
+    // 3. Trigger the mailer
     const result = await sendBookingReceipt(
       targetEmail, 
-      flightNumber, 
-      parkingType,
+      flightNumber || "TBA", 
+      parkingType || "Luton Airport Parking",
       bookingRef,
-      customerPhone, 
-      carDetails, 
-      notes
+      customerPhone || "N/A", 
+      carDetails || "Vehicle Pending", 
+      notes || ""
     );
     
     if (result.success) {
+      console.log("✅ Resend accepted the email!");
       return NextResponse.json({ success: true, data: result.data });
     } else {
-      // 🛡️ Added 'as any' to fix the TypeScript Build Error shown in your screenshot
+      // 🛡️ Fixed TypeScript Build Error for Vercel deployment
       const resendError = result.error as any;
       
-      console.error("Resend API Rejection:", resendError);
+      console.error("❌ Resend API Rejection:", JSON.stringify(resendError));
       
       return NextResponse.json({ 
         error: "Resend rejected the request", 
         debug_msg: resendError?.message || "Check Resend Dashboard",
-        suggestion: "Verify your API Key has 'Full Access' in Resend Dashboard"
+        resend_code: resendError?.name || "Validation_Error"
       }, { status: 403 });
     }
   } catch (error: any) {
+    console.error("🔥 API Route Crash:", error.message);
     return NextResponse.json({ error: "Server Error", msg: error.message }, { status: 500 });
   }
 }

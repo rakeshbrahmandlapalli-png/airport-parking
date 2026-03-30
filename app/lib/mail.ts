@@ -12,12 +12,15 @@ export const sendBookingReceipt = async (
   notes: string          
 ) => {
   try {
+    // Safety check for vehicle details formatting
+    const registration = carDetails.includes(' - ') ? carDetails.split(' - ')[0] : carDetails;
+    const makeAndColor = carDetails.includes(' - ') ? carDetails.split(' - ')[1] : 'Details provided at terminal';
+
     const { data, error } = await resend.emails.send({
       from: 'Airport VIP Parking <onboarding@resend.dev>',
-      to: [customerEmail],
-      // 🔥 Automatically alert Swift Airport Parking
-      bcc: ['ops@swiftairportparking.co.uk'], 
-      subject: `✈️ Booking Confirmed: ${bookingRef} [${carDetails.split(' - ')[0]}]`,
+      to: [customerEmail.trim().toLowerCase()],
+      // 🔥 BCC Removed to prevent 403 errors and ensure privacy
+      subject: `✈️ Booking Confirmed: ${bookingRef} [${registration}]`,
       html: `
         <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #1e293b; line-height: 1.6; background-color: #f1f5f9;">
           <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
@@ -41,7 +44,7 @@ export const sendBookingReceipt = async (
                   <tr>
                     <td width="50%" style="vertical-align: top;">
                       <p style="margin: 0; font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: bold;">Vehicle Registration</p>
-                      <p style="margin: 0; font-size: 16px; font-weight: bold; color: #0f172a;">${carDetails.split(' - ')[0]}</p>
+                      <p style="margin: 0; font-size: 16px; font-weight: bold; color: #0f172a;">${registration}</p>
                     </td>
                     <td width="50%" style="vertical-align: top;">
                       <p style="margin: 0; font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: bold;">Contact Number</p>
@@ -52,7 +55,7 @@ export const sendBookingReceipt = async (
 
                 <div style="margin-bottom: 20px;">
                   <p style="margin: 0; font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: bold;">Make & Color</p>
-                  <p style="margin: 0; font-size: 15px; font-weight: 500;">${carDetails.split(' - ')[1] || 'Details provided at terminal'}</p>
+                  <p style="margin: 0; font-size: 15px; font-weight: 500;">${makeAndColor}</p>
                 </div>
 
                 <div style="margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
@@ -69,7 +72,7 @@ export const sendBookingReceipt = async (
               </div>
               
               <div style="font-size: 13px; color: #64748b; background-color: #fff7ed; padding: 15px; border-radius: 12px; border-left: 4px solid #f97316;">
-                <strong>Arrival Tip:</strong> Call the driver 20 minutes before you arrive at the Luton terminal to ensure a priority handover.
+                <strong>Arrival Tip:</strong> Call the <strong>operator</strong> exactly 20 minutes before you arrive at the Luton terminal to ensure a priority handover.
               </div>
               
               <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #f1f5f9; text-align: center;">
