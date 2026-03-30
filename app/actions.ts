@@ -18,6 +18,9 @@ export async function createCheckoutSession(formData: FormData) {
   const parkingType = formData.get("parkingType") as string || "standard";
   const totalPrice = parseFloat(formData.get("totalPrice") as string) || 0;
 
+  // Generate a temporary Reference ID for the email since Stripe hasn't finished yet
+  const tempRef = "VIP-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+
   let sessionUrl = "";
 
   // 3. DATABASE, EMAIL & STRIPE LOGIC
@@ -38,7 +41,13 @@ export async function createCheckoutSession(formData: FormData) {
 
     // B. Fire off the email receipt via Resend ✈️
     if (customerEmail) {
-      await sendBookingReceipt(customerEmail, flightNumber, parkingType);
+      // 🔥 FIXED: Added the 4th argument (tempRef) to match your new lib/mail.ts requirement
+      await sendBookingReceipt(
+        customerEmail, 
+        flightNumber || "TBA", 
+        parkingType, 
+        tempRef
+      );
     }
 
     // C. Create the Stripe Checkout Session 💳
@@ -50,7 +59,7 @@ export async function createCheckoutSession(formData: FormData) {
             currency: "gbp",
             product_data: {
               name: `AIRPORT VIP: ${parkingType.toUpperCase()} PARKING`,
-              description: `Flight: ${flightNumber} | License: ${licensePlate}`,
+              description: `Flight: ${flightNumber} | License: ${licensePlate} | Ref: ${tempRef}`,
             },
             unit_amount: Math.round(totalPrice * 100),
           },
@@ -58,7 +67,7 @@ export async function createCheckoutSession(formData: FormData) {
         },
       ],
       mode: "payment",
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/success?session_id={CHECKOUT_SESSION_ID}&ref=${tempRef}`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout?type=${parkingType}`,
       customer_email: customerEmail,
     });
@@ -66,12 +75,11 @@ export async function createCheckoutSession(formData: FormData) {
     sessionUrl = session.url as string;
 
   } catch (error) {
-    // Log the actual error for debugging
     console.error("Critical Error in createCheckoutSession:", error);
-    return; // Stop execution if there's a real error
+    return;
   }
 
-  // 4. THE REDIRECT (Move this OUTSIDE the try/catch block)
+  // 4. THE REDIRECT
   if (sessionUrl) {
     redirect(sessionUrl);
   }
