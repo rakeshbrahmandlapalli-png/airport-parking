@@ -6,6 +6,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     
     // 🔥 Extracting ALL the new fields from the checkout request
+    // These must match the keys sent from JSON.stringify in your Checkout page
     const { 
       customerEmail, 
       flightNumber, 
@@ -16,27 +17,38 @@ export async function POST(req: Request) {
       notes 
     } = body;
 
-    // We pass all 7 arguments. If optional ones are missing, we provide a clean string.
+    // 🔥 Calling the mailer with the 7 required arguments
     const result = await sendBookingReceipt(
       customerEmail, 
       flightNumber || "TBA", 
-      parkingType || "Standard Parking",
+      parkingType || "Luton VIP Parking",
       bookingRef,
-      customerPhone || "N/A", // Fallback if phone is missing
-      carDetails || "Vehicle details pending", // Fallback if car details are missing
-      notes || "" // Fallback if no notes provided
+      customerPhone || "N/A", 
+      carDetails || "Vehicle Details Pending", 
+      notes || "" 
     );
     
-    // Check if the mailer actually succeeded
+    // 🛡️ Error Handling based on the Resend Response
     if (result.success) {
-      return NextResponse.json({ success: true, data: result.data });
+      return NextResponse.json({ 
+        success: true, 
+        message: "Booking receipt sent",
+        data: result.data 
+      });
     } else {
-      console.error("Mailer reported failure:", result.error);
-      return NextResponse.json({ error: "Mailer failed to deliver" }, { status: 500 });
+      // This logs the specific Resend error (like 'unauthorized') to your Vercel console
+      console.error("Resend Mailer Error:", result.error);
+      return NextResponse.json({ 
+        error: "Mailer failed to deliver", 
+        details: result.error 
+      }, { status: 500 });
     }
     
-  } catch (error) {
-    console.error("Email API Route Error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Email API Route Crash:", error);
+    return NextResponse.json({ 
+      error: "Internal Server Error", 
+      message: error.message 
+    }, { status: 500 });
   }
 }
