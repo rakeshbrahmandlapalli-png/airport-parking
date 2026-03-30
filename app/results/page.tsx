@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, Suspense } from "react"; // 🔥 Added Suspense
+import { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import BookingStepper from "../../components/BookingStepper"; // 🔥 Import the Stepper
 import { 
   Check, 
   ShieldCheck, 
@@ -14,7 +15,6 @@ import {
   Loader2
 } from "lucide-react";
 
-// 1. Rename the main function to ResultsContent (Remove 'export default')
 function ResultsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -23,7 +23,6 @@ function ResultsContent() {
   const dropoffDate = searchParams.get("dropoffDate") || "2026-03-28";
   const pickupDate = searchParams.get("pickupDate") || "2026-03-31";
 
-  // UPDATED TIERS WITH NEW BRANDING
   const tiers = [
     { 
       id: "abc", 
@@ -54,11 +53,9 @@ function ResultsContent() {
     },
   ];
 
-  // FUNCTION TO PASS tierName INSTEAD OF tierId
   const handleSelect = (tierId: string, tierName: string, price: number) => {
     setLoadingId(tierId);
     setTimeout(() => {
-      // encodeURIComponent ensures the "&" in "meet & greet" doesn't break the URL
       router.push(`/checkout?type=${encodeURIComponent(tierName)}&dropoffDate=${dropoffDate}&pickupDate=${pickupDate}&price=${price}`);
     }, 800);
   };
@@ -85,7 +82,13 @@ function ResultsContent() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-20">
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        
+        {/* 🔥 STEPPER INTEGRATION */}
+        <div className="mb-12">
+            <BookingStepper currentStep={1} />
+        </div>
+
         <div className="mb-16">
           <h1 className="text-5xl font-black text-slate-900 tracking-tighter mb-4">Choose your space.</h1>
           <p className="text-slate-400 font-bold text-lg tracking-tight">Vetted, secure parking found for your journey.</p>
@@ -94,8 +97,6 @@ function ResultsContent() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           {tiers.map((tier) => (
             <div key={tier.id} className="relative group">
-              
-              {/* THE COLOR-SHIFTING HOVER AURA */}
               <div className={`absolute -inset-4 bg-gradient-to-tr ${tier.glow} rounded-[4rem] blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none`}></div>
 
               <div className={`relative bg-white rounded-[3.2rem] p-10 shadow-xl border transition-all duration-500 h-full flex flex-col hover:-translate-y-2 ${
@@ -137,7 +138,6 @@ function ResultsContent() {
                   ))}
                 </div>
 
-                {/* THE DYNAMIC INTERACTIVE BUTTON */}
                 <button 
                   onClick={() => handleSelect(tier.id, tier.name, tier.price)} 
                   disabled={loadingId !== null}
@@ -148,8 +148,6 @@ function ResultsContent() {
                     ${loadingId === tier.id ? 'opacity-90 cursor-wait' : ''}
                   `}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]"></div>
-
                   {loadingId === tier.id ? (
                     <>
                       <Loader2 className="w-6 h-6 animate-spin" />
@@ -162,7 +160,6 @@ function ResultsContent() {
                     </>
                   )}
                 </button>
-
               </div>
             </div>
           ))}
@@ -172,7 +169,6 @@ function ResultsContent() {
   );
 }
 
-// 2. 🔥 EXPORT THE WRAPPER COMPONENT WITH SUSPENSE
 export default function ResultsPage() {
   return (
     <Suspense fallback={

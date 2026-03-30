@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 import { useState, Suspense } from "react"; 
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import BookingStepper from "../../components/BookingStepper"; // 🔥 Added Stepper
 import { 
   ShieldCheck, 
   Lock, 
@@ -11,7 +12,6 @@ import {
   ArrowRight, 
   ChevronLeft, 
   Loader2,
-  BookmarkCheck,
   Mail
 } from "lucide-react";
 
@@ -20,11 +20,10 @@ function CheckoutContent() {
   const router = useRouter();
   
   const [isProcessing, setIsProcessing] = useState(false);
-  const [saveCard, setSaveCard] = useState(false);
   
   // States for user details
   const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState(""); // 🔥 New: track email for the receipt
+  const [email, setEmail] = useState(""); 
 
   const dropDate = searchParams.get("dropoffDate");
   const pickDate = searchParams.get("pickupDate");
@@ -72,14 +71,14 @@ function CheckoutContent() {
 
       if (dbError) throw dbError;
 
-      // 2. 🔥 TRIGGER EMAIL (Calls your /api/send route)
+      // 2. TRIGGER EMAIL
       try {
         await fetch('/api/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             customerEmail: email,
-            flightNumber: "Not Provided", // You can add a flight field later
+            flightNumber: "Not Provided",
             parkingType: type
           }),
         });
@@ -103,6 +102,11 @@ function CheckoutContent() {
         <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to results
       </Link>
 
+      {/* 🔥 STEPPER INTEGRATION (STEP 2) */}
+      <div className="mb-12">
+        <BookingStepper currentStep={2} />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-12 items-start">
         <div className="space-y-8">
           <div className="bg-white rounded-[3rem] p-10 shadow-xl border border-slate-100">
@@ -114,7 +118,6 @@ function CheckoutContent() {
               </h3>
 
               <div className="space-y-6">
-                {/* NAME INPUT */}
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
                   <input 
@@ -126,7 +129,6 @@ function CheckoutContent() {
                   />
                 </div>
 
-                {/* EMAIL INPUT 🔥 */}
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email for Receipt</label>
                   <div className="relative">
@@ -141,8 +143,7 @@ function CheckoutContent() {
                   </div>
                 </div>
                 
-                {/* CARD NUMBER */}
-                <div className="flex flex-col gap-2 pt-4">
+                <div className="flex flex-col gap-2 pt-4 border-t border-slate-100 mt-4">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Card Number</label>
                   <div className="relative">
                     <input type="text" placeholder="0000 0000 0000 0000" className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 text-slate-900" />
@@ -156,9 +157,15 @@ function CheckoutContent() {
                 </div>
               </div>
           </div>
+          
+          <div className="flex items-center justify-center gap-8 opacity-20 grayscale">
+            <ShieldCheck className="w-10 h-10 text-slate-900" />
+            <div className="text-2xl font-black italic text-slate-900 uppercase tracking-tighter">Visa</div>
+            <div className="text-2xl font-black italic text-slate-900 uppercase tracking-tighter">Mastercard</div>
+          </div>
         </div>
 
-        {/* ORDER SUMMARY (RIGHT) */}
+        {/* ORDER SUMMARY */}
         <aside className="relative group lg:sticky lg:top-10">
           <div className="absolute -inset-1 bg-gradient-to-b from-blue-600 to-indigo-600 rounded-[3.5rem] blur-2xl opacity-20 group-hover:opacity-30 transition-opacity duration-700"></div>
           <div className="relative bg-[#0b1120] rounded-[3.5rem] p-10 text-white shadow-2xl border border-white/10 overflow-hidden">
@@ -170,8 +177,8 @@ function CheckoutContent() {
                 <span className="text-blue-400 uppercase text-xs text-right max-w-[150px] leading-tight">{type}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-500 uppercase text-[10px] tracking-widest">Days</span>
-                <span className="text-white text-sm">{booking.days}</span>
+                <span className="text-slate-500 uppercase text-[10px] tracking-widest">Duration</span>
+                <span className="text-white text-sm">{booking.days} {booking.days === 1 ? 'Day' : 'Days'}</span>
               </div>
 
               <div className="pt-8 border-t border-white/5">
