@@ -5,8 +5,9 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    // 🔥 Extracting ALL the new fields from the checkout request
-    // These must match the keys sent from JSON.stringify in your Checkout page
+    // Log incoming request for debugging in Vercel Console
+    console.log("Email Request Received for Ref:", body.bookingRef);
+
     const { 
       customerEmail, 
       flightNumber, 
@@ -17,27 +18,31 @@ export async function POST(req: Request) {
       notes 
     } = body;
 
-    // 🔥 Calling the mailer with the 7 required arguments
+    // Validate minimum requirements to prevent Resend from crashing
+    if (!customerEmail || !bookingRef) {
+      return NextResponse.json({ error: "Missing required email fields" }, { status: 400 });
+    }
+
+    // Trigger the generic mailer (7 arguments)
     const result = await sendBookingReceipt(
       customerEmail, 
       flightNumber || "TBA", 
-      parkingType || "Luton VIP Parking",
+      parkingType || "Luton Airport Parking",
       bookingRef,
       customerPhone || "N/A", 
       carDetails || "Vehicle Details Pending", 
-      notes || "" 
+      notes || "No additional notes" 
     );
     
-    // 🛡️ Error Handling based on the Resend Response
     if (result.success) {
       return NextResponse.json({ 
         success: true, 
-        message: "Booking receipt sent",
+        message: "Confirmation email processed",
         data: result.data 
       });
     } else {
-      // This logs the specific Resend error (like 'unauthorized') to your Vercel console
-      console.error("Resend Mailer Error:", result.error);
+      // Logs exactly why Resend rejected it (e.g., Sandbox restrictions)
+      console.error("Resend API Failure:", result.error);
       return NextResponse.json({ 
         error: "Mailer failed to deliver", 
         details: result.error 
@@ -45,7 +50,7 @@ export async function POST(req: Request) {
     }
     
   } catch (error: any) {
-    console.error("Email API Route Crash:", error);
+    console.error("Critical Email Route Error:", error);
     return NextResponse.json({ 
       error: "Internal Server Error", 
       message: error.message 
