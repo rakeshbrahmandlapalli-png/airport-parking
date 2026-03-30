@@ -5,9 +5,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    // Log incoming request for debugging in Vercel Console
-    console.log("Email Request Received for Ref:", body.bookingRef);
-
+    // Extract fields
     const { 
       customerEmail, 
       flightNumber, 
@@ -18,14 +16,21 @@ export async function POST(req: Request) {
       notes 
     } = body;
 
-    // Validate minimum requirements to prevent Resend from crashing
+    // 1. Validate requirements
     if (!customerEmail || !bookingRef) {
+      console.error("❌ Email API Error: Missing customerEmail or bookingRef");
       return NextResponse.json({ error: "Missing required email fields" }, { status: 400 });
     }
 
-    // Trigger the generic mailer (7 arguments)
+    // 2. Normalize Email (Crucial for Resend Sandbox Testing)
+    // This removes hidden spaces and forces lowercase to match your Resend login exactly
+    const normalizedEmail = customerEmail.trim().toLowerCase();
+
+    console.log(`📩 Attempting to send email to: ${normalizedEmail} for Ref: ${bookingRef}`);
+
+    // 3. Trigger the generic mailer (7 arguments)
     const result = await sendBookingReceipt(
-      customerEmail, 
+      normalizedEmail, 
       flightNumber || "TBA", 
       parkingType || "Luton Airport Parking",
       bookingRef,
@@ -35,14 +40,15 @@ export async function POST(req: Request) {
     );
     
     if (result.success) {
+      console.log("✅ Resend success:", result.data);
       return NextResponse.json({ 
         success: true, 
         message: "Confirmation email processed",
         data: result.data 
       });
     } else {
-      // Logs exactly why Resend rejected it (e.g., Sandbox restrictions)
-      console.error("Resend API Failure:", result.error);
+      // Logs the exact Resend error (e.g., 403 Forbidden)
+      console.error("❌ Resend API Failure:", result.error);
       return NextResponse.json({ 
         error: "Mailer failed to deliver", 
         details: result.error 
@@ -50,7 +56,7 @@ export async function POST(req: Request) {
     }
     
   } catch (error: any) {
-    console.error("Critical Email Route Error:", error);
+    console.error("🔥 Critical Email Route Error:", error);
     return NextResponse.json({ 
       error: "Internal Server Error", 
       message: error.message 

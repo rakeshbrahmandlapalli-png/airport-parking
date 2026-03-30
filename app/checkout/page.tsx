@@ -61,6 +61,7 @@ function CheckoutContent() {
     
     try {
       const shortId = "APV-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+      const cleanEmail = email.trim().toLowerCase(); // 🔥 Prevent 403 errors in Resend Sandbox
 
       // 1. Save to Supabase
       const { error: dbError } = await supabase
@@ -69,7 +70,7 @@ function CheckoutContent() {
           { 
             booking_ref: shortId, 
             full_name: fullName, 
-            email: email, // 🔥 Ensure this column exists in Supabase!
+            email: cleanEmail,
             phone_number: phone,
             license_plate: registration.toUpperCase(), 
             car_make: carMake,
@@ -83,16 +84,15 @@ function CheckoutContent() {
           }
         ]);
 
-      // 🔥 THROW THE ERROR SO CATCH CAN READ IT
       if (dbError) throw dbError;
 
-      // 2. TRIGGER EMAIL
+      // 2. TRIGGER EMAIL (Now Active)
       try {
         await fetch('/api/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            customerEmail: email,
+            customerEmail: cleanEmail,
             customerPhone: phone,
             carDetails: `${registration.toUpperCase()} - ${carColor} ${carMake}`,
             flightNumber: flightNumber.toUpperCase().trim() || "TBA",
@@ -102,7 +102,7 @@ function CheckoutContent() {
           }),
         });
       } catch (mailErr) {
-        console.error("Mail service failed:", mailErr);
+        console.error("Non-critical background mail error:", mailErr);
       }
 
       // 3. Success Redirect
@@ -110,8 +110,7 @@ function CheckoutContent() {
       
     } catch (error: any) {
       console.error("Critical Booking Failure:", error);
-      // 🔥 NEW DEBUG POPUP: This will tell you EXACTLY why it failed
-      alert(`❌ ERROR: ${error.message || "Unknown Error"}\n\nHint: ${error.details || "Check your Supabase column names"}`);
+      alert(`❌ ERROR: ${error.message || "Unknown Error"}\n\nHint: Check your connection or database columns.`);
       setIsProcessing(false);
     }
   };
