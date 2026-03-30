@@ -14,13 +14,16 @@ import {
   Star,
   Menu,
   X,
-  ChevronRight
+  ChevronRight,
+  Info
 } from "lucide-react";
 import Link from "next/link";
+import MapModal from "@/components/MapModal"; // IMPORT MODAL
 
 export default function HomePage() {
   const [now, setNow] = useState(new Date());
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMapOpen, setIsMapOpen] = useState(false); // MAP STATE
   const [dropoffDate, setDropoffDate] = useState("");
   const [dropoffTime, setDropoffTime] = useState("");
   const [pickupDate, setPickupDate] = useState("");
@@ -59,9 +62,9 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    if (isMenuOpen) document.body.style.overflow = 'hidden';
+    if (isMenuOpen || isMapOpen) document.body.style.overflow = 'hidden';
     else document.body.style.overflow = 'unset';
-  }, [isMenuOpen]);
+  }, [isMenuOpen, isMapOpen]);
 
   return (
     <main className="min-h-screen bg-slate-50 font-sans selection:bg-blue-600 selection:text-white overflow-x-hidden">
@@ -93,11 +96,8 @@ export default function HomePage() {
           </button>
         </div>
 
-        {/* MOBILE MENU - FORCED SOLID WHITE BACKGROUND */}
-        <div 
-          className={`md:hidden fixed inset-0 z-[100] !bg-white transition-all duration-500 flex flex-col ${isMenuOpen ? 'opacity-100 pointer-events-auto translate-x-0' : 'opacity-0 pointer-events-none translate-x-full'}`}
-          style={{ backgroundColor: '#ffffff' }}
-        >
+        {/* MOBILE MENU */}
+        <div className={`md:hidden fixed inset-0 z-[100] !bg-white transition-all duration-500 flex flex-col ${isMenuOpen ? 'opacity-100 pointer-events-auto translate-x-0' : 'opacity-0 pointer-events-none translate-x-full'}`} style={{ backgroundColor: '#ffffff' }}>
           <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100 !bg-white">
             <div className="flex items-center gap-2 text-blue-600 font-black tracking-tight text-xl uppercase">
               <Plane className="w-6 h-6 rotate-45" /> AIRPORT<span className="text-slate-900">VIP</span>
@@ -106,7 +106,6 @@ export default function HomePage() {
               <X className="w-6 h-6" />
             </button>
           </div>
-
           <div className="flex flex-col px-8 pt-10 gap-6 !bg-white flex-grow">
             {["Services", "Locations", "Support"].map((item) => (
               <a key={item} href="#" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between text-2xl font-black text-slate-900 border-b border-slate-100 pb-5">
@@ -117,7 +116,6 @@ export default function HomePage() {
               Admin Login <ChevronRight className="w-6 h-6 text-blue-500" />
             </Link>
           </div>
-
           <div className="p-8 border-t border-slate-100 !bg-white">
             <Link href="/manage" onClick={() => setIsMenuOpen(false)} className="w-full py-5 bg-blue-600 text-white font-black rounded-3xl text-lg flex items-center justify-center">
               Manage Booking
@@ -129,10 +127,7 @@ export default function HomePage() {
       {/* 2. HERO SECTION */}
       <section className="relative min-h-[100svh] md:min-h-[850px] w-full flex flex-col items-center justify-center pt-24 pb-12 overflow-hidden bg-slate-950">
         <div className="absolute inset-0 z-0 overflow-hidden">
-          <div 
-            className={`absolute inset-0 bg-cover bg-center transition-all duration-[3000ms] ease-out origin-center ${isLoaded ? 'scale-105 opacity-100 blur-0' : 'scale-150 opacity-0 blur-2xl'}`}
-            style={{ backgroundImage: "url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format&fit=crop')" }}
-          ></div>
+          <div className={`absolute inset-0 bg-cover bg-center transition-all duration-[3000ms] ease-out origin-center ${isLoaded ? 'scale-105 opacity-100 blur-0' : 'scale-150 opacity-0 blur-2xl'}`} style={{ backgroundImage: "url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format&fit=crop')" }}></div>
           <div className={`absolute inset-0 bg-slate-900 transition-opacity duration-[2500ms] ${isLoaded ? 'opacity-50' : 'opacity-100'}`}></div>
         </div>
 
@@ -140,9 +135,17 @@ export default function HomePage() {
           <h1 className={`text-4xl sm:text-5xl md:text-[5.5rem] font-black text-white tracking-tight mb-4 leading-[1.1] transition-all duration-1000 delay-300 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
             Start Your Journey <br className="md:hidden" /><span className="text-blue-400">Stress-Free.</span>
           </h1>
-          <p className={`text-base sm:text-lg md:text-xl text-slate-200 mb-10 max-w-3xl font-medium transition-all duration-1000 delay-500 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+          <p className={`text-base sm:text-lg md:text-xl text-slate-200 mb-6 max-w-3xl font-medium transition-all duration-1000 delay-500 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
             Compare premium, secure airport parking. Book in under 2 minutes and guarantee your spot today.
           </p>
+
+          {/* NEW MAP TRIGGER LINK */}
+          <button 
+            onClick={() => setIsMapOpen(true)}
+            className={`flex items-center gap-2 text-blue-400 font-black uppercase text-[10px] tracking-widest mb-10 hover:text-white transition-all duration-1000 delay-600 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+          >
+            <Info className="w-4 h-4" /> Where exactly do I meet the operator?
+          </button>
           
           <div className={`relative w-full group z-20 transition-all duration-1000 delay-700 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0 scale-95'}`}>
             <div className="relative z-10 bg-white rounded-[2rem] md:rounded-full p-4 md:p-3 shadow-2xl">
@@ -157,7 +160,6 @@ export default function HomePage() {
                     <input type="time" name="dropoffTime" value={dropoffTime} onChange={(e) => setDropoffTime(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 font-bold text-slate-700 text-xs" />
                   </div>
                 </div>
-
                 <div className="flex-1 w-full px-2 md:px-4 flex flex-col text-left">
                   <div className="flex items-center gap-1.5 mb-2 text-slate-500 ml-1">
                     <Calendar className="w-3.5 h-3.5 text-blue-500" />
@@ -168,7 +170,6 @@ export default function HomePage() {
                     <input type="time" name="pickupTime" value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 font-bold text-slate-700 text-xs" />
                   </div>
                 </div>
-
                 <button type="submit" className="w-full md:w-48 h-[60px] bg-blue-600 text-white font-black rounded-full shadow-lg flex items-center justify-center gap-2">
                   SEARCH <PlaneTakeoff className="w-5 h-5" />
                 </button>
@@ -266,6 +267,9 @@ export default function HomePage() {
            </div>
         </div>
       </footer>
+
+      {/* RENDER MAP MODAL */}
+      <MapModal isOpen={isMapOpen} onClose={() => setIsMapOpen(false)} />
     </main>
   );
 }
