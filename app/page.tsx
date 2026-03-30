@@ -16,6 +16,7 @@ import {
   X,
   ChevronRight
 } from "lucide-react";
+import Link from "next/link";
 
 export default function HomePage() {
   const [now, setNow] = useState(new Date());
@@ -25,11 +26,9 @@ export default function HomePage() {
   const [pickupDate, setPickupDate] = useState("");
   const [pickupTime, setPickupTime] = useState("18:00");
   
-  // State for our new Cinematic Entrance
   const [isLoaded, setIsLoaded] = useState(false); 
 
   useEffect(() => {
-    // Slight delay to ensure the browser paints the "before" state first
     setTimeout(() => setIsLoaded(true), 100); 
     
     const today = new Date();
@@ -59,6 +58,7 @@ export default function HomePage() {
     }
   };
 
+  // Prevent scrolling when menu is open
   useEffect(() => {
     if (isMenuOpen) document.body.style.overflow = 'hidden';
     else document.body.style.overflow = 'unset';
@@ -70,9 +70,9 @@ export default function HomePage() {
       {/* 1. NAVBAR */}
       <nav className={`fixed top-0 w-full z-50 bg-white/90 backdrop-blur-xl border-b border-slate-200 shadow-sm transition-all duration-1000 ${isLoaded ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-blue-600 font-black tracking-tight text-xl uppercase z-50 cursor-pointer hover:scale-105 transition-transform">
+          <Link href="/" className="flex items-center gap-2 text-blue-600 font-black tracking-tight text-xl uppercase z-50 cursor-pointer hover:scale-105 transition-transform">
             <Plane className="w-6 h-6 rotate-45" /> AIRPORT<span className="text-slate-900">VIP</span>
-          </div>
+          </Link>
           
           <div className="hidden md:flex items-center gap-10">
             {["Services", "Locations", "Support"].map((item) => (
@@ -81,38 +81,70 @@ export default function HomePage() {
                 <span className="absolute -bottom-2 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
               </a>
             ))}
-            <a href="#" className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors pl-6 border-l border-slate-200 group">
+            <Link href="/admin/login" className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors pl-6 border-l border-slate-200 group">
               <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-blue-50 transition-colors">
                 <User className="w-4 h-4" />
               </div>
               Admin
-            </a>
+            </Link>
           </div>
 
-          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden z-50 p-2 text-slate-900 active:scale-90 transition-transform">
-            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          <button onClick={() => setIsMenuOpen(true)} className="md:hidden z-50 p-2 text-slate-900 active:scale-90 transition-transform">
+            <Menu className="w-6 h-6" />
           </button>
         </div>
 
-        {/* MOBILE MENU */}
-        <div className={`md:hidden fixed inset-0 bg-white/95 backdrop-blur-2xl z-40 transition-all duration-500 flex flex-col pt-28 px-8 ${isMenuOpen ? 'opacity-100 pointer-events-auto translate-x-0' : 'opacity-0 pointer-events-none translate-x-full'}`}>
-          <div className="flex flex-col gap-6">
-            {["Services", "Locations", "Support", "Admin Login"].map((item, i) => (
-              <a key={item} href="#" className="flex items-center justify-between text-2xl font-black text-slate-900 border-b border-slate-100 pb-4 active:scale-95 transition-transform">
+        {/* MOBILE MENU - FIXED READABILITY */}
+        <div className={`md:hidden fixed inset-0 z-[9999] bg-white transition-all duration-500 flex flex-col ${isMenuOpen ? 'opacity-100 pointer-events-auto translate-x-0' : 'opacity-0 pointer-events-none translate-x-full'}`}>
+          
+          {/* Menu Header */}
+          <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100">
+            <div className="flex items-center gap-2 text-blue-600 font-black tracking-tight text-xl uppercase">
+              <Plane className="w-6 h-6 rotate-45" /> AIRPORT<span className="text-slate-900">VIP</span>
+            </div>
+            <button onClick={() => setIsMenuOpen(false)} className="p-2 text-slate-900 bg-slate-50 rounded-full active:scale-90 transition-transform">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          <div className="flex flex-col px-8 pt-10 gap-6">
+            {["Services", "Locations", "Support"].map((item) => (
+              <a 
+                key={item} 
+                href="#" 
+                onClick={() => setIsMenuOpen(false)}
+                className="flex items-center justify-between text-2xl font-black text-slate-900 border-b border-slate-50 pb-5 active:scale-95 transition-transform"
+              >
                 {item} <ChevronRight className="w-6 h-6 text-blue-500" />
               </a>
             ))}
+            <Link 
+              href="/admin/login"
+              onClick={() => setIsMenuOpen(false)}
+              className="flex items-center justify-between text-2xl font-black text-slate-900 border-b border-slate-50 pb-5 active:scale-95 transition-transform"
+            >
+              Admin Login <ChevronRight className="w-6 h-6 text-blue-500" />
+            </Link>
           </div>
-          <button className="mt-12 py-5 bg-blue-600 text-white font-black rounded-3xl text-lg shadow-xl shadow-blue-500/30 active:scale-95 transition-all">
-            Manage Booking
-          </button>
+
+          <div className="mt-auto p-8 border-t border-slate-50">
+            <Link 
+              href="/manage"
+              onClick={() => setIsMenuOpen(false)}
+              className="w-full py-5 bg-blue-600 text-white font-black rounded-3xl text-lg shadow-xl shadow-blue-500/30 active:scale-95 transition-all flex items-center justify-center"
+            >
+              Manage Booking
+            </Link>
+            <p className="text-center text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-6">
+              © {new Date().getFullYear()} AIRPORT VIP PARKING
+            </p>
+          </div>
         </div>
       </nav>
 
       {/* 2. CINEMATIC HERO SECTION */}
       <section className="relative min-h-[100svh] md:min-h-[850px] w-full flex flex-col items-center justify-center pt-24 pb-12 overflow-hidden bg-slate-950">
         
-        {/* Cinematic Background Reveal */}
         <div className="absolute inset-0 z-0 overflow-hidden">
           <div 
             className={`absolute inset-0 bg-cover bg-center transition-all duration-[3000ms] ease-out origin-center
@@ -121,28 +153,21 @@ export default function HomePage() {
             style={{ backgroundImage: "url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format&fit=crop')" }}
           ></div>
           
-          {/* Dynamic Dark Overlay (Fades out slightly as it loads) */}
           <div className={`absolute inset-0 bg-slate-900 transition-opacity duration-[2500ms] ${isLoaded ? 'opacity-50' : 'opacity-100'}`}></div>
-          
-          {/* Slow Looping Light Sweep / Cloud Pass Effect */}
           <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_10s_infinite_linear]"></div>
         </div>
 
         <div className="relative z-10 w-full max-w-5xl px-4 md:px-6 flex flex-col items-center text-center">
           
-          {/* STAGGER 1: Title */}
           <h1 className={`text-4xl sm:text-5xl md:text-[5.5rem] font-black text-white tracking-tight mb-4 md:mb-6 leading-[1.1] transition-all duration-1000 delay-300 ease-out transform ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
             Start Your Journey <br className="md:hidden" /><span className="text-blue-400">Stress-Free.</span>
           </h1>
           
-          {/* STAGGER 2: Subtitle */}
           <p className={`text-base sm:text-lg md:text-xl text-slate-200 mb-10 md:mb-14 max-w-3xl font-medium tracking-wide px-4 transition-all duration-1000 delay-500 ease-out transform ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
             Compare premium, secure airport parking. Book in under 2 minutes and guarantee your spot today.
           </p>
           
-          {/* STAGGER 3: Search Pill */}
           <div className={`relative w-full group z-20 transition-all duration-1000 delay-700 ease-out transform ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0 scale-95'}`}>
-            {/* Ambient Glow */}
             <div className="absolute -inset-1 md:-inset-2 bg-gradient-to-r from-blue-600 to-cyan-400 rounded-[2.5rem] blur-xl md:blur-2xl opacity-40 md:opacity-20 md:group-hover:opacity-40 transition duration-700 animate-[pulse_4s_infinite]"></div>
 
             <div className="relative z-10 bg-white rounded-[2rem] md:rounded-full p-4 md:p-3 shadow-2xl border border-white/20">
@@ -188,7 +213,6 @@ export default function HomePage() {
                     <PlaneTakeoff className="w-4 h-4 md:w-5 md:h-5 relative z-10 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
                   </button>
                 </div>
-                
               </form>
             </div>
           </div>
@@ -227,7 +251,7 @@ export default function HomePage() {
             {[
               { icon: MapPin, step: "1", title: "Book Online", desc: "Enter your dates and choose your space." },
               { icon: CarFront, step: "2", title: "Drive In", desc: "Drop your car at our secure, vetted lot." },
-              { icon: PlaneTakeoff, step: "3", title: "Fly High", desc: "5 Minutes walk to the therminal." }
+              { icon: PlaneTakeoff, step: "3", title: "Fly High", desc: "5 Minutes walk to the terminal." }
             ].map((item, i) => (
               <div key={i} className="flex flex-col items-center text-center relative z-10 group cursor-pointer">
                 <div className="w-20 h-20 md:w-24 md:h-24 bg-slate-900 text-white rounded-[1.5rem] md:rounded-[2rem] flex items-center justify-center mb-6 md:mb-8 shadow-2xl relative group-hover:-translate-y-2 group-active:scale-95 transition-all duration-300">
@@ -279,9 +303,9 @@ export default function HomePage() {
       {/* 6. CLEAN FOOTER */}
       <footer className="bg-[#020617] py-12 md:py-16 px-6 border-t border-white/10">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 text-center md:text-left">
-           <div className="flex items-center gap-2 text-white font-black tracking-tight text-lg md:text-xl uppercase hover:scale-105 transition-transform cursor-pointer">
+           <Link href="/" className="flex items-center gap-2 text-white font-black tracking-tight text-lg md:text-xl uppercase hover:scale-105 transition-transform cursor-pointer">
              <Plane className="w-5 h-5 md:w-6 md:h-6 text-blue-500 rotate-45" /> AIRPORT<span className="text-blue-500">VIP</span>
-           </div>
+           </Link>
            <div className="flex flex-wrap justify-center gap-6 md:gap-8 text-slate-400 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em]">
              <a href="#" className="hover:text-white hover:-translate-y-1 transition-all">Privacy</a>
              <a href="#" className="hover:text-white hover:-translate-y-1 transition-all">Terms</a>
