@@ -18,7 +18,7 @@ export async function createCheckoutSession(formData: FormData) {
   const parkingType = formData.get("parkingType") as string || "standard";
   const totalPrice = parseFloat(formData.get("totalPrice") as string) || 0;
 
-  // Generate a temporary Reference ID for the email since Stripe hasn't finished yet
+  // Generate a temporary Reference ID
   const tempRef = "VIP-" + Math.random().toString(36).substring(2, 8).toUpperCase();
 
   let sessionUrl = "";
@@ -41,12 +41,15 @@ export async function createCheckoutSession(formData: FormData) {
 
     // B. Fire off the email receipt via Resend ✈️
     if (customerEmail) {
-      // 🔥 FIXED: Added the 4th argument (tempRef) to match your new lib/mail.ts requirement
+      // 🔥 FIXED: Added all 7 arguments to match lib/mail.ts
       await sendBookingReceipt(
         customerEmail, 
         flightNumber || "TBA", 
         parkingType, 
-        tempRef
+        tempRef,
+        customerPhone || "N/A",               // Argument 5: Phone
+        `License: ${licensePlate || "N/A"}`,  // Argument 6: Car Details
+        "Direct Stripe Booking"               // Argument 7: Notes
       );
     }
 
