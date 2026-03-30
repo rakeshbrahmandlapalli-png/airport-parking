@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Link from "next/link";
 import { PlaneTakeoff, User } from "lucide-react";
-import { Analytics } from "@vercel/analytics/react"; // 🔥 Added Analytics
+import { Analytics } from "@vercel/analytics/next"; // 🔥 Added Analytics
 
 export const metadata: Metadata = {
   title: "Airport VIP Parking",
