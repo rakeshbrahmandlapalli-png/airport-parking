@@ -12,14 +12,13 @@ import {
   Download,
   Loader2,
   Phone,
-  Car,
   Clock
 } from "lucide-react";
 
 function SuccessContent() {
   const searchParams = useSearchParams();
   
-  // 🔥 Pulling the data from the URL (or defaults)
+  // Pulling the booking reference from the URL
   const bookingId = searchParams.get("ref") || "APV-PENDING";
 
   return (
@@ -54,7 +53,7 @@ function SuccessContent() {
                 <div className="mt-1 p-1.5 bg-blue-500/20 rounded-lg"><MapPin className="w-3.5 h-3.5 text-blue-400" /></div>
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Location</p>
-                  <p className="text-sm font-bold">Luton Terminal VIP Zone</p>
+                  <p className="text-sm font-bold">Luton Airport (LTN)</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -93,11 +92,11 @@ function SuccessContent() {
           <ul className="space-y-4">
             <li className="flex gap-4 items-start">
               <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-black">1</div>
-              <p className="text-slate-600 text-sm font-bold">Call the driver on <span className="text-blue-600">07XXX XXXXXX</span> exactly 20 minutes before you reach Luton Airport.</p>
+              <p className="text-slate-600 text-sm font-bold">Call the driver on <span className="text-blue-600 font-black text-base">07XXX XXXXXX</span> exactly 20 minutes before you reach Luton Airport.</p>
             </li>
             <li className="flex gap-4 items-start">
               <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-black">2</div>
-              <p className="text-slate-600 text-sm font-bold">Follow signs for "Terminal Car Park 1" and head to the <span className="text-blue-600 underline">Level 3 Off-Airport Meet & Greet area</span>.</p>
+              <p className="text-slate-600 text-sm font-bold">Follow signs for <span className="font-black text-slate-900">"Terminal Car Park 1"</span> and proceed to the <span className="text-blue-600 underline font-black">Level 3 Off-Airport Meet & Greet area</span>.</p>
             </li>
           </ul>
         </div>
