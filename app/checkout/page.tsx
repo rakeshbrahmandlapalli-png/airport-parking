@@ -27,7 +27,7 @@ function CheckoutContent() {
   const [email, setEmail] = useState(""); 
   const [phone, setPhone] = useState("");
   const [flightNumber, setFlightNumber] = useState("");
-  const [registration, setRegistration] = useState(""); // 🔥 NEW
+  const [registration, setRegistration] = useState(""); 
   const [carMake, setCarMake] = useState("");
   const [carColor, setCarColor] = useState("");
   const [notes, setNotes] = useState("");
@@ -62,16 +62,16 @@ function CheckoutContent() {
     try {
       const shortId = "APV-" + Math.random().toString(36).substring(2, 8).toUpperCase();
 
-      // 1. Save to Supabase (Including ALL new columns)
+      // 1. Save to Supabase
       const { error: dbError } = await supabase
         .from('bookings')
         .insert([
           { 
             booking_ref: shortId, 
             full_name: fullName, 
-            email: email,
+            email: email, // 🔥 Ensure this column exists in Supabase!
             phone_number: phone,
-            license_plate: registration.toUpperCase(), // 🔥 NEW
+            license_plate: registration.toUpperCase(), 
             car_make: carMake,
             car_color: carColor,
             additional_notes: notes,
@@ -83,6 +83,7 @@ function CheckoutContent() {
           }
         ]);
 
+      // 🔥 THROW THE ERROR SO CATCH CAN READ IT
       if (dbError) throw dbError;
 
       // 2. TRIGGER EMAIL
@@ -93,7 +94,7 @@ function CheckoutContent() {
           body: JSON.stringify({
             customerEmail: email,
             customerPhone: phone,
-            carDetails: `${registration.toUpperCase()} - ${carColor} ${carMake}`, // 🔥 INCLUDED REG
+            carDetails: `${registration.toUpperCase()} - ${carColor} ${carMake}`,
             flightNumber: flightNumber.toUpperCase().trim() || "TBA",
             parkingType: type,
             bookingRef: shortId,
@@ -107,9 +108,10 @@ function CheckoutContent() {
       // 3. Success Redirect
       router.push(`/success?ref=${shortId}`);
       
-    } catch (error) {
-      console.error("Booking failed:", error);
-      alert("Something went wrong. Please try again.");
+    } catch (error: any) {
+      console.error("Critical Booking Failure:", error);
+      // 🔥 NEW DEBUG POPUP: This will tell you EXACTLY why it failed
+      alert(`❌ ERROR: ${error.message || "Unknown Error"}\n\nHint: ${error.details || "Check your Supabase column names"}`);
       setIsProcessing(false);
     }
   };
@@ -187,7 +189,6 @@ function CheckoutContent() {
                     <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Vehicle & Trip Details</h4>
                   </div>
 
-                  {/* REGISTRATION - FULL WIDTH TO HIGHLIGHT IT */}
                   <div className="flex flex-col gap-2 pb-2">
                     <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest ml-1">Vehicle Registration (Required)</label>
                     <input 
@@ -247,7 +248,7 @@ function CheckoutContent() {
                   </div>
                 </div>
                 
-                {/* SECTION 3: PAYMENT (SIMULATED) */}
+                {/* PAYMENT BLOCK (SIMULATED) */}
                 <div className="space-y-6 pt-6 border-t border-slate-50">
                   <div className="flex items-center gap-2 mb-4">
                     <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
@@ -269,11 +270,9 @@ function CheckoutContent() {
           </div>
         </div>
 
-        {/* ORDER SUMMARY */}
         <aside className="relative lg:sticky lg:top-10">
           <div className="bg-[#0b1120] rounded-[3.5rem] p-10 text-white shadow-2xl border border-white/10">
             <h2 className="text-xl font-black mb-10 border-b border-white/5 pb-4">Order Summary</h2>
-            
             <div className="space-y-6 font-bold">
               <div className="flex justify-between items-center">
                 <span className="text-slate-500 uppercase text-[10px] tracking-widest">Service</span>
@@ -283,14 +282,12 @@ function CheckoutContent() {
                 <span className="text-slate-500 uppercase text-[10px] tracking-widest">Duration</span>
                 <span className="text-white text-sm">{booking.days} Days</span>
               </div>
-
               <div className="pt-8 border-t border-white/5">
                 <div className="flex justify-between items-end pt-4">
                   <span className="text-slate-500 uppercase text-[10px] tracking-widest">Total</span>
                   <span className="text-5xl font-black text-white tracking-tighter">£{booking.total}.00</span>
                 </div>
               </div>
-
               <button 
                 onClick={handlePayment}
                 disabled={isProcessing}
