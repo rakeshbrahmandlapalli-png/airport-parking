@@ -5,21 +5,30 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    // We now extract bookingRef from the body as well
-    const { customerEmail, flightNumber, parkingType, bookingRef } = body;
+    // 🔥 Extracting ALL the new fields from the checkout request
+    const { 
+      customerEmail, 
+      flightNumber, 
+      parkingType, 
+      bookingRef, 
+      customerPhone, 
+      carDetails, 
+      notes 
+    } = body;
 
-    // We pass the bookingRef to your mail function so it can be included in the email text
-    // Ensure your sendBookingReceipt function in lib/mail.ts is updated to accept this 4th argument
     const result = await sendBookingReceipt(
       customerEmail, 
-      flightNumber || "Not Provided", 
+      flightNumber || "TBA", 
       parkingType,
-      bookingRef || "N/A"
+      bookingRef,
+      customerPhone, // 🔥 Passed to mailer
+      carDetails,    // 🔥 Passed to mailer
+      notes          // 🔥 Passed to mailer
     );
     
     return NextResponse.json({ success: true, result });
   } catch (error) {
-    console.error("Email Error:", error);
+    console.error("Email API Error:", error);
     return NextResponse.json({ error: "Failed to send email" }, { status: 500 });
   }
 }

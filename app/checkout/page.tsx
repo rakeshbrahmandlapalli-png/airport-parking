@@ -13,7 +13,7 @@ import {
   ChevronLeft, 
   Loader2,
   Mail,
-  Plane // 🔥 Added Plane icon
+  Plane 
 } from "lucide-react";
 
 function CheckoutContent() {
@@ -22,10 +22,14 @@ function CheckoutContent() {
   
   const [isProcessing, setIsProcessing] = useState(false);
   
-  // User States
+  // --- USER & VEHICLE STATES ---
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState(""); 
-  const [flightNumber, setFlightNumber] = useState(""); // 🔥 New Flight Number state
+  const [phone, setPhone] = useState("");
+  const [flightNumber, setFlightNumber] = useState("");
+  const [carMake, setCarMake] = useState("");
+  const [carColor, setCarColor] = useState("");
+  const [notes, setNotes] = useState("");
 
   const dropDate = searchParams.get("dropoffDate");
   const pickDate = searchParams.get("pickupDate");
@@ -47,8 +51,8 @@ function CheckoutContent() {
   const booking = calculateTotal();
 
   const handlePayment = async () => {
-    if (!fullName || !email) {
-      alert("Please enter your Full Name and Email to secure your booking.");
+    if (!fullName || !email || !phone || !carMake) {
+      alert("Please fill in your Name, Email, Phone, and Car Make to continue.");
       return;
     }
 
@@ -57,33 +61,41 @@ function CheckoutContent() {
     try {
       const shortId = "APV-" + Math.random().toString(36).substring(2, 8).toUpperCase();
 
-      // 1. Save to Supabase (Including flight_number)
+      // 1. Save to Supabase (Including ALL new columns)
       const { error: dbError } = await supabase
         .from('bookings')
         .insert([
           { 
             booking_ref: shortId, 
             full_name: fullName, 
+            email: email,
+            phone_number: phone,
+            car_make: carMake,
+            car_color: carColor,
+            additional_notes: notes,
             service_type: type,
             dropoff_date: dropDate,
             pickup_date: pickDate,
             total_price: booking.total,
-            flight_number: flightNumber.toUpperCase().trim() // 🔥 NEW COLUMN
+            flight_number: flightNumber.toUpperCase().trim()
           }
         ]);
 
       if (dbError) throw dbError;
 
-      // 2. TRIGGER EMAIL (Now includes flightNumber)
+      // 2. TRIGGER EMAIL
       try {
         await fetch('/api/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             customerEmail: email,
-            flightNumber: flightNumber.toUpperCase().trim() || "Not Provided", // 🔥 NEW
+            customerPhone: phone,
+            carDetails: `${carColor} ${carMake}`,
+            flightNumber: flightNumber.toUpperCase().trim() || "TBA",
             parkingType: type,
-            bookingRef: shortId
+            bookingRef: shortId,
+            notes: notes
           }),
         });
       } catch (mailErr) {
@@ -120,62 +132,124 @@ function CheckoutContent() {
                 Booking Details
               </h3>
 
-              <div className="space-y-6">
-                {/* FULL NAME */}
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
-                  <input 
-                    type="text" 
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="John Doe" 
-                    className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900" 
-                  />
-                </div>
-
-                {/* EMAIL */}
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
-                  <div className="relative">
-                    <input 
-                      type="email" 
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="name@email.com" 
-                      className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900" 
-                    />
-                    <Mail className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+              <div className="space-y-10">
+                {/* SECTION 1: CONTACT INFO */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Contact Information</h4>
                   </div>
-                </div>
-
-                {/* FLIGHT NUMBER 🔥 */}
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 text-blue-600">Return Flight Number</label>
-                  <div className="relative">
+                  
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
                     <input 
                       type="text" 
-                      value={flightNumber}
-                      onChange={(e) => setFlightNumber(e.target.value)}
-                      placeholder="e.g. BA123" 
-                      className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900 uppercase" 
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="John Doe" 
+                      className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900" 
                     />
-                    <Plane className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
                   </div>
-                  <p className="text-[9px] text-slate-400 ml-1 font-bold italic">Optional: We use this to monitor your arrival for delays.</p>
-                </div>
-                
-                {/* CARD SECTION */}
-                <div className="flex flex-col gap-2 pt-6 border-t border-slate-100 mt-4">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Card Number</label>
-                  <div className="relative">
-                    <input type="text" placeholder="0000 0000 0000 0000" className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 text-slate-900" />
-                    <Lock className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
+                      <div className="relative">
+                        <input 
+                          type="email" 
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="name@email.com" 
+                          className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900" 
+                        />
+                        <Mail className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mobile Number</label>
+                      <input 
+                        type="tel" 
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="07123 456789" 
+                        className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900" 
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-6">
-                  <input type="text" placeholder="MM/YY" className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 text-center text-slate-900" />
-                  <input type="text" placeholder="CVC" className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 text-center text-slate-900" />
+                {/* SECTION 2: VEHICLE & TRIP */}
+                <div className="space-y-6 pt-6 border-t border-slate-50">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Vehicle & Trip Details</h4>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Car Make/Model</label>
+                      <input 
+                        type="text" 
+                        value={carMake}
+                        onChange={(e) => setCarMake(e.target.value)}
+                        placeholder="BMW 3 Series" 
+                        className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900" 
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Car Color</label>
+                      <input 
+                        type="text" 
+                        value={carColor}
+                        onChange={(e) => setCarColor(e.target.value)}
+                        placeholder="Black" 
+                        className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900" 
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Return Flight</label>
+                      <div className="relative">
+                        <input 
+                          type="text" 
+                          value={flightNumber}
+                          onChange={(e) => setFlightNumber(e.target.value)}
+                          placeholder="EZY123" 
+                          className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900 uppercase" 
+                        />
+                        <Plane className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2 pt-4">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Additional Requirements</label>
+                    <textarea 
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="e.g. Car has a child seat, please be careful..." 
+                      rows={3}
+                      className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 resize-none transition-all" 
+                    />
+                  </div>
+                </div>
+                
+                {/* SECTION 3: PAYMENT (SIMULATED) */}
+                <div className="space-y-6 pt-6 border-t border-slate-50">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Payment Information</h4>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Card Number</label>
+                    <div className="relative">
+                      <input type="text" placeholder="0000 0000 0000 0000" className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 text-slate-900" />
+                      <Lock className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-6">
+                    <input type="text" placeholder="MM/YY" className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 text-center text-slate-900" />
+                    <input type="text" placeholder="CVC" className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 text-center text-slate-900" />
+                  </div>
                 </div>
               </div>
           </div>

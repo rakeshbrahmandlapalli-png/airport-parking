@@ -10,14 +10,16 @@ import {
   MapPin, 
   ArrowRight,
   Download,
-  Loader2
+  Loader2,
+  Phone,
+  Car,
+  Clock
 } from "lucide-react";
 
-// 1. Main Success Logic
 function SuccessContent() {
   const searchParams = useSearchParams();
   
-  // 🔥 Pull the exact APV reference from the URL
+  // 🔥 Pulling the data from the URL (or defaults)
   const bookingId = searchParams.get("ref") || "APV-PENDING";
 
   return (
@@ -32,36 +34,72 @@ function SuccessContent() {
         </div>
 
         <h1 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">Booking Confirmed!</h1>
-        <p className="text-slate-500 font-bold mb-10 text-lg">Your space is secured. See you at the terminal.</p>
+        <p className="text-slate-500 font-bold mb-10 text-lg">Your space is secured. Check your email for your full voucher.</p>
 
         {/* VOUCHER CARD */}
-        <div className="bg-slate-900 rounded-[2.5rem] p-8 text-left text-white mb-10 relative group">
+        <div className="bg-slate-900 rounded-[2.5rem] p-8 text-left text-white mb-8 relative group border border-white/5">
           <div className="flex justify-between items-start mb-8">
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Booking Reference</p>
-              <p className="text-2xl font-black text-blue-400">{bookingId}</p>
+              <p className="text-3xl font-black text-blue-400 tracking-tighter">{bookingId}</p>
             </div>
             <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center border border-white/10">
               <Printer className="w-5 h-5 text-white" />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-6 border-t border-white/10 pt-6">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <MapPin className="w-3 h-3 text-slate-500" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Location</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-white/10 pt-8">
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="mt-1 p-1.5 bg-blue-500/20 rounded-lg"><MapPin className="w-3.5 h-3.5 text-blue-400" /></div>
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Location</p>
+                  <p className="text-sm font-bold">Luton Terminal VIP Zone</p>
+                </div>
               </div>
-              <p className="text-sm font-bold">Terminal VIP Zone</p>
+              <div className="flex items-start gap-3">
+                <div className="mt-1 p-1.5 bg-blue-500/20 rounded-lg"><Mail className="w-3.5 h-3.5 text-blue-400" /></div>
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Confirmation</p>
+                  <p className="text-sm font-bold">Sent to your inbox</p>
+                </div>
+              </div>
             </div>
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Mail className="w-3 h-3 text-slate-500" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Email Sent</span>
+
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="mt-1 p-1.5 bg-emerald-500/20 rounded-lg"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /></div>
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Status</p>
+                  <p className="text-sm font-bold">Paid & Confirmed</p>
+                </div>
               </div>
-              <p className="text-sm font-bold truncate">Check your inbox</p>
+              <div className="flex items-start gap-3">
+                <div className="mt-1 p-1.5 bg-purple-500/20 rounded-lg"><Clock className="w-3.5 h-3.5 text-purple-400" /></div>
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Flight Tracking</p>
+                  <p className="text-sm font-bold">Active for Arrival</p>
+                </div>
+              </div>
             </div>
           </div>
+        </div>
+
+        {/* DRIVER INSTRUCTIONS BLOCK */}
+        <div className="bg-blue-50/50 rounded-[2rem] p-8 text-left border border-blue-100 mb-10">
+          <h4 className="text-blue-900 font-black text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
+            <Phone className="w-4 h-4" /> Next Steps
+          </h4>
+          <ul className="space-y-4">
+            <li className="flex gap-4 items-start">
+              <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-black">1</div>
+              <p className="text-slate-600 text-sm font-bold">Call the driver on <span className="text-blue-600">07XXX XXXXXX</span> exactly 20 minutes before you reach Luton Airport.</p>
+            </li>
+            <li className="flex gap-4 items-start">
+              <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-black">2</div>
+              <p className="text-slate-600 text-sm font-bold">Follow signs for "Terminal Car Park 1" and head to the <span className="text-blue-600 underline">Level 3 Off-Airport Meet & Greet area</span>.</p>
+            </li>
+          </ul>
         </div>
 
         {/* ACTION BUTTONS */}
@@ -70,13 +108,13 @@ function SuccessContent() {
             onClick={() => window.print()}
             className="py-5 bg-slate-900 text-white font-black rounded-3xl flex items-center justify-center gap-3 hover:bg-black transition-all active:scale-95"
           >
-            <Download className="w-5 h-5" /> Download PDF
+            <Download className="w-5 h-5" /> Print Voucher
           </button>
           <Link 
             href="/"
             className="py-5 bg-blue-600 text-white font-black rounded-3xl flex items-center justify-center gap-3 hover:bg-blue-700 shadow-xl shadow-blue-500/30 transition-all active:scale-95"
           >
-            Back to Home <ArrowRight className="w-5 h-5" />
+            Finish <ArrowRight className="w-5 h-5" />
           </Link>
         </div>
       </div>
@@ -88,7 +126,6 @@ function SuccessContent() {
   );
 }
 
-// 2. 🔥 EXPORT WRAPPER WITH SUSPENSE
 export default function SuccessPage() {
   return (
     <main className="min-h-screen bg-slate-50 flex items-center justify-center p-6 relative">
