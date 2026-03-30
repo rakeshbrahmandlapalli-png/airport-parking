@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, Suspense } from "react"; // 🔥 Added Suspense here
+import { supabase } from "../lib/supabase";
+import { useState, Suspense } from "react"; 
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
@@ -13,13 +14,16 @@ import {
   BookmarkCheck
 } from "lucide-react";
 
-// 1. Rename your main logic to CheckoutContent
+// 1. Main Checkout Logic
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   
   const [isProcessing, setIsProcessing] = useState(false);
   const [saveCard, setSaveCard] = useState(false);
+  
+  // 🔥 State to store the user's name
+  const [fullName, setFullName] = useState("");
   
   const dropDate = searchParams.get("dropoffDate");
   const pickDate = searchParams.get("pickupDate");
@@ -48,11 +52,45 @@ function CheckoutContent() {
 
   const booking = calculateTotal();
 
-  const handlePayment = () => {
+  // 🔥 Live Database Function (Now with Short ID Generator)
+  const handlePayment = async () => {
+    // Prevent checkout if they haven't typed a name
+    if (!fullName) {
+      alert("Please enter your Full Name to secure your booking.");
+      return;
+    }
+
     setIsProcessing(true);
-    setTimeout(() => {
-      router.push("/success");
-    }, 1800);
+    
+    try {
+      // 1. Generate a professional short ID (e.g. APV-X7B92M)
+      const shortId = "APV-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+
+      // 2. Send the data AND the new short ID to your Supabase 'bookings' table
+      const { data, error } = await supabase
+        .from('bookings')
+        .insert([
+          { 
+            booking_ref: shortId, // <-- Saving it to the vault!
+            full_name: fullName, 
+            service_type: type,
+            dropoff_date: dropDate,
+            pickup_date: pickDate,
+            total_price: booking.total
+          }
+        ])
+        .select(); 
+
+      if (error) throw error;
+
+      // 3. Push them to the success page with their SHORT ID!
+      router.push(`/success?ref=${shortId}`);
+      
+    } catch (error) {
+      console.error("Booking failed:", error);
+      alert("Something went wrong securing your spot. Please try again.");
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -76,7 +114,15 @@ function CheckoutContent() {
               <div className="space-y-6">
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
-                  <input type="text" placeholder="Cardholder Name" className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-slate-900" />
+                  
+                  {/* Added value and onChange to track the typing */}
+                  <input 
+                    type="text" 
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Cardholder Name" 
+                    className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-slate-900" 
+                  />
                 </div>
                 
                 <div className="flex flex-col gap-2">
