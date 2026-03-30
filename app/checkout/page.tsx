@@ -4,7 +4,7 @@ import { supabase } from "../lib/supabase";
 import { useState, Suspense } from "react"; 
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import BookingStepper from "../../components/BookingStepper"; // 🔥 Added Stepper
+import BookingStepper from "../../components/BookingStepper";
 import { 
   ShieldCheck, 
   Lock, 
@@ -12,7 +12,8 @@ import {
   ArrowRight, 
   ChevronLeft, 
   Loader2,
-  Mail
+  Mail,
+  Plane // 🔥 Added Plane icon
 } from "lucide-react";
 
 function CheckoutContent() {
@@ -21,9 +22,10 @@ function CheckoutContent() {
   
   const [isProcessing, setIsProcessing] = useState(false);
   
-  // States for user details
+  // User States
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState(""); 
+  const [flightNumber, setFlightNumber] = useState(""); // 🔥 New Flight Number state
 
   const dropDate = searchParams.get("dropoffDate");
   const pickDate = searchParams.get("pickupDate");
@@ -55,7 +57,7 @@ function CheckoutContent() {
     try {
       const shortId = "APV-" + Math.random().toString(36).substring(2, 8).toUpperCase();
 
-      // 1. Save to Supabase
+      // 1. Save to Supabase (Including flight_number)
       const { error: dbError } = await supabase
         .from('bookings')
         .insert([
@@ -65,25 +67,27 @@ function CheckoutContent() {
             service_type: type,
             dropoff_date: dropDate,
             pickup_date: pickDate,
-            total_price: booking.total
+            total_price: booking.total,
+            flight_number: flightNumber.toUpperCase().trim() // 🔥 NEW COLUMN
           }
         ]);
 
       if (dbError) throw dbError;
 
-      // 2. TRIGGER EMAIL
+      // 2. TRIGGER EMAIL (Now includes flightNumber)
       try {
         await fetch('/api/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             customerEmail: email,
-            flightNumber: "Not Provided",
-            parkingType: type
+            flightNumber: flightNumber.toUpperCase().trim() || "Not Provided", // 🔥 NEW
+            parkingType: type,
+            bookingRef: shortId
           }),
         });
       } catch (mailErr) {
-        console.error("Mail service failed, but booking was saved:", mailErr);
+        console.error("Mail service failed:", mailErr);
       }
 
       // 3. Success Redirect
@@ -102,7 +106,6 @@ function CheckoutContent() {
         <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to results
       </Link>
 
-      {/* 🔥 STEPPER INTEGRATION (STEP 2) */}
       <div className="mb-12">
         <BookingStepper currentStep={2} />
       </div>
@@ -114,10 +117,11 @@ function CheckoutContent() {
                 <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
                   <CreditCard className="w-5 h-5" />
                 </div>
-                Checkout Details
+                Booking Details
               </h3>
 
               <div className="space-y-6">
+                {/* FULL NAME */}
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
                   <input 
@@ -129,8 +133,9 @@ function CheckoutContent() {
                   />
                 </div>
 
+                {/* EMAIL */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email for Receipt</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
                   <div className="relative">
                     <input 
                       type="email" 
@@ -142,8 +147,25 @@ function CheckoutContent() {
                     <Mail className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
                   </div>
                 </div>
+
+                {/* FLIGHT NUMBER 🔥 */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 text-blue-600">Return Flight Number</label>
+                  <div className="relative">
+                    <input 
+                      type="text" 
+                      value={flightNumber}
+                      onChange={(e) => setFlightNumber(e.target.value)}
+                      placeholder="e.g. BA123" 
+                      className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900 uppercase" 
+                    />
+                    <Plane className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                  </div>
+                  <p className="text-[9px] text-slate-400 ml-1 font-bold italic">Optional: We use this to monitor your arrival for delays.</p>
+                </div>
                 
-                <div className="flex flex-col gap-2 pt-4 border-t border-slate-100 mt-4">
+                {/* CARD SECTION */}
+                <div className="flex flex-col gap-2 pt-6 border-t border-slate-100 mt-4">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Card Number</label>
                   <div className="relative">
                     <input type="text" placeholder="0000 0000 0000 0000" className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 text-slate-900" />
@@ -151,39 +173,32 @@ function CheckoutContent() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-6 pb-4">
+                <div className="grid grid-cols-2 gap-6">
                   <input type="text" placeholder="MM/YY" className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 text-center text-slate-900" />
                   <input type="text" placeholder="CVC" className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 text-center text-slate-900" />
                 </div>
               </div>
           </div>
-          
-          <div className="flex items-center justify-center gap-8 opacity-20 grayscale">
-            <ShieldCheck className="w-10 h-10 text-slate-900" />
-            <div className="text-2xl font-black italic text-slate-900 uppercase tracking-tighter">Visa</div>
-            <div className="text-2xl font-black italic text-slate-900 uppercase tracking-tighter">Mastercard</div>
-          </div>
         </div>
 
         {/* ORDER SUMMARY */}
-        <aside className="relative group lg:sticky lg:top-10">
-          <div className="absolute -inset-1 bg-gradient-to-b from-blue-600 to-indigo-600 rounded-[3.5rem] blur-2xl opacity-20 group-hover:opacity-30 transition-opacity duration-700"></div>
-          <div className="relative bg-[#0b1120] rounded-[3.5rem] p-10 text-white shadow-2xl border border-white/10 overflow-hidden">
+        <aside className="relative lg:sticky lg:top-10">
+          <div className="bg-[#0b1120] rounded-[3.5rem] p-10 text-white shadow-2xl border border-white/10">
             <h2 className="text-xl font-black mb-10 border-b border-white/5 pb-4">Order Summary</h2>
             
-            <div className="space-y-6 font-bold relative z-10">
+            <div className="space-y-6 font-bold">
               <div className="flex justify-between items-center">
                 <span className="text-slate-500 uppercase text-[10px] tracking-widest">Service</span>
-                <span className="text-blue-400 uppercase text-xs text-right max-w-[150px] leading-tight">{type}</span>
+                <span className="text-blue-400 uppercase text-xs text-right leading-tight">{type}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-slate-500 uppercase text-[10px] tracking-widest">Duration</span>
-                <span className="text-white text-sm">{booking.days} {booking.days === 1 ? 'Day' : 'Days'}</span>
+                <span className="text-white text-sm">{booking.days} Days</span>
               </div>
 
               <div className="pt-8 border-t border-white/5">
                 <div className="flex justify-between items-end pt-4">
-                  <span className="text-slate-500 uppercase text-[10px] tracking-widest">Total Price</span>
+                  <span className="text-slate-500 uppercase text-[10px] tracking-widest">Total</span>
                   <span className="text-5xl font-black text-white tracking-tighter">£{booking.total}.00</span>
                 </div>
               </div>
@@ -193,7 +208,7 @@ function CheckoutContent() {
                 disabled={isProcessing}
                 className={`w-full py-6 mt-10 text-white font-black text-xl rounded-[2.2rem] shadow-xl transition-all duration-300 flex items-center justify-center gap-3 active:scale-95 ${isProcessing ? 'bg-blue-700 cursor-wait' : 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/30'}`}
               >
-                {isProcessing ? <Loader2 className="w-6 h-6 animate-spin" /> : <><span>Pay Securely</span><ArrowRight className="w-6 h-6" /></>}
+                {isProcessing ? <Loader2 className="w-6 h-6 animate-spin" /> : <><span>Complete Booking</span><ArrowRight className="w-6 h-6" /></>}
               </button>
             </div>
           </div>
