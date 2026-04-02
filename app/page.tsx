@@ -16,7 +16,6 @@ import {
   X,
   ChevronRight,
   Info,
-  ArrowRight,
   ChevronDown
 } from "lucide-react";
 import Link from "next/link";
@@ -108,9 +107,9 @@ export default function HomePage() {
           </button>
         </div>
 
-        {/* MOBILE MENU */}
-        <div className={`md:hidden fixed inset-0 z-[100] !bg-white transition-all duration-500 flex flex-col ${isMenuOpen ? 'opacity-100 pointer-events-auto translate-x-0' : 'opacity-0 pointer-events-none translate-x-full'}`} style={{ backgroundColor: '#ffffff' }}>
-          <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100 !bg-white">
+        {/* MOBILE MENU - 🔥 Z-INDEX & BACKGROUND PRESERVED */}
+        <div className={`md:hidden fixed inset-0 z-[100] bg-white transition-all duration-500 flex flex-col ${isMenuOpen ? 'opacity-100 pointer-events-auto translate-x-0' : 'opacity-0 pointer-events-none translate-x-full'}`}>
+          <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100 bg-white">
             <div className="flex items-center gap-2 text-blue-600 font-black tracking-tight text-xl uppercase">
               <Plane className="w-6 h-6 rotate-45" /> AIRPORT<span className="text-slate-900">VIP</span>
             </div>
@@ -118,7 +117,7 @@ export default function HomePage() {
               <X className="w-6 h-6" />
             </button>
           </div>
-          <div className="flex flex-col px-8 pt-10 gap-6 !bg-white flex-grow">
+          <div className="flex flex-col px-8 pt-10 gap-6 bg-white flex-grow">
             <Link href="/services" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between text-2xl font-black text-slate-900 border-b border-slate-100 pb-5">
               Services <ChevronRight className="w-6 h-6 text-blue-500" />
             </Link>
@@ -129,7 +128,7 @@ export default function HomePage() {
               Reviews <ChevronRight className="w-6 h-6 text-blue-500" />
             </a>
           </div>
-          <div className="p-8 border-t border-slate-100 !bg-white">
+          <div className="p-8 border-t border-slate-100 bg-white">
             <Link href="/manage" onClick={() => setIsMenuOpen(false)} className="w-full py-5 bg-blue-600 text-white font-black rounded-3xl text-lg flex items-center justify-center shadow-lg shadow-blue-500/20 active:scale-95 transition-transform">
               Manage Booking
             </Link>
@@ -145,8 +144,9 @@ export default function HomePage() {
         </div>
 
         <div className="relative z-10 w-full max-w-7xl px-4 md:px-6 flex flex-col items-center text-center">
+          {/* 🔥 NEW TEXT UPDATED HERE */}
           <h1 className={`text-4xl sm:text-5xl md:text-[5.5rem] font-black text-white tracking-tight mb-4 leading-[1.1] transition-all duration-1000 delay-300 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-            Premium Parking. <br className="md:hidden" /><span className="text-blue-400">Arrive in Style.</span>
+            Premium Parking. <br className="md:hidden" /><span className="text-blue-400">Start your journey stress-free.</span>
           </h1>
           <p className={`text-base sm:text-lg md:text-xl text-slate-200 mb-10 max-w-3xl font-medium transition-all duration-1000 delay-500 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
             Luton and Heathrow's most trusted Meet & Greet service. Drive directly to the terminal, we handle the rest.
