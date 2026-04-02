@@ -40,22 +40,23 @@ export async function createCheckoutSession(formData: FormData) {
         parkingType,
         totalPrice,
         status: "pending",
+        airport,    // 🔥 ADDED: Save airport to DB
+        terminal,   // 🔥 ADDED: Save terminal to DB
       },
     });
 
     // B. Fire off the email receipt via Resend ✈️
     if (customerEmail) {
-      // 🔥 FIXED: Now passing all 9 arguments to match lib/mail.ts!
       await sendBookingReceipt(
         customerEmail, 
         flightNumber || "TBA", 
         parkingType, 
         tempRef,
-        customerPhone || "N/A",               // Argument 5: Phone
-        `License: ${licensePlate || "N/A"}`,  // Argument 6: Car Details
-        "Direct Stripe Booking",              // Argument 7: Notes
-        airport,                              // Argument 8: Airport
-        terminal                              // Argument 9: Terminal
+        customerPhone || "N/A", 
+        `License: ${licensePlate || "N/A"}`, 
+        "Direct Stripe Booking", 
+        airport,  
+        terminal  
       );
     }
 
