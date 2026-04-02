@@ -92,7 +92,9 @@ function SuccessContent() {
           <ul className="space-y-4">
             <li className="flex gap-4 items-start">
               <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-black">1</div>
-              <p className="text-slate-600 text-sm font-bold">Call the <span className="text-blue-700 font-black">operator</span> on <span className="text-blue-600 font-black text-base">07XXX XXXXXX</span> exactly 20 minutes before you reach Luton Airport.</p>
+              <p className="text-slate-600 text-sm font-bold">
+                Call the <span className="text-blue-700 font-black">operator</span> on <span className="text-blue-600 font-black text-base">07XXX XXXXXX</span> exactly <span className="bg-blue-600 text-white px-2 py-0.5 rounded ml-1 mr-1">30 minutes</span> before you reach Luton Airport.
+              </p>
             </li>
             <li className="flex gap-4 items-start">
               <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-black">2</div>

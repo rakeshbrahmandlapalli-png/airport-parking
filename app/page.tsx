@@ -15,15 +15,16 @@ import {
   Menu,
   X,
   ChevronRight,
-  Info
+  Info,
+  ArrowRight
 } from "lucide-react";
 import Link from "next/link";
-import MapModal from "@/components/MapModal"; // IMPORT MODAL
+import MapModal from "@/components/MapModal";
 
 export default function HomePage() {
   const [now, setNow] = useState(new Date());
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isMapOpen, setIsMapOpen] = useState(false); // MAP STATE
+  const [isMapOpen, setIsMapOpen] = useState(false);
   const [dropoffDate, setDropoffDate] = useState("");
   const [dropoffTime, setDropoffTime] = useState("");
   const [pickupDate, setPickupDate] = useState("");
@@ -72,22 +73,29 @@ export default function HomePage() {
       {/* 1. NAVBAR */}
       <nav className={`fixed top-0 w-full z-50 bg-white/90 backdrop-blur-xl border-b border-slate-200 shadow-sm transition-all duration-1000 ${isLoaded ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          
           <Link href="/" className="flex items-center gap-2 text-blue-600 font-black tracking-tight text-xl uppercase z-50 cursor-pointer hover:scale-105 transition-transform">
             <Plane className="w-6 h-6 rotate-45" /> AIRPORT<span className="text-slate-900">VIP</span>
           </Link>
           
-          <div className="hidden md:flex items-center gap-10">
-            {["Services", "Locations", "Support"].map((item) => (
-              <a key={item} href="#" className="text-xs font-black uppercase tracking-widest text-slate-500 hover:text-blue-600 transition-colors relative group">
-                {item}
-                <span className="absolute -bottom-2 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
-              </a>
-            ))}
-            <Link href="/admin/login" className="flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors pl-6 border-l border-slate-200 group">
-              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-blue-50 transition-colors">
-                <User className="w-4 h-4" />
-              </div>
-              Admin
+          <div className="hidden md:flex items-center gap-8">
+            <Link href="/services" className="text-xs font-black uppercase tracking-widest text-slate-600 hover:text-blue-600 transition-colors relative group">
+              Services
+              <span className="absolute -bottom-2 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
+            </Link>
+            <a href="#how-it-works" className="text-xs font-black uppercase tracking-widest text-slate-600 hover:text-blue-600 transition-colors relative group">
+              How it works
+              <span className="absolute -bottom-2 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
+            </a>
+            <a href="#reviews" className="text-xs font-black uppercase tracking-widest text-slate-600 hover:text-blue-600 transition-colors relative group">
+              Reviews
+              <span className="absolute -bottom-2 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
+            </a>
+
+            <div className="h-6 w-px bg-slate-200 ml-2"></div>
+
+            <Link href="/manage" className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-white bg-slate-900 px-5 py-2.5 rounded-full hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-500/30 transition-all duration-300 active:scale-95 ml-2">
+              <User className="w-4 h-4" /> Manage Booking
             </Link>
           </div>
 
@@ -107,17 +115,18 @@ export default function HomePage() {
             </button>
           </div>
           <div className="flex flex-col px-8 pt-10 gap-6 !bg-white flex-grow">
-            {["Services", "Locations", "Support"].map((item) => (
-              <a key={item} href="#" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between text-2xl font-black text-slate-900 border-b border-slate-100 pb-5">
-                {item} <ChevronRight className="w-6 h-6 text-blue-500" />
-              </a>
-            ))}
-            <Link href="/admin/login" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between text-2xl font-black text-slate-900 border-b border-slate-100 pb-5">
-              Admin Login <ChevronRight className="w-6 h-6 text-blue-500" />
+            <Link href="/services" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between text-2xl font-black text-slate-900 border-b border-slate-100 pb-5">
+              Services <ChevronRight className="w-6 h-6 text-blue-500" />
             </Link>
+            <a href="#how-it-works" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between text-2xl font-black text-slate-900 border-b border-slate-100 pb-5">
+              How it works <ChevronRight className="w-6 h-6 text-blue-500" />
+            </a>
+            <a href="#reviews" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between text-2xl font-black text-slate-900 border-b border-slate-100 pb-5">
+              Reviews <ChevronRight className="w-6 h-6 text-blue-500" />
+            </a>
           </div>
           <div className="p-8 border-t border-slate-100 !bg-white">
-            <Link href="/manage" onClick={() => setIsMenuOpen(false)} className="w-full py-5 bg-blue-600 text-white font-black rounded-3xl text-lg flex items-center justify-center">
+            <Link href="/manage" onClick={() => setIsMenuOpen(false)} className="w-full py-5 bg-blue-600 text-white font-black rounded-3xl text-lg flex items-center justify-center shadow-lg shadow-blue-500/20 active:scale-95 transition-transform">
               Manage Booking
             </Link>
           </div>
@@ -139,7 +148,6 @@ export default function HomePage() {
             Compare premium, secure airport parking. Book in under 2 minutes and guarantee your spot today.
           </p>
 
-          {/* NEW MAP TRIGGER LINK */}
           <button 
             onClick={() => setIsMapOpen(true)}
             className={`flex items-center gap-2 text-blue-400 font-black uppercase text-[10px] tracking-widest mb-10 hover:text-white transition-all duration-1000 delay-600 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
@@ -180,50 +188,91 @@ export default function HomePage() {
       </section>
 
       {/* 3. TRUST SIGNALS */}
-      <section className="py-20 md:py-32 bg-slate-50 px-4 md:px-6">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-10">
+      <section id="services" className="py-20 md:py-32 bg-slate-50/50 px-4 md:px-6 relative overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
+
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
           {[
-            { icon: ShieldCheck, title: "Secured 24/7", desc: "Full CCTV, perimeter fencing, and constant patrols at every facility." },
-            { icon: Clock, title: "Rapid Transfers", desc: "Shuttles run every 10 minutes. Reach the terminal in under 5 minutes." },
+            { icon: ShieldCheck, title: "Highly Secure", desc: "Monitored facilities with full CCTV, fencing, and 24/7 patrols." },
+            { icon: Clock, title: "Zero Shuttle Buses", desc: "Drive directly to the terminal. Walk to check-in within 5 minutes." },
             { icon: CreditCard, title: "Zero Hidden Fees", desc: "The price you see is the price you pay. No unexpected charges." }
           ].map((item, i) => (
-            <div key={i} className="bg-white p-8 md:p-12 rounded-[2rem] border border-slate-100 shadow-xl">
-              <item.icon className="w-10 h-10 text-blue-600 mb-6" />
-              <h3 className="text-xl font-black text-slate-900 mb-3">{item.title}</h3>
-              <p className="text-sm text-slate-500 font-bold">{item.desc}</p>
+            <div 
+              key={i} 
+              className="group relative bg-white p-8 md:p-10 rounded-[2.5rem] border border-slate-100 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_-10px_rgba(37,99,235,0.08)] hover:border-blue-100 z-10"
+            >
+              <div className="w-16 h-16 bg-blue-50/80 rounded-[1.25rem] flex items-center justify-center mb-8 transition-all duration-500 group-hover:bg-blue-600 group-hover:scale-110 group-hover:rotate-3">
+                <item.icon className="w-8 h-8 text-blue-600 transition-colors duration-500 group-hover:text-white stroke-[1.5]" />
+              </div>
+              
+              <h3 className="text-xl font-black text-slate-900 mb-3 tracking-tight transition-colors group-hover:text-blue-600">
+                {item.title}
+              </h3>
+              
+              <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                {item.desc}
+              </p>
             </div>
           ))}
         </div>
       </section>
 
       {/* 4. HOW IT WORKS */}
-      <section className="py-20 md:py-32 bg-white px-4 md:px-6">
+      <section id="how-it-works" className="py-24 md:py-32 bg-white px-6">
         <div className="max-w-7xl mx-auto">
+          
           <div className="text-center mb-16 md:mb-24">
-            <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight mb-4">Easy as 1, 2, 3.</h2>
-            <p className="text-base md:text-lg text-slate-500 font-bold">Your seamless journey starts here.</p>
+            <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4">
+              Easy as 1, 2, 3.
+            </h2>
+            <p className="text-lg text-slate-500 font-bold max-w-lg mx-auto leading-relaxed">
+              Your seamless journey starts here. Secure your premium spot in minutes.
+            </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            {[
-              { icon: MapPin, step: "1", title: "Book Online", desc: "Enter your dates and choose your space." },
-              { icon: CarFront, step: "2", title: "Drive In", desc: "Drop your car at our secure, vetted lot." },
-              { icon: PlaneTakeoff, step: "3", title: "Fly High", desc: "5 Minutes walk to the terminal." }
-            ].map((item, i) => (
-              <div key={i} className="flex flex-col items-center text-center group">
-                <div className="w-20 h-20 bg-slate-900 text-white rounded-[1.5rem] flex items-center justify-center mb-6 relative">
-                   <item.icon className="w-8 h-8" />
-                   <div className="absolute -top-2 -right-2 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center font-black text-xs border-4 border-white">{item.step}</div>
+
+          <div className="relative">
+            <div className="hidden md:block absolute top-[50px] left-[15%] right-[15%] h-[2px] bg-slate-100 z-0"></div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8 relative z-10">
+              {[
+                { icon: MapPin, step: "1", title: "Book Online", desc: "Select your dates and secure your terminal Meet & Greet space." },
+                { icon: CarFront, step: "2", title: "Drive to Terminal", desc: "Head straight to Terminal Car Park 1 and meet your vetted operator." },
+                { icon: PlaneTakeoff, step: "3", title: "Fly High", desc: "A 5-minute walk to check-in while we park your vehicle securely." }
+              ].map((item, i, arr) => (
+                <div key={i} className="flex flex-col items-center text-center group">
+                  
+                  <div className="relative mb-8">
+                    <div className="absolute inset-0 bg-blue-500/10 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    
+                    <div className="w-24 h-24 bg-white border-2 border-slate-100 text-blue-600 rounded-full flex items-center justify-center relative transition-transform duration-300 group-hover:-translate-y-1">
+                       <item.icon className="w-10 h-10 stroke-[1.5]" />
+                    </div>
+                    
+                    <div className="absolute -top-3 -right-3 w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center font-black text-sm text-white shadow-lg border-4 border-white transition-transform duration-300 group-hover:scale-110">
+                      {item.step}
+                    </div>
+                  </div>
+
+                  <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight transition-colors group-hover:text-blue-600">
+                    {item.title}
+                  </h3>
+                  
+                  <p className="text-base text-slate-600 font-medium leading-relaxed max-w-[280px]">
+                    {item.desc}
+                  </p>
+
+                  {i < arr.length - 1 && (
+                    <ArrowRight className="hidden md:block absolute -right-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-200" />
+                  )}
                 </div>
-                <h3 className="text-lg font-black text-slate-900 mb-2">{item.title}</h3>
-                <p className="text-sm text-slate-400 font-bold max-w-[250px]">{item.desc}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* 5. REVIEWS */}
-      <section className="py-20 md:py-32 bg-[#020617] px-4 md:px-6 relative overflow-hidden">
+      <section id="reviews" className="py-20 md:py-32 bg-[#020617] px-4 md:px-6 relative overflow-hidden">
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-16">
              <h2 className="text-3xl md:text-5xl font-black text-white mb-6">Real travelers, real trust.</h2>
