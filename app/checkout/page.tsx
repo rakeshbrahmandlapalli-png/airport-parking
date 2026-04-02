@@ -12,11 +12,7 @@ import {
   ArrowRight, 
   ChevronLeft, 
   Loader2,
-  Mail,
-  Plane,
   Car,
-  Phone,
-  Info,
   User,
   MapPin
 } from "lucide-react";
@@ -43,13 +39,26 @@ function CheckoutContent() {
   const type = searchParams.get("type") || "Premium Meet & Greet"; 
   const urlPrice = Number(searchParams.get("price")) || 0; 
 
+  // --- REFINED CALCULATION ---
   const calculateTotal = () => {
     if (!dropDate || !pickDate) return { days: 1, total: urlPrice };
+    
     const start = new Date(dropDate);
     const end = new Date(pickDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
+    
+    // Calculate difference in milliseconds
+    const diffTime = end.getTime() - start.getTime();
+    
+    // Convert to days and round up (e.g., 1.2 days = 2 days for parking)
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return { days: diffDays || 1, total: urlPrice };
+    
+    // Ensure we never show 0 or negative days
+    const finalDays = diffDays <= 0 ? 1 : diffDays;
+
+    return { 
+      days: finalDays, 
+      total: urlPrice // Using the total price passed from results
+    };
   };
 
   const booking = calculateTotal();
@@ -85,7 +94,6 @@ function CheckoutContent() {
 
       if (dbError) throw dbError;
 
-      // Trigger Email API
       await fetch('/api/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -117,7 +125,6 @@ function CheckoutContent() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12 items-start">
         <div className="space-y-8">
           
-          {/* VEHICLE PREVIEW CARD */}
           {registration && (
             <div className="bg-blue-600 rounded-[2.5rem] p-6 text-white flex items-center justify-between shadow-xl shadow-blue-500/20 animate-in fade-in slide-in-from-top-4 duration-500">
                <div className="flex items-center gap-4">
@@ -128,9 +135,6 @@ function CheckoutContent() {
                    <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Registration Recognized</p>
                    <p className="text-xl font-black">{registration.toUpperCase()}</p>
                  </div>
-               </div>
-               <div className="hidden md:block px-4 py-2 bg-white/10 rounded-xl border border-white/10 text-[10px] font-black uppercase tracking-widest">
-                 VIP Terminal Access
                </div>
             </div>
           )}
@@ -144,15 +148,17 @@ function CheckoutContent() {
               </h3>
 
               <div className="space-y-12">
+                {/* CONTACT INFO */}
                 <section className="space-y-6">
                   <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-600 border-b border-slate-50 pb-4">1. Personal Info</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full Name" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all" />
-                    <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Mobile Number" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all" />
+                    <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full Name" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all" />
+                    <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Mobile Number" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all" />
                   </div>
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email Address" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all" />
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email Address" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all" />
                 </section>
 
+                {/* VEHICLE INFO */}
                 <section className="space-y-6 pt-6">
                   <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-600 border-b border-slate-50 pb-4">2. Vehicle & Flight</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -165,6 +171,7 @@ function CheckoutContent() {
                   </div>
                 </section>
 
+                {/* PAYMENT INFO */}
                 <section className="space-y-6 pt-6">
                   <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-600 border-b border-slate-50 pb-4">3. Secure Payment</h4>
                   <div className="bg-slate-50 p-6 rounded-3xl space-y-4">
@@ -191,7 +198,8 @@ function CheckoutContent() {
               </div>
               <div className="flex justify-between text-white">
                 <span className="opacity-50 font-medium">Duration</span>
-                <span>{booking.days} Days</span>
+                {/* DYNAMIC GRAMMAR FIX HERE */}
+                <span>{booking.days} {booking.days === 1 ? "Day" : "Days"}</span>
               </div>
               <div className="pt-6 border-t border-white/10 flex justify-between items-end">
                 <span className="opacity-50 text-[10px] uppercase">Total</span>
@@ -203,7 +211,6 @@ function CheckoutContent() {
             </div>
           </div>
 
-          {/* DYNAMIC MEETING POINT CARD - Updated logic */}
           <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-xl shadow-slate-200/40">
               <div className="flex items-center gap-3 mb-4">
                  <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
