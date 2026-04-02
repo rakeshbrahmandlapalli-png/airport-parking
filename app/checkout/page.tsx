@@ -41,23 +41,23 @@ function CheckoutContent() {
 
   // --- REFINED CALCULATION ---
   const calculateTotal = () => {
-    if (!dropDate || !pickDate) return { days: 1, total: urlPrice };
+    if (!dropDate || !pickDate) return { days: 1, dailyRate: urlPrice, total: urlPrice };
     
     const start = new Date(dropDate);
     const end = new Date(pickDate);
     
-    // Calculate difference in milliseconds
+    // Convert to 24h blocks rounded up
     const diffTime = end.getTime() - start.getTime();
-    
-    // Convert to days and round up (e.g., 1.2 days = 2 days for parking)
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    // Ensure we never show 0 or negative days
     const finalDays = diffDays <= 0 ? 1 : diffDays;
+
+    // Calculate daily rate based on the total price passed from results
+    const dailyRate = urlPrice / finalDays;
 
     return { 
       days: finalDays, 
-      total: urlPrice // Using the total price passed from results
+      dailyRate: dailyRate,
+      total: urlPrice 
     };
   };
 
@@ -148,7 +148,6 @@ function CheckoutContent() {
               </h3>
 
               <div className="space-y-12">
-                {/* CONTACT INFO */}
                 <section className="space-y-6">
                   <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-600 border-b border-slate-50 pb-4">1. Personal Info</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -158,7 +157,6 @@ function CheckoutContent() {
                   <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email Address" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all" />
                 </section>
 
-                {/* VEHICLE INFO */}
                 <section className="space-y-6 pt-6">
                   <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-600 border-b border-slate-50 pb-4">2. Vehicle & Flight</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -171,7 +169,6 @@ function CheckoutContent() {
                   </div>
                 </section>
 
-                {/* PAYMENT INFO */}
                 <section className="space-y-6 pt-6">
                   <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-600 border-b border-slate-50 pb-4">3. Secure Payment</h4>
                   <div className="bg-slate-50 p-6 rounded-3xl space-y-4">
@@ -196,15 +193,25 @@ function CheckoutContent() {
                 <span>Service</span>
                 <span>{type}</span>
               </div>
+              
+              {/* NEW: DAILY RATE DISPLAY */}
+              <div className="flex justify-between text-white opacity-80">
+                <span className="font-medium">Daily Rate</span>
+                <span>£{booking.dailyRate.toFixed(2)}</span>
+              </div>
+
               <div className="flex justify-between text-white">
                 <span className="opacity-50 font-medium">Duration</span>
-                {/* DYNAMIC GRAMMAR FIX HERE */}
                 <span>{booking.days} {booking.days === 1 ? "Day" : "Days"}</span>
               </div>
-              <div className="pt-6 border-t border-white/10 flex justify-between items-end">
-                <span className="opacity-50 text-[10px] uppercase">Total</span>
-                <span className="text-5xl font-black tracking-tighter">£{booking.total.toFixed(2)}</span>
+
+              <div className="pt-6 border-t border-white/10 flex flex-col items-end gap-1">
+                <span className="opacity-50 text-[10px] uppercase">Total to Pay</span>
+                <span className="text-5xl font-black tracking-tighter text-blue-500">
+                  £{booking.total.toFixed(2)}
+                </span>
               </div>
+              
               <button onClick={handlePayment} disabled={isProcessing} className="w-full py-6 mt-8 bg-blue-600 hover:bg-blue-500 text-white font-black text-xl rounded-3xl shadow-xl transition-all flex items-center justify-center gap-3">
                 {isProcessing ? <Loader2 className="w-6 h-6 animate-spin" /> : <>Confirm <ArrowRight className="w-5 h-5" /></>}
               </button>
