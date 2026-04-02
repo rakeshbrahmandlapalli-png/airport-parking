@@ -20,5 +20,10 @@ model Booking {
   parkingType   String
   totalPrice    Float
   status        String   @default("pending")
+  
+  // 🔥 NEW FIELDS ADDED HERE:
+  airport       String?  @default("Luton Airport (LTN)") 
+  terminal      String?  @default("Main Terminal")       
+  
   createdAt     DateTime @default(now())
 }
