@@ -9,12 +9,20 @@ export const sendBookingReceipt = async (
   bookingRef: string,
   customerPhone: string, 
   carDetails: string,    
-  notes: string          
+  notes: string,
+  airport: string,     // NEW: Added airport parameter
+  terminal: string     // NEW: Added terminal parameter
 ) => {
   try {
     // Safety check for vehicle details formatting
     const registration = carDetails.includes(' - ') ? carDetails.split(' - ')[0] : carDetails;
     const makeAndColor = carDetails.includes(' - ') ? carDetails.split(' - ')[1] : 'Details provided at terminal';
+
+    // Dynamic arrival instruction based on airport
+    const isHeathrow = airport.includes("Heathrow");
+    const arrivalTip = isHeathrow 
+      ? `Call the operator exactly 30 minutes before arriving at the <strong>${terminal} Short Stay car park</strong> to ensure a priority handover.`
+      : `Call the operator exactly 20 minutes before you arrive at the <strong>Luton terminal (Car Park 1)</strong> to ensure a priority handover.`;
 
     const { data, error } = await resend.emails.send({
       from: 'Airport VIP Parking <onboarding@resend.dev>',
@@ -38,6 +46,12 @@ export const sendBookingReceipt = async (
                 <div style="margin-bottom: 20px;">
                   <p style="margin: 0; font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Booking Reference</p>
                   <p style="margin: 0; font-size: 20px; font-weight: 900; color: #2563eb;">${bookingRef}</p>
+                </div>
+
+                <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #e2e8f0;">
+                  <p style="margin: 0; font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: bold;">Meeting Location</p>
+                  <p style="margin: 0; font-size: 18px; font-weight: bold; color: #0f172a;">${airport}</p>
+                  <p style="margin: 0; font-size: 14px; font-weight: bold; color: #2563eb;">${terminal}</p>
                 </div>
 
                 <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
@@ -72,7 +86,7 @@ export const sendBookingReceipt = async (
               </div>
               
               <div style="font-size: 13px; color: #64748b; background-color: #fff7ed; padding: 15px; border-radius: 12px; border-left: 4px solid #f97316;">
-                <strong>Arrival Tip:</strong> Call the <strong>operator</strong> exactly 20 minutes before you arrive at the Luton terminal to ensure a priority handover.
+                <strong>Arrival Tip:</strong> ${arrivalTip}
               </div>
               
               <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #f1f5f9; text-align: center;">

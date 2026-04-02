@@ -11,8 +11,10 @@ import {
   User, 
   MapPin, 
   CheckCircle2,
-  Car 
+  Car,
+  PlaneTakeoff
 } from "lucide-react";
+
 export default function ManageBooking() {
   const [ref, setRef] = useState("");
   const [fullName, setFullName] = useState("");
@@ -112,6 +114,18 @@ export default function ManageBooking() {
             </div>
 
             <div className="p-10 space-y-10">
+              {/* NEW: AIRPORT & TERMINAL LOCATION */}
+              <div className="bg-blue-50/50 rounded-[2rem] p-6 border border-blue-100 flex items-center gap-5">
+                <div className="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg">
+                  <PlaneTakeoff className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest">Meeting Location</p>
+                  <p className="text-xl font-black text-slate-900 tracking-tight">{booking.airport || "Luton Airport (LTN)"}</p>
+                  <p className="text-blue-600 font-black text-sm">{booking.terminal || "Main Terminal"}</p>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <div className="space-y-6">
                   <div>
@@ -122,15 +136,16 @@ export default function ManageBooking() {
                   </div>
                   <div>
                     <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mb-2 flex items-center gap-2 italic">
-                      <Car className="w-3 h-3 text-blue-500" /> Service Type
+                      <Car className="w-3 h-3 text-blue-500" /> Vehicle
                     </p>
-                    <p className="text-xl font-black text-slate-900 tracking-tight">{booking.service_type}</p>
+                    <p className="text-xl font-black text-slate-900 tracking-tight">{booking.car_color || ""} {booking.car_make}</p>
+                    <p className="text-sm font-bold text-slate-500">{booking.license_plate}</p>
                   </div>
                 </div>
                 
                 <div className="bg-slate-50 p-8 rounded-[2rem] border border-slate-100 flex flex-col justify-center">
                   <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mb-2 text-center">Total Amount Paid</p>
-                  <p className="text-5xl font-black text-slate-900 tracking-tighter text-center italic">£{booking.total_price}.00</p>
+                  <p className="text-5xl font-black text-slate-900 tracking-tighter text-center italic">£{Number(booking.total_price).toFixed(2)}</p>
                 </div>
               </div>
 
@@ -170,7 +185,7 @@ export default function ManageBooking() {
               </div>
 
               <div className="hidden print:block pt-10 border-t border-dashed border-slate-200 text-center text-slate-400 text-[10px] font-bold uppercase tracking-widest">
-                Thank you for choosing Airport VIP Parking. Please show this receipt at the terminal.
+                Thank you for choosing Airport VIP Parking. Please show this receipt at {booking.airport || "the terminal"}.
               </div>
             </div>
           </div>

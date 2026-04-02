@@ -1,8 +1,9 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { supabase } from "../lib/supabase"; // Make sure this path matches your project
 import { 
   CheckCircle2, 
   Printer, 
@@ -12,14 +13,56 @@ import {
   Download,
   Loader2,
   Phone,
-  Clock
+  Clock,
+  CreditCard
 } from "lucide-react";
 
 function SuccessContent() {
   const searchParams = useSearchParams();
-  
-  // Pulling the booking reference from the URL
   const bookingId = searchParams.get("ref") || "APV-PENDING";
+
+  // --- STATE FOR DB FETCH ---
+  const [booking, setBooking] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // --- FETCH BOOKING DETAILS ---
+  useEffect(() => {
+    const fetchBooking = async () => {
+      if (bookingId === "APV-PENDING") {
+        setIsLoading(false);
+        return;
+      }
+      
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('booking_ref', bookingId)
+        .single();
+        
+      if (data) {
+        setBooking(data);
+      }
+      setIsLoading(false);
+    };
+
+    fetchBooking();
+  }, [bookingId]);
+
+  // If loading the database info, show a spinner
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center text-slate-400 min-h-[400px]">
+        <Loader2 className="w-12 h-12 animate-spin mb-4 text-blue-600" />
+        <p className="font-bold tracking-widest uppercase text-xs">Retrieving secure voucher...</p>
+      </div>
+    );
+  }
+
+  // Fallback values if DB fetch fails, otherwise use real data
+  const airport = booking?.airport || "Luton (LTN)";
+  const terminal = booking?.terminal || "Main Terminal";
+  const totalPrice = booking?.total_price ? `£${booking.total_price.toFixed(2)}` : "Paid";
+  const isHeathrow = airport.includes("Heathrow");
 
   return (
     <div className="relative z-10 max-w-2xl w-full">
@@ -53,7 +96,8 @@ function SuccessContent() {
                 <div className="mt-1 p-1.5 bg-blue-500/20 rounded-lg"><MapPin className="w-3.5 h-3.5 text-blue-400" /></div>
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Location</p>
-                  <p className="text-sm font-bold">Luton Airport (LTN)</p>
+                  <p className="text-sm font-bold">{airport}</p>
+                  <p className="text-[10px] text-blue-400 font-bold">{terminal}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -67,10 +111,10 @@ function SuccessContent() {
 
             <div className="space-y-4">
               <div className="flex items-start gap-3">
-                <div className="mt-1 p-1.5 bg-emerald-500/20 rounded-lg"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /></div>
+                <div className="mt-1 p-1.5 bg-emerald-500/20 rounded-lg"><CreditCard className="w-3.5 h-3.5 text-emerald-400" /></div>
                 <div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Status</p>
-                  <p className="text-sm font-bold">Paid & Confirmed</p>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Amount Paid</p>
+                  <p className="text-sm font-bold text-emerald-400">{totalPrice}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -84,7 +128,7 @@ function SuccessContent() {
           </div>
         </div>
 
-        {/* OPERATOR INSTRUCTIONS BLOCK */}
+        {/* DYNAMIC OPERATOR INSTRUCTIONS BLOCK */}
         <div className="bg-blue-50/50 rounded-[2rem] p-8 text-left border border-blue-100 mb-10">
           <h4 className="text-blue-900 font-black text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
             <Phone className="w-4 h-4" /> Next Steps
@@ -93,12 +137,18 @@ function SuccessContent() {
             <li className="flex gap-4 items-start">
               <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-black">1</div>
               <p className="text-slate-600 text-sm font-bold">
-                Call the <span className="text-blue-700 font-black">operator</span> on <span className="text-blue-600 font-black text-base">07XXX XXXXXX</span> exactly <span className="bg-blue-600 text-white px-2 py-0.5 rounded ml-1 mr-1">30 minutes</span> before you reach Luton Airport.
+                Call the <span className="text-blue-700 font-black">operator</span> on <span className="text-blue-600 font-black text-base">07XXX XXXXXX</span> exactly <span className="bg-blue-600 text-white px-2 py-0.5 rounded ml-1 mr-1">30 minutes</span> before you reach the airport.
               </p>
             </li>
             <li className="flex gap-4 items-start">
               <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-black">2</div>
-              <p className="text-slate-600 text-sm font-bold">Follow signs for <span className="font-black text-slate-900">"Terminal Car Park 1"</span> and proceed to the <span className="text-blue-600 underline font-black">Level 3 Off-Airport Meet & Greet area</span>.</p>
+              <p className="text-slate-600 text-sm font-bold">
+                {isHeathrow ? (
+                  <>Follow signs for the <span className="font-black text-slate-900">{terminal} Short Stay Car Park</span> and proceed to the designated Meet & Greet area.</>
+                ) : (
+                  <>Follow signs for <span className="font-black text-slate-900">"Terminal Car Park 1"</span> and proceed to the <span className="text-blue-600 underline font-black">Level 3 Off-Airport Meet & Greet area</span>.</>
+                )}
+              </p>
             </li>
           </ul>
         </div>
@@ -132,9 +182,9 @@ export default function SuccessPage() {
     <main className="min-h-screen bg-slate-50 flex items-center justify-center p-6 relative">
       <div className="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-blue-600/10 to-transparent"></div>
       <Suspense fallback={
-        <div className="relative z-10 flex flex-col items-center justify-center text-slate-400">
+        <div className="relative z-10 flex flex-col items-center justify-center text-slate-400 min-h-screen">
           <Loader2 className="w-10 h-10 animate-spin mb-4 text-blue-600" />
-          <p className="font-bold tracking-widest uppercase text-xs">Generating your voucher...</p>
+          <p className="font-bold tracking-widest uppercase text-xs">Securing your voucher...</p>
         </div>
       }>
         <SuccessContent />

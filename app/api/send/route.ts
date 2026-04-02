@@ -11,24 +11,28 @@ export async function POST(req: Request) {
       bookingRef, 
       customerPhone, 
       carDetails, 
-      notes 
+      notes,
+      airport,    // NEW: Capture airport
+      terminal    // NEW: Capture terminal
     } = body;
 
     // 1. Normalize the email (Remove spaces and force lowercase)
     const targetEmail = customerEmail?.trim().toLowerCase();
 
     // 2. Log exactly what we are sending to Resend for debugging
-    console.log(`📤 Sending to: "${targetEmail}" | Ref: ${bookingRef}`);
+    console.log(`📤 Sending to: "${targetEmail}" | Ref: ${bookingRef} | Loc: ${airport} ${terminal}`);
 
-    // 3. Trigger the mailer
+    // 3. Trigger the mailer (Now passing airport and terminal!)
     const result = await sendBookingReceipt(
       targetEmail, 
       flightNumber || "TBA", 
-      parkingType || "Luton Airport Parking",
+      parkingType || "Premium Meet & Greet",
       bookingRef,
       customerPhone || "N/A", 
       carDetails || "Vehicle Pending", 
-      notes || ""
+      notes || "",
+      airport || "Luton Airport (LTN)", // Pass to mailer
+      terminal || "Main Terminal"       // Pass to mailer
     );
     
     if (result.success) {
