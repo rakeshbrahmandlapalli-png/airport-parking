@@ -17,6 +17,10 @@ export async function createCheckoutSession(formData: FormData) {
   const licensePlate = formData.get("licensePlate") as string;
   const parkingType = formData.get("parkingType") as string || "standard";
   const totalPrice = parseFloat(formData.get("totalPrice") as string) || 0;
+  
+  // 🔥 NEW: Extract the airport and terminal
+  const airport = formData.get("airport") as string || "Luton Airport (LTN)";
+  const terminal = formData.get("terminal") as string || "Main Terminal";
 
   // Generate a temporary Reference ID
   const tempRef = "VIP-" + Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -41,7 +45,7 @@ export async function createCheckoutSession(formData: FormData) {
 
     // B. Fire off the email receipt via Resend ✈️
     if (customerEmail) {
-      // 🔥 FIXED: Added all 7 arguments to match lib/mail.ts
+      // 🔥 FIXED: Now passing all 9 arguments to match lib/mail.ts!
       await sendBookingReceipt(
         customerEmail, 
         flightNumber || "TBA", 
@@ -49,7 +53,9 @@ export async function createCheckoutSession(formData: FormData) {
         tempRef,
         customerPhone || "N/A",               // Argument 5: Phone
         `License: ${licensePlate || "N/A"}`,  // Argument 6: Car Details
-        "Direct Stripe Booking"               // Argument 7: Notes
+        "Direct Stripe Booking",              // Argument 7: Notes
+        airport,                              // Argument 8: Airport
+        terminal                              // Argument 9: Terminal
       );
     }
 
