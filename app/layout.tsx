@@ -3,7 +3,7 @@ import "./globals.css";
 import Link from "next/link";
 import { PlaneTakeoff, User } from "lucide-react";
 import { Analytics } from "@vercel/analytics/next"; 
-import Chatbot from "@/components/Chatbot"; // 🔥 ADDED: Import your new AI Chatbot
+import Chatbot from "@components/Chatbot";
 
 export const metadata: Metadata = {
   title: "Airport VIP Parking",
