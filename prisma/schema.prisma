@@ -21,9 +21,13 @@ model Booking {
   totalPrice    Float
   status        String   @default("pending")
   
-  // 🔥 NEW FIELDS ADDED HERE:
+  // 🔥 Multi-Airport Fields:
   airport       String?  @default("Luton Airport (LTN)") 
   terminal      String?  @default("Main Terminal")       
+  
+  // 🔥 NEW INVENTORY FIELDS: 
+  dropoffDate   DateTime? 
+  pickupDate    DateTime?
   
   createdAt     DateTime @default(now())
 }

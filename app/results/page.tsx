@@ -15,19 +15,43 @@ import {
   Flame,
   ChevronDown,
   Plane,
-  Calendar
+  Calendar,
+  AlertTriangle
 } from "lucide-react";
 import Link from "next/link";
-import { Suspense, useState, useMemo } from "react";
+import { Suspense, useState, useMemo, useEffect } from "react";
+// 🔥 NEW: Import your inventory checker from actions.ts!
+import { checkAvailability } from "../actions";
 
 function ResultsContent() {
   const searchParams = useSearchParams();
   const [expandedId, setExpandedId] = useState<number | null>(null);
   
+  // 🔥 NEW: Inventory States
+  const [isChecking, setIsChecking] = useState(true);
+  const [isAvailable, setIsAvailable] = useState(true);
+  const [spotsLeft, setSpotsLeft] = useState<number | null>(null);
+  
   const airport = searchParams.get("airport") || "Luton (LTN)";
   const dropoff = searchParams.get("dropoffDate") || "";
   const pickup = searchParams.get("pickupDate") || "";
   const isHeathrow = airport.includes("Heathrow");
+
+  // 🔥 NEW: Check database capacity on page load
+  useEffect(() => {
+    async function fetchInventory() {
+      if (!dropoff || !pickup) {
+        setIsChecking(false);
+        return;
+      }
+      // Call the server action we just built!
+      const inventory = await checkAvailability(airport, dropoff, pickup);
+      setIsAvailable(inventory.isAvailable);
+      setSpotsLeft(inventory.spotsLeft);
+      setIsChecking(false);
+    }
+    fetchInventory();
+  }, [airport, dropoff, pickup]);
 
   const duration = useMemo(() => {
     if (!dropoff || !pickup) return 1;
@@ -90,8 +114,47 @@ function ResultsContent() {
     }
   ];
 
+  // 🔥 NEW: Loading State while checking DB
+  if (isChecking) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-32 text-center flex flex-col items-center">
+        <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-6"></div>
+        <h2 className="text-xl font-black text-slate-900 tracking-tight">Checking secure parking availability...</h2>
+      </div>
+    );
+  }
+
+  // 🔥 NEW: Sold Out State
+  if (!isAvailable) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-20 text-center">
+        <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-8">
+          <XCircle className="w-12 h-12 text-red-500" />
+        </div>
+        <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">Fully Booked</h2>
+        <p className="text-slate-500 font-bold leading-relaxed mb-10">
+          We are currently sold out for {airport} between your selected dates. Please adjust your travel dates or check back later.
+        </p>
+        <Link href="/" className="inline-flex items-center gap-2 bg-slate-900 text-white px-8 py-4 rounded-full font-black uppercase tracking-widest text-xs hover:bg-blue-600 hover:shadow-lg transition-all active:scale-95">
+          <ArrowLeft className="w-4 h-4" /> Change Search Dates
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 md:py-10">
+      
+      {/* 🔥 NEW: Urgency Badge if spots are low */}
+      {spotsLeft !== null && spotsLeft <= 10 && (
+        <div className="mb-6 bg-red-50 border border-red-200 p-4 rounded-2xl flex items-center justify-center gap-3 text-red-600 animate-pulse">
+          <Flame className="w-5 h-5" />
+          <span className="text-xs font-black uppercase tracking-widest">
+            High Demand: Only {spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} remaining for these dates!
+          </span>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-10 px-4">
         <div className="flex flex-col items-center gap-2 flex-1">
           <div className="h-1.5 w-full bg-blue-600 rounded-full"></div>
