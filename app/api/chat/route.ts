@@ -1,29 +1,34 @@
 import { openai } from '@ai-sdk/openai';
-import { streamText } from 'ai';
+import { streamText, createDataStreamResponse } from 'ai';
 
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
-
   try {
-    // 🧠 ONLINE MODE (Tries to talk to OpenAI)
+    const { messages } = await req.json();
+
+    // 🧠 ONLINE MODE
     const result = await streamText({
       model: openai('gpt-4o-mini'),
       messages,
       system: "You are a VIP Airport Parking assistant. Be professional and helpful.",
     });
 
-    // Changed from toDataStreamResponse to toAIStreamResponse
     return result.toTextStreamResponse();
     
   } catch (error: any) {
-    // 🛡️ OFFLINE/FAILSAFE MODE
-    // This triggers if you have no money in OpenAI or if the key is missing
-    console.error("OpenAI Error:", error);
-    
-    return new Response(
-      "I'm currently in Guest Mode. Once my live AI connection is activated, I'll be able to give you real-time parking advice. How can I help you generally today?"
-    );
+    // 🛡️ OFFLINE / FAILSAFE MODE
+    console.error("Chatbot Error:", error);
+
+    // We turn the "Offline" message into a stream so the frontend "types" it out
+    return createDataStreamResponse({
+      execute: async (dataStream) => {
+        dataStream.writeMessageAnnotation({
+          type: 'status',
+          value: 'offline-mode'
+        });
+        dataStream.writeText("I'm currently in Guest Mode. Once my live AI connection is activated, I'll be able to give you real-time parking advice. How can I help you generally today?");
+      },
+    });
   }
 }
