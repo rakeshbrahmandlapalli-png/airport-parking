@@ -8,9 +8,26 @@ export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
   
   // @ts-ignore
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+  const { messages, input, handleInputChange, append, isLoading } = useChat({
     api: '/api/chat',
   } as any);
+
+  // 🔥 MANUAL SEND FUNCTION
+  const handleManualSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Send button clicked with input:", input); // Check console for this!
+    
+    if (!input || isLoading) return;
+
+    try {
+      await append({
+        role: 'user',
+        content: input,
+      });
+    } catch (err) {
+      console.error("Manual Send Error:", err);
+    }
+  };
 
   return (
     <div className="fixed bottom-6 right-6 z-[100]">
@@ -22,7 +39,7 @@ export default function Chatbot() {
               <Plane className="w-5 h-5 text-blue-500 rotate-45" />
               <span className="font-black tracking-widest uppercase text-sm">VIP Assistant</span>
             </div>
-            <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white transition-colors">
+            <button type="button" onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white transition-colors">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -45,20 +62,10 @@ export default function Chatbot() {
                 </div>
               </div>
             ))}
-
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-white border border-slate-200 p-3 rounded-2xl rounded-bl-sm flex gap-1">
-                  <div className="w-2 h-2 bg-slate-300 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-slate-300 rounded-full animate-bounce delay-75"></div>
-                  <div className="w-2 h-2 bg-slate-300 rounded-full animate-bounce delay-150"></div>
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Input Area - Using the standard handleSubmit here */}
-          <form onSubmit={handleSubmit} className="p-3 bg-white border-t border-slate-100 flex items-center gap-2">
+          {/* Input Area */}
+          <form onSubmit={handleManualSend} className="p-3 bg-white border-t border-slate-100 flex items-center gap-2">
             <input
               value={input}
               onChange={handleInputChange}
@@ -76,8 +83,9 @@ export default function Chatbot() {
         </div>
       )}
 
-      {/* Floating Bubble */}
+      {/* Bubble Toggle */}
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-110 active:scale-95 ${isOpen ? 'bg-slate-900 text-white' : 'bg-blue-600 text-white'}`}
       >
