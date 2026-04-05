@@ -6,7 +6,7 @@ import { MessageCircle, X, Send, Plane } from "lucide-react";
 
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat();
+  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat<any>();
 
   return (
     <div className="fixed bottom-6 right-6 z-[100]">
