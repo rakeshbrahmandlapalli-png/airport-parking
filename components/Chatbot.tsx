@@ -1,32 +1,16 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react"; // Reverting to the most stable path
+import { useChat } from "@ai-sdk/react";
 import { useState } from "react";
 import { MessageCircle, X, Send, Plane } from "lucide-react";
 
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
   
-// @ts-ignore
-  const { messages, input, handleInputChange, append, isLoading } = useChat({
+  // @ts-ignore
+  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: '/api/chat',
   } as any);
-
-  // Custom function to handle the send button
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input || isLoading) return;
-    
-    try {
-      // This "append" function is the most reliable way to send
-      await append({
-        role: 'user',
-        content: input,
-      });
-    } catch (error) {
-      console.error("Chat Error:", error);
-    }
-  };
 
   return (
     <div className="fixed bottom-6 right-6 z-[100]">
@@ -61,6 +45,7 @@ export default function Chatbot() {
                 </div>
               </div>
             ))}
+
             {isLoading && (
               <div className="flex justify-start">
                 <div className="bg-white border border-slate-200 p-3 rounded-2xl rounded-bl-sm flex gap-1">
@@ -72,21 +57,26 @@ export default function Chatbot() {
             )}
           </div>
 
-          {/* Input Area */}
-          <form onSubmit={handleFormSubmit} className="p-3 bg-white border-t border-slate-100 flex items-center gap-2">
+          {/* Input Area - Using the standard handleSubmit here */}
+          <form onSubmit={handleSubmit} className="p-3 bg-white border-t border-slate-100 flex items-center gap-2">
             <input
               value={input}
               onChange={handleInputChange}
               placeholder="Type your question..."
               className="flex-1 bg-slate-50 border border-slate-200 rounded-full px-4 py-2 text-sm outline-none focus:border-blue-500 transition-colors"
             />
-            <button type="submit" disabled={isLoading || !input} className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-slate-900 transition-colors disabled:opacity-50">
+            <button 
+              type="submit" 
+              disabled={isLoading || !input} 
+              className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-slate-900 transition-colors disabled:opacity-50"
+            >
               <Send className="w-4 h-4 ml-1" />
             </button>
           </form>
         </div>
       )}
 
+      {/* Floating Bubble */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-110 active:scale-95 ${isOpen ? 'bg-slate-900 text-white' : 'bg-blue-600 text-white'}`}
