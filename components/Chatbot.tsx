@@ -1,6 +1,6 @@
 "use client";
 
-import { useChat } from "ai/react"; // Reverting to the most stable path
+import { useChat } from "@ai-sdk/react"; // Reverting to the most stable path
 import { useState } from "react";
 import { MessageCircle, X, Send, Plane } from "lucide-react";
 
