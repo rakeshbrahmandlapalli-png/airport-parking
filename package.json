@@ -9,9 +9,12 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.50",
+    "@ai-sdk/react": "^3.0.148",
     "@stripe/stripe-js": "^9.0.0",
     "@supabase/supabase-js": "^2.100.1",
     "@vercel/analytics": "^2.0.1",
+    "ai": "^6.0.146",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.7.0",
     "next": "16.2.1",

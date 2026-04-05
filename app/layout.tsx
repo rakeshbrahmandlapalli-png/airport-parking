@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Link from "next/link";
 import { PlaneTakeoff, User } from "lucide-react";
-import { Analytics } from "@vercel/analytics/next"; // 🔥 Added Analytics
+import { Analytics } from "@vercel/analytics/next"; 
+import Chatbot from "@/components/Chatbot"; // 🔥 ADDED: Import your new AI Chatbot
 
 export const metadata: Metadata = {
   title: "Airport VIP Parking",
@@ -42,6 +43,9 @@ export default function RootLayout({
 
         {/* 🔥 Analytics Tracker */}
         <Analytics /> 
+        
+        {/* 🔥 The 24/7 AI Support Agent */}
+        <Chatbot />
       </body>
     </html>
   );
