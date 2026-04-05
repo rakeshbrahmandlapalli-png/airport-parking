@@ -1,31 +1,27 @@
 import { openai } from '@ai-sdk/openai';
-import { streamText } from 'ai';
+import { generateText } from 'ai';
 
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
+    const lastMessage = messages[messages.length - 1].content;
 
-    // 🧠 ONLINE MODE
-    const result = await streamText({
+    // 1. If you DON'T have credits/key yet, this will fail and go to 'catch'
+    const { text } = await generateText({
       model: openai('gpt-4o-mini'),
-      messages,
-      system: "You are a VIP Airport Parking assistant. Be professional and helpful.",
+      system: "You are a VIP Airport Parking assistant.",
+      prompt: lastMessage,
     });
 
-    return result.toTextStreamResponse();
+    return new Response(text);
     
-  } catch (error: any) {
-    // 🛡️ OFFLINE / FAILSAFE MODE
-    console.error("Chatbot Error:", error);
-
-    // This creates a simple text response that useChat can understand
+  } catch (error) {
+    // 🛡️ OFFLINE GUEST MODE
+    // This is what will play right now since you haven't added credits!
     return new Response(
-      "I'm currently in Guest Mode. Once my live AI connection is activated, I'll be able to give you real-time parking advice. How can I help you generally today?",
-      {
-        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-      }
+      "Hello! I'm your VIP Assistant. I'm currently in Guest Mode until my AI connection is funded, but I can tell you that we offer premium Meet & Greet services at Luton and Heathrow!"
     );
   }
 }
