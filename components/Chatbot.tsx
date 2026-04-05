@@ -7,8 +7,10 @@ import { MessageCircle, X, Send, Plane } from "lucide-react";
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
   
-  // @ts-ignore
-  const { messages, input, handleInputChange, append, isLoading } = useChat<any>();
+ // @ts-ignore
+const { messages, input, handleInputChange, append, isLoading } = useChat<any>({
+  api: '/api/chat', // 🔥 Force it to look at the correct URL
+});
 
   // Custom function to handle the send button
   const handleFormSubmit = async (e: React.FormEvent) => {
