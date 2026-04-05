@@ -1,17 +1,33 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
+import { useChat } from "ai/react"; // Reverting to the most stable path
 import { useState } from "react";
 import { MessageCircle, X, Send, Plane } from "lucide-react";
 
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
+  
   // @ts-ignore
-const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat<any>();
+  const { messages, input, handleInputChange, append, isLoading } = useChat<any>();
+
+  // Custom function to handle the send button
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input || isLoading) return;
+    
+    try {
+      // This "append" function is the most reliable way to send
+      await append({
+        role: 'user',
+        content: input,
+      });
+    } catch (error) {
+      console.error("Chat Error:", error);
+    }
+  };
 
   return (
     <div className="fixed bottom-6 right-6 z-[100]">
-      {/* The Chat Window */}
       {isOpen && (
         <div className="mb-4 w-[350px] h-[500px] bg-white rounded-3xl shadow-2xl border border-slate-100 flex flex-col overflow-hidden animate-in slide-in-from-bottom-5">
           {/* Header */}
@@ -36,7 +52,7 @@ const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat<
               </div>
             )}
             
-            {messages.map((m) => (
+            {messages.map((m: any) => (
               <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[85%] p-3 rounded-2xl text-sm ${m.role === 'user' ? 'bg-blue-600 text-white rounded-br-sm' : 'bg-white border border-slate-200 text-slate-700 rounded-bl-sm'}`}>
                   {m.content}
@@ -55,7 +71,7 @@ const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat<
           </div>
 
           {/* Input Area */}
-          <form onSubmit={handleSubmit} className="p-3 bg-white border-t border-slate-100 flex items-center gap-2">
+          <form onSubmit={handleFormSubmit} className="p-3 bg-white border-t border-slate-100 flex items-center gap-2">
             <input
               value={input}
               onChange={handleInputChange}
@@ -69,7 +85,6 @@ const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat<
         </div>
       )}
 
-      {/* The Floating Bubble Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-110 active:scale-95 ${isOpen ? 'bg-slate-900 text-white' : 'bg-blue-600 text-white'}`}
@@ -79,4 +94,3 @@ const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat<
     </div>
   );
 }
-/*test  */
