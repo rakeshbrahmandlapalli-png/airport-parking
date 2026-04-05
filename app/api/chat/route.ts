@@ -1,28 +1,36 @@
 import { openai } from '@ai-sdk/openai';
 import { streamText } from 'ai';
 
-// Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
   const { messages } = await req.json();
 
-  const result = await streamText({
-    // We use gpt-4o-mini because it is incredibly fast and cheap
-    model: openai('gpt-4o-mini'),
-    system: `You are the official Customer Support Assistant for AirportVIP, a premium Meet & Greet parking service.
-    
-    CRITICAL RULES:
-    1. Be polite, professional, and concise. 
-    2. We operate ONLY at London Heathrow (LHR) Terminals 2, 3, 4, 5 and London Luton (LTN) Airport.
-    3. Our service is "Meet & Greet" (valet). Customers drive directly to the terminal, hand us the keys, and walk straight to check-in.
-    4. If someone asks for pricing, tell them to "use the search bar on the home page for live daily rates."
-    5. Never promise a specific price or discount unless explicitly authorized.
-    6. If a customer has an issue, tell them to email support at support@airportvip.com.
-    
-    Always format your responses cleanly. Avoid long, massive paragraphs.`,
-    messages,
-  });
+  // 1. Check if the API Key exists in Vercel
+  const apiKey = process.env.OPENAI_API_KEY;
 
-  return result.toTextStreamResponse();
+  if (!apiKey || apiKey === "") {
+    // 🛡️ OFFLINE MOCK MODE (No Key Found)
+    return new Response(
+      "Hello! I'm currently in 'Guest Mode' because my AI brain isn't connected to OpenAI yet. How can I help you with parking today?"
+    );
+  }
+
+  try {
+    // 🧠 ONLINE MODE (Tries to talk to OpenAI)
+    const result = await streamText({
+      model: openai('gpt-4o-mini'),
+      messages,
+      system: "You are a VIP Airport Parking assistant. Be professional and helpful.",
+    });
+
+    return result.toDataStreamResponse();
+  } catch (error: any) {
+    // 🛠️ FAILSAFE (If OpenAI says "No Credits" or "Error")
+    console.error("OpenAI Error:", error);
+    
+    return new Response(
+      "I'm having a bit of trouble connecting to my live database right now, but I can still help you with general parking info! What are you looking for?"
+    );
+  }
 }
