@@ -1,5 +1,5 @@
 import { openai } from '@ai-sdk/openai';
-import { streamText, createDataStreamResponse } from 'ai';
+import { streamText } from 'ai';
 
 export const maxDuration = 30;
 
@@ -20,15 +20,12 @@ export async function POST(req: Request) {
     // 🛡️ OFFLINE / FAILSAFE MODE
     console.error("Chatbot Error:", error);
 
-    // We turn the "Offline" message into a stream so the frontend "types" it out
-    return createDataStreamResponse({
-      execute: async (dataStream) => {
-        dataStream.writeMessageAnnotation({
-          type: 'status',
-          value: 'offline-mode'
-        });
-        dataStream.writeText("I'm currently in Guest Mode. Once my live AI connection is activated, I'll be able to give you real-time parking advice. How can I help you generally today?");
-      },
-    });
+    // This creates a simple text response that useChat can understand
+    return new Response(
+      "I'm currently in Guest Mode. Once my live AI connection is activated, I'll be able to give you real-time parking advice. How can I help you generally today?",
+      {
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      }
+    );
   }
 }
