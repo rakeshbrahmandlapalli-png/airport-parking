@@ -137,7 +137,7 @@ export default function ManageBooking() {
       setExtensionSuccess({
         oldDate: oldPickupDate,
         newDate: newPickupDate,
-        extraPaid: extensionData.extraPaid || extensionData.extraCost
+        extraPaid: extensionData.extraCost || extensionData.extraCost
       });
 
       setBooking({
