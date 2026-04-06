@@ -76,7 +76,7 @@ export default function HomePage() {
     <main className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-blue-600 selection:text-white overflow-x-hidden">
       
       {/* 1. PREMIUM NAVBAR */}
-      <nav className={`fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl border-b border-white/20 shadow-[0_4px_30px_rgba(0,0,0,0.03)] transition-all duration-1000 ${isLoaded ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
+      <nav className={`fixed top-0 w-full z-[100] bg-white/70 backdrop-blur-xl border-b border-white/20 shadow-[0_4px_30px_rgba(0,0,0,0.03)] transition-all duration-1000 ${isLoaded ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           
           <Link href="/" className="flex items-center gap-2 text-blue-600 font-black tracking-tighter text-2xl uppercase z-50 cursor-pointer group">
@@ -99,14 +99,14 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <button onClick={() => setIsMenuOpen(true)} className="md:hidden z-50 p-2 text-slate-900 active:scale-90 transition-transform">
+          <button onClick={() => setIsMenuOpen(true)} className="md:hidden p-2 text-slate-900 active:scale-90 transition-transform">
             <Menu className="w-6 h-6" />
           </button>
         </div>
 
-        {/* MOBILE MENU */}
-        <div className={`md:hidden fixed inset-0 z-[100] bg-white/95 backdrop-blur-3xl transition-all duration-500 flex flex-col ${isMenuOpen ? 'opacity-100 pointer-events-auto translate-x-0' : 'opacity-0 pointer-events-none translate-x-full'}`}>
-          <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100 mt-8">
+        {/* MOBILE MENU - REWRITTEN TO FIX OVERLAP */}
+        <div className={`md:hidden fixed inset-0 z-[1000] bg-white transition-all duration-500 flex flex-col overflow-y-auto ${isMenuOpen ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full pointer-events-none'}`}>
+          <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100 shrink-0">
             <div className="flex items-center gap-2 text-blue-600 font-black tracking-tighter text-2xl uppercase">
               <Plane className="w-7 h-7 rotate-45" /> AIRPORT<span className="text-slate-900">VIP</span>
             </div>
@@ -114,15 +114,26 @@ export default function HomePage() {
               <X className="w-6 h-6" />
             </button>
           </div>
+          
           <div className="flex flex-col px-8 pt-12 gap-8 flex-grow">
             {["Services", "How it works", "Reviews"].map((item) => (
-              <a key={item} href={`#${item.toLowerCase().replace(/ /g, '-')}`} onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between text-3xl font-black text-slate-900 border-b border-slate-100 pb-6">
-                {item} <ChevronRight className="w-8 h-8 text-blue-500" />
+              <a 
+                key={item} 
+                href={`#${item.toLowerCase().replace(/ /g, '-')}`} 
+                onClick={() => setIsMenuOpen(false)} 
+                className="flex items-center justify-between text-3xl font-black text-slate-900 border-b border-slate-100 pb-6 group"
+              >
+                {item} <ChevronRight className="w-8 h-8 text-blue-500 group-active:translate-x-2 transition-transform" />
               </a>
             ))}
           </div>
-          <div className="p-8 pb-12 border-t border-slate-100">
-            <Link href="/manage" onClick={() => setIsMenuOpen(false)} className="w-full py-5 bg-blue-600 text-white font-black rounded-full text-lg flex items-center justify-center shadow-xl shadow-blue-500/20 active:scale-95 transition-transform">
+
+          <div className="p-8 pb-12 border-t border-slate-100 bg-white sticky bottom-0">
+            <Link 
+              href="/manage" 
+              onClick={() => setIsMenuOpen(false)} 
+              className="w-full py-5 bg-blue-600 text-white font-black rounded-3xl text-lg flex items-center justify-center shadow-xl shadow-blue-500/20 active:scale-95 transition-transform"
+            >
               Manage Booking
             </Link>
           </div>
