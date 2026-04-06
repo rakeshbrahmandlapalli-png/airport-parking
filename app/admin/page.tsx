@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase"; 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { 
   Users, 
   Trash2, 
@@ -13,13 +14,21 @@ import {
   MessageCircle, 
   Search,
   TrendingUp,
-  MapPin
+  MapPin,
+  PlaneTakeoff,
+  Loader2,
+  Filter,
+  LayoutDashboard,
+  CalendarDays,
+  PoundSterling,
+  Calendar
 } from "lucide-react";
 
 export default function AdminDashboard() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filter, setFilter] = useState("All");
   const router = useRouter();
 
   // 1. AUTH PROTECTION & INITIAL FETCH
@@ -55,173 +64,276 @@ export default function AdminDashboard() {
     }
   };
 
-  // 3. WHATSAPP DISPATCH LOGIC (UPDATED WITH AIRPORT/TERMINAL)
+  // 3. WHATSAPP DISPATCH LOGIC
   const sendToWhatsApp = (booking: any) => {
     const airport = booking.airport || "Luton (LTN)";
     const terminal = booking.terminal || "Main Terminal";
-    const message = `*NEW JOB: ${booking.booking_ref}*\n👤 Name: ${booking.full_name}\n🚗 Car: ${booking.car_color} ${booking.car_make}\n📱 Phone: ${booking.phone_number}\n📍 Airport: ${airport}\n🏢 Terminal: ${terminal}\n✈️ Flight: ${booking.flight_number}\n📅 Drop: ${booking.dropoff_date}`;
+    const message = `*NEW JOB: ${booking.booking_ref}*\n👤 Name: ${booking.full_name}\n🚗 Car: ${booking.car_color || ''} ${booking.car_make}\n📱 Phone: ${booking.phone_number}\n📍 Airport: ${airport}\n🏢 Terminal: ${terminal}\n✈️ Flight: ${booking.flight_number || 'TBC'}\n📅 Drop: ${booking.dropoff_date} at ${booking.dropoff_time || 'TBC'}`;
     
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
   };
 
-  // 4. FILTER LOGIC (NOW SEARCHES AIRPORTS TOO)
-  const filteredBookings = bookings.filter(b => 
-    b.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    b.booking_ref?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    b.car_make?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    b.airport?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    b.terminal?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // 4. METRICS CALCULATION
+  const totalRevenue = bookings.reduce((a, b) => a + Number(b.total_price || 0), 0);
+  const activeCount = bookings.length;
+  const todayStr = new Date().toISOString().split('T')[0];
+  const arrivingToday = bookings.filter(b => b.dropoff_date === todayStr).length;
+
+  // 5. FILTER LOGIC
+  const filteredBookings = bookings.filter(b => {
+    const matchesSearch = 
+      b.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.booking_ref?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.car_make?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.airport?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.terminal?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    if (filter === "LHR") return matchesSearch && b.airport?.includes("Heathrow");
+    if (filter === "LTN") return matchesSearch && b.airport?.includes("Luton");
+    if (filter === "Today") return matchesSearch && (b.dropoff_date === todayStr || b.pickup_date === todayStr);
+    
+    return matchesSearch;
+  });
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return "--";
+    return new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+  };
+
+  // 6. LOGOUT
+  const handleLogout = async () => {
+    await supabase.auth.signOut(); 
+    router.push("/admin/login");
+  };
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <p className="font-black text-slate-400 animate-pulse tracking-widest uppercase">Loading Operations Board...</p>
+    <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center text-white">
+      <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-6" />
+      <p className="font-black text-slate-400 animate-pulse tracking-widest uppercase text-sm">Securing Operations Board...</p>
     </div>
   );
 
   return (
-    <main className="min-h-screen bg-[#f8fafc] p-8 font-sans">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-slate-50 font-sans flex flex-col md:flex-row overflow-hidden">
+      
+      {/* SIDEBAR NAVIGATION */}
+      <aside className="w-full md:w-64 bg-slate-950 text-slate-400 flex flex-col hidden md:flex sticky top-0 h-screen border-r border-slate-800">
+        <div className="p-6 border-b border-white/10 flex items-center gap-2 text-white font-black text-xl uppercase tracking-tighter">
+          <PlaneTakeoff className="w-6 h-6 text-blue-500" /> Ops<span className="text-blue-500">Center</span>
+        </div>
         
-        {/* HEADER */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
-          <div>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tighter">OPERATIONS</h1>
-            <p className="text-slate-500 font-bold text-sm">Manage bookings and driver dispatch.</p>
+        <nav className="p-4 space-y-2 flex-grow">
+          <a href="#" className="flex items-center gap-3 px-4 py-3 bg-blue-600/10 text-blue-400 rounded-xl font-bold transition-colors">
+            <LayoutDashboard className="w-5 h-5" /> Live Dispatch
+          </a>
+          <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 hover:text-white rounded-xl font-bold transition-colors">
+            <Car className="w-5 h-5" /> Fleet & Drivers
+          </a>
+          <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 hover:text-white rounded-xl font-bold transition-colors">
+            <CalendarDays className="w-5 h-5" /> Schedule
+          </a>
+        </nav>
+
+        <div className="p-6 border-t border-white/10">
+          <button onClick={handleLogout} className="flex items-center gap-3 text-sm font-bold hover:text-red-400 transition-colors w-full text-left">
+            <LogOut className="w-4 h-4" /> Secure Logout
+          </button>
+        </div>
+      </aside>
+
+      {/* MAIN CONTENT AREA */}
+      <main className="flex-1 p-4 md:p-8 w-full overflow-y-auto h-screen relative">
+        
+        {/* MOBILE HEADER */}
+        <div className="md:hidden flex items-center justify-between mb-6 bg-slate-950 p-4 rounded-2xl text-white">
+          <div className="flex items-center gap-2 font-black text-lg uppercase tracking-tighter">
+            <PlaneTakeoff className="w-5 h-5 text-blue-500" /> Ops<span className="text-blue-500">Center</span>
           </div>
-          <div className="flex items-center gap-4 w-full md:w-auto">
-            <div className="relative flex-1 md:flex-none">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+          <button onClick={handleLogout} className="p-2 bg-white/10 rounded-lg text-slate-300 hover:text-red-400">
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* PAGE HEADER */}
+        <header className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 mb-8">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Command Center</h1>
+            <p className="text-slate-500 font-bold text-sm mt-1">Manage live bookings and driver dispatch.</p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
+            <div className="relative w-full sm:w-72">
+              <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
               <input 
                 type="text" 
-                placeholder="Search name, ref, or airport..." 
+                placeholder="Search ref, name, or plate..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-12 pr-6 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm w-full md:w-72 font-bold outline-none focus:ring-2 focus:ring-blue-600 transition-all text-sm"
+                className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
               />
             </div>
-            <button 
-              onClick={async () => { await supabase.auth.signOut(); router.push("/admin/login"); }} 
-              className="p-3 bg-white border border-slate-200 text-slate-400 hover:text-red-600 rounded-2xl transition-colors shadow-sm"
-            >
-              <LogOut className="w-5 h-5" />
+            <button className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-500/30 hover:bg-blue-500 transition-all flex items-center justify-center gap-2">
+              + Manual Add
             </button>
           </div>
-        </div>
+        </header>
 
-        {/* STATS CARDS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-          <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6">
-            <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-[1.5rem] flex items-center justify-center"><Users className="w-8 h-8" /></div>
+        {/* METRICS ROW */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex items-center justify-between">
             <div>
-              <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest">Total Bookings</p>
-              <h3 className="text-3xl font-black text-slate-900">{bookings.length}</h3>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Gross Revenue</p>
+              <p className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter">£{totalRevenue.toFixed(2)}</p>
+            </div>
+            <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-[1.25rem] flex items-center justify-center border border-emerald-100">
+              <TrendingUp className="w-6 h-6" />
             </div>
           </div>
-          <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6">
-            <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-[1.5rem] flex items-center justify-center"><TrendingUp className="w-8 h-8" /></div>
+          
+          <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm flex items-center justify-between">
             <div>
-              <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest">Gross Revenue</p>
-              <h3 className="text-3xl font-black text-slate-900">£{bookings.reduce((a, b) => a + Number(b.total_price), 0).toFixed(2)}</h3>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Total Bookings</p>
+              <p className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter">{activeCount}</p>
+            </div>
+            <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-[1.25rem] flex items-center justify-center border border-blue-100">
+              <Users className="w-6 h-6" />
+            </div>
+          </div>
+
+          <div className="bg-slate-900 p-6 rounded-[2rem] border border-slate-800 shadow-xl flex items-center justify-between relative overflow-hidden sm:col-span-2 lg:col-span-1">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 rounded-full blur-[40px]"></div>
+            <div className="relative z-10">
+              <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">Arriving Today</p>
+              <p className="text-3xl md:text-4xl font-black text-white tracking-tighter">{arrivingToday} Vehicles</p>
+            </div>
+            <div className="relative z-10 w-14 h-14 bg-blue-600 text-white rounded-[1.25rem] flex items-center justify-center shadow-lg shadow-blue-500/30">
+              <Car className="w-6 h-6" />
             </div>
           </div>
         </div>
 
-        {/* OPERATIONS TABLE */}
-        <div className="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left whitespace-nowrap min-w-[800px]">
-              <thead className="bg-slate-50/50 text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-100">
-                <tr>
-                  <th className="p-6">Customer & Ref</th>
-                  <th className="p-6">Vehicle Details</th>
-                  <th className="p-6">Location & Flight</th>
-                  <th className="p-6">Total Price</th>
-                  <th className="p-6 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {filteredBookings.map(b => (
-                  <tr key={b.id} className="hover:bg-slate-50/50 transition-colors group">
-                    
-                    {/* CUSTOMER INFO */}
-                    <td className="p-6">
-                      <p className="font-black text-slate-900">{b.full_name}</p>
-                      <p className="text-[11px] font-bold text-blue-600 uppercase tracking-tight">{b.booking_ref}</p>
-                      <div className="flex items-center gap-2 mt-2 text-slate-400">
-                        <Phone className="w-3 h-3" />
-                        <span className="text-[11px] font-bold">{b.phone_number || "N/A"}</span>
-                      </div>
-                    </td>
-                    
-                    {/* VEHICLE INFO */}
-                    <td className="p-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500"><Car className="w-4 h-4" /></div>
-                        <div>
-                          <p className="font-bold text-sm text-slate-700">{b.car_color || "Any"} {b.car_make}</p>
-                          <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{b.license_plate || "N/A"}</p>
-                          {b.additional_notes && (
-                            <p className="text-[9px] text-orange-600 font-bold truncate max-w-[150px] mt-1">Note: {b.additional_notes}</p>
-                          )}
-                        </div>
-                      </div>
-                    </td>
+        {/* DATA TABLE SECTION */}
+        <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          
+          {/* Filters */}
+          <div className="p-6 border-b border-slate-100 flex items-center gap-2 overflow-x-auto">
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mr-2 flex items-center gap-1"><Filter className="w-3 h-3" /> Filters:</div>
+            {['All', 'Today', 'LHR', 'LTN'].map(f => (
+              <button 
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${filter === f ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-500 hover:bg-slate-100 border border-slate-200'}`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
 
-                    {/* LOCATION & FLIGHT INFO (NEW) */}
-                    <td className="p-6">
-                      <div className="flex items-center gap-2 text-slate-900 font-bold text-sm mb-1">
-                        <MapPin className="w-3.5 h-3.5 text-blue-500" />
-                        {b.airport || "Luton (LTN)"}
-                      </div>
-                      <div className="flex items-center gap-2 text-slate-500 text-[10px] font-black uppercase tracking-widest mb-3">
-                         <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md">{b.terminal || "Main Terminal"}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
-                        <Plane className="w-3.5 h-3.5 text-blue-500" />
-                        {b.flight_number || "TBC"}
-                      </div>
-                    </td>
-
-                    {/* PRICE */}
-                    <td className="p-6">
-                       <p className="text-xl font-black text-slate-900">£{Number(b.total_price).toFixed(2)}</p>
-                       <p className="text-[10px] text-emerald-500 font-black uppercase tracking-widest bg-emerald-50 inline-block px-2 py-0.5 rounded mt-1">Paid</p>
-                    </td>
-
-                    {/* ACTIONS */}
-                    <td className="p-6 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button 
-                          onClick={() => sendToWhatsApp(b)}
-                          className="p-3 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-600 hover:text-white transition-all shadow-sm flex items-center gap-2 group/btn"
-                          title="Dispatch via WhatsApp"
-                        >
-                          <MessageCircle className="w-5 h-5" />
-                          <span className="text-[10px] font-black uppercase tracking-widest hidden md:block group-hover/btn:text-white">Dispatch</span>
-                        </button>
-                        <button 
-                          onClick={() => deleteBooking(b.id)} 
-                          className="p-3 bg-white text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm border border-slate-100"
-                          title="Delete Booking"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </td>
+          {/* Table Content */}
+          <div className="overflow-x-auto min-h-[400px]">
+            {filteredBookings.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-64 text-slate-400">
+                <Car className="w-10 h-10 mb-4 opacity-50 text-slate-300" />
+                <p className="text-xs font-black uppercase tracking-widest text-slate-400">No bookings match criteria</p>
+              </div>
+            ) : (
+              <table className="w-full text-left whitespace-nowrap">
+                <thead className="bg-slate-50/50">
+                  <tr>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-100">Customer & Ref</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-100">Vehicle</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-100">Location</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-100">Dates</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-100 text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredBookings.map((b) => (
+                    <tr key={b.id} className="hover:bg-slate-50/50 transition-colors group">
+                      
+                      {/* CUSTOMER & REF */}
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-black text-sm uppercase">
+                            {b.full_name?.charAt(0) || "U"}
+                          </div>
+                          <div>
+                            <div className="font-black text-slate-900 text-sm">{b.full_name}</div>
+                            <div className="font-mono font-bold text-blue-600 text-[10px] tracking-widest uppercase mt-0.5">{b.booking_ref}</div>
+                            <div className="flex items-center gap-1.5 mt-1.5 text-slate-500">
+                              <Phone className="w-3 h-3" />
+                              <span className="text-[10px] font-bold tracking-wider">{b.phone_number || "N/A"}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* VEHICLE */}
+                      <td className="px-6 py-5">
+                        <div className="inline-block px-3 py-1 bg-[#fde047] text-slate-900 font-black font-mono text-xs rounded border-2 border-yellow-400 uppercase tracking-[0.15em] shadow-inner mb-1.5">
+                          {b.license_plate}
+                        </div>
+                        <div className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
+                          <div className="w-2 h-2 rounded-full border border-slate-300" style={{ backgroundColor: b.car_color?.toLowerCase() || 'transparent' }}></div>
+                          {b.car_color || ""} {b.car_make}
+                        </div>
+                      </td>
+
+                      {/* LOCATION */}
+                      <td className="px-6 py-5">
+                        <div className="font-bold text-slate-900 text-sm flex items-center gap-1.5 mb-1">
+                          <MapPin className="w-3.5 h-3.5 text-blue-500" />
+                          {b.airport?.includes("Heathrow") ? "LHR" : "LTN"} <span className="text-slate-300 mx-1">|</span> {b.terminal?.replace("Terminal ", "T")}
+                        </div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                           <Plane className="w-3 h-3 text-slate-400" /> {b.flight_number || "TBC"}
+                        </div>
+                      </td>
+
+                      {/* DATES */}
+                      <td className="px-6 py-5">
+                        <div className="flex flex-col gap-1.5">
+                          <div className="text-[11px] font-bold text-slate-900 flex items-center gap-2">
+                            <span className="w-6 text-slate-400 text-[9px] uppercase font-black">In:</span> 
+                            {formatDate(b.dropoff_date)} <span className="text-blue-600">{b.dropoff_time || ''}</span>
+                          </div>
+                          <div className="text-[11px] font-bold text-slate-900 flex items-center gap-2">
+                            <span className="w-6 text-slate-400 text-[9px] uppercase font-black">Out:</span> 
+                            {formatDate(b.pickup_date)} <span className="text-emerald-600">{b.pickup_time || ''}</span>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* ACTIONS */}
+                      <td className="px-6 py-5 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button 
+                            onClick={() => sendToWhatsApp(b)}
+                            className="px-3 py-2 bg-emerald-50 hover:bg-emerald-500 text-emerald-600 hover:text-white rounded-xl transition-all shadow-sm flex items-center gap-2 border border-emerald-100 hover:border-emerald-500 group/btn"
+                            title="Dispatch to Driver via WhatsApp"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                            <span className="text-[10px] font-black uppercase tracking-widest hidden xl:block">Dispatch</span>
+                          </button>
+                          
+                          <button 
+                            onClick={() => deleteBooking(b.id)} 
+                            className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100"
+                            title="Delete Booking"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
-          {filteredBookings.length === 0 && (
-            <div className="p-20 text-center flex flex-col items-center justify-center">
-               <Car className="w-12 h-12 text-slate-200 mb-4" />
-               <p className="text-slate-400 font-black uppercase tracking-widest text-xs">No bookings found</p>
-            </div>
-          )}
         </div>
-      </div>
-    </main>
+
+      </main>
+    </div>
   );
 }
