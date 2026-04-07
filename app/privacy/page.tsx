@@ -24,15 +24,27 @@ export default function PrivacyPage() {
         <div className="prose prose-slate max-w-none prose-headings:font-black prose-headings:uppercase prose-headings:tracking-tight space-y-8 text-slate-600">
           <section>
             <h2 className="text-2xl text-slate-900 mb-4">1. Information We Collect</h2>
-            <p>We collect information to provide better services to our users. When you make a booking, we ask for personal information, like your name, email address, telephone number, and vehicle details to facilitate the Meet & Greet service.</p>
+            <p>To facilitate our elite Meet & Greet services at Luton and Heathrow airports, we collect essential personal and vehicular data. This includes:</p>
+            <ul>
+                <li><strong>Personal Details:</strong> Name, email address, and mobile phone number for driver communications.</li>
+                <li><strong>Vehicle Information:</strong> Make, model, color, and Vehicle Registration Mark (VRM) to identify your car at the terminal drop-off zones.</li>
+                <li><strong>Travel Itinerary:</strong> Outbound and return flight numbers, and expected arrival times to monitor flight delays and adjust staff schedules accordingly.</li>
+            </ul>
           </section>
+
           <section>
-            <h2 className="text-2xl text-slate-900 mb-4">2. How We Use Information</h2>
-            <p>We use the information we collect from all of our services to provide, maintain, protect and improve them, to develop new ones, and to protect AirportVIP and our users. We may use your email address to inform you about your booking.</p>
+            <h2 className="text-2xl text-slate-900 mb-4">2. CCTV and Photographic Data</h2>
+            <p>For your peace of mind and our mutual protection, our chauffeurs conduct a rapid digital photographic inspection of your vehicle during the handover process at the Luton Airport TCP1. These images are stored securely and used solely to verify the vehicle's pre-existing condition. Additionally, our private parking compounds operate 24/7 HD CCTV monitoring.</p>
           </section>
+
           <section>
-            <h2 className="text-2xl text-slate-900 mb-4">3. Data Security</h2>
-            <p>We work hard to protect our users from unauthorized access to or unauthorized alteration, disclosure, or destruction of information we hold. We review our information collection, storage, and processing practices, including physical security measures.</p>
+            <h2 className="text-2xl text-slate-900 mb-4">3. Data Sharing and Airport Authorities</h2>
+            <p>We do not sell your personal data to third parties. However, as an operator at major UK airports, we may be required to share your Vehicle Registration Mark (VRM) with London Luton Airport Operations Limited (LLAOL) or Heathrow Airport Limited (HAL) for Automatic Number Plate Recognition (ANPR) barrier access, or with local law enforcement if legally obligated.</p>
+          </section>
+          
+          <section>
+            <h2 className="text-2xl text-slate-900 mb-4">4. Data Retention</h2>
+            <p>Photographic inspection data is retained for 14 days following the return of your vehicle, after which it is securely deleted, provided no claims have been raised. General booking data is retained for tax and accounting purposes as required by UK law.</p>
           </section>
         </div>
       </div>

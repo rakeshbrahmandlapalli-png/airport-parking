@@ -27,7 +27,7 @@ export default function ContactPage() {
               </div>
               <div>
                 <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Emergency Hotline</p>
-                <p className="text-xl font-black text-slate-900">+44 (0) 800 123 4567</p>
+                <p className="text-xl font-black text-slate-900">+44 (0) 000 000 1234</p>
               </div>
             </div>
             <div className="flex items-center gap-5">
