@@ -305,61 +305,43 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* 4. THE BENTO BOX FEATURE GRID */}
-      <section id="services" className="py-24 md:py-32 px-6">
+      {/* 4. THE BENTO BOX - POLISHED MOBILE LAYOUT */}
+      <section id="services" className="py-24 px-6 bg-white">
         <div className="max-w-7xl mx-auto">
-          
           <div className="mb-16">
-            <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4">
-              The Standard of <span className="text-blue-600">Excellence.</span>
-            </h2>
-            <p className="text-lg text-slate-500 font-medium max-w-xl">
-              We eliminated the shuttle buses and the long walks. Experience airport parking designed around your schedule.
-            </p>
+            <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4 uppercase">The Standard of <span className="text-blue-600">Excellence.</span></h2>
+            <p className="text-lg text-slate-500 font-medium max-w-xl leading-relaxed">We eliminated shuttle buses. Experience airport parking designed around your schedule.</p>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[280px]">
-            
-            <div className="md:col-span-2 md:row-span-2 bg-white rounded-[2rem] p-10 border border-slate-200 shadow-sm relative overflow-hidden group hover:border-blue-500/30 transition-colors">
-              <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-blue-50 to-transparent rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform duration-700"></div>
-              <div className="relative z-10 flex flex-col h-full justify-between">
-                <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30 mb-6">
-                  <Clock className="w-8 h-8 text-white stroke-[1.5]" />
-                </div>
-                <div>
-                  <h3 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Zero Wait Time. <br/>Direct Terminal Access.</h3>
-                  <p className="text-slate-500 font-medium leading-relaxed max-w-md text-lg">
-                    Drive your vehicle straight to the Short Stay car park at your terminal. Hand the keys to our insured chauffeurs, and you are exactly a 2-minute walk from the departure gates.
-                  </p>
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:auto-rows-[320px]">
+            {/* Large Card */}
+            <div className="md:col-span-2 md:row-span-2 bg-slate-50 rounded-[2.5rem] p-8 md:p-12 border border-slate-200 relative overflow-hidden flex flex-col justify-between min-h-[400px] md:min-h-0">
+              <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-100/40 via-transparent to-transparent pointer-events-none"></div>
+              <div className="relative z-10">
+                <div className="w-16 h-16 md:w-20 md:h-20 bg-blue-600 rounded-3xl flex items-center justify-center shadow-xl shadow-blue-200 mb-8 text-white"><Clock className="w-8 h-8 md:w-10 md:h-10" /></div>
+                <h3 className="text-3xl md:text-4xl font-black text-slate-900 mb-6 tracking-tight leading-tight">Zero Wait Time. <br/>Direct Access.</h3>
+                <p className="text-slate-500 font-medium text-lg md:text-xl leading-relaxed max-w-lg">Hand your keys to our vetted chauffeurs exactly at terminal check-in. Walk 2 minutes to the gate. It's that simple.</p>
               </div>
             </div>
-
-            <div className="bg-[#0F172A] rounded-[2rem] p-8 relative overflow-hidden group">
-              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-              <div className="relative z-10 flex flex-col h-full justify-between">
-                <ShieldCheck className="w-10 h-10 text-blue-400 stroke-[1.5]" />
-                <div>
-                  <h3 className="text-xl font-black text-white mb-2 tracking-tight">24/7 Secure Facility</h3>
-                  <p className="text-slate-400 font-medium text-sm">Monitored facilities with full CCTV coverage, perimeter fencing, and regular patrols.</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-sm flex flex-col justify-between group hover:border-blue-500/30 transition-colors">
-              <CreditCard className="w-10 h-10 text-slate-900 stroke-[1.5]" />
+            {/* Small Card 1 */}
+            <div className="bg-[#0F172A] rounded-[2.5rem] p-8 md:p-10 flex flex-col justify-between min-h-[280px] md:min-h-0">
+              <ShieldCheck className="w-12 h-12 text-blue-400" />
               <div>
-                <h3 className="text-xl font-black text-slate-900 mb-2 tracking-tight">Transparent Pricing</h3>
-                <ul className="space-y-2 mt-4">
-                  {["No hidden drop-off fees", "Flexible cancellations", "Price match guarantee"].map((item, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm text-slate-600 font-medium">
-                      <CheckCircle2 className="w-4 h-4 text-blue-500" /> {item}
-                    </li>
-                  ))}
+                <h3 className="text-2xl font-black text-white mb-3 uppercase tracking-tight">24/7 Security</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">Your vehicle is moved to a private compound with HD CCTV and manned regular patrols.</p>
+              </div>
+            </div>
+            {/* Small Card 2 */}
+            <div className="bg-white rounded-[2.5rem] p-8 md:p-10 border border-slate-200 shadow-sm flex flex-col justify-between min-h-[280px] md:min-h-0">
+              <CreditCard className="w-12 h-12 text-slate-900" />
+              <div>
+                <h3 className="text-2xl font-black text-slate-900 mb-4 uppercase tracking-tight">Pricing</h3>
+                <ul className="space-y-3">
+                   {["Price match guarantee", "No hidden drop-off fees"].map((item, idx) => (
+                     <li key={idx} className="flex items-center gap-3 text-sm text-slate-600 font-bold"><CheckCircle2 className="w-4 h-4 text-blue-500 shrink-0" /> {item}</li>
+                   ))}
                 </ul>
               </div>
             </div>
-
           </div>
         </div>
       </section>
