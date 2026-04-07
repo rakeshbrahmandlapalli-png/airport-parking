@@ -99,11 +99,13 @@ export default function HomePage() {
               <User className="w-4 h-4" /> Manage Booking
             </Link>
           </div>
+          
 
           <button onClick={() => setIsMenuOpen(true)} className="md:hidden p-2 text-slate-900 bg-slate-100 rounded-xl active:scale-90 transition-transform">
             <Menu className="w-6 h-6" />
           </button>
         </div>
+        </nav>
 
         {/* MOBILE MENU - FULLY REPAIRED */}
         <div 
@@ -153,7 +155,7 @@ export default function HomePage() {
             </Link>
           </div>
         </div>
-        </nav>
+        
 
       {/* 2. IMMERSIVE HERO SECTION */}
       <section className="relative min-h-[100svh] md:min-h-[850px] w-full flex items-center pt-28 pb-16 overflow-hidden bg-slate-950">
