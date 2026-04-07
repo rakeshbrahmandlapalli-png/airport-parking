@@ -460,19 +460,24 @@ export default function HomePage() {
       </section>
 
       {/* 6. FOOTER */}
-      <footer className="bg-slate-900 py-16 px-6 border-t border-white/10">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
-           <Link href="/" className="flex items-center gap-2 text-white font-black text-2xl uppercase tracking-tighter">
-             <Plane className="w-6 h-6 text-blue-500 rotate-45" /> AIRPORT<span className="text-blue-500">VIP</span>
+      <footer className="bg-[#0B1121] py-10 md:py-14 px-6 border-t border-white/5">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 md:gap-4">
+           
+           <Link href="/" className="flex items-center gap-2 text-white font-black text-xl md:text-2xl uppercase tracking-tighter w-full md:w-1/3 justify-center md:justify-start">
+             <Plane className="w-5 h-5 md:w-6 md:h-6 text-blue-500 rotate-45" /> AIRPORT<span className="text-blue-500">VIP</span>
            </Link>
-           <div className="flex flex-wrap justify-center gap-8 text-slate-400 text-[11px] font-black uppercase tracking-[0.2em]">
-             <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-             <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-             <a href="#" className="hover:text-white transition-colors">Contact Support</a>
+           
+           {/* UPDATED: Using Next.js Links pointing to real routes */}
+           <div className="flex flex-wrap justify-center gap-6 md:gap-10 text-slate-300/80 text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] md:tracking-[0.2em] w-full md:w-1/3">
+             <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+             <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+             <Link href="/contact" className="hover:text-white transition-colors">Contact Support</Link>
            </div>
-           <div className="text-slate-600 font-bold text-[10px] uppercase tracking-widest">
+           
+           <div className="text-slate-500/70 font-bold text-[9px] md:text-[10px] uppercase tracking-[0.15em] md:tracking-widest w-full md:w-1/3 text-center md:text-right">
              © {new Date().getFullYear()} AirportVIP Global
            </div>
+           
         </div>
       </footer>
 
