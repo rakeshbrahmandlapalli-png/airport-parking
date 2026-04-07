@@ -18,7 +18,8 @@ import {
   Info,
   ChevronDown,
   CheckCircle2,
-  Tag
+  Tag,
+  Search
 } from "lucide-react";
 import Link from "next/link";
 import MapModal from "@/components/MapModal";
@@ -76,11 +77,11 @@ export default function HomePage() {
     <main className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-blue-600 selection:text-white overflow-x-hidden">
       
       {/* 1. PREMIUM NAVBAR */}
-      <nav className={`fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl border-b border-white/20 shadow-[0_4px_30px_rgba(0,0,0,0.03)] transition-all duration-1000 ${isLoaded ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
+      <nav className={`fixed top-0 w-full z-[100] bg-white/80 backdrop-blur-xl border-b border-slate-200 transition-all duration-1000 ${isLoaded ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           
-          <Link href="/" className="flex items-center gap-2 text-blue-600 font-black tracking-tighter text-2xl uppercase z-50 cursor-pointer group">
-            <Plane className="w-7 h-7 rotate-45 group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform duration-300" /> 
+          <Link href="/" className="flex items-center gap-2 text-blue-600 font-black tracking-tighter text-2xl uppercase group">
+            <Plane className="w-7 h-7 rotate-45 group-hover:translate-x-1 transition-transform" /> 
             AIRPORT<span className="text-slate-900">VIP</span>
           </Link>
           
@@ -94,63 +95,61 @@ export default function HomePage() {
 
             <div className="h-6 w-px bg-slate-200 ml-2"></div>
 
-            <Link href="/manage" className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.15em] text-white bg-slate-900 px-6 py-3 rounded-full hover:bg-blue-600 hover:shadow-[0_10px_20px_-10px_rgba(37,99,235,0.6)] transition-all duration-300 active:scale-95 ml-2">
+            <Link href="/manage" className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.15em] text-white bg-slate-900 px-6 py-3 rounded-full hover:bg-blue-600 transition-all active:scale-95 ml-2">
               <User className="w-4 h-4" /> Manage Booking
             </Link>
           </div>
 
-          <button onClick={() => setIsMenuOpen(true)} className="md:hidden z-50 p-2 text-slate-900 active:scale-90 transition-transform">
-            <Menu className="w-6 h-6" />
-          </button>
-        </div>
-
-        return (
-    <main className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-blue-600 selection:text-white overflow-x-hidden">
-      
-      <nav className={`fixed top-0 w-full z-[100] bg-white/80 backdrop-blur-xl border-b border-slate-200 transition-all duration-1000 ${isLoaded ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-blue-600 font-black tracking-tighter text-2xl uppercase group">
-            <Plane className="w-7 h-7 rotate-45 group-hover:translate-x-1 transition-transform" /> 
-            AIRPORT<span className="text-slate-900">VIP</span>
-          </Link>
-          
-          <div className="hidden md:flex items-center gap-8">
-            <a href="#services" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-600">Services</a>
-            <a href="#how-it-works" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-600">How it works</a>
-            <a href="#reviews" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-600">Reviews</a>
-            <div className="h-6 w-px bg-slate-200 ml-2"></div>
-            <Link href="/manage" className="text-[11px] font-black uppercase tracking-widest text-white bg-slate-900 px-6 py-3 rounded-full hover:bg-blue-600 transition-all">
-              Manage Booking
-            </Link>
-          </div>
-
-          <button onClick={() => setIsMenuOpen(true)} className="md:hidden p-2 text-slate-900 bg-slate-100 rounded-xl">
+          <button onClick={() => setIsMenuOpen(true)} className="md:hidden p-2 text-slate-900 bg-slate-100 rounded-xl active:scale-90 transition-transform">
             <Menu className="w-6 h-6" />
           </button>
         </div>
 
         {/* MOBILE MENU - FIXED & POLISHED */}
-        <div className={`fixed inset-0 z-[1000] bg-white transition-all duration-500 flex flex-col ${isMenuOpen ? 'opacity-100 translate-x-0 visible' : 'opacity-0 translate-x-full invisible pointer-events-none'}`}>
-          <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100">
+        <div 
+          className={`md:hidden fixed inset-0 z-[1000] bg-white transition-all duration-500 ease-in-out flex flex-col ${
+            isMenuOpen 
+              ? 'opacity-100 translate-x-0 visible' 
+              : 'opacity-0 translate-x-full invisible pointer-events-none'
+          }`}
+        >
+          <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100 shrink-0">
             <div className="flex items-center gap-2 text-blue-600 font-black tracking-tighter text-2xl uppercase">
-              <Plane className="w-7 h-7 rotate-45" /> AIRPORTVIP
+              <Plane className="w-7 h-7 rotate-45" /> AIRPORT<span className="text-slate-900">VIP</span>
             </div>
-            <button onClick={() => setIsMenuOpen(false)} className="p-3 text-slate-900 bg-slate-100 rounded-full">
+            <button onClick={() => setIsMenuOpen(false)} className="p-3 text-slate-900 bg-slate-100 rounded-full active:scale-90 transition-transform">
               <X className="w-6 h-6" />
             </button>
           </div>
-          <div className="flex flex-col px-8 pt-10 gap-8 flex-grow">
-            <a href="#services" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between text-3xl font-black text-slate-900">Services <ChevronRight /></a>
-            <a href="#how-it-works" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between text-3xl font-black text-slate-900">How it works <ChevronRight /></a>
-            <a href="#reviews" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between text-3xl font-black text-slate-900">Reviews <ChevronRight /></a>
+          
+          <div className="flex flex-col px-8 pt-10 gap-6 flex-grow overflow-y-auto">
+            <a href="#services" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between text-2xl font-black text-slate-900 border-b border-slate-50 pb-6 group active:text-blue-600 transition-colors">
+              Services <ChevronRight className="w-6 h-6 text-blue-500" />
+            </a>
+            <a href="#how-it-works" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between text-2xl font-black text-slate-900 border-b border-slate-50 pb-6 group active:text-blue-600 transition-colors">
+              How it works <ChevronRight className="w-6 h-6 text-blue-500" />
+            </a>
+            <a href="#reviews" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between text-2xl font-black text-slate-900 border-b border-slate-50 pb-6 group active:text-blue-600 transition-colors">
+              Reviews <ChevronRight className="w-6 h-6 text-blue-500" />
+            </a>
+            <Link href="/manage" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between text-2xl font-black text-slate-900 border-b border-slate-50 pb-6 group active:text-blue-600 transition-colors">
+              Manage Trip <ChevronRight className="w-6 h-6 text-blue-500" />
+            </Link>
           </div>
-          <div className="p-8 pb-10 border-t bg-white sticky bottom-0">
-            <Link href="/manage" onClick={() => setIsMenuOpen(false)} className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl text-center block text-lg">Manage Booking</Link>
+
+          <div className="p-8 pb-10 border-t border-slate-100 bg-white shadow-2xl">
+            <Link 
+              href="/manage" 
+              onClick={() => setIsMenuOpen(false)} 
+              className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl text-lg flex items-center justify-center active:scale-95 transition-transform"
+            >
+              Manage Booking
+            </Link>
           </div>
         </div>
       </nav>
 
-      {/* 2. HERO SECTION */}
+      {/* 2. IMMERSIVE HERO SECTION */}
       <section className="relative min-h-[100svh] md:min-h-[850px] w-full flex items-center pt-28 pb-16 overflow-hidden bg-slate-950">
         <div className="absolute inset-0 z-0 overflow-hidden">
           <div className={`absolute inset-0 bg-cover bg-center transition-all duration-[3000ms] ease-out origin-center ${isLoaded ? 'scale-105 opacity-100 blur-0' : 'scale-150 opacity-0 blur-3xl'}`} style={{ backgroundImage: "url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format&fit=crop')" }}></div>
@@ -159,17 +158,14 @@ export default function HomePage() {
         </div>
 
         <div className="relative z-10 w-full max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          
           <div className="lg:col-span-5 flex flex-col text-left">
             <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-md w-fit mb-8 transition-all duration-1000 delay-200 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
               <span className="flex h-2 w-2 rounded-full bg-blue-400 animate-pulse"></span>
               <span className="text-white text-[10px] font-black uppercase tracking-widest">Premium Terminal Drop-off</span>
             </div>
-            
             <h1 className={`text-5xl md:text-[5rem] font-black text-white tracking-tighter mb-6 leading-[1.05] transition-all duration-1000 delay-300 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
               Redefine your <br className="hidden lg:block" /><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600">Departure.</span>
             </h1>
-            
             <p className={`text-lg md:text-xl text-slate-300 mb-10 max-w-xl font-medium leading-relaxed transition-all duration-1000 delay-500 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
               Luton and Heathrow's elite Meet & Greet service. Leave the keys with us, and step straight into the terminal.
             </p>
@@ -178,9 +174,7 @@ export default function HomePage() {
           <div className={`lg:col-span-7 transition-all duration-1000 delay-700 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
             <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] p-6 md:p-8 shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/20 rounded-full blur-[80px] pointer-events-none"></div>
-              
               <form action="/results" method="GET" onSubmit={handleSearch} className="relative z-10 flex flex-col gap-6">
-                
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4 hover:border-white/30 transition-colors group/input relative">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2 text-blue-300">
@@ -191,7 +185,6 @@ export default function HomePage() {
                       <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span> Limited Spots
                     </div>
                   </div>
-                  
                   <div className="relative">
                     <select name="airport" value={airport} onChange={(e) => setAirport(e.target.value)} className="w-full bg-transparent font-black text-white text-xl outline-none cursor-pointer appearance-none">
                       <option value="Luton (LTN)" className="text-slate-900">Luton Airport (LTN)</option>
@@ -200,121 +193,65 @@ export default function HomePage() {
                     <ChevronDown className="absolute right-0 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 hover:border-white/30 transition-colors">
-                    <div className="flex items-center gap-2 mb-3 text-blue-300">
-                      <PlaneTakeoff className="w-4 h-4" />
-                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-300">Drop-off Vehicle</label>
-                    </div>
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 transition-colors">
+                    <div className="flex items-center gap-2 mb-3 text-blue-300"><PlaneTakeoff className="w-4 h-4" /><label className="text-[10px] font-black uppercase tracking-widest text-slate-300">Drop-off</label></div>
                     <div className="grid grid-cols-2 gap-3">
-                      <input 
-                        type="date" name="dropoffDate" min={todayStr} value={dropoffDate} onChange={(e) => setDropoffDate(e.target.value)} 
-                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all cursor-pointer [color-scheme:light]" style={{ color: "#0f172a" }}
-                      />
-                      <input 
-                        type="time" name="dropoffTime" value={dropoffTime} onChange={(e) => setDropoffTime(e.target.value)} 
-                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all cursor-pointer [color-scheme:light]" style={{ color: "#0f172a" }}
-                      />
+                      <input type="date" name="dropoffDate" min={todayStr} value={dropoffDate} onChange={(e) => setDropoffDate(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-sm text-slate-900 outline-none" />
+                      <input type="time" name="dropoffTime" value={dropoffTime} onChange={(e) => setDropoffTime(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-sm text-slate-900 outline-none" />
                     </div>
                   </div>
-
-                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 hover:border-white/30 transition-colors">
-                    <div className="flex items-center gap-2 mb-3 text-blue-300">
-                      <Calendar className="w-4 h-4" />
-                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-300">Pick-up Vehicle</label>
-                    </div>
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 transition-colors">
+                    <div className="flex items-center gap-2 mb-3 text-blue-300"><Calendar className="w-4 h-4" /><label className="text-[10px] font-black uppercase tracking-widest text-slate-300">Pick-up</label></div>
                     <div className="grid grid-cols-2 gap-3">
-                      <input 
-                        type="date" name="pickupDate" min={dropoffDate || todayStr} value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} 
-                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all cursor-pointer [color-scheme:light]" style={{ color: "#0f172a" }}
-                      />
-                      <input 
-                        type="time" name="pickupTime" value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} 
-                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all cursor-pointer [color-scheme:light]" style={{ color: "#0f172a" }}
-                      />
+                      <input type="date" name="pickupDate" min={dropoffDate || todayStr} value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-sm text-slate-900 outline-none" />
+                      <input type="time" name="pickupTime" value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-sm text-slate-900 outline-none" />
                     </div>
                   </div>
                 </div>
-
-                <button type="submit" className="w-full h-[64px] bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl shadow-[0_10px_30px_rgba(37,99,235,0.4)] flex items-center justify-center gap-3 transition-all active:scale-95 group/btn mt-2">
-                  SECURE MY PARKING <SearchIcon className="w-5 h-5 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
+                <button type="submit" className="w-full h-16 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 uppercase text-sm tracking-widest">
+                  Secure My Parking <Search className="w-5 h-5" />
                 </button>
               </form>
             </div>
-            
-            <button onClick={() => setIsMapOpen(true)} className="mt-6 flex items-center gap-2 text-slate-400 font-bold text-xs hover:text-white transition-colors">
-              <Info className="w-4 h-4" /> View official meeting points for LTN & LHR
-            </button>
           </div>
         </div>
       </section>
 
-      {/* 2.5 LIVE AVAILABILITY & OFFERS DASHBOARD */}
+      {/* 2.5 LIVE AVAILABILITY SECTION */}
       <section className="relative z-20 bg-slate-950 px-6 pb-20 pt-4">
         <div className="max-w-7xl mx-auto">
           <div className="bg-[#0f172a]/90 backdrop-blur-3xl border border-white/10 rounded-[2rem] p-6 md:p-8 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 via-purple-500 to-blue-600"></div>
-            <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-blue-500/20 rounded-full blur-[80px]"></div>
-
             <div className="flex flex-col lg:flex-row gap-8 items-stretch relative z-10">
-              
               <div className="flex-1 w-full lg:pr-8 lg:border-r border-white/10 flex flex-col">
-                <h3 className="flex items-center gap-2 text-white font-black uppercase tracking-widest text-xs mb-6">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Live Availability
-                </h3>
-                
+                <h3 className="flex items-center gap-2 text-white font-black uppercase tracking-widest text-[10px] mb-6"><span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Live Availability</h3>
                 <div className="grid grid-cols-2 gap-4 flex-1">
-                  <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col justify-center hover:bg-white/10 transition-colors h-full">
-                    <div className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2 flex items-center justify-between">
-                      Luton (LTN) <MapPin className="w-3 h-3 text-slate-500" />
-                    </div>
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col justify-center h-full">
+                    <div className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2 flex items-center justify-between">Luton (LTN) <MapPin className="w-3 h-3 text-slate-500" /></div>
                     <div className="text-3xl font-black text-red-400 mb-1">12</div>
-                    <div className="text-xs text-slate-300 font-medium">Spots remaining</div>
+                    <div className="text-[10px] text-slate-400 font-black uppercase">Spots Left</div>
                   </div>
-                  
-                  <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col justify-center hover:bg-white/10 transition-colors h-full">
-                    <div className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2 flex items-center justify-between">
-                      Heathrow T5 <MapPin className="w-3 h-3 text-slate-500" />
-                    </div>
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col justify-center h-full">
+                    <div className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2 flex items-center justify-between">Heathrow T5 <MapPin className="w-3 h-3 text-slate-500" /></div>
                     <div className="text-3xl font-black text-emerald-400 mb-1">45</div>
-                    <div className="text-xs text-slate-300 font-medium">Spots remaining</div>
+                    <div className="text-[10px] text-slate-400 font-black uppercase">Spots Left</div>
                   </div>
                 </div>
               </div>
-
-              <div className="flex-[1.5] w-full flex flex-col">
-                <h3 className="flex items-center gap-2 text-white font-black uppercase tracking-widest text-xs mb-6">
-                  <Tag className="w-4 h-4 text-blue-400" /> Active Promotions
-                </h3>
-                
+              <div className="flex-[1.5] w-full flex flex-col text-white">
+                <h3 className="flex items-center gap-2 text-white font-black uppercase tracking-widest text-[10px] mb-6"><Tag className="w-4 h-4 text-blue-400" /> Active Promotions</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
-                  
-                  <div className="relative bg-gradient-to-br from-blue-900/40 to-blue-600/10 border border-blue-500/30 rounded-2xl p-5 group hover:border-blue-400/50 transition-all overflow-hidden flex flex-col justify-between h-full">
-                    <div className="absolute top-0 right-0 bg-blue-600 text-white text-[9px] font-black px-3 py-1.5 rounded-bl-xl uppercase tracking-widest shadow-md">Limited Time</div>
-                    <div>
-                      <div className="text-2xl font-black text-white mb-1">15% OFF</div>
-                      <div className="text-sm text-blue-200 font-medium mb-4 pr-10">Valid on all Heathrow Terminal drop-offs.</div>
-                    </div>
-                    <div className="inline-flex items-center justify-center gap-2 bg-black/40 border border-white/10 text-white font-mono text-xs px-4 py-2 rounded-lg border-dashed w-fit">
-                      CODE: <span className="text-blue-400 font-bold">T5SAVE15</span>
-                    </div>
+                  <div className="relative bg-gradient-to-br from-blue-900/40 to-blue-600/10 border border-blue-500/30 rounded-2xl p-5 overflow-hidden flex flex-col justify-between h-full">
+                    <div><div className="text-2xl font-black mb-1">15% OFF</div><div className="text-sm text-blue-200 font-medium">LHR Terminal drop-offs.</div></div>
+                    <div className="bg-black/40 border border-white/10 font-mono text-xs px-4 py-2 rounded-lg border-dashed w-fit mt-4">CODE: T5SAVE15</div>
                   </div>
-
-                  <div className="relative bg-gradient-to-br from-purple-900/40 to-purple-600/10 border border-purple-500/30 rounded-2xl p-5 group hover:border-purple-400/50 transition-all overflow-hidden flex flex-col justify-between h-full">
-                    <div className="absolute top-0 right-0 bg-purple-600 text-white text-[9px] font-black px-3 py-1.5 rounded-bl-xl uppercase tracking-widest shadow-md">Premium Add-on</div>
-                    <div>
-                      <div className="text-[1.35rem] leading-tight font-black text-white mb-1">Free Interior Detail</div>
-                      <div className="text-sm text-purple-200 font-medium mb-4 pr-10">Complimentary detail for stays over 5 days.</div>
-                    </div>
-                    <div className="inline-flex items-center justify-center gap-2 bg-black/40 border border-white/10 text-white font-mono text-xs px-4 py-2 rounded-lg border-dashed w-fit">
-                      CODE: <span className="text-purple-400 font-bold">CLEANRETURN</span>
-                    </div>
+                  <div className="relative bg-gradient-to-br from-purple-900/40 to-purple-600/10 border border-purple-500/30 rounded-2xl p-5 overflow-hidden flex flex-col justify-between h-full">
+                    <div><div className="text-2xl font-black mb-1">Free Valet</div><div className="text-sm text-purple-200 font-medium">Stays over 5 days.</div></div>
+                    <div className="bg-black/40 border border-white/10 font-mono text-xs px-4 py-2 rounded-lg border-dashed w-fit mt-4">CODE: CLEANRETURN</div>
                   </div>
-
                 </div>
               </div>
-
             </div>
           </div>
         </div>
