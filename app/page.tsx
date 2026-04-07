@@ -104,9 +104,15 @@ export default function HomePage() {
           </button>
         </div>
 
-        {/* MOBILE MENU */}
-        <div className={`md:hidden fixed inset-0 z-[100] bg-white/95 backdrop-blur-3xl transition-all duration-500 flex flex-col ${isMenuOpen ? 'opacity-100 pointer-events-auto translate-x-0' : 'opacity-0 pointer-events-none translate-x-full'}`}>
-          <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100 mt-8">
+        {/* MOBILE MENU - THE FIX */}
+        <div 
+          className={`md:hidden fixed inset-0 z-[1000] bg-white transition-all duration-500 ease-in-out flex flex-col ${
+            isMenuOpen 
+              ? 'opacity-100 translate-x-0 visible' 
+              : 'opacity-0 translate-x-full invisible pointer-events-none'
+          }`}
+        >
+          <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100 shrink-0">
             <div className="flex items-center gap-2 text-blue-600 font-black tracking-tighter text-2xl uppercase">
               <Plane className="w-7 h-7 rotate-45" /> AIRPORT<span className="text-slate-900">VIP</span>
             </div>
@@ -114,15 +120,26 @@ export default function HomePage() {
               <X className="w-6 h-6" />
             </button>
           </div>
-          <div className="flex flex-col px-8 pt-12 gap-8 flex-grow">
+          
+          <div className="flex flex-col px-8 pt-12 gap-8 flex-grow overflow-y-auto">
             {["Services", "How it works", "Reviews"].map((item) => (
-              <a key={item} href={`#${item.toLowerCase().replace(/ /g, '-')}`} onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between text-3xl font-black text-slate-900 border-b border-slate-100 pb-6">
+              <a 
+                key={item} 
+                href={`#${item.toLowerCase().replace(/ /g, '-')}`} 
+                onClick={() => setIsMenuOpen(false)} 
+                className="flex items-center justify-between text-3xl font-black text-slate-900 border-b border-slate-50 pb-6 active:text-blue-600 transition-colors"
+              >
                 {item} <ChevronRight className="w-8 h-8 text-blue-500" />
               </a>
             ))}
           </div>
-          <div className="p-8 pb-12 border-t border-slate-100">
-            <Link href="/manage" onClick={() => setIsMenuOpen(false)} className="w-full py-5 bg-blue-600 text-white font-black rounded-full text-lg flex items-center justify-center shadow-xl shadow-blue-500/20 active:scale-95 transition-transform">
+
+          <div className="p-8 pb-12 border-t border-slate-100 bg-white sticky bottom-0">
+            <Link 
+              href="/manage" 
+              onClick={() => setIsMenuOpen(false)} 
+              className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl text-lg flex items-center justify-center shadow-xl active:scale-95 transition-transform"
+            >
               Manage Booking
             </Link>
           </div>
