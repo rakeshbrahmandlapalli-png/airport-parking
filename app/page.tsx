@@ -158,32 +158,38 @@ export default function HomePage() {
         
 
       {/* 2. IMMERSIVE HERO SECTION */}
-      <section className="relative min-h-[100svh] md:min-h-[850px] w-full flex items-center pt-28 pb-16 overflow-hidden bg-slate-950">
+      <section className="relative min-h-[100svh] md:min-h-[850px] w-full pt-32 md:pt-40 pb-16 flex flex-col justify-center overflow-hidden bg-slate-950">
         <div className="absolute inset-0 z-0 overflow-hidden">
           <div className={`absolute inset-0 bg-cover bg-center transition-all duration-[3000ms] ease-out origin-center ${isLoaded ? 'scale-105 opacity-100 blur-0' : 'scale-150 opacity-0 blur-3xl'}`} style={{ backgroundImage: "url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format&fit=crop')" }}></div>
           <div className={`absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900/80 to-transparent transition-opacity duration-[2500ms] ${isLoaded ? 'opacity-100' : 'opacity-0'}`}></div>
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
         </div>
 
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-5 md:px-6 grid grid-cols-1 lg:grid-cols-12 gap-10 md:gap-12">
+          
+          {/* Hero Text */}
           <div className="lg:col-span-5 flex flex-col text-left">
-            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-md w-fit mb-8 transition-all duration-1000 delay-200 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-md w-fit mb-6 md:mb-8 transition-all duration-1000 delay-200 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
               <span className="flex h-2 w-2 rounded-full bg-blue-400 animate-pulse"></span>
               <span className="text-white text-[10px] font-black uppercase tracking-widest">Premium Terminal Drop-off</span>
             </div>
-            <h1 className={`text-5xl md:text-[5rem] font-black text-white tracking-tighter mb-6 leading-[1.05] transition-all duration-1000 delay-300 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+            <h1 className={`text-5xl md:text-[5rem] font-black text-white tracking-tighter mb-4 md:mb-6 leading-[1.05] transition-all duration-1000 delay-300 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
               Redefine your <br className="hidden lg:block" /><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600">Departure.</span>
             </h1>
-            <p className={`text-lg md:text-xl text-slate-300 mb-10 max-w-xl font-medium leading-relaxed transition-all duration-1000 delay-500 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+            <p className={`text-lg md:text-xl text-slate-300 mb-6 md:mb-10 max-w-xl font-medium leading-relaxed transition-all duration-1000 delay-500 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
               Luton and Heathrow's elite Meet & Greet service. Leave the keys with us, and step straight into the terminal.
             </p>
           </div>
 
+          {/* Hero Form */}
           <div className={`lg:col-span-7 transition-all duration-1000 delay-700 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
-            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] p-6 md:p-8 shadow-2xl relative overflow-hidden">
+            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] p-5 md:p-8 shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/20 rounded-full blur-[80px] pointer-events-none"></div>
-              <form action="/results" method="GET" onSubmit={handleSearch} className="relative z-10 flex flex-col gap-6">
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 hover:border-white/30 transition-colors group/input relative">
+              
+              <form action="/results" method="GET" onSubmit={handleSearch} className="relative z-10 flex flex-col gap-4 md:gap-6">
+                
+                {/* Airport Selector */}
+                <div className="bg-white/5 border border-white/10 rounded-xl md:rounded-2xl p-4 group/input relative">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2 text-blue-300">
                       <MapPin className="w-4 h-4" />
@@ -194,34 +200,62 @@ export default function HomePage() {
                     </div>
                   </div>
                   <div className="relative">
-                    <select name="airport" value={airport} onChange={(e) => setAirport(e.target.value)} className="w-full bg-transparent font-black text-white text-xl outline-none cursor-pointer appearance-none">
+                    <select name="airport" value={airport} onChange={(e) => setAirport(e.target.value)} className="w-full bg-transparent font-black text-white text-xl md:text-2xl outline-none cursor-pointer appearance-none">
                       <option value="Luton (LTN)" className="text-slate-900">Luton Airport (LTN)</option>
                       <option value="Heathrow (LHR)" className="text-slate-900">Heathrow Airport (LHR)</option>
                     </select>
                     <ChevronDown className="absolute right-0 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 transition-colors">
-                    <div className="flex items-center gap-2 mb-3 text-blue-300"><PlaneTakeoff className="w-4 h-4" /><label className="text-[10px] font-black uppercase tracking-widest text-slate-300">Drop-off</label></div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <input type="date" name="dropoffDate" min={todayStr} value={dropoffDate} onChange={(e) => setDropoffDate(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-sm text-slate-900 outline-none" />
-                      <input type="time" name="dropoffTime" value={dropoffTime} onChange={(e) => setDropoffTime(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-sm text-slate-900 outline-none" />
+
+                {/* Date & Time Inputs - Fixed alignment and padding for mobile fit */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                  
+                  <div className="bg-white/5 border border-white/10 rounded-xl md:rounded-2xl p-4">
+                    <div className="flex items-center gap-2 mb-3 text-blue-300">
+                      <PlaneTakeoff className="w-4 h-4" />
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-300">Drop-off</label>
+                    </div>
+                    <div className="flex gap-2 h-12 md:h-14">
+                      <input 
+                        type="date" name="dropoffDate" min={todayStr} value={dropoffDate} onChange={(e) => setDropoffDate(e.target.value)} 
+                        className="w-full bg-white border border-slate-200 rounded-lg md:rounded-xl pl-3 pr-1 py-2 font-bold text-[13px] md:text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
+                      />
+                      <input 
+                        type="time" name="dropoffTime" value={dropoffTime} onChange={(e) => setDropoffTime(e.target.value)} 
+                        className="w-full bg-white border border-slate-200 rounded-lg md:rounded-xl pl-3 pr-1 py-2 font-bold text-[13px] md:text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
+                      />
                     </div>
                   </div>
-                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 transition-colors">
-                    <div className="flex items-center gap-2 mb-3 text-blue-300"><Calendar className="w-4 h-4" /><label className="text-[10px] font-black uppercase tracking-widest text-slate-300">Pick-up</label></div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <input type="date" name="pickupDate" min={dropoffDate || todayStr} value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-sm text-slate-900 outline-none" />
-                      <input type="time" name="pickupTime" value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 font-bold text-sm text-slate-900 outline-none" />
+
+                  <div className="bg-white/5 border border-white/10 rounded-xl md:rounded-2xl p-4">
+                    <div className="flex items-center gap-2 mb-3 text-blue-300">
+                      <Calendar className="w-4 h-4" />
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-300">Pick-up</label>
+                    </div>
+                    <div className="flex gap-2 h-12 md:h-14">
+                      <input 
+                        type="date" name="pickupDate" min={dropoffDate || todayStr} value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} 
+                        className="w-full bg-white border border-slate-200 rounded-lg md:rounded-xl pl-3 pr-1 py-2 font-bold text-[13px] md:text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
+                      />
+                      <input 
+                        type="time" name="pickupTime" value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} 
+                        className="w-full bg-white border border-slate-200 rounded-lg md:rounded-xl pl-3 pr-1 py-2 font-bold text-[13px] md:text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
+                      />
                     </div>
                   </div>
+                  
                 </div>
-                <button type="submit" className="w-full h-16 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 uppercase text-sm tracking-widest">
-                  Secure My Parking <Search className="w-5 h-5" />
+
+                <button type="submit" className="w-full h-14 md:h-16 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl md:rounded-2xl shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 uppercase text-xs md:text-sm tracking-widest mt-2">
+                  Secure My Parking <Search className="w-4 h-4 md:w-5 md:h-5" />
                 </button>
               </form>
             </div>
+            
+            <button onClick={() => setIsMapOpen(true)} className="mt-6 flex items-center gap-2 text-slate-400 font-bold text-xs hover:text-white transition-colors w-full justify-center md:justify-start">
+              <Info className="w-4 h-4" /> View official meeting points for LTN & LHR
+            </button>
           </div>
         </div>
       </section>
