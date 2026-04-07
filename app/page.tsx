@@ -105,15 +105,16 @@ export default function HomePage() {
           </button>
         </div>
 
-        {/* MOBILE MENU - FIXED & POLISHED */}
+        {/* MOBILE MENU - FULLY FIXED & POLISHED */}
         <div 
-          className={`md:hidden fixed inset-0 z-[1000] bg-white transition-all duration-500 ease-in-out flex flex-col ${
+          className={`md:hidden fixed inset-0 z-[9999] bg-white transition-all duration-500 ease-in-out flex flex-col ${
             isMenuOpen 
               ? 'opacity-100 translate-x-0 visible' 
               : 'opacity-0 translate-x-full invisible pointer-events-none'
           }`}
         >
-          <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100 shrink-0">
+          {/* Header */}
+          <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100 shrink-0 bg-white">
             <div className="flex items-center gap-2 text-blue-600 font-black tracking-tighter text-2xl uppercase">
               <Plane className="w-7 h-7 rotate-45" /> AIRPORT<span className="text-slate-900">VIP</span>
             </div>
@@ -122,32 +123,39 @@ export default function HomePage() {
             </button>
           </div>
           
-          <div className="flex flex-col px-8 pt-10 gap-6 flex-grow overflow-y-auto">
-            <a href="#services" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between text-2xl font-black text-slate-900 border-b border-slate-50 pb-6 group active:text-blue-600 transition-colors">
-              Services <ChevronRight className="w-6 h-6 text-blue-500" />
+          {/* All Menu Options - Fixed & Explicit */}
+          <div className="flex flex-col px-8 pt-10 gap-2 flex-grow overflow-y-auto bg-white">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Main Menu</p>
+            
+            <a href="#services" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-3xl font-black text-slate-900 border-b border-slate-50 active:text-blue-600 transition-colors">
+              Services <ChevronRight className="w-8 h-8 text-blue-500" />
             </a>
-            <a href="#how-it-works" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between text-2xl font-black text-slate-900 border-b border-slate-50 pb-6 group active:text-blue-600 transition-colors">
-              How it works <ChevronRight className="w-6 h-6 text-blue-500" />
+            
+            <a href="#how-it-works" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-3xl font-black text-slate-900 border-b border-slate-50 active:text-blue-600 transition-colors">
+              How it works <ChevronRight className="w-8 h-8 text-blue-500" />
             </a>
-            <a href="#reviews" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between text-2xl font-black text-slate-900 border-b border-slate-50 pb-6 group active:text-blue-600 transition-colors">
-              Reviews <ChevronRight className="w-6 h-6 text-blue-500" />
+            
+            <a href="#reviews" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-3xl font-black text-slate-900 border-b border-slate-50 active:text-blue-600 transition-colors">
+              Reviews <ChevronRight className="w-8 h-8 text-blue-500" />
             </a>
-            <Link href="/manage" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between text-2xl font-black text-slate-900 border-b border-slate-50 pb-6 group active:text-blue-600 transition-colors">
-              Manage Trip <ChevronRight className="w-6 h-6 text-blue-500" />
+
+            <Link href="/manage" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-3xl font-black text-slate-900 active:text-blue-600 transition-colors">
+              Manage Trip <ChevronRight className="w-8 h-8 text-blue-500" />
             </Link>
           </div>
 
-          <div className="p-8 pb-10 border-t border-slate-100 bg-white shadow-2xl">
+          {/* Sticky Bottom Action */}
+          <div className="p-8 pb-10 border-t border-slate-100 bg-white sticky bottom-0">
             <Link 
               href="/manage" 
               onClick={() => setIsMenuOpen(false)} 
-              className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl text-lg flex items-center justify-center active:scale-95 transition-transform"
+              className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl text-lg flex items-center justify-center shadow-xl shadow-blue-200 active:scale-95 transition-transform"
             >
-              Manage Booking
+              Sign In to Booking
             </Link>
           </div>
         </div>
-      </nav>
+        </nav>
 
       {/* 2. IMMERSIVE HERO SECTION */}
       <section className="relative min-h-[100svh] md:min-h-[850px] w-full flex items-center pt-28 pb-16 overflow-hidden bg-slate-950">
