@@ -104,49 +104,53 @@ export default function HomePage() {
           </button>
         </div>
 
-        {/* MOBILE MENU - THE FIX */}
-        <div 
-          className={`md:hidden fixed inset-0 z-[1000] bg-white transition-all duration-500 ease-in-out flex flex-col ${
-            isMenuOpen 
-              ? 'opacity-100 translate-x-0 visible' 
-              : 'opacity-0 translate-x-full invisible pointer-events-none'
-          }`}
-        >
-          <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100 shrink-0">
+        return (
+    <main className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-blue-600 selection:text-white overflow-x-hidden">
+      
+      <nav className={`fixed top-0 w-full z-[100] bg-white/80 backdrop-blur-xl border-b border-slate-200 transition-all duration-1000 ${isLoaded ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2 text-blue-600 font-black tracking-tighter text-2xl uppercase group">
+            <Plane className="w-7 h-7 rotate-45 group-hover:translate-x-1 transition-transform" /> 
+            AIRPORT<span className="text-slate-900">VIP</span>
+          </Link>
+          
+          <div className="hidden md:flex items-center gap-8">
+            <a href="#services" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-600">Services</a>
+            <a href="#how-it-works" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-600">How it works</a>
+            <a href="#reviews" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-600">Reviews</a>
+            <div className="h-6 w-px bg-slate-200 ml-2"></div>
+            <Link href="/manage" className="text-[11px] font-black uppercase tracking-widest text-white bg-slate-900 px-6 py-3 rounded-full hover:bg-blue-600 transition-all">
+              Manage Booking
+            </Link>
+          </div>
+
+          <button onClick={() => setIsMenuOpen(true)} className="md:hidden p-2 text-slate-900 bg-slate-100 rounded-xl">
+            <Menu className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* MOBILE MENU - FIXED & POLISHED */}
+        <div className={`fixed inset-0 z-[1000] bg-white transition-all duration-500 flex flex-col ${isMenuOpen ? 'opacity-100 translate-x-0 visible' : 'opacity-0 translate-x-full invisible pointer-events-none'}`}>
+          <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100">
             <div className="flex items-center gap-2 text-blue-600 font-black tracking-tighter text-2xl uppercase">
-              <Plane className="w-7 h-7 rotate-45" /> AIRPORT<span className="text-slate-900">VIP</span>
+              <Plane className="w-7 h-7 rotate-45" /> AIRPORTVIP
             </div>
-            <button onClick={() => setIsMenuOpen(false)} className="p-3 text-slate-900 bg-slate-100 rounded-full active:scale-90 transition-transform">
+            <button onClick={() => setIsMenuOpen(false)} className="p-3 text-slate-900 bg-slate-100 rounded-full">
               <X className="w-6 h-6" />
             </button>
           </div>
-          
-          <div className="flex flex-col px-8 pt-12 gap-8 flex-grow overflow-y-auto">
-            {["Services", "How it works", "Reviews"].map((item) => (
-              <a 
-                key={item} 
-                href={`#${item.toLowerCase().replace(/ /g, '-')}`} 
-                onClick={() => setIsMenuOpen(false)} 
-                className="flex items-center justify-between text-3xl font-black text-slate-900 border-b border-slate-50 pb-6 active:text-blue-600 transition-colors"
-              >
-                {item} <ChevronRight className="w-8 h-8 text-blue-500" />
-              </a>
-            ))}
+          <div className="flex flex-col px-8 pt-10 gap-8 flex-grow">
+            <a href="#services" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between text-3xl font-black text-slate-900">Services <ChevronRight /></a>
+            <a href="#how-it-works" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between text-3xl font-black text-slate-900">How it works <ChevronRight /></a>
+            <a href="#reviews" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between text-3xl font-black text-slate-900">Reviews <ChevronRight /></a>
           </div>
-
-          <div className="p-8 pb-12 border-t border-slate-100 bg-white sticky bottom-0">
-            <Link 
-              href="/manage" 
-              onClick={() => setIsMenuOpen(false)} 
-              className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl text-lg flex items-center justify-center shadow-xl active:scale-95 transition-transform"
-            >
-              Manage Booking
-            </Link>
+          <div className="p-8 pb-10 border-t bg-white sticky bottom-0">
+            <Link href="/manage" onClick={() => setIsMenuOpen(false)} className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl text-center block text-lg">Manage Booking</Link>
           </div>
         </div>
       </nav>
 
-      {/* 2. IMMERSIVE HERO SECTION */}
+      {/* 2. HERO SECTION */}
       <section className="relative min-h-[100svh] md:min-h-[850px] w-full flex items-center pt-28 pb-16 overflow-hidden bg-slate-950">
         <div className="absolute inset-0 z-0 overflow-hidden">
           <div className={`absolute inset-0 bg-cover bg-center transition-all duration-[3000ms] ease-out origin-center ${isLoaded ? 'scale-105 opacity-100 blur-0' : 'scale-150 opacity-0 blur-3xl'}`} style={{ backgroundImage: "url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format&fit=crop')" }}></div>
