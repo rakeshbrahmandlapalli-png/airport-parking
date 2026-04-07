@@ -105,47 +105,45 @@ export default function HomePage() {
           </button>
         </div>
 
-        {/* MOBILE MENU - FULLY FIXED & POLISHED */}
+        {/* MOBILE MENU - FULLY REPAIRED */}
         <div 
           className={`md:hidden fixed inset-0 z-[9999] bg-white transition-all duration-500 ease-in-out flex flex-col ${
-            isMenuOpen 
-              ? 'opacity-100 translate-x-0 visible' 
-              : 'opacity-0 translate-x-full invisible pointer-events-none'
+            isMenuOpen ? 'opacity-100 translate-x-0 visible' : 'opacity-0 translate-x-full invisible pointer-events-none'
           }`}
         >
-          {/* Header */}
-          <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100 shrink-0 bg-white">
+          {/* 1. Header */}
+          <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100 shrink-0">
             <div className="flex items-center gap-2 text-blue-600 font-black tracking-tighter text-2xl uppercase">
               <Plane className="w-7 h-7 rotate-45" /> AIRPORT<span className="text-slate-900">VIP</span>
             </div>
-            <button onClick={() => setIsMenuOpen(false)} className="p-3 text-slate-900 bg-slate-100 rounded-full active:scale-90 transition-transform">
+            <button onClick={() => setIsMenuOpen(false)} className="p-3 text-slate-900 bg-slate-100 rounded-full">
               <X className="w-6 h-6" />
             </button>
           </div>
           
-          {/* All Menu Options - Fixed & Explicit */}
-          <div className="flex flex-col px-8 pt-10 gap-2 flex-grow overflow-y-auto bg-white">
+          {/* 2. Menu Links - Forced Visibility */}
+          <div className="flex flex-col px-8 py-12 gap-2 flex-grow overflow-y-auto bg-white">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Main Menu</p>
             
-            <a href="#services" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-3xl font-black text-slate-900 border-b border-slate-50 active:text-blue-600 transition-colors">
+            <a href="#services" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-3xl font-black text-slate-900 border-b border-slate-50">
               Services <ChevronRight className="w-8 h-8 text-blue-500" />
             </a>
             
-            <a href="#how-it-works" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-3xl font-black text-slate-900 border-b border-slate-50 active:text-blue-600 transition-colors">
+            <a href="#how-it-works" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-3xl font-black text-slate-900 border-b border-slate-50">
               How it works <ChevronRight className="w-8 h-8 text-blue-500" />
             </a>
             
-            <a href="#reviews" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-3xl font-black text-slate-900 border-b border-slate-50 active:text-blue-600 transition-colors">
+            <a href="#reviews" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-3xl font-black text-slate-900 border-b border-slate-50">
               Reviews <ChevronRight className="w-8 h-8 text-blue-500" />
             </a>
 
-            <Link href="/manage" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-3xl font-black text-slate-900 active:text-blue-600 transition-colors">
+            <Link href="/manage" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-3xl font-black text-slate-900">
               Manage Trip <ChevronRight className="w-8 h-8 text-blue-500" />
             </Link>
           </div>
 
-          {/* Sticky Bottom Action */}
-          <div className="p-8 pb-10 border-t border-slate-100 bg-white sticky bottom-0">
+          {/* 3. Sticky Bottom Button */}
+          <div className="p-8 pb-10 border-t border-slate-100 bg-white shrink-0">
             <Link 
               href="/manage" 
               onClick={() => setIsMenuOpen(false)} 
