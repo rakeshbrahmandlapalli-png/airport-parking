@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { 
-  Plane, 
   User, 
   Calendar, 
   Clock, 
@@ -11,7 +10,6 @@ import {
   CreditCard,
   MapPin,
   CarFront,
-  Star,
   Menu,
   X,
   ChevronRight,
@@ -22,6 +20,7 @@ import {
   Search
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import MapModal from "@/components/MapModal";
 
 export default function HomePage() {
@@ -80,13 +79,20 @@ export default function HomePage() {
       <nav className={`fixed top-0 w-full z-[100] bg-white/80 backdrop-blur-xl border-b border-slate-200 transition-all duration-1000 ${isLoaded ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           
-          <Link href="/" className="flex items-center gap-2 text-blue-600 font-black tracking-tighter text-2xl uppercase group">
-            <Plane className="w-7 h-7 rotate-45 group-hover:translate-x-1 transition-transform" /> 
-            AIRPORT<span className="text-slate-900">VIP</span>
+          <Link href="/" className="flex items-center z-50">
+            <Image 
+              src="/logo.png" /* Or whatever the original file is named */
+              alt="AeroPark Direct"
+              width={350} 
+              height={120}
+              priority
+              /* This is the magic line. mix-blend-multiply forces the white to turn invisible! */
+              className="h-20 md:h-24 w-auto object-contain scale-[1.35] origin-left mix-blend-multiply" 
+            />
           </Link>
           
           <div className="hidden md:flex items-center gap-8">
-            {["Services", "How it works", "Reviews"].map((item) => (
+            {["Services", "How it works"].map((item) => (
               <a key={item} href={`#${item.toLowerCase().replace(/ /g, '-')}`} className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 hover:text-slate-900 transition-colors relative group">
                 {item}
                 <span className="absolute -bottom-2 left-0 w-0 h-[2px] bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
@@ -115,9 +121,16 @@ export default function HomePage() {
         >
           {/* 1. Header */}
           <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100 shrink-0">
-            <div className="flex items-center gap-2 text-blue-600 font-black tracking-tighter text-2xl uppercase">
-              <Plane className="w-7 h-7 rotate-45" /> AIRPORT<span className="text-slate-900">VIP</span>
-            </div>
+            <Link href="/" onClick={() => setIsMenuOpen(false)} className="flex items-center">
+              <Image 
+                src="/logo.png" /* Make sure this filename matches too! */
+                alt="AeroPark Direct"
+                width={250}
+                height={80}
+                /* MOBILE SIZING AND SCALE */
+                className="h-16 md:h-18 w-auto object-contain scale-[1.35] origin-left mix-blend-multiply" 
+                />
+            </Link>
             <button onClick={() => setIsMenuOpen(false)} className="p-3 text-slate-900 bg-slate-100 rounded-full">
               <X className="w-6 h-6" />
             </button>
@@ -133,10 +146,6 @@ export default function HomePage() {
             
             <a href="#how-it-works" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-3xl font-black text-slate-900 border-b border-slate-50">
               How it works <ChevronRight className="w-8 h-8 text-blue-500" />
-            </a>
-            
-            <a href="#reviews" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-3xl font-black text-slate-900 border-b border-slate-50">
-              Reviews <ChevronRight className="w-8 h-8 text-blue-500" />
             </a>
 
             <Link href="/manage" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-3xl font-black text-slate-900">
@@ -208,7 +217,7 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* Date & Time Inputs - Fixed alignment and padding for mobile fit */}
+                {/* Date & Time Inputs */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   
                   <div className="bg-white/5 border border-white/10 rounded-xl md:rounded-2xl p-4">
@@ -259,7 +268,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
       {/* 2.5 LIVE AVAILABILITY SECTION */}
       <section className="relative z-20 bg-slate-950 px-6 pb-20 pt-4">
         <div className="max-w-7xl mx-auto">
@@ -424,47 +432,21 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 5. REVIEWS */}
-      <section id="reviews" className="py-24 md:py-32 bg-slate-950 px-6 relative overflow-hidden">
-        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
-        <div className="max-w-7xl mx-auto relative z-10">
-          
-          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
-             <div>
-               <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-4">Preferred by <br className="hidden md:block"/>Professionals.</h2>
-               <div className="flex gap-1">
-                 {[1,2,3,4,5].map(i => <Star key={i} className="w-6 h-6 text-yellow-500 fill-current drop-shadow-[0_0_10px_rgba(234,179,8,0.4)]" />)}
-               </div>
-             </div>
-             <p className="text-slate-400 font-medium max-w-sm text-lg">Based on verified 5-star reviews from business and leisure travelers.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[
-              { text: "Heathrow T5 can be a nightmare, but this Meet & Greet service was effortless. No shuttle buses, just straight to check-in. The driver was waiting exactly where promised.", name: "James D.", role: "LHR T5 Traveler", initials: "JD" },
-              { text: "Used them for Luton parking. Extremely professional staff and the car was returned perfectly clean. Best service in LTN hands down.", name: "Sarah M.", role: "Luton Executive", initials: "SM" }
-            ].map((rev, i) => (
-              <div key={i} className="bg-white/[0.03] hover:bg-white/[0.06] transition-colors backdrop-blur-md p-8 md:p-10 rounded-[2rem] border border-white/10">
-                <p className="text-xl text-slate-300 leading-relaxed mb-10 font-medium">"{rev.text}"</p>
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center font-black text-white text-lg shadow-lg">{rev.initials}</div>
-                  <div className="flex flex-col">
-                    <span className="font-black text-white">{rev.name}</span>
-                    <span className="text-blue-400 font-bold uppercase tracking-widest text-[10px]">{rev.role}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* 6. FOOTER */}
       <footer className="bg-[#0B1121] py-10 md:py-14 px-6 border-t border-white/5">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 md:gap-4">
            
-           <Link href="/" className="flex items-center gap-2 text-white font-black text-xl md:text-2xl uppercase tracking-tighter w-full md:w-1/3 justify-center md:justify-start">
-             <Plane className="w-5 h-5 md:w-6 md:h-6 text-blue-500 rotate-45" /> AIRPORT<span className="text-blue-500">VIP</span>
+           <Link href="/" className="flex items-center w-full md:w-1/3 justify-center md:justify-start">
+             <div className="bg-white px-2.5 py-1.5 rounded-lg shadow-sm">
+               <Image 
+                 src="/footer.jpg" /* Ensure your filename matches */
+                 alt="AeroPark Direct"
+                 width={200}
+                 height={60}
+                 /* Reduced height from h-10/12 down to h-7/9 */
+                 className="h-7 md:h-9 w-auto object-contain" 
+               />
+             </div>
            </Link>
            
            {/* UPDATED: Using Next.js Links pointing to real routes */}
@@ -475,7 +457,7 @@ export default function HomePage() {
            </div>
            
            <div className="text-slate-500/70 font-bold text-[9px] md:text-[10px] uppercase tracking-[0.15em] md:tracking-widest w-full md:w-1/3 text-center md:text-right">
-             © {new Date().getFullYear()} AirportVIP Global
+             © {new Date().getFullYear()} AeroPark Direct
            </div>
            
         </div>
