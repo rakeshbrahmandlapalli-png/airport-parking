@@ -17,7 +17,8 @@ import {
   ChevronDown,
   CheckCircle2,
   Tag,
-  Search
+  Search,
+  Car
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -434,48 +435,60 @@ export default function HomePage() {
       </section>
 
       {/* 4.5 HOW IT WORKS SECTION */}
-      <section id="how-it-works" className="py-24 md:py-32 bg-slate-50 px-6 border-t border-slate-200">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16 md:mb-24">
-            <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4">
-              Seamless Departure in <span className="text-blue-600">3 Steps.</span>
-            </h2>
-            <p className="text-lg text-slate-500 font-medium max-w-xl mx-auto leading-relaxed">
-              Skip the shuttle buses and off-site lots. Experience true VIP convenience at Luton and Heathrow.
-            </p>
-          </div>
+      <section className="py-24 bg-white">
+  <div className="max-w-7xl mx-auto px-6 text-center">
+    {/* Header */}
+    <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4">
+      Seamless Departure in <span className="text-blue-600">3 Steps.</span>
+    </h2>
+    <p className="text-slate-500 font-medium max-w-2xl mx-auto mb-20">
+      
+    </p>
 
-          <div className="relative">
-            <div className="hidden md:block absolute top-12 left-[15%] right-[15%] h-[2px] bg-gradient-to-r from-transparent via-blue-200 to-transparent z-0"></div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8 relative z-10">
-              {[
-                { icon: MapPin, step: "01", title: "Book Online", desc: "Select your departure terminal and travel dates. Receive instant confirmation." },
-                { icon: CarFront, step: "02", title: "Drive to Terminal", desc: "Head directly to the Short Stay car park exactly outside your departure terminal." },
-                { icon: PlaneTakeoff, step: "03", title: "Hand Over Keys", desc: "Meet our insured chauffeur, hand over your keys, and walk to check-in in 2 minutes." }
-              ].map((item, i) => (
-                <div key={i} className="flex flex-col items-center text-center group">
-                  <div className="relative mb-8">
-                    <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    <div className="w-24 h-24 bg-white border border-slate-200 shadow-sm text-blue-600 rounded-full flex items-center justify-center relative transition-transform duration-500 group-hover:-translate-y-2 group-hover:border-blue-500/50">
-                       <item.icon className="w-10 h-10 stroke-[1.5]" />
-                    </div>
-                    <div className="absolute -top-2 -right-2 w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center font-black text-sm text-white shadow-lg border-4 border-[#F8FAFC] group-hover:scale-110 group-hover:bg-blue-600 transition-all">
-                      {item.step}
-                    </div>
-                  </div>
-                  <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight group-hover:text-blue-600 transition-colors">
-                    {item.title}
-                  </h3>
-                  <p className="text-base text-slate-500 font-medium leading-relaxed max-w-[280px]">
-                    {item.desc}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
+    {/* Steps Grid */}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
+      
+      {/* Step 1 */}
+      <div className="relative group">
+        <div className="w-24 h-24 bg-white border-2 border-slate-100 rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl group-hover:border-blue-500 transition-all duration-500 relative z-10">
+          <Search className="w-10 h-10 text-blue-600" />
+          <div className="absolute -top-2 -right-2 w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center text-xs font-black">01</div>
         </div>
-      </section>
+        <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tight">1. Choose</h3>
+        <p className="text-slate-500 font-bold text-sm leading-relaxed max-w-[240px] mx-auto">
+          Tell us your airport, date and time, and we'll do the rest.
+        </p>
+      </div>
+
+      {/* Step 2 */}
+      <div className="relative group">
+        <div className="w-24 h-24 bg-white border-2 border-slate-100 rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl group-hover:border-blue-500 transition-all duration-500 relative z-10">
+          <CreditCard className="w-10 h-10 text-blue-600" />
+          <div className="absolute -top-2 -right-2 w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center text-xs font-black">02</div>
+        </div>
+        <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tight">2. Book</h3>
+        <p className="text-slate-500 font-bold text-sm leading-relaxed max-w-[240px] mx-auto">
+          Choose your preferred option and complete your booking securely in minutes.
+        </p>
+      </div>
+
+      {/* Step 3 */}
+      <div className="relative group">
+        <div className="w-24 h-24 bg-white border-2 border-slate-100 rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl group-hover:border-blue-500 transition-all duration-500 relative z-10">
+          <Car className="w-10 h-10 text-blue-600" />
+          <div className="absolute -top-2 -right-2 w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center text-xs font-black">03</div>
+        </div>
+        <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tight">3. Park</h3>
+        <p className="text-slate-500 font-bold text-sm leading-relaxed max-w-[240px] mx-auto">
+          Arrive at your parking location, follow the instructions, and you’re ready to go.
+        </p>
+      </div>
+
+      {/* Decorative Connector Line (Hidden on mobile) */}
+      <div className="hidden md:block absolute top-12 left-0 w-full h-[2px] bg-slate-100 -z-0"></div>
+    </div>
+  </div>
+</section>
 
       {/* 6. FOOTER */}
       <footer className="bg-[#0B1121] py-10 md:py-14 px-6 border-t border-white/5">

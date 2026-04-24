@@ -189,7 +189,7 @@ export default function ManageBooking() {
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 text-blue-600">Reference Number</label>
                 <input 
                   type="text" 
-                  placeholder="APV-XXXXXX" 
+                  placeholder="APD-XXXXXX" 
                   className="w-full p-5 bg-slate-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900 border border-transparent focus:bg-white shadow-inner uppercase"
                   value={ref}
                   onChange={(e) => setRef(e.target.value.toUpperCase())}

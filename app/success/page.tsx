@@ -19,7 +19,7 @@ import {
 
 function SuccessContent() {
   const searchParams = useSearchParams();
-  const bookingId = searchParams.get("ref") || "APV-PENDING";
+  const bookingId = searchParams.get("ref") || "APD-PENDING";
 
   // --- STATE FOR DB FETCH ---
   const [booking, setBooking] = useState<any>(null);
@@ -28,7 +28,7 @@ function SuccessContent() {
   // --- FETCH BOOKING DETAILS ---
   useEffect(() => {
     const fetchBooking = async () => {
-      if (bookingId === "APV-PENDING") {
+      if (bookingId === "APD-PENDING") {
         setIsLoading(false);
         return;
       }
