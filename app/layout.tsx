@@ -4,8 +4,8 @@ import { Analytics } from "@vercel/analytics/next";
 import Chatbot from "@/components/Chatbot";
 
 export const metadata: Metadata = {
-  title: "Airport VIP Parking | Premium Meet & Greet",
-  description: "Luton and Heathrow's elite Meet & Greet service. Drive directly to the terminal.",
+  title: "AeroPark Direct",
+  description: "Your direct route to stress free travel at Luton and Heathrow.",
 };
 
 export default function RootLayout({

@@ -36,7 +36,7 @@ export default function ContactPage() {
               </div>
               <div>
                 <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Email Support</p>
-                <p className="text-xl font-black text-slate-900">support@airportvip.com</p>
+                <p className="text-xl font-black text-slate-900">support@aeroparkdirect.com</p>
               </div>
             </div>
           </div>

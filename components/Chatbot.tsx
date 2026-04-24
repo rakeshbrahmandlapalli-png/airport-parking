@@ -40,7 +40,7 @@ export default function Chatbot() {
           <div className="bg-slate-900 p-4 flex items-center justify-between text-white">
             <div className="flex items-center gap-2">
               <Plane className="w-5 h-5 text-blue-400 rotate-45" />
-              <span className="font-bold text-xs uppercase tracking-widest">VIP Assistant</span>
+              <span className="font-bold text-xs uppercase tracking-widest">AEROPARK SUPPORT</span>
             </div>
             <button onClick={() => setIsOpen(false)}><X /></button>
           </div>

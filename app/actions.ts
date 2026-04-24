@@ -78,7 +78,7 @@ export async function createCheckoutSession(formData: FormData) {
           price_data: {
             currency: "gbp",
             product_data: {
-              name: `AIRPORT VIP: ${parkingType.toUpperCase()} PARKING`,
+              name: `AeroPark Direct: ${parkingType.toUpperCase()} PARKING`,
               description: `Flight: ${flightNumber} | License: ${licensePlate} | Ref: ${tempRef}`,
             },
             unit_amount: Math.round(totalPrice * 100),

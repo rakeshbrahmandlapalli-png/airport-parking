@@ -80,7 +80,7 @@ export default function AdminLogin() {
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
               <input 
                 type="email" 
-                placeholder="dispatch@airportvip.com" 
+                placeholder="dispatch@aeroparkdirect.com" 
                 required 
                 className="w-full pl-12 pr-4 py-4 bg-slate-950 border border-slate-800 rounded-2xl font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all placeholder:text-slate-600" 
                 value={email} 

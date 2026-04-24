@@ -23,7 +23,7 @@ export default function TermsPage() {
           
           <section>
             <h2 className="text-2xl text-slate-900 mb-4">1. Luton & Heathrow Meet & Greet Protocol</h2>
-            <p>Our Meet & Greet service requires you to call our operations team 20 minutes prior to arriving at your designated terminal. For <strong>London Luton Airport (LTN)</strong>, the handover takes place in the designated zones within the Short Stay Car Park (Terminal 1). AirportVIP covers the cost of terminal entry and exit fees within your booking price, provided you arrive within your scheduled window.</p>
+            <p>Our Meet & Greet service requires you to call our operations team 20 minutes prior to arriving at your designated terminal. For <strong>London Luton Airport (LTN)</strong>, the handover takes place in the designated zones within the Short Stay Car Park (Terminal 1). AeroPark Direct covers the cost of terminal entry and exit fees within your booking price, provided you arrive within your scheduled window.</p>
           </section>
 
           <section>

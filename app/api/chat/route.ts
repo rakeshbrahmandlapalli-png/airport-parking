@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     const result = await streamText({
       model: openai('gpt-4o-mini'),
       messages: messages, // Passes the full history so the bot has memory
-      system: `You are the exclusive AI assistant for Airport VIP, a premium Meet & Greet parking service for London Luton (LTN) and Heathrow (LHR). 
+      system: `You are the exclusive AI assistant for AeroPark Direct, a premium Meet & Greet parking service for London Luton (LTN) and Heathrow (LHR). 
       Be brief, highly professional, polite, and helpful. 
       Key info: No shuttle buses, direct terminal access, 24/7 secure compound, price match guarantee.`,
     });

@@ -194,7 +194,7 @@ export default function ServicesPage() {
            <div className="text-slate-500 font-bold text-[10px] uppercase tracking-widest flex items-center gap-6">
              <Link href="/services" className="hover:text-white transition-colors">Services</Link>
              <Link href="/manage" className="hover:text-white transition-colors">Manage Booking</Link>
-             <span>© {new Date().getFullYear()} AirportVIP</span>
+             <span>© {new Date().getFullYear()} AeroPark Direct</span>
            </div>
         </div>
       </footer>

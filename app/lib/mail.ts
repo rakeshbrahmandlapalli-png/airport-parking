@@ -25,7 +25,7 @@ export const sendBookingReceipt = async (
       : `Call the operator exactly 20 minutes before you arrive at the <strong>Luton terminal (Car Park 1)</strong> to ensure a priority handover.`;
 
     const { data, error } = await resend.emails.send({
-      from: 'Airport VIP Parking <onboarding@resend.dev>', // Update this to your verified domain later (e.g., bookings@airportvip.com)
+      from: 'AeroPark Direct Parking <onboarding@resend.dev>', // Update this to your verified domain later (e.g., bookings@aeroparkdirect.com)
       to: [customerEmail.trim().toLowerCase()],
       subject: `✈️ Booking Confirmed: ${bookingRef} [${registration}]`,
       html: `
@@ -98,8 +98,8 @@ export const sendBookingReceipt = async (
             </div>
             
             <div style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 30px; text-align: center;">
-              <p style="margin: 0; font-size: 12px; color: #64748b; font-weight: 800;">© ${new Date().getFullYear()} Airport VIP Parking.</p>
-              <p style="margin: 8px 0 0 0; font-size: 12px; color: #94a3b8; font-weight: 500;">Need help? Contact our 24/7 Concierge: <a href="mailto:support@airportvip.com" style="color: #2563eb; text-decoration: none; font-weight: 700;">support@airportvip.com</a></p>
+              <p style="margin: 0; font-size: 12px; color: #64748b; font-weight: 800;">© ${new Date().getFullYear()} AeroPark Direct Parking.</p>
+              <p style="margin: 8px 0 0 0; font-size: 12px; color: #94a3b8; font-weight: 500;">Need help? Contact our 24/7 Concierge: <a href="mailto:support@aeroparkdirect.com" style="color: #2563eb; text-decoration: none; font-weight: 700;">support@aeroparkdirect.com</a></p>
             </div>
 
           </div>
