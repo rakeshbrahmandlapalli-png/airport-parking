@@ -128,7 +128,7 @@ export default function AdminDashboard() {
             <LayoutDashboard className="w-5 h-5" /> Live Dispatch
           </a>
           <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 hover:text-white rounded-xl font-bold transition-colors">
-            <Car className="w-5 h-5" /> Fleet & Drivers
+            <Car className="w-5 h-5" /> Companies
           </a>
           <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 hover:text-white rounded-xl font-bold transition-colors">
             <CalendarDays className="w-5 h-5" /> Schedule
