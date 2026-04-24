@@ -166,50 +166,64 @@ export default function HomePage() {
         </div>
         
 
-      {/* 2. IMMERSIVE HERO SECTION */}
-      <section className="relative min-h-[100svh] md:min-h-[850px] w-full pt-32 md:pt-40 pb-16 flex flex-col justify-center overflow-hidden bg-slate-950">
+     {/* 2. IMMERSIVE HERO SECTION */}
+      <section className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-slate-950 py-20">
+        {/* Enhanced Background with Dual Gradients */}
         <div className="absolute inset-0 z-0 overflow-hidden">
-          <div className={`absolute inset-0 bg-cover bg-center transition-all duration-[3000ms] ease-out origin-center ${isLoaded ? 'scale-105 opacity-100 blur-0' : 'scale-150 opacity-0 blur-3xl'}`} style={{ backgroundImage: "url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format&fit=crop')" }}></div>
-          <div className={`absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900/80 to-transparent transition-opacity duration-[2500ms] ${isLoaded ? 'opacity-100' : 'opacity-0'}`}></div>
+          <div className={`absolute inset-0 bg-cover bg-center transition-all duration-[3000ms] ease-out origin-center ${isLoaded ? 'scale-105 opacity-100' : 'scale-150 opacity-0'}`} style={{ backgroundImage: "url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format&fit=crop')" }}></div>
+          {/* Dark overlay on the left for text readability, clear on the right for the plane */}
+          <div className={`absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900/60 to-transparent transition-opacity duration-[2500ms] ${isLoaded ? 'opacity-100' : 'opacity-0'}`}></div>
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
         </div>
 
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-5 md:px-6 grid grid-cols-1 lg:grid-cols-12 gap-10 md:gap-12">
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
-          {/* Hero Text */}
-          <div className="lg:col-span-5 flex flex-col text-left">
-            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-md w-fit mb-6 md:mb-8 transition-all duration-1000 delay-200 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+          {/* Hero Text - Wider 7-column span */}
+          <div className={`lg:col-span-7 flex flex-col justify-center transition-all duration-1000 delay-300 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-md w-fit mb-8">
               <span className="flex h-2 w-2 rounded-full bg-blue-400 animate-pulse"></span>
               <span className="text-white text-[10px] font-black uppercase tracking-widest">Premium Terminal Drop-off</span>
             </div>
-            <h1 className={`text-5xl md:text-[5rem] font-black text-white tracking-tighter mb-4 md:mb-6 leading-[1.05] transition-all duration-1000 delay-300 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-              Redefine your <br className="hidden lg:block" /><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600">Departure.</span>
+
+            <h1 className="text-5xl md:text-7xl font-bold text-white mb-8 leading-[1.1] tracking-tight">
+              Redefine your <br />
+              <span className="text-blue-500">Departure.</span>
             </h1>
-            <p className={`text-lg md:text-xl text-slate-300 mb-6 md:mb-10 max-w-xl font-medium leading-relaxed transition-all duration-1000 delay-500 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-              Luton and Heathrow's elite Meet & Greet service. Leave the keys with us, and step straight into the terminal.
-            </p>
+
+            <div className="space-y-6 max-w-xl">
+              <p className="text-xl text-white leading-relaxed font-semibold opacity-90">
+                Parking should be simple, secure, and completely stress-free. We connect you with trusted providers, ensuring your vehicle is in safe hands while you travel.
+              </p>
+              
+              <p className="text-lg text-gray-300 leading-relaxed font-light">
+                Whether planning in advance or booking last minute, find the 
+                right parking option tailored to your journey—quick, clear, and reliable.
+              </p>
+
+              <div className="flex items-center gap-4 pt-6 border-t border-white/10">
+                <p className="text-blue-400 font-bold tracking-widest uppercase text-xs">
+                  Reliable • Secure • Simple
+                </p>
+              </div>
+            </div>
           </div>
 
-          {/* Hero Form */}
-          <div className={`lg:col-span-7 transition-all duration-1000 delay-700 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
-            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] p-5 md:p-8 shadow-2xl relative overflow-hidden">
+          {/* Booking Form - Compact 5-column span */}
+          <div className={`lg:col-span-5 flex justify-center lg:justify-end transition-all duration-1000 delay-700 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
+            <div className="w-full max-w-[480px] bg-white/10 backdrop-blur-2xl border border-white/20 rounded-[2.5rem] p-6 md:p-8 shadow-2xl relative overflow-hidden">
+              {/* Internal Glow Effect */}
               <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/20 rounded-full blur-[80px] pointer-events-none"></div>
               
-              <form action="/results" method="GET" onSubmit={handleSearch} className="relative z-10 flex flex-col gap-4 md:gap-6">
+              <form action="/results" method="GET" onSubmit={handleSearch} className="relative z-10 flex flex-col gap-5">
                 
                 {/* Airport Selector */}
-                <div className="bg-white/5 border border-white/10 rounded-xl md:rounded-2xl p-4 group/input relative">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 group/input transition-colors hover:bg-white/10">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2 text-blue-300">
-                      <MapPin className="w-4 h-4" />
-                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-300">Select Departure Airport</label>
-                    </div>
-                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-[9px] font-black uppercase tracking-wider animate-pulse">
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span> Limited Spots
-                    </div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-300">Select Departure Airport</label>
+                    <div className="px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-[9px] font-black uppercase tracking-wider animate-pulse">Limited Spots</div>
                   </div>
                   <div className="relative">
-                    <select name="airport" value={airport} onChange={(e) => setAirport(e.target.value)} className="w-full bg-transparent font-black text-white text-xl md:text-2xl outline-none cursor-pointer appearance-none">
+                    <select name="airport" value={airport} onChange={(e) => setAirport(e.target.value)} className="w-full bg-transparent font-black text-white text-xl md:text-2xl outline-none cursor-pointer appearance-none relative z-10">
                       <option value="Luton (LTN)" className="text-slate-900">Luton Airport (LTN)</option>
                       <option value="Heathrow (LHR)" className="text-slate-900">Heathrow Airport (LHR)</option>
                     </select>
@@ -217,57 +231,50 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* Date & Time Inputs */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                  
-                  <div className="bg-white/5 border border-white/10 rounded-xl md:rounded-2xl p-4">
+                {/* Date & Time Stacks */}
+                <div className="space-y-4">
+                  {/* Drop-off Card */}
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 transition-all focus-within:border-blue-500/50">
                     <div className="flex items-center gap-2 mb-3 text-blue-300">
                       <PlaneTakeoff className="w-4 h-4" />
                       <label className="text-[10px] font-black uppercase tracking-widest text-slate-300">Drop-off</label>
                     </div>
-                    <div className="flex gap-2 h-12 md:h-14">
-                      <input 
-                        type="date" name="dropoffDate" min={todayStr} value={dropoffDate} onChange={(e) => setDropoffDate(e.target.value)} 
-                        className="w-full bg-white border border-slate-200 rounded-lg md:rounded-xl pl-3 pr-1 py-2 font-bold text-[13px] md:text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
-                      />
-                      <input 
-                        type="time" name="dropoffTime" value={dropoffTime} onChange={(e) => setDropoffTime(e.target.value)} 
-                        className="w-full bg-white border border-slate-200 rounded-lg md:rounded-xl pl-3 pr-1 py-2 font-bold text-[13px] md:text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
-                      />
+                    <div className="flex gap-2 h-11">
+                      <input type="date" name="dropoffDate" min={todayStr} value={dropoffDate} onChange={(e) => setDropoffDate(e.target.value)} className="w-full bg-white text-slate-900 rounded-xl px-3 font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                      <input type="time" name="dropoffTime" value={dropoffTime} onChange={(e) => setDropoffTime(e.target.value)} className="w-32 bg-white text-slate-900 rounded-xl px-2 font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" />
                     </div>
                   </div>
 
-                  <div className="bg-white/5 border border-white/10 rounded-xl md:rounded-2xl p-4">
+                  {/* Pick-up Card */}
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 transition-all focus-within:border-blue-500/50">
                     <div className="flex items-center gap-2 mb-3 text-blue-300">
                       <Calendar className="w-4 h-4" />
                       <label className="text-[10px] font-black uppercase tracking-widest text-slate-300">Pick-up</label>
                     </div>
-                    <div className="flex gap-2 h-12 md:h-14">
-                      <input 
-                        type="date" name="pickupDate" min={dropoffDate || todayStr} value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} 
-                        className="w-full bg-white border border-slate-200 rounded-lg md:rounded-xl pl-3 pr-1 py-2 font-bold text-[13px] md:text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
-                      />
-                      <input 
-                        type="time" name="pickupTime" value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} 
-                        className="w-full bg-white border border-slate-200 rounded-lg md:rounded-xl pl-3 pr-1 py-2 font-bold text-[13px] md:text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" 
-                      />
+                    <div className="flex gap-2 h-11">
+                      <input type="date" name="pickupDate" min={dropoffDate || todayStr} value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="w-full bg-white text-slate-900 rounded-xl px-3 font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                      <input type="time" name="pickupTime" value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} className="w-32 bg-white text-slate-900 rounded-xl px-2 font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" />
                     </div>
                   </div>
-                  
                 </div>
 
-                <button type="submit" className="w-full h-14 md:h-16 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl md:rounded-2xl shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 uppercase text-xs md:text-sm tracking-widest mt-2">
-                  Secure My Parking <Search className="w-4 h-4 md:w-5 md:h-5" />
+                <button type="submit" className="w-full h-14 md:h-16 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl shadow-xl shadow-blue-600/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 uppercase text-sm tracking-widest mt-2">
+                  Secure My Parking <Search className="w-5 h-5" />
                 </button>
               </form>
             </div>
             
-            <button onClick={() => setIsMapOpen(true)} className="mt-6 flex items-center gap-2 text-slate-400 font-bold text-xs hover:text-white transition-colors w-full justify-center md:justify-start">
-              <Info className="w-4 h-4" /> View official meeting points for LTN & LHR
+            {/* Contextual Link */}
+            <button onClick={() => setIsMapOpen(true)} className="absolute -bottom-12 flex items-center gap-2 text-slate-400 font-bold text-xs hover:text-white transition-colors w-full justify-center lg:justify-end pr-4">
+              <Info className="w-4 h-4" /> .
             </button>
           </div>
+
         </div>
       </section>
+<section className="hidden relative z-20 -mt-12 px-6"> 
+  {/* The rest of the code remains but won't show on screen      will use later */}
+
       {/* 2.5 LIVE AVAILABILITY SECTION */}
       <section className="relative z-20 bg-slate-950 px-6 pb-20 pt-4">
         <div className="max-w-7xl mx-auto">
@@ -305,6 +312,7 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+      </section>
       </section>
 
       {/* 3. CORE BENEFITS BANNER */}
@@ -347,42 +355,79 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* 4. THE BENTO BOX - POLISHED MOBILE LAYOUT */}
+      {/* 4. THE BENTO BOX - REFINED GRID */}
       <section id="services" className="py-24 px-6 bg-white">
         <div className="max-w-7xl mx-auto">
+          {/* Header Section */}
           <div className="mb-16">
-            <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4 uppercase">The Standard of <span className="text-blue-600">Excellence.</span></h2>
-            <p className="text-lg text-slate-500 font-medium max-w-xl leading-relaxed">We eliminated shuttle buses. Experience airport parking designed around your schedule.</p>
+            <h2 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter mb-6 uppercase">
+              The Standard of <br />
+              <span className="text-blue-600">Excellence.</span>
+            </h2>
+            <p className="text-lg text-slate-500 font-medium max-w-xl leading-relaxed border-l-4 border-blue-600 pl-6">
+              We eliminated shuttle buses. Experience airport parking designed around your schedule, not ours.
+            </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:auto-rows-[320px]">
-            {/* Large Card */}
-            <div className="md:col-span-2 md:row-span-2 bg-slate-50 rounded-[2.5rem] p-8 md:p-12 border border-slate-200 relative overflow-hidden flex flex-col justify-between min-h-[400px] md:min-h-0">
-              <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-100/40 via-transparent to-transparent pointer-events-none"></div>
+
+          {/* Grid Container */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            {/* Primary Large Card - 2/3 of the width */}
+            <div className="md:col-span-2 bg-slate-50 rounded-[3rem] p-8 md:p-14 border border-slate-100 relative overflow-hidden flex flex-col justify-between min-h-[500px]">
+              {/* Subtle Ambient Glow */}
+              <div className="absolute top-0 right-0 w-96 h-96 bg-blue-100/40 rounded-full blur-[100px] -mr-20 -mt-20 pointer-events-none"></div>
+              
               <div className="relative z-10">
-                <div className="w-16 h-16 md:w-20 md:h-20 bg-blue-600 rounded-3xl flex items-center justify-center shadow-xl shadow-blue-200 mb-8 text-white"><Clock className="w-8 h-8 md:w-10 md:h-10" /></div>
-                <h3 className="text-3xl md:text-4xl font-black text-slate-900 mb-6 tracking-tight leading-tight">Zero Wait Time. <br/>Direct Access.</h3>
-                <p className="text-slate-500 font-medium text-lg md:text-xl leading-relaxed max-w-lg">Hand your keys to our vetted chauffeurs exactly at terminal check-in. Walk 2 minutes to the gate. It's that simple.</p>
+                <div className="w-16 h-16 md:w-20 md:h-20 bg-blue-600 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-blue-500/20 mb-10 text-white">
+                  <Clock className="w-8 h-8 md:w-10 md:h-10" />
+                </div>
+                <h3 className="text-4xl md:text-5xl font-black text-slate-900 mb-8 tracking-tight leading-none">
+                  Zero Wait Time. <br/>Direct Access.
+                </h3>
+                <p className="text-slate-500 font-semibold text-lg md:text-xl leading-relaxed max-w-lg">
+                  Hand your keys to our vetted chauffeurs exactly at terminal check-in. 
+                  Walk 2 minutes to the gate. It's that simple.
+                </p>
+              </div>
+              
+              {/* Action Badge */}
+              <div className="relative z-10 mt-10">
+                <span className="px-5 py-2 bg-white border border-slate-200 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  Terminal 2, 3, 4, 5 & LTN
+                </span>
               </div>
             </div>
-            {/* Small Card 1 */}
-            <div className="bg-[#0F172A] rounded-[2.5rem] p-8 md:p-10 flex flex-col justify-between min-h-[280px] md:min-h-0">
-              <ShieldCheck className="w-12 h-12 text-blue-400" />
-              <div>
-                <h3 className="text-2xl font-black text-white mb-3 uppercase tracking-tight">24/7 Security</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">Your vehicle is moved to a private compound with HD CCTV and manned regular patrols.</p>
+
+            {/* Right Column - Stacked Small Cards */}
+            <div className="md:col-span-1 flex flex-col gap-6">
+              
+              {/* Security Card */}
+              <div className="flex-1 bg-[#0F172A] rounded-[3rem] p-8 md:p-10 flex flex-col justify-between group overflow-hidden relative">
+                <div className="absolute bottom-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all duration-500"></div>
+                <ShieldCheck className="w-14 h-14 text-blue-400 mb-8" />
+                <div>
+                  <h3 className="text-2xl font-black text-white mb-4 uppercase tracking-tight">24/7 Security</h3>
+                  <p className="text-slate-400 text-sm font-medium leading-relaxed">
+                    Your vehicle is moved to a private compound with HD CCTV and manned regular patrols.
+                  </p>
+                </div>
               </div>
-            </div>
-            {/* Small Card 2 */}
-            <div className="bg-white rounded-[2.5rem] p-8 md:p-10 border border-slate-200 shadow-sm flex flex-col justify-between min-h-[280px] md:min-h-0">
-              <CreditCard className="w-12 h-12 text-slate-900" />
-              <div>
-                <h3 className="text-2xl font-black text-slate-900 mb-4 uppercase tracking-tight">Pricing</h3>
-                <ul className="space-y-3">
-                   {["Price match guarantee", "No hidden drop-off fees"].map((item, idx) => (
-                     <li key={idx} className="flex items-center gap-3 text-sm text-slate-600 font-bold"><CheckCircle2 className="w-4 h-4 text-blue-500 shrink-0" /> {item}</li>
-                   ))}
-                </ul>
+
+              {/* Pricing Card */}
+              <div className="flex-1 bg-white rounded-[3rem] p-8 md:p-10 border border-slate-200 shadow-sm flex flex-col justify-between group hover:border-blue-600 transition-colors duration-300">
+                <CreditCard className="w-14 h-14 text-slate-900 group-hover:scale-110 transition-transform duration-300" />
+                <div>
+                  <h3 className="text-2xl font-black text-slate-900 mb-6 uppercase tracking-tight">Pricing</h3>
+                  <ul className="space-y-4">
+                    {["Price match guarantee", "No hidden drop-off fees"].map((item, idx) => (
+                      <li key={idx} className="flex items-center gap-3 text-xs text-slate-600 font-black uppercase tracking-wider">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
+
             </div>
           </div>
         </div>

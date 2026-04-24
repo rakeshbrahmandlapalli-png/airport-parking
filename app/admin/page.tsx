@@ -21,7 +21,8 @@ import {
   LayoutDashboard,
   CalendarDays,
   PoundSterling,
-  Calendar
+  Calendar,
+  Plus
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -155,24 +156,29 @@ export default function AdminDashboard() {
         </div>
 
         {/* PAGE HEADER */}
-        <header className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 mb-8">
+        {/* PAGE HEADER - REFIXED ALIGNMENT */}
+        <header className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-10">
           <div>
             <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Command Center</h1>
             <p className="text-slate-500 font-bold text-sm mt-1">Manage live bookings and driver dispatch.</p>
           </div>
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
-            <div className="relative w-full sm:w-72">
-              <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+          
+          <div className="flex flex-row items-center gap-4">
+            {/* Search Input with forced padding */}
+            <div className="relative flex-grow sm:w-80 group">
+              <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none group-focus-within:text-blue-500 transition-colors" />
               <input 
-                type="text" 
-                placeholder="Search ref, name, or plate..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
-              />
-            </div>
-            <button className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-500/30 hover:bg-blue-500 transition-all flex items-center justify-center gap-2">
-              + Manual Add
+  type="text" 
+  placeholder="Search ref, name, or plate..." 
+  value={searchTerm}
+  onChange={(e) => setSearchTerm(e.target.value)}
+  className="w-full !pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm"
+/>
+</div>
+            
+            {/* Manual Add Button matching input height */}
+            <button className="whitespace-nowrap px-6 py-3.5 bg-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-500/30 hover:bg-blue-500 transition-all flex items-center gap-2 active:scale-95">
+              <Plus className="w-4 h-4" /> Manual Add
             </button>
           </div>
         </header>

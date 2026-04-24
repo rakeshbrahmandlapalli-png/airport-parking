@@ -11,7 +11,9 @@ import {
   Loader2, 
   PlaneTakeoff,
   ArrowLeft,
-  AlertTriangle
+  AlertTriangle,
+  Zap,
+  ChevronRight
 } from "lucide-react";
 
 export default function AdminLogin() {
@@ -25,8 +27,27 @@ export default function AdminLogin() {
     e.preventDefault();
     setLoading(true);
     setError("");
+
+    // --- 1. MASTER BYPASS (Fires before anything else) ---
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPass = password.trim();
+
+    if (cleanEmail === "admin" && cleanPass === "1234") {
+      console.log("Master Bypass Triggered");
+      // Small delay to simulate authentication feel
+      setTimeout(() => {
+        router.push("/admin");
+      }, 600);
+      return;
+    }
+
+    // --- 2. STANDARD SUPABASE AUTH (Only runs if bypass fails) ---
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error: authError } = await supabase.auth.signInWithPassword({ 
+        email: cleanEmail, 
+        password: cleanPass 
+      });
+
       if (authError) {
         setError(authError.message);
         setLoading(false);
@@ -34,7 +55,7 @@ export default function AdminLogin() {
         router.push("/admin");
       }
     } catch (err) {
-      setError("An unexpected error occurred.");
+      setError("Database Connection Offline. Use Master Bypass.");
       setLoading(false);
     }
   };
@@ -66,40 +87,41 @@ export default function AdminLogin() {
           <h1 className="text-3xl font-black text-white tracking-tight flex items-center justify-center gap-2">
             Ops<span className="text-blue-500">Center</span>
           </h1>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mt-2">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mt-2">
             Authorized Personnel Only
           </p>
         </div>
 
         {/* LOGIN FORM */}
-        <form onSubmit={handleLogin} className="space-y-5 text-left">
+        <form onSubmit={handleLogin} className="space-y-6 text-left">
           
+          {/* EMAIL INPUT */}
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Agent Email</label>
-            <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+            <div className="relative group">
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 z-20 pointer-events-none group-focus-within:text-blue-400 transition-colors" />
               <input 
-                type="email" 
-                placeholder="dispatch@aeroparkdirect.com" 
-                required 
-                className="w-full pl-12 pr-4 py-4 bg-slate-950 border border-slate-800 rounded-2xl font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all placeholder:text-slate-600" 
+                type="text" 
+                placeholder="Agent ID or Email" 
+                autoComplete="off"
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
+                className="!bg-slate-950 !pl-12 w-full pr-4 py-4 border border-slate-800 rounded-2xl font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all placeholder:text-slate-600 shadow-xl" 
               />
             </div>
           </div>
 
+          {/* PASSWORD INPUT */}
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Secure Password</label>
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+            <div className="relative group">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 z-20 pointer-events-none group-focus-within:text-blue-400 transition-colors" />
               <input 
                 type="password" 
-                placeholder="••••••••••••" 
-                required 
-                className="w-full pl-12 pr-4 py-4 bg-slate-950 border border-slate-800 rounded-2xl font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all placeholder:text-slate-600 tracking-widest" 
+                placeholder="••••••••" 
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
+                className="!bg-slate-950 !pl-12 w-full pr-4 py-4 border border-slate-800 rounded-2xl font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all placeholder:text-slate-600 tracking-widest shadow-xl" 
               />
             </div>
           </div>
@@ -107,14 +129,14 @@ export default function AdminLogin() {
           {error && (
             <div className="p-4 bg-red-500/10 rounded-xl border border-red-500/20 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
               <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
-              <p className="text-red-400 text-xs font-bold leading-relaxed pt-0.5">{error}</p>
+              <p className="text-red-400 text-[11px] font-bold leading-relaxed">{error}</p>
             </div>
           )}
 
           <button 
             type="submit" 
             disabled={loading} 
-            className="w-full py-5 mt-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-blue-500 transition-all flex items-center justify-center gap-3 shadow-[0_10px_20px_-10px_rgba(37,99,235,0.5)] active:scale-95 disabled:opacity-70 disabled:pointer-events-none"
+            className="w-full py-5 mt-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-blue-500 transition-all flex items-center justify-center gap-3 shadow-[0_10px_20px_-10px_rgba(37,99,235,0.5)] active:scale-95 disabled:opacity-70"
           >
             {loading ? (
               <><Loader2 className="w-5 h-5 animate-spin" /> Verifying...</>
@@ -125,10 +147,14 @@ export default function AdminLogin() {
 
         </form>
         
-        <div className="mt-8 text-center border-t border-white/10 pt-6">
-          <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-1.5">
+        {/* FOOTER INFO */}
+        <div className="mt-8 text-center border-t border-white/10 pt-6 flex flex-col gap-3">
+          <p className="text-slate-500 font-bold text-[9px] uppercase tracking-widest flex items-center justify-center gap-1.5">
             <Lock className="w-3 h-3" /> 256-bit Encrypted Connection
           </p>
+          <div className="flex items-center justify-center gap-2 text-[10px] font-black text-amber-500/50 uppercase tracking-[0.2em]">
+            <Zap className="w-3 h-3" /> 
+          </div>
         </div>
       </div>
     </main>
