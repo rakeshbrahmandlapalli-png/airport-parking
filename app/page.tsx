@@ -1,5 +1,5 @@
 "use client";
-
+import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { 
   User, 
@@ -25,6 +25,7 @@ import Image from "next/image";
 import MapModal from "@/components/MapModal";
 
 export default function HomePage() {
+  const router = useRouter();
   const [now, setNow] = useState(new Date());
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
@@ -53,29 +54,35 @@ export default function HomePage() {
   const todayStr = now.toISOString().split("T")[0];
   const currentTimeStr = now.toTimeString().slice(0, 5);
 
-  const handleSearch = (e: React.FormEvent) => {
+ const handleSearch = (e: React.FormEvent) => {
+    // 1. Stop the default form submission so Next.js can handle it smoothly
+    e.preventDefault();
+
+    // 2. Run your time validation
     if (dropoffDate === todayStr && dropoffTime < currentTimeStr) {
-      e.preventDefault();
       alert("Drop-off time cannot be in the past!");
       return;
     }
     const start = new Date(`${dropoffDate}T${dropoffTime}`);
     const end = new Date(`${pickupDate}T${pickupTime}`);
     if (end <= start) {
-      e.preventDefault();
       alert("Pick-up time must be after your Drop-off time!");
       return;
     }
+
+    // 3. Build the URL and push to the new page
+    const query = new URLSearchParams({
+      airport,
+      dropoffDate,
+      dropoffTime,
+      pickupDate,
+      pickupTime
+    }).toString();
+
+    router.push(`/select-service?${query}`);
   };
-
-  useEffect(() => {
-    if (isMenuOpen || isMapOpen) document.body.style.overflow = 'hidden';
-    else document.body.style.overflow = 'unset';
-  }, [isMenuOpen, isMapOpen]);
-
-  return (
+      return (
     <main className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-blue-600 selection:text-white overflow-x-hidden">
-      
       {/* 1. PREMIUM NAVBAR */}
       <nav className={`fixed top-0 w-full z-[100] bg-white/80 backdrop-blur-xl border-b border-slate-200 transition-all duration-1000 ${isLoaded ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
@@ -183,7 +190,7 @@ export default function HomePage() {
           <div className={`lg:col-span-7 flex flex-col justify-center transition-all duration-1000 delay-300 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-md w-fit mb-8">
               <span className="flex h-2 w-2 rounded-full bg-blue-400 animate-pulse"></span>
-              <span className="text-white text-[10px] font-black uppercase tracking-widest">Premium Terminal Drop-off</span>
+              <span className="text-white text-[10px] font-black uppercase tracking-widest">AEROPARK DIRECT</span>
             </div>
 
             <h1 className="text-5xl md:text-7xl font-bold text-white mb-8 leading-[1.1] tracking-tight">

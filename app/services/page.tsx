@@ -24,7 +24,7 @@ export default function ServicesPage() {
       <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-2xl border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-blue-600 font-black tracking-tighter text-xl uppercase z-50 hover:scale-105 transition-transform group">
-            <Plane className="w-6 h-6 rotate-45 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform" /> AIRPORT<span className="text-slate-900">VIP</span>
+            <Plane className="w-6 h-6 rotate-45 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform" /> AEROPARK<span className="text-slate-900">DIRECT</span>
           </Link>
           <div className="flex items-center gap-6">
             <Link href="/" className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-600 transition-colors hidden sm:block">
@@ -189,7 +189,7 @@ export default function ServicesPage() {
       <footer className="bg-slate-950 py-16 px-6 border-t border-slate-900 mt-10">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
            <Link href="/" className="flex items-center gap-2 text-white font-black text-xl uppercase tracking-tighter">
-             <Plane className="w-6 h-6 text-blue-500 rotate-45" /> AIRPORT<span className="text-blue-500">VIP</span>
+             <Plane className="w-6 h-6 text-blue-500 rotate-45" />AeroPark<span className="text-blue-500">DIRECT</span>
            </Link>
            <div className="text-slate-500 font-bold text-[10px] uppercase tracking-widest flex items-center gap-6">
              <Link href="/services" className="hover:text-white transition-colors">Services</Link>

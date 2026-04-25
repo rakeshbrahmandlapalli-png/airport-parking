@@ -10,7 +10,7 @@ export default function TermsPage() {
             <ArrowLeft className="w-4 h-4" /> Back to Home
           </Link>
           <div className="flex items-center gap-2 text-blue-600 font-black tracking-tighter text-xl uppercase">
-            <Plane className="w-5 h-5 rotate-45" /> AIRPORT<span className="text-slate-900">VIP</span>
+            <Plane className="w-5 h-5 rotate-45" /> AEROPARK<span className="text-slate-900">DIRECT</span>
           </div>
         </div>
       </nav>

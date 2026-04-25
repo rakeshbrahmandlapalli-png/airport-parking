@@ -77,7 +77,7 @@ function CheckoutContent() {
     setIsProcessing(true);
     
     try {
-      const shortId = "APV-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+      const shortId = "APD-" + Math.random().toString(36).substring(2, 8).toUpperCase();
       
       // Simulate payment gateway delay before saving to DB
       await new Promise(resolve => setTimeout(resolve, 1500));
@@ -365,7 +365,7 @@ export default function CheckoutPage() {
           </Link>
           
           <Link href="/" className="flex items-center gap-2 text-white font-black tracking-tighter text-xl uppercase absolute left-1/2 -translate-x-1/2">
-            <Plane className="w-6 h-6 text-blue-500 rotate-45" /> AIRPORT<span className="text-blue-500">VIP</span>
+            <Plane className="w-6 h-6 text-blue-500 rotate-45" /> AEROPARK<span className="text-blue-500">DIRECT</span>
           </Link>
 
           <div className="flex items-center gap-2 text-emerald-400">
