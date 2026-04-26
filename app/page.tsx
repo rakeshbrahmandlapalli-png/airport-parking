@@ -180,7 +180,7 @@ export default function HomePage() {
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-12 grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12 items-center mt-6 md:mt-0">
           
           {/* Hero Text */}
-          <div className={`lg:col-span-7 flex flex-col justify-center transition-all duration-1000 delay-300 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+          <div className={`lg:col-span-7 flex flex-col items-center text-center lg:items-start lg:text-left justify-center transition-all duration-1000 delay-300 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-md w-fit mb-6 md:mb-8">
               <span className="flex h-2 w-2 rounded-full bg-blue-400 animate-pulse"></span>
               <span className="text-white text-[9px] md:text-[10px] font-black uppercase tracking-widest">AEROPARK DIRECT</span>
@@ -191,7 +191,7 @@ export default function HomePage() {
               <span className="text-blue-500">Departure.</span>
             </h1>
 
-            <div className="space-y-4 md:space-y-6 max-w-xl">
+            <div className="space-y-4 md:space-y-6 max-w-xl flex flex-col items-center lg:items-start">
               <p className="text-base sm:text-lg md:text-xl text-white leading-relaxed font-semibold opacity-90">
                 Parking should be simple, secure, and completely stress-free. We connect you with trusted providers, ensuring your vehicle is in safe hands while you travel.
               </p>
@@ -201,7 +201,7 @@ export default function HomePage() {
                 right parking option tailored to your journey—quick, clear, and reliable.
               </p>
 
-              <div className="flex items-center gap-4 pt-4 md:pt-6 border-t border-white/10">
+              <div className="flex items-center justify-center lg:justify-start gap-4 pt-4 md:pt-6 border-t border-white/10 w-3/4 lg:w-full">
                 <p className="text-blue-400 font-bold tracking-widest uppercase text-[10px] md:text-xs">
                   Reliable • Secure • Simple
                 </p>
@@ -276,7 +276,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
           
           {/* TEXT SIDE (Left - 5 Columns) */}
-          <div className="lg:col-span-5 space-y-6">
+          <div className="lg:col-span-5 space-y-6 flex flex-col items-center text-center lg:items-start lg:text-left">
             <h2 className="text-5xl md:text-7xl font-black text-slate-900 leading-[0.85] tracking-tighter uppercase">
               Smart <br/>
               <span className="text-blue-600">Vetting.</span>
@@ -364,12 +364,12 @@ export default function HomePage() {
       {/* 4. THE BENTO BOX */}
       <section id="services" className="py-16 md:py-24 px-4 md:px-6 bg-white">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-10 md:mb-16">
+          <div className="mb-10 md:mb-16 flex flex-col items-center text-center lg:items-start lg:text-left">
             <h2 className="text-3xl sm:text-4xl md:text-6xl font-black text-slate-900 tracking-tighter mb-4 md:mb-6 uppercase">
               The Standard of <br />
               <span className="text-blue-600">Excellence.</span>
             </h2>
-            <p className="text-base md:text-lg text-slate-500 font-medium max-w-xl leading-relaxed border-l-4 border-blue-600 pl-4 md:pl-6">
+            <p className="text-base md:text-lg text-slate-500 font-medium max-w-xl leading-relaxed border-t-4 lg:border-t-0 lg:border-l-4 border-blue-600 pt-4 lg:pt-0 pl-0 lg:pl-6">
               From premium Meet & Greet to cost-effective Park & Ride. Find the perfect parking solution tailored to your schedule and budget.
             </p>
           </div>
@@ -380,12 +380,12 @@ export default function HomePage() {
             <div className="lg:col-span-2 bg-slate-50 rounded-[2rem] md:rounded-[3rem] p-6 sm:p-8 md:p-14 border border-slate-100 relative overflow-hidden flex flex-col justify-center min-h-[400px] md:min-h-[500px]">
               <div className="absolute top-0 right-0 w-64 md:w-96 h-64 md:h-96 bg-blue-100/40 rounded-full blur-[80px] md:blur-[100px] -mr-10 md:-mr-20 -mt-10 md:-mt-20 pointer-events-none"></div>
               
-              <div className="relative z-10">
+              <div className="relative z-10 flex flex-col items-center text-center lg:items-start lg:text-left">
                 <div className="w-14 h-14 md:w-20 md:h-20 bg-blue-600 rounded-[1.5rem] md:rounded-[2rem] flex items-center justify-center shadow-xl md:shadow-2xl shadow-blue-500/20 mb-6 md:mb-10 text-white">
                   <Car className="w-6 h-6 md:w-10 md:h-10" />
                 </div>
                 <h3 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 mb-4 md:mb-8 tracking-tight leading-[1.1]">
-                  Compare Trusted <br/>Airport Parking Operators.
+                  Compare Trusted <br className="hidden sm:block"/>Airport Parking Operators.
                 </h3>
                 <p className="text-slate-500 font-semibold text-base sm:text-lg md:text-xl leading-relaxed max-w-lg">
                   We bring the top-rated providers together in one place so you can find the perfect balance of convenience and value for your trip.
@@ -394,7 +394,7 @@ export default function HomePage() {
             </div>
 
             <div className="lg:col-span-1 flex flex-col gap-4 md:gap-6">
-              <div className="flex-1 bg-[#0F172A] rounded-[2rem] md:rounded-[3rem] p-6 md:p-8 flex flex-col justify-between group overflow-hidden relative">
+              <div className="flex-1 bg-[#0F172A] rounded-[2rem] md:rounded-[3rem] p-6 md:p-8 flex flex-col justify-between items-center text-center lg:items-start lg:text-left group overflow-hidden relative">
                 <div className="absolute bottom-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all duration-500"></div>
                 <ShieldCheck className="w-10 h-10 md:w-12 md:h-12 text-blue-400 mb-4 md:mb-6" />
                 <div>
@@ -405,7 +405,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="flex-1 bg-white rounded-[2rem] md:rounded-[3rem] p-6 md:p-8 border border-slate-200 shadow-sm flex flex-col justify-between group hover:border-blue-600 transition-colors duration-300">
+              <div className="flex-1 bg-white rounded-[2rem] md:rounded-[3rem] p-6 md:p-8 border border-slate-200 shadow-sm flex flex-col justify-between items-center text-center lg:items-start lg:text-left group hover:border-blue-600 transition-colors duration-300">
                 <CreditCard className="w-10 h-10 md:w-12 md:h-12 text-slate-900 mb-4 md:mb-6 group-hover:scale-110 transition-transform duration-300" />
                 <div>
                   <h3 className="text-xl md:text-2xl font-black text-slate-900 mb-3 md:mb-4 uppercase tracking-tight">Great Value</h3>
@@ -413,7 +413,7 @@ export default function HomePage() {
                 </div>
               </div>
               
-              <div className="flex-1 bg-slate-50 rounded-[2rem] md:rounded-[3rem] p-6 md:p-8 border border-slate-200 shadow-sm flex flex-col justify-between group hover:border-amber-500 transition-colors duration-300">
+              <div className="flex-1 bg-slate-50 rounded-[2rem] md:rounded-[3rem] p-6 md:p-8 border border-slate-200 shadow-sm flex flex-col justify-between items-center text-center lg:items-start lg:text-left group hover:border-amber-500 transition-colors duration-300">
                 <Star className="w-10 h-10 md:w-12 md:h-12 text-amber-400 mb-4 md:mb-6 group-hover:scale-110 transition-transform duration-300 fill-current" />
                 <div>
                   <h3 className="text-xl md:text-2xl font-black text-slate-900 mb-2 md:mb-3 uppercase tracking-tight">Reliable Trust</h3>
