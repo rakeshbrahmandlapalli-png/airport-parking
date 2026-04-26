@@ -130,7 +130,6 @@ function ServiceSelectionContent() {
             <div 
               key={service.id}
               onClick={() => handleSelect(service.id)}
-              /* 🟢 ADDED: items-center text-center md:items-start md:text-left */
               className="touch-manipulation bg-white rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-500 active:scale-[0.98] lg:hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col items-center text-center md:items-start md:text-left group relative overflow-hidden [-webkit-tap-highlight-color:transparent]"
             >
               {/* Highlight Tag */}
@@ -151,12 +150,11 @@ function ServiceSelectionContent() {
                 {service.description}
               </p>
 
-              {/* Features List */}
+              {/* Features List - 🟢 FIXED: Left Aligned with justify-start and text-left */}
               <ul className="space-y-3 mb-6 md:mb-8 w-full">
                 {service.features.map((feature, idx) => (
-                  /* 🟢 ADDED: justify-center md:justify-start */
-                  <li key={idx} className="flex items-center justify-center md:justify-start gap-3 text-xs font-bold text-slate-700">
-                    <ShieldCheck className="w-4 h-4 text-blue-500 opacity-70 shrink-0" /> 
+                  <li key={idx} className="flex items-start md:items-center justify-start gap-3 text-xs font-bold text-slate-700 text-left">
+                    <ShieldCheck className="w-4 h-4 text-blue-500 opacity-70 shrink-0 mt-0.5 md:mt-0" /> 
                     <span>{feature}</span>
                   </li>
                 ))}
