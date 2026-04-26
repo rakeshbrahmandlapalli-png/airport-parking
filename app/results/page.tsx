@@ -3,9 +3,9 @@
 import { useSearchParams, useRouter } from "next/navigation";
 import { 
   MapPin, Clock, ShieldCheck, ChevronRight, ThumbsUp, ArrowLeft,
-  XCircle, Flame, ChevronDown, Plane, Calendar, Footprints,
-  Check, Star, Ban, Bus, BedDouble, Info, PlaneTakeoff, 
-  PlaneLanding, Map as MapIcon, Navigation, ExternalLink, Loader2,
+  ChevronDown, Plane, Calendar, Footprints,
+  Star, Ban, Bus, BedDouble, Info, PlaneTakeoff, 
+  PlaneLanding, Map as MapIcon, Navigation, Loader2,
   AlertCircle, X
 } from "lucide-react";
 import Link from "next/link";
@@ -267,10 +267,33 @@ function ResultsContent() {
   );
 }
 
+function AirportTitle() {
+  const searchParams = useSearchParams();
+  const airport = searchParams.get("airport") || "Luton (LTN)";
+  const dropDate = searchParams.get("dropoffDate") || "";
+  const pickDate = searchParams.get("pickupDate") || "";
+  
+  const formatShortDate = (dateStr: string) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  };
+
+  const code = airport.includes("Heathrow") ? "LHR" : "LTN";
+  const dateDisplay = dropDate && pickDate ? `${formatShortDate(dropDate)} - ${formatShortDate(pickDate)}` : "Selected";
+
+  return (
+    <div className="flex flex-col items-end">
+      <span className="text-sm md:text-base font-black text-white tracking-widest leading-none mb-0.5 md:mb-1 group-hover:text-blue-400 transition-colors">{code}</span>
+      <span className="text-[7px] md:text-[8px] font-black text-blue-500 uppercase tracking-[0.2em] leading-none">{dateDisplay}</span>
+    </div>
+  );
+}
+
 // ----------------------------------------------------------------------
-// 3. MAIN PAGE WRAPPER
+// 3. MAIN PAGE WRAPPER (WITH MODAL AND SUSPENSE)
 // ----------------------------------------------------------------------
-export default function ResultsPage() {
+function ResultsLayout() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -309,15 +332,11 @@ export default function ResultsPage() {
         
         {/* CLICKABLE SUMMARY */}
         <button onClick={() => setIsEditModalOpen(true)} className="text-right group touch-manipulation cursor-pointer">
-          <Suspense fallback={<div className="h-5 w-10 md:h-6 md:w-12 bg-slate-800 rounded animate-pulse" />}>
-             <AirportTitle />
-          </Suspense>
+          <AirportTitle />
         </button>
       </header>
 
-      <Suspense fallback={<div className="p-24 md:p-40 text-center text-slate-400 font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-xs md:text-sm animate-pulse">Initializing Interface...</div>}>
-        <ResultsContent />
-      </Suspense>
+      <ResultsContent />
 
       {/* MODIFY SEARCH MODAL */}
       {isEditModalOpen && (
@@ -375,25 +394,10 @@ export default function ResultsPage() {
   );
 }
 
-function AirportTitle() {
-  const searchParams = useSearchParams();
-  const airport = searchParams.get("airport") || "Luton (LTN)";
-  const dropDate = searchParams.get("dropoffDate") || "";
-  const pickDate = searchParams.get("pickupDate") || "";
-  
-  const formatShortDate = (dateStr: string) => {
-    if (!dateStr) return "";
-    const d = new Date(dateStr);
-    return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-  };
-
-  const code = airport.includes("Heathrow") ? "LHR" : "LTN";
-  const dateDisplay = dropDate && pickDate ? `${formatShortDate(dropDate)} - ${formatShortDate(pickDate)}` : "Selected";
-
+export default function ResultsPage() {
   return (
-    <div className="flex flex-col items-end">
-      <span className="text-sm md:text-base font-black text-white tracking-widest leading-none mb-0.5 md:mb-1 group-hover:text-blue-400 transition-colors">{code}</span>
-      <span className="text-[7px] md:text-[8px] font-black text-blue-500 uppercase tracking-[0.2em] leading-none">{dateDisplay}</span>
-    </div>
+    <Suspense fallback={<div className="min-h-[100dvh] bg-[#F8FAFC] flex flex-col items-center justify-center font-black text-slate-400 uppercase tracking-[0.2em] text-xs">Initializing Interface...</div>}>
+      <ResultsLayout />
+    </Suspense>
   );
 }
