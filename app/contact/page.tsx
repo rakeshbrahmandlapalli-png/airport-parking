@@ -116,7 +116,7 @@ export default function ContactPage() {
                   </div>
                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Average Wait</span>
                 </div>
-                <p className="text-lg md:text-xl font-black text-white italic tracking-tight">Rapid Response <span className="text-blue-500">&lt; 45m</span></p>
+                <p className="text-lg md:text-xl font-black text-white italic tracking-tight">Rapid Response <span className="text-blue-500">&lt; 2hrs</span></p>
               </div>
             </div>
           </div>
