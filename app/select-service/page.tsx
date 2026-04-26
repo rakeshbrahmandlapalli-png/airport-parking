@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import Link from "next/link";
 import { 
   Car, 
   Bus, 
@@ -9,7 +10,9 @@ import {
   ArrowRight, 
   Clock, 
   ShieldCheck, 
-  MapPin 
+  MapPin,
+  ArrowLeft,
+  Plane
 } from "lucide-react";
 
 function ServiceSelectionContent() {
@@ -22,6 +25,19 @@ function ServiceSelectionContent() {
   const dropoffTime = searchParams.get("dropoffTime") || "";
   const pickupDate = searchParams.get("pickupDate") || "";
   const pickupTime = searchParams.get("pickupTime") || "";
+
+  // Helper to format dates for the top navbar
+  const formatShortDate = (dateStr: string) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  };
+
+  const dateDisplay = dropoffDate && pickupDate 
+    ? `${formatShortDate(dropoffDate)} - ${formatShortDate(pickupDate)}`
+    : "Dates not set";
+
+  const airportCode = airport.includes("Heathrow") ? "LHR" : "LTN";
 
   const handleSelect = (serviceType: string) => {
     const query = new URLSearchParams({
@@ -71,8 +87,29 @@ function ServiceSelectionContent() {
   ];
 
   return (
-    <main suppressHydrationWarning className="min-h-[100dvh] bg-slate-50 pt-24 pb-16 px-4 sm:px-6 font-sans antialiased overflow-x-hidden">
-      <div className="max-w-5xl mx-auto w-full">
+    <main suppressHydrationWarning className="min-h-[100dvh] bg-slate-50 font-sans antialiased overflow-x-hidden pb-16">
+      
+      {/* PREMIUM DARK NAVBAR (Matches Results & Checkout) */}
+      <header className="sticky top-0 z-[100] bg-[#0A101D] border-b border-white/5 h-16 md:h-20 flex items-center px-4 md:px-8 justify-between shadow-2xl backdrop-blur-md">
+        <Link href="/" className="text-slate-400 hover:text-white transition-colors flex items-center gap-2 group touch-manipulation">
+          <ArrowLeft className="w-4 h-4 md:w-5 md:h-5 lg:group-hover:-translate-x-1 transition-transform" /> 
+          <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] hidden md:block">Edit Search</span>
+        </Link>
+        
+        <Link href="/" className="flex items-center gap-1.5 md:gap-2 text-white font-black tracking-tighter text-xl md:text-2xl uppercase absolute left-1/2 -translate-x-1/2 group touch-manipulation">
+          <Plane className="w-5 h-5 md:w-7 md:h-7 text-blue-500 rotate-45 lg:group-hover:scale-110 transition-transform" />AEROPARK<span className="text-blue-500">DIRECT</span>
+        </Link>
+
+        {/* Dynamic Search Summary linking back to home for editing */}
+        <Link href="/" className="text-right group touch-manipulation">
+           <div className="flex flex-col items-end">
+              <span className="text-sm md:text-base font-black text-white tracking-widest leading-none mb-0.5 md:mb-1 group-hover:text-blue-400 transition-colors">{airportCode}</span>
+              <span className="text-[7px] md:text-[8px] font-black text-blue-500 uppercase tracking-[0.2em] leading-none">{dateDisplay}</span>
+           </div>
+        </Link>
+      </header>
+
+      <div className="max-w-5xl mx-auto w-full pt-12 md:pt-16 px-4 sm:px-6">
         
         {/* Header Section */}
         <div className="text-center mb-10 md:mb-16">
@@ -93,7 +130,8 @@ function ServiceSelectionContent() {
             <div 
               key={service.id}
               onClick={() => handleSelect(service.id)}
-              className="touch-manipulation bg-white rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-500 active:scale-[0.98] lg:hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col group relative overflow-hidden [-webkit-tap-highlight-color:transparent]"
+              /* 🟢 ADDED: items-center text-center md:items-start md:text-left */
+              className="touch-manipulation bg-white rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-500 active:scale-[0.98] lg:hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col items-center text-center md:items-start md:text-left group relative overflow-hidden [-webkit-tap-highlight-color:transparent]"
             >
               {/* Highlight Tag */}
               <div className={`absolute top-5 right-5 md:top-6 md:right-6 px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest ${service.tagColor}`}>
@@ -114,17 +152,18 @@ function ServiceSelectionContent() {
               </p>
 
               {/* Features List */}
-              <ul className="space-y-3 mb-6 md:mb-8">
+              <ul className="space-y-3 mb-6 md:mb-8 w-full">
                 {service.features.map((feature, idx) => (
-                  <li key={idx} className="flex items-start md:items-center gap-3 text-xs font-bold text-slate-700">
-                    <ShieldCheck className="w-4 h-4 text-blue-500 opacity-70 shrink-0 mt-0.5 md:mt-0" /> 
+                  /* 🟢 ADDED: justify-center md:justify-start */
+                  <li key={idx} className="flex items-center justify-center md:justify-start gap-3 text-xs font-bold text-slate-700">
+                    <ShieldCheck className="w-4 h-4 text-blue-500 opacity-70 shrink-0" /> 
                     <span>{feature}</span>
                   </li>
                 ))}
               </ul>
 
               {/* Footer / Action */}
-              <div className="pt-5 md:pt-6 border-t border-slate-100 flex items-center justify-between mt-auto">
+              <div className="w-full pt-5 md:pt-6 border-t border-slate-100 flex items-center justify-between mt-auto">
                 <div className="flex items-center gap-1.5 md:gap-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">
                   <Clock className="w-3.5 h-3.5 shrink-0" /> {service.time}
                 </div>
