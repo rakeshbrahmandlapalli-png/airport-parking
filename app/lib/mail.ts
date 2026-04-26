@@ -25,7 +25,8 @@ export const sendBookingReceipt = async (
       : `Call the operator exactly 20 minutes before you arrive at the <strong>Luton terminal (Car Park 1)</strong> to ensure a priority handover.`;
 
     const { data, error } = await resend.emails.send({
-      from: 'AeroPark Direct Parking <onboarding@resend.dev>', // Update this to your verified domain later (e.g., bookings@airportvip.com)
+      // 🔥 UPDATED: Now using your real, verified domain
+      from: 'AeroPark Direct <info@aeroparkdirect.co.uk>', 
       to: [customerEmail.trim().toLowerCase()],
       subject: `✈️ Booking Confirmed: ${bookingRef} [${registration}]`,
       html: `
@@ -93,13 +94,13 @@ export const sendBookingReceipt = async (
               </div>
               
               <div style="margin-top: 40px; text-align: center;">
-                <a href="https://yourdomain.com/manage" style="background-color: #0f172a; color: #ffffff; text-decoration: none; padding: 18px 36px; border-radius: 16px; font-weight: 900; font-size: 13px; display: inline-block; text-transform: uppercase; letter-spacing: 2px;">Manage Your Trip Online</a>
+                <a href="https://aeroparkdirect.co.uk/manage" style="background-color: #0f172a; color: #ffffff; text-decoration: none; padding: 18px 36px; border-radius: 16px; font-weight: 900; font-size: 13px; display: inline-block; text-transform: uppercase; letter-spacing: 2px;">Manage Your Trip Online</a>
               </div>
             </div>
             
             <div style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 30px; text-align: center;">
-              <p style="margin: 0; font-size: 12px; color: #64748b; font-weight: 800;">© ${new Date().getFullYear()} AeroPark Direct Parking.</p>
-              <p style="margin: 8px 0 0 0; font-size: 12px; color: #94a3b8; font-weight: 500;">Need help? Contact our 24/7 Concierge: <a href="mailto:support@airportvip.com" style="color: #2563eb; text-decoration: none; font-weight: 700;">support@airportvip.com</a></p>
+              <p style="margin: 0; font-size: 12px; color: #64748b; font-weight: 800;">© ${new Date().getFullYear()} AeroPark Direct.</p>
+              <p style="margin: 8px 0 0 0; font-size: 12px; color: #94a3b8; font-weight: 500;">Need help? Contact our 24/7 Concierge: <a href="mailto:info@aeroparkdirect.co.uk" style="color: #2563eb; text-decoration: none; font-weight: 700;">info@aeroparkdirect.co.uk</a></p>
             </div>
 
           </div>
