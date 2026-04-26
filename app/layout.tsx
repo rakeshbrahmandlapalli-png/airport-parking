@@ -14,8 +14,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="antialiased bg-[#F8FAFC]">
+    /* 🔥 Added suppressHydrationWarning here */
+    <html lang="en" suppressHydrationWarning>
+      {/* 🔥 And added it here! This kills the red error box forever. */}
+      <body className="antialiased bg-[#F8FAFC]" suppressHydrationWarning>
         
         {/* Page Content (Your HomePage with its own custom Navbar will render here) */}
         {children}

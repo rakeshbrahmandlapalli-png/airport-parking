@@ -29,37 +29,42 @@ import MapModal from "@/components/MapModal";
 
 export default function HomePage() {
   const router = useRouter();
-  const [now, setNow] = useState(new Date());
+  
+  const [now, setNow] = useState<Date | null>(null); 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
-  
+  const [isLoaded, setIsLoaded] = useState(false); 
+
   // --- SEARCH STATES ---
   const [airport, setAirport] = useState("Luton (LTN)");
   const [dropoffDate, setDropoffDate] = useState("");
   const [dropoffTime, setDropoffTime] = useState("");
   const [pickupDate, setPickupDate] = useState("");
   const [pickupTime, setPickupTime] = useState("18:00");
-  
-  const [isLoaded, setIsLoaded] = useState(false); 
 
   useEffect(() => {
-    setTimeout(() => setIsLoaded(true), 100); 
-    
     const today = new Date();
+    setNow(today);
+    
     setDropoffDate(today.toISOString().split("T")[0]);
     setDropoffTime(today.toTimeString().slice(0, 5));
     setPickupDate(today.toISOString().split("T")[0]);
     
+    setIsLoaded(true);
+
     const timer = setInterval(() => setNow(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
+
+  if (!isLoaded || !now) {
+    return <div className="min-h-[100dvh] bg-slate-950" />; 
+  }
 
   const todayStr = now.toISOString().split("T")[0];
   const currentTimeStr = now.toTimeString().slice(0, 5);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-
     if (dropoffDate === todayStr && dropoffTime < currentTimeStr) {
       alert("Drop-off time cannot be in the past!");
       return;
@@ -72,31 +77,24 @@ export default function HomePage() {
     }
 
     const query = new URLSearchParams({
-      airport,
-      dropoffDate,
-      dropoffTime,
-      pickupDate,
-      pickupTime
+      airport, dropoffDate, dropoffTime, pickupDate, pickupTime
     }).toString();
-
     router.push(`/select-service?${query}`);
   };
 
   return (
-    <main className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-blue-600 selection:text-white overflow-x-hidden">
-     {/* 1. PREMIUM NAVBAR - FIXED LOGO VISIBILITY */}
+    <main suppressHydrationWarning className="min-h-[100dvh] bg-[#F8FAFC] font-sans antialiased selection:bg-blue-600 selection:text-white overflow-x-hidden">
+      {/* 1. PREMIUM NAVBAR */}
       <nav className={`fixed top-0 w-full z-[100] bg-white/80 backdrop-blur-xl border-b border-slate-200 transition-all duration-1000 ${isLoaded ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 md:h-24 flex items-center justify-between overflow-hidden">
           
-          <Link href="/" className="flex items-center z-50 overflow-visible">
+          <Link href="/" className="flex items-center z-50 overflow-visible touch-manipulation [-webkit-tap-highlight-color:transparent]">
             <Image 
               src="/logo.png" 
               alt="AeroPark Direct"
               width={400} 
               height={120}
               priority
-              /* 🟢 THE FIX: Scale increased to 1.8 on mobile and 1.35 on desktop. 
-                 -translate-x-4 pulls the zoomed logo back into the safe area. */
               className="h-12 md:h-20 w-auto object-contain scale-[1.8] md:scale-[1.35] origin-left mix-blend-multiply -translate-x-4 md:translate-x-0 ml-6 md:ml-0" 
             />
           </Link>
@@ -111,25 +109,25 @@ export default function HomePage() {
 
             <div className="h-6 w-px bg-slate-200 ml-2"></div>
 
-            <Link href="/manage" className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.15em] text-white bg-slate-900 px-6 py-3 rounded-full hover:bg-blue-600 transition-all active:scale-95 ml-2">
+            <Link href="/manage" className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.15em] text-white bg-slate-900 px-6 py-3 rounded-full hover:bg-blue-600 transition-all active:scale-95 ml-2 touch-manipulation">
               <User className="w-4 h-4" /> Manage Booking
             </Link>
           </div>
           
-          <button onClick={() => setIsMenuOpen(true)} className="md:hidden p-2.5 text-slate-900 bg-slate-100 rounded-xl active:scale-90 transition-transform relative z-50">
+          <button onClick={() => setIsMenuOpen(true)} className="md:hidden p-2.5 text-slate-900 bg-slate-100 rounded-xl active:scale-90 transition-transform relative z-50 touch-manipulation [-webkit-tap-highlight-color:transparent]">
             <Menu className="w-6 h-6" />
           </button>
         </div>
       </nav>
 
-      {/* MOBILE MENU - LOGO FIX APPLIED HERE TOO */}
+      {/* MOBILE MENU */}
       <div 
         className={`md:hidden fixed inset-0 z-[9999] bg-white transition-all duration-500 ease-in-out flex flex-col ${
           isMenuOpen ? 'opacity-100 translate-x-0 visible' : 'opacity-0 translate-x-full invisible pointer-events-none'
         }`}
       >
         <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100 shrink-0 overflow-hidden">
-          <Link href="/" onClick={() => setIsMenuOpen(false)} className="flex items-center overflow-visible">
+          <Link href="/" onClick={() => setIsMenuOpen(false)} className="flex items-center overflow-visible touch-manipulation [-webkit-tap-highlight-color:transparent]">
             <Image 
               src="/logo.png" 
               alt="AeroPark Direct"
@@ -138,7 +136,7 @@ export default function HomePage() {
               className="h-12 w-auto object-contain scale-[1.8] origin-left mix-blend-multiply -translate-x-4 ml-6" 
             />
           </Link>
-          <button onClick={() => setIsMenuOpen(false)} className="p-3 text-slate-900 bg-slate-100 rounded-full">
+          <button onClick={() => setIsMenuOpen(false)} className="p-3 text-slate-900 bg-slate-100 rounded-full touch-manipulation [-webkit-tap-highlight-color:transparent]">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -146,15 +144,15 @@ export default function HomePage() {
         <div className="flex flex-col px-8 py-12 gap-2 flex-grow overflow-y-auto bg-white">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Main Menu</p>
           
-          <a href="#services" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-2xl font-black text-slate-900 border-b border-slate-50">
+          <a href="#services" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-2xl font-black text-slate-900 border-b border-slate-50 touch-manipulation [-webkit-tap-highlight-color:transparent]">
             Services <ChevronRight className="w-6 h-6 text-blue-500" />
           </a>
           
-          <a href="#how-it-works" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-2xl font-black text-slate-900 border-b border-slate-50">
+          <a href="#how-it-works" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-2xl font-black text-slate-900 border-b border-slate-50 touch-manipulation [-webkit-tap-highlight-color:transparent]">
             How it works <ChevronRight className="w-6 h-6 text-blue-500" />
           </a>
 
-          <Link href="/manage" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-2xl font-black text-slate-900">
+          <Link href="/manage" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-2xl font-black text-slate-900 touch-manipulation [-webkit-tap-highlight-color:transparent]">
             Manage Trip <ChevronRight className="w-6 h-6 text-blue-500" />
           </Link>
         </div>
@@ -163,7 +161,7 @@ export default function HomePage() {
           <Link 
             href="/manage" 
             onClick={() => setIsMenuOpen(false)} 
-            className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl text-lg flex items-center justify-center shadow-xl shadow-blue-200 active:scale-95 transition-transform"
+            className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl text-lg flex items-center justify-center shadow-xl shadow-blue-200 active:scale-95 transition-transform touch-manipulation [-webkit-tap-highlight-color:transparent]"
           >
             Sign In to Booking
           </Link>
@@ -172,7 +170,7 @@ export default function HomePage() {
         
 
       {/* 2. IMMERSIVE HERO SECTION */}
-      <section className="relative min-h-[100svh] w-full flex items-center justify-center overflow-hidden bg-slate-950 pt-28 pb-12 md:py-20">
+      <section className="relative min-h-[100dvh] w-full flex items-center justify-center overflow-hidden bg-slate-950 pt-28 pb-12 md:py-20">
         <div className="absolute inset-0 z-0 overflow-hidden">
           <div className={`absolute inset-0 bg-cover bg-center transition-all duration-[3000ms] ease-out origin-center ${isLoaded ? 'scale-105 opacity-100' : 'scale-150 opacity-0'}`} style={{ backgroundImage: "url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format&fit=crop')" }}></div>
           <div className={`absolute inset-0 bg-gradient-to-b md:bg-gradient-to-r from-slate-950 via-slate-900/80 md:via-slate-900/60 to-transparent transition-opacity duration-[2500ms] ${isLoaded ? 'opacity-100' : 'opacity-0'}`}></div>
@@ -223,7 +221,7 @@ export default function HomePage() {
                     <label className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-300">Select Departure Airport</label>
                   </div>
                   <div className="relative">
-                    <select name="airport" value={airport} onChange={(e) => setAirport(e.target.value)} className="w-full bg-transparent font-black text-white text-lg sm:text-xl md:text-2xl outline-none cursor-pointer appearance-none relative z-10">
+                    <select name="airport" value={airport} onChange={(e) => setAirport(e.target.value)} className="w-full bg-transparent font-black text-white text-lg sm:text-xl md:text-2xl outline-none cursor-pointer appearance-none relative z-10 touch-manipulation [-webkit-tap-highlight-color:transparent]">
                       <option value="Luton (LTN)" className="text-slate-900">Luton Airport (LTN)</option>
                       <option value="Heathrow (LHR)" className="text-slate-900">Heathrow Airport (LHR)</option>
                     </select>
@@ -240,8 +238,8 @@ export default function HomePage() {
                     </div>
                     {/* CSS Grid ensures the date and time never squish on mobile */}
                     <div className="grid grid-cols-[3fr_2fr] gap-2 h-12 md:h-11">
-                      <input type="date" name="dropoffDate" min={todayStr} value={dropoffDate} onChange={(e) => setDropoffDate(e.target.value)} className="w-full bg-white text-slate-900 rounded-xl px-2 md:px-3 font-bold text-base md:text-sm outline-none focus:ring-2 focus:ring-blue-500" />
-                      <input type="time" name="dropoffTime" value={dropoffTime} onChange={(e) => setDropoffTime(e.target.value)} className="w-full bg-white text-slate-900 rounded-xl px-2 font-bold text-base md:text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                      <input type="date" name="dropoffDate" min={todayStr} value={dropoffDate} onChange={(e) => setDropoffDate(e.target.value)} className="w-full bg-white text-slate-900 rounded-xl px-2 md:px-3 font-bold text-base md:text-sm outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation" />
+                      <input type="time" name="dropoffTime" value={dropoffTime} onChange={(e) => setDropoffTime(e.target.value)} className="w-full bg-white text-slate-900 rounded-xl px-2 font-bold text-base md:text-sm outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation" />
                     </div>
                   </div>
 
@@ -253,19 +251,19 @@ export default function HomePage() {
                     </div>
                     {/* CSS Grid ensures the date and time never squish on mobile */}
                     <div className="grid grid-cols-[3fr_2fr] gap-2 h-12 md:h-11">
-                      <input type="date" name="pickupDate" min={dropoffDate || todayStr} value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="w-full bg-white text-slate-900 rounded-xl px-2 md:px-3 font-bold text-base md:text-sm outline-none focus:ring-2 focus:ring-blue-500" />
-                      <input type="time" name="pickupTime" value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} className="w-full bg-white text-slate-900 rounded-xl px-2 font-bold text-base md:text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                      <input type="date" name="pickupDate" min={dropoffDate || todayStr} value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="w-full bg-white text-slate-900 rounded-xl px-2 md:px-3 font-bold text-base md:text-sm outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation" />
+                      <input type="time" name="pickupTime" value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} className="w-full bg-white text-slate-900 rounded-xl px-2 font-bold text-base md:text-sm outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation" />
                     </div>
                   </div>
                 </div>
 
-                <button type="submit" className="w-full h-14 md:h-16 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl shadow-xl shadow-blue-600/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 md:gap-3 uppercase text-xs md:text-sm tracking-widest mt-1 md:mt-2">
+                <button type="submit" className="w-full h-14 md:h-16 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl shadow-xl shadow-blue-600/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 md:gap-3 uppercase text-xs md:text-sm tracking-widest mt-1 md:mt-2 touch-manipulation [-webkit-tap-highlight-color:transparent]">
                   Secure Parking <Search className="w-4 h-4 md:w-5 md:h-5" />
                 </button>
               </form>
             </div>
             
-            <button onClick={() => setIsMapOpen(true)} className="absolute -bottom-10 md:-bottom-12 flex items-center gap-2 text-slate-400 font-bold text-[10px] md:text-xs hover:text-white transition-colors w-full justify-center lg:justify-end pr-4">
+            <button onClick={() => setIsMapOpen(true)} className="absolute -bottom-10 md:-bottom-12 flex items-center gap-2 text-slate-400 font-bold text-[10px] md:text-xs hover:text-white transition-colors w-full justify-center lg:justify-end pr-4 touch-manipulation [-webkit-tap-highlight-color:transparent]">
               <Info className="w-3 h-3 md:w-4 md:h-4" /> .
             </button>
           </div>
@@ -378,13 +376,12 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-4 md:mb-6">
             
-            {/* Big Left Card - Symbol Fixed to Car, Badge Fixed */}
-            <div className="lg:col-span-2 bg-slate-50 rounded-[2rem] md:rounded-[3rem] p-6 sm:p-8 md:p-14 border border-slate-100 relative overflow-hidden flex flex-col justify-between min-h-[400px] md:min-h-[500px]">
+            {/* Big Left Card - Symbol Fixed to Car, Badge Removed */}
+            <div className="lg:col-span-2 bg-slate-50 rounded-[2rem] md:rounded-[3rem] p-6 sm:p-8 md:p-14 border border-slate-100 relative overflow-hidden flex flex-col justify-center min-h-[400px] md:min-h-[500px]">
               <div className="absolute top-0 right-0 w-64 md:w-96 h-64 md:h-96 bg-blue-100/40 rounded-full blur-[80px] md:blur-[100px] -mr-10 md:-mr-20 -mt-10 md:-mt-20 pointer-events-none"></div>
               
               <div className="relative z-10">
                 <div className="w-14 h-14 md:w-20 md:h-20 bg-blue-600 rounded-[1.5rem] md:rounded-[2rem] flex items-center justify-center shadow-xl md:shadow-2xl shadow-blue-500/20 mb-6 md:mb-10 text-white">
-                  {/* 🟢 FIXED: Symbol matched to Compare theme */}
                   <Car className="w-6 h-6 md:w-10 md:h-10" />
                 </div>
                 <h3 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 mb-4 md:mb-8 tracking-tight leading-[1.1]">
@@ -393,13 +390,6 @@ export default function HomePage() {
                 <p className="text-slate-500 font-semibold text-base sm:text-lg md:text-xl leading-relaxed max-w-lg">
                   We bring the top-rated providers together in one place so you can find the perfect balance of convenience and value for your trip.
                 </p>
-              </div>
-              
-              <div className="relative z-10 mt-8 md:mt-10">
-                {/* 🟢 FIXED: confusing terminal text cleared up */}
-                <span className="px-4 md:px-5 py-2 bg-white border border-slate-200 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-400 inline-block">
-                  Serving LTN & LHR Terminals
-                </span>
               </div>
             </div>
 
@@ -410,12 +400,11 @@ export default function HomePage() {
                 <div>
                   <h3 className="text-xl md:text-2xl font-black text-white mb-2 md:mb-3 uppercase tracking-tight">24/7 Security</h3>
                   <p className="text-slate-400 text-xs md:text-sm font-medium leading-relaxed">
-                    Your vehicle is moved to a private compound with HD CCTV and manned regular patrols.
+                    We ensure all operators are equipped with CCTV and on-site measures to safeguard your vehicle at all times.
                   </p>
                 </div>
               </div>
 
-              {/* 🟢 FIXED: Pricing card streamlined and copy updated */}
               <div className="flex-1 bg-white rounded-[2rem] md:rounded-[3rem] p-6 md:p-8 border border-slate-200 shadow-sm flex flex-col justify-between group hover:border-blue-600 transition-colors duration-300">
                 <CreditCard className="w-10 h-10 md:w-12 md:h-12 text-slate-900 mb-4 md:mb-6 group-hover:scale-110 transition-transform duration-300" />
                 <div>
@@ -486,7 +475,7 @@ export default function HomePage() {
       <footer className="bg-[#0B1121] py-8 md:py-14 px-4 md:px-6 border-t border-white/5">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 md:gap-4">
            
-           <Link href="/" className="flex items-center w-full md:w-1/3 justify-center md:justify-start">
+           <Link href="/" className="flex items-center w-full md:w-1/3 justify-center md:justify-start touch-manipulation [-webkit-tap-highlight-color:transparent]">
              <div className="bg-white px-2.5 py-1.5 rounded-lg shadow-sm">
                <Image 
                  src="/footer.jpg" 
@@ -499,9 +488,9 @@ export default function HomePage() {
            </Link>
            
            <div className="flex flex-wrap justify-center gap-4 md:gap-10 text-slate-300/80 text-[9px] md:text-[11px] font-bold uppercase tracking-[0.15em] md:tracking-[0.2em] w-full md:w-1/3">
-             <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
-             <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
-             <Link href="/contact" className="hover:text-white transition-colors">Support</Link>
+             <Link href="/privacy" className="hover:text-white transition-colors touch-manipulation [-webkit-tap-highlight-color:transparent]">Privacy Policy</Link>
+             <Link href="/terms" className="hover:text-white transition-colors touch-manipulation [-webkit-tap-highlight-color:transparent]">Terms</Link>
+             <Link href="/contact" className="hover:text-white transition-colors touch-manipulation [-webkit-tap-highlight-color:transparent]">Support</Link>
            </div>
            
            <div className="text-slate-500/70 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.15em] md:tracking-widest w-full md:w-1/3 text-center md:text-right">

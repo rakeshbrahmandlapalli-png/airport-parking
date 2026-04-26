@@ -40,7 +40,7 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking }: any) {
   const BadgeIcon = option.category?.toLowerCase().includes('bus') || option.category?.toLowerCase().includes('ride') ? Bus : option.category?.toLowerCase().includes('hotel') ? BedDouble : Footprints;
 
   return (
-    <div className={`relative rounded-[2rem] overflow-hidden flex flex-col lg:flex-row transition-all duration-500 group ${cardBg} border ${borderClass} ${isPremium ? 'shadow-[0_20px_40px_-15px_rgba(15,23,42,0.3)] hover:shadow-[0_30px_60px_-15px_rgba(37,99,235,0.2)] hover:border-blue-900/50 transform md:-translate-x-2 md:w-[calc(100%+16px)]' : (isSoldOut ? 'opacity-80 grayscale-[20%]' : 'shadow-lg hover:shadow-xl hover:border-blue-200 hover:-translate-y-1')}`}>
+    <div className={`relative rounded-[2rem] overflow-hidden flex flex-col lg:flex-row transition-all duration-500 group ${cardBg} border ${borderClass} ${isPremium ? 'shadow-[0_20px_40px_-15px_rgba(15,23,42,0.3)] lg:hover:shadow-[0_30px_60px_-15px_rgba(37,99,235,0.2)] lg:hover:border-blue-900/50 transform lg:-translate-x-2 lg:w-[calc(100%+16px)]' : (isSoldOut ? 'opacity-80 grayscale-[20%]' : 'shadow-lg lg:hover:shadow-xl lg:hover:border-blue-200 lg:hover:-translate-y-1')}`}>
       
       {/* VIP Glow Accent */}
       {isPremium && !isSoldOut && (
@@ -48,8 +48,8 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking }: any) {
       )}
 
       {/* LEFT SIDE: Details */}
-      <div className="flex-1 p-8 md:p-10 relative z-10 flex flex-col">
-        <div className="mb-8">
+      <div className="flex-1 p-6 md:p-8 lg:p-10 relative z-10 flex flex-col">
+        <div className="mb-6 md:mb-8">
           {/* VIP Badge */}
           {isPremium && !isSoldOut && (
             <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em] mb-4">
@@ -57,15 +57,15 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking }: any) {
             </div>
           )}
 
-          <h2 className={`text-3xl md:text-4xl font-black uppercase tracking-tight mb-4 ${textPrimary}`}>
+          <h2 className={`text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight mb-4 ${textPrimary}`}>
             {option.name}
           </h2>
           
-          <div className="flex flex-wrap items-center gap-3">
-            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-white/5 text-slate-300 border border-white/5' : 'bg-slate-50 text-slate-600 border border-slate-200'}`}>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-white/5 text-slate-300 border border-white/5' : 'bg-slate-50 text-slate-600 border border-slate-200'}`}>
               <ThumbsUp className="w-3.5 h-3.5" /> {option.category?.replace('-', ' ')}
             </div>
-            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-white/5 text-slate-300 border border-white/5' : 'bg-slate-50 text-slate-600 border border-slate-200'}`}>
+            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-white/5 text-slate-300 border border-white/5' : 'bg-slate-50 text-slate-600 border border-slate-200'}`}>
               <BadgeIcon className="w-3.5 h-3.5" /> {option.category?.toLowerCase().includes('meet') ? '5 mins walk to terminal' : 'Express Shuttle'}
             </div>
           </div>
@@ -73,14 +73,14 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking }: any) {
 
         {/* Expandable Details Area */}
         <details className="group/details mt-auto relative">
-          <summary className={`inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest cursor-pointer list-none select-none transition-colors [&::-webkit-details-marker]:hidden ${isPremium ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}>
+          <summary className={`inline-flex items-center gap-2 text-[11px] sm:text-xs font-black uppercase tracking-widest cursor-pointer list-none select-none transition-colors touch-manipulation [-webkit-tap-highlight-color:transparent] [&::-webkit-details-marker]:hidden ${isPremium ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}>
             <span>View Full Details & Instructions</span>
             <ChevronDown className="w-4 h-4 transition-transform duration-300 group-open/details:rotate-180" />
           </summary>
           
-          <div className={`mt-6 rounded-2xl border overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300 ${isPremium ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+          <div className={`mt-5 md:mt-6 rounded-2xl border overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300 ${isPremium ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
             {/* Modern Pill Tabs */}
-            <div className={`flex flex-wrap items-center gap-2 p-3 border-b ${isPremium ? 'border-slate-800' : 'border-slate-200'}`}>
+            <div className={`flex flex-wrap items-center gap-1.5 sm:gap-2 p-2 sm:p-3 border-b overflow-x-auto no-scrollbar ${isPremium ? 'border-slate-800' : 'border-slate-200'}`}>
               {[
                 { id: 'overview', label: 'Overview', icon: Info },
                 { id: 'arrival', label: 'Arrival', icon: PlaneTakeoff },
@@ -90,33 +90,33 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking }: any) {
                 <button
                   key={tab.id}
                   onClick={(e) => { e.preventDefault(); setActiveTab(tab.id); }}
-                  className={`flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-full transition-all ${
+                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded-full transition-all whitespace-nowrap touch-manipulation ${
                     activeTab === tab.id 
                       ? (isPremium ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'bg-blue-600 text-white shadow-md') 
                       : (isPremium ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5' : 'text-slate-500 hover:text-slate-900 hover:bg-white')
                   }`}
                 >
-                  <tab.icon className="w-3.5 h-3.5 hidden sm:block" /> {tab.label}
+                  <tab.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 hidden xs:block" /> {tab.label}
                 </button>
               ))}
             </div>
 
-            <div className="p-6">
-              {activeTab === 'overview' && <p className={`text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-600'}`}>{option.overview || "Professional secure parking service with 24/7 patrols."}</p>}
-              {activeTab === 'arrival' && <p className={`text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-600'}`}>{option.on_arrival || "Drive directly to the terminal and call 20 mins before arrival."}</p>}
-              {activeTab === 'return' && <p className={`text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-600'}`}>{option.on_return || "Call the dispatch team after clearing customs and collecting luggage."}</p>}
+            <div className="p-4 sm:p-6">
+              {activeTab === 'overview' && <p className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-600'}`}>{option.overview || "Professional secure parking service with 24/7 patrols."}</p>}
+              {activeTab === 'arrival' && <p className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-600'}`}>{option.on_arrival || "Drive directly to the terminal and call 20 mins before arrival."}</p>}
+              {activeTab === 'return' && <p className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-600'}`}>{option.on_return || "Call the dispatch team after clearing customs and collecting luggage."}</p>}
               {activeTab === 'map' && (
-                <div className="flex flex-col sm:flex-row gap-6">
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
                   <div className="flex-1">
-                    <h4 className={`text-[10px] font-black uppercase tracking-widest mb-1 ${isPremium ? 'text-blue-400' : 'text-blue-600'}`}>Arrival Location</h4>
-                    <p className={`text-sm font-bold ${isPremium ? 'text-white' : 'text-slate-900'}`}>{isHeathrow ? "Heathrow Terminal Area" : "Luton Terminal Car Park 1"}</p>
-                    <p className={`text-xs mt-1 ${isPremium ? 'text-slate-400' : 'text-slate-500'}`}>Postcode: {isHeathrow ? "TW6 1EW" : "LU2 9LY"}</p>
+                    <h4 className={`text-[9px] sm:text-[10px] font-black uppercase tracking-widest mb-1 ${isPremium ? 'text-blue-400' : 'text-blue-600'}`}>Arrival Location</h4>
+                    <p className={`text-xs sm:text-sm font-bold ${isPremium ? 'text-white' : 'text-slate-900'}`}>{isHeathrow ? "Heathrow Terminal Area" : "Luton Terminal Car Park 1"}</p>
+                    <p className={`text-[11px] sm:text-xs mt-1 ${isPremium ? 'text-slate-400' : 'text-slate-500'}`}>Postcode: {isHeathrow ? "TW6 1EW" : "LU2 9LY"}</p>
                     {!isSoldOut && (
-                      <a href="https://maps.google.com" target="_blank" className="inline-flex items-center gap-2 mt-4 text-[10px] font-black uppercase text-blue-500 hover:text-blue-400 transition-colors"><Navigation className="w-3 h-3"/> Get Directions</a>
+                      <a href="https://maps.google.com" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 sm:gap-2 mt-3 sm:mt-4 text-[9px] sm:text-[10px] font-black uppercase text-blue-500 hover:text-blue-400 transition-colors touch-manipulation"><Navigation className="w-3 h-3"/> Get Directions</a>
                     )}
                   </div>
-                  <div className="flex-1 h-32 bg-slate-200/20 rounded-xl overflow-hidden relative border border-slate-200/10 flex items-center justify-center">
-                    <div className="text-slate-400 text-[10px] font-black uppercase flex flex-col items-center gap-2"><MapPin className="w-5 h-5"/> Map Preview Unavailable</div>
+                  <div className="flex-1 h-24 sm:h-32 bg-slate-200/20 rounded-xl overflow-hidden relative border border-slate-200/10 flex items-center justify-center">
+                    <div className="text-slate-400 text-[9px] sm:text-[10px] font-black uppercase flex flex-col items-center gap-2"><MapPin className="w-4 h-4 sm:w-5 sm:h-5"/> Map Preview Unavailable</div>
                   </div>
                 </div>
               )}
@@ -133,14 +133,14 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking }: any) {
       </div>
 
       {/* RIGHT SIDE: Pricing Stub */}
-      <div className={`w-full lg:w-[340px] p-8 md:p-10 shrink-0 relative z-10 flex flex-col justify-center border-t border-dashed lg:border-t-0 transition-colors ${stubBg} ${borderClass}`}>
-        <div className="text-left md:text-right w-full flex flex-col h-full justify-center">
+      <div className={`w-full lg:w-[320px] xl:w-[340px] p-6 md:p-8 lg:p-10 shrink-0 relative z-10 flex flex-col justify-center border-t border-dashed lg:border-t-0 transition-colors ${stubBg} ${borderClass}`}>
+        <div className="text-left lg:text-right w-full flex flex-col h-full justify-center">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-2 text-slate-400">Total Stay Cost</p>
-            <p className={`text-5xl md:text-6xl font-black tracking-tighter mb-2 ${textPrimary} ${isSoldOut ? 'line-through opacity-30' : ''}`}>
+            <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] mb-1 sm:mb-2 text-slate-400">Total Stay Cost</p>
+            <p className={`text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter mb-2 ${textPrimary} ${isSoldOut ? 'line-through opacity-30' : ''}`}>
               £{totalPrice.toFixed(2)}
             </p>
-            <p className={`text-[11px] font-bold uppercase tracking-widest mb-8 ${isPremium ? 'text-blue-400' : 'text-blue-600'}`}>
+            <p className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-widest mb-6 lg:mb-8 ${isPremium ? 'text-blue-400' : 'text-blue-600'}`}>
               {isSoldOut ? 'Sold Out for these dates' : `Just £${dailyRate.toFixed(2)} / Day`}
             </p>
           </div>
@@ -148,16 +148,16 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking }: any) {
           <button 
             disabled={isSoldOut}
             onClick={() => handleBooking(option, dailyRate)}
-            className={`group w-full h-14 font-black rounded-xl flex items-center justify-center gap-3 uppercase tracking-[0.15em] text-xs transition-all duration-300 active:scale-95 overflow-hidden relative ${
+            className={`group touch-manipulation [-webkit-tap-highlight-color:transparent] w-full h-12 sm:h-14 font-black rounded-xl flex items-center justify-center gap-2 sm:gap-3 uppercase tracking-[0.15em] text-[10px] sm:text-xs transition-all duration-300 active:scale-95 overflow-hidden relative ${
               isSoldOut 
                 ? 'bg-slate-200/10 text-slate-500 cursor-not-allowed border border-slate-200/20' 
                 : (isPremium 
-                    ? 'bg-white text-slate-900 hover:bg-blue-50 shadow-xl shadow-white/10' 
-                    : 'bg-slate-900 hover:bg-blue-600 text-white shadow-xl shadow-slate-900/20')
+                    ? 'bg-white text-slate-900 lg:hover:bg-blue-50 shadow-xl shadow-white/10' 
+                    : 'bg-slate-900 lg:hover:bg-blue-600 text-white shadow-xl shadow-slate-900/20')
             }`}
           >
-            {isSoldOut ? <Ban className="w-4 h-4"/> : <span className="relative z-10">Select Option</span>}
-            {!isSoldOut && <ChevronRight className="w-4 h-4 relative z-10 transition-transform group-hover:translate-x-1" />}
+            {isSoldOut ? <Ban className="w-3.5 h-3.5 sm:w-4 sm:h-4"/> : <span className="relative z-10">Select Option</span>}
+            {!isSoldOut && <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 relative z-10 transition-transform lg:group-hover:translate-x-1" />}
           </button>
         </div>
       </div>
@@ -226,41 +226,41 @@ function ResultsContent() {
   };
 
   if (loading) return (
-    <div className="max-w-4xl mx-auto py-40 text-center flex flex-col items-center">
-      <Loader2 className="w-12 h-12 animate-spin text-blue-600 mb-8" />
-      <h2 className="text-2xl font-black uppercase tracking-[0.3em] text-slate-900">Validating Inventory</h2>
-      <p className="text-slate-400 mt-3 font-medium">Securing live allocations for {isHeathrow ? 'Heathrow (LHR)' : 'Luton (LTN)'}...</p>
+    <div className="max-w-4xl mx-auto py-24 md:py-40 text-center flex flex-col items-center px-4">
+      <Loader2 className="w-10 h-10 md:w-12 md:h-12 animate-spin text-blue-600 mb-6 md:mb-8" />
+      <h2 className="text-xl md:text-2xl font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-slate-900">Validating Inventory</h2>
+      <p className="text-slate-400 mt-2 md:mt-3 font-medium text-sm md:text-base">Securing live allocations for {isHeathrow ? 'Heathrow (LHR)' : 'Luton (LTN)'}...</p>
     </div>
   );
 
   return (
-    <div className="max-w-[1000px] mx-auto px-4 py-8">
+    <div className="max-w-[1000px] mx-auto px-4 py-6 md:py-8">
       {/* Sleek Stepper */}
-      <div className="relative mb-16 max-w-2xl mx-auto px-2 mt-4">
+      <div className="relative mb-10 md:mb-16 max-w-2xl mx-auto px-2 mt-2 md:mt-4">
         <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-200 -translate-y-1/2 rounded-full"></div>
         <div className="absolute top-1/2 left-0 w-[15%] h-1 bg-blue-600 -translate-y-1/2 rounded-full shadow-[0_0_12px_rgba(37,99,235,0.6)] transition-all duration-1000"></div>
         <div className="relative z-10 flex justify-between items-center text-slate-900 font-bold">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center font-black shadow-lg shadow-blue-500/30 border-4 border-[#F8FAFC] text-lg transition-transform hover:scale-110 cursor-default">1</div>
-            <span className="text-[10px] font-black uppercase text-blue-600 tracking-[0.2em]">Select</span>
+          <div className="flex flex-col items-center gap-2 md:gap-3">
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-blue-600 text-white flex items-center justify-center font-black shadow-lg shadow-blue-500/30 border-4 border-[#F8FAFC] text-base md:text-lg transition-transform lg:hover:scale-110 cursor-default">1</div>
+            <span className="text-[9px] md:text-[10px] font-black uppercase text-blue-600 tracking-[0.2em]">Select</span>
           </div>
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-white text-slate-400 border-2 border-slate-200 flex items-center justify-center font-black text-lg">2</div>
-            <span className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Details</span>
+          <div className="flex flex-col items-center gap-2 md:gap-3">
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white text-slate-400 border-2 border-slate-200 flex items-center justify-center font-black text-base md:text-lg">2</div>
+            <span className="text-[9px] md:text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Details</span>
           </div>
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-white text-slate-400 border-2 border-slate-200 flex items-center justify-center font-black text-lg">3</div>
-            <span className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Payment</span>
+          <div className="flex flex-col items-center gap-2 md:gap-3">
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white text-slate-400 border-2 border-slate-200 flex items-center justify-center font-black text-base md:text-lg">3</div>
+            <span className="text-[9px] md:text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Payment</span>
           </div>
         </div>
       </div>
 
-      <div className="space-y-10">
+      <div className="space-y-6 md:space-y-10">
         {companies.length === 0 ? (
-          <div className="text-center py-24 bg-white rounded-[3rem] border border-dashed border-slate-300">
-            <AlertCircle className="w-16 h-16 text-slate-200 mx-auto mb-6" />
-            <h3 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">No Active Providers</h3>
-            <p className="text-slate-500 font-medium">This provider does not serve {isHeathrow ? 'Heathrow' : 'Luton'} for this category.</p>
+          <div className="text-center py-16 md:py-24 bg-white rounded-[2rem] md:rounded-[3rem] border border-dashed border-slate-300">
+            <AlertCircle className="w-12 h-12 md:w-16 md:h-16 text-slate-200 mx-auto mb-4 md:mb-6" />
+            <h3 className="text-xl md:text-2xl font-black text-slate-900 mb-2 tracking-tight">No Active Providers</h3>
+            <p className="text-slate-500 font-medium text-sm md:text-base">This provider does not serve {isHeathrow ? 'Heathrow' : 'Luton'} for this category.</p>
           </div>
         ) : (
           companies.map((option) => (
@@ -283,24 +283,24 @@ function ResultsContent() {
 // ----------------------------------------------------------------------
 export default function ResultsPage() {
   return (
-    <main className="min-h-screen bg-[#F8FAFC] font-sans pb-32 selection:bg-blue-200 selection:text-blue-900">
+    <main suppressHydrationWarning className="min-h-[100dvh] bg-[#F8FAFC] font-sans antialiased pb-24 md:pb-32 selection:bg-blue-200 selection:text-blue-900 overflow-x-hidden">
       {/* Top Navigation Bar */}
-      <header className="sticky top-0 z-[100] bg-[#0A101D] border-b border-white/5 h-20 flex items-center px-8 justify-between shadow-2xl backdrop-blur-md">
-        <Link href="/select-service" className="text-slate-400 hover:text-white transition-colors flex items-center gap-2 group">
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> 
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] hidden md:block">Back to Services</span>
+      <header className="sticky top-0 z-[100] bg-[#0A101D] border-b border-white/5 h-16 md:h-20 flex items-center px-4 md:px-8 justify-between shadow-2xl backdrop-blur-md">
+        <Link href="/select-service" className="text-slate-400 hover:text-white transition-colors flex items-center gap-2 group touch-manipulation">
+          <ArrowLeft className="w-4 h-4 md:w-5 md:h-5 lg:group-hover:-translate-x-1 transition-transform" /> 
+          <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] hidden md:block">Back to Services</span>
         </Link>
-        <Link href="/" className="flex items-center gap-2 text-white font-black tracking-tighter text-2xl uppercase absolute left-1/2 -translate-x-1/2 group">
-          <Plane className="w-7 h-7 text-blue-500 rotate-45 group-hover:scale-110 transition-transform" />AEROPARK<span className="text-blue-500">DIRECT</span>
+        <Link href="/" className="flex items-center gap-1.5 md:gap-2 text-white font-black tracking-tighter text-xl md:text-2xl uppercase absolute left-1/2 -translate-x-1/2 group touch-manipulation">
+          <Plane className="w-5 h-5 md:w-7 md:h-7 text-blue-500 rotate-45 lg:group-hover:scale-110 transition-transform" />AEROPARK<span className="text-blue-500">DIRECT</span>
         </Link>
         <div className="text-right">
-          <Suspense fallback={<div className="h-6 w-12 bg-slate-800 rounded animate-pulse" />}>
+          <Suspense fallback={<div className="h-5 w-10 md:h-6 md:w-12 bg-slate-800 rounded animate-pulse" />}>
              <AirportTitle />
           </Suspense>
         </div>
       </header>
 
-      <Suspense fallback={<div className="p-40 text-center text-slate-400 font-black uppercase tracking-[0.3em] animate-pulse">Initializing Interface...</div>}>
+      <Suspense fallback={<div className="p-24 md:p-40 text-center text-slate-400 font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-xs md:text-sm animate-pulse">Initializing Interface...</div>}>
         <ResultsContent />
       </Suspense>
     </main>
@@ -313,8 +313,8 @@ function AirportTitle() {
   const code = airport.includes("Heathrow") ? "LHR" : "LTN";
   return (
     <div className="flex flex-col items-end">
-      <span className="text-base font-black text-white tracking-widest leading-none mb-1">{code}</span>
-      <span className="text-[8px] font-black text-blue-500 uppercase tracking-[0.2em] leading-none">Selected</span>
+      <span className="text-sm md:text-base font-black text-white tracking-widest leading-none mb-0.5 md:mb-1">{code}</span>
+      <span className="text-[7px] md:text-[8px] font-black text-blue-500 uppercase tracking-[0.2em] leading-none">Selected</span>
     </div>
   );
 }
