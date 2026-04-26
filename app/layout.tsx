@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next"; 
+import { GoogleAnalytics } from '@next/third-parties/google'; // 🔥 Added GA4 Import
 import Chatbot from "@/components/Chatbot";
 
 export const metadata: Metadata = {
@@ -14,18 +15,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    /* 🔥 Added suppressHydrationWarning here */
     <html lang="en" suppressHydrationWarning>
-      {/* 🔥 And added it here! This kills the red error box forever. */}
       <body className="antialiased bg-[#F8FAFC]" suppressHydrationWarning>
         
-        {/* Page Content (Your HomePage with its own custom Navbar will render here) */}
+        {/* Main Page Content */}
         {children}
 
-        {/* 🔥 Analytics Tracker */}
+        {/* Vercel Speed & Traffic Analytics */}
         <Analytics /> 
         
-        {/* 🔥 The 24/7 AI Support Agent */}
+        {/* Google Analytics 4 - Integrated with G-4QPSFJJD6S */}
+        <GoogleAnalytics gaId="G-4QPSFJJD6S" />
+        
+        {/* 24/7 AI Support Agent */}
         <Chatbot />
         
       </body>
