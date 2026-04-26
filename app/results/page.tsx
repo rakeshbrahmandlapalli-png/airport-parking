@@ -1,12 +1,12 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { 
   MapPin, Clock, ShieldCheck, ChevronRight, ThumbsUp, ArrowLeft,
   XCircle, Flame, ChevronDown, Plane, Calendar, Footprints,
   Check, Star, Ban, Bus, BedDouble, Info, PlaneTakeoff, 
   PlaneLanding, Map as MapIcon, Navigation, ExternalLink, Loader2,
-  AlertCircle
+  AlertCircle, X
 } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useState, useMemo, useEffect } from "react";
@@ -31,7 +31,6 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking }: any) {
   const isPremium = option.name.toLowerCase().includes("24/7") || option.is_recommended;
   const isSoldOut = option.is_sold_out;
 
-  // Premium sleek styling vs Clean standard styling
   const cardBg = isPremium ? 'bg-gradient-to-br from-slate-900 to-slate-950' : (isSoldOut ? 'bg-slate-50' : 'bg-white');
   const stubBg = isPremium ? 'bg-slate-950/50' : (isSoldOut ? 'bg-slate-100/50' : 'bg-slate-50/80');
   const borderClass = isPremium ? 'border-slate-800' : (isSoldOut ? 'border-slate-200' : 'border-slate-200');
@@ -41,16 +40,12 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking }: any) {
 
   return (
     <div className={`relative rounded-[2rem] overflow-hidden flex flex-col lg:flex-row transition-all duration-500 group ${cardBg} border ${borderClass} ${isPremium ? 'shadow-[0_20px_40px_-15px_rgba(15,23,42,0.3)] lg:hover:shadow-[0_30px_60px_-15px_rgba(37,99,235,0.2)] lg:hover:border-blue-900/50 transform lg:-translate-x-2 lg:w-[calc(100%+16px)]' : (isSoldOut ? 'opacity-80 grayscale-[20%]' : 'shadow-lg lg:hover:shadow-xl lg:hover:border-blue-200 lg:hover:-translate-y-1')}`}>
-      
-      {/* VIP Glow Accent */}
       {isPremium && !isSoldOut && (
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-blue-400 to-indigo-500 z-20"></div>
       )}
 
-      {/* LEFT SIDE: Details */}
       <div className="flex-1 p-6 md:p-8 lg:p-10 relative z-10 flex flex-col">
         <div className="mb-6 md:mb-8">
-          {/* VIP Badge */}
           {isPremium && !isSoldOut && (
             <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em] mb-4">
               <Star className="w-3 h-3 fill-current" /> Featured
@@ -71,7 +66,6 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking }: any) {
           </div>
         </div>
 
-        {/* Expandable Details Area */}
         <details className="group/details mt-auto relative">
           <summary className={`inline-flex items-center gap-2 text-[11px] sm:text-xs font-black uppercase tracking-widest cursor-pointer list-none select-none transition-colors touch-manipulation [-webkit-tap-highlight-color:transparent] [&::-webkit-details-marker]:hidden ${isPremium ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}>
             <span>View Full Details & Instructions</span>
@@ -79,7 +73,6 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking }: any) {
           </summary>
           
           <div className={`mt-5 md:mt-6 rounded-2xl border overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300 ${isPremium ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-            {/* Modern Pill Tabs */}
             <div className={`flex flex-wrap items-center gap-1.5 sm:gap-2 p-2 sm:p-3 border-b overflow-x-auto no-scrollbar ${isPremium ? 'border-slate-800' : 'border-slate-200'}`}>
               {[
                 { id: 'overview', label: 'Overview', icon: Info },
@@ -125,14 +118,11 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking }: any) {
         </details>
       </div>
 
-      {/* THE TICKET DIVIDER (Perforated Edge) */}
       <div className={`hidden lg:block w-px border-l-2 border-dashed my-8 relative z-20 ${borderClass}`}>
-        {/* Punch holes that match the background color */}
         <div className="absolute -top-10 -left-4 w-8 h-8 rounded-full bg-[#F8FAFC] shadow-[inset_0_-2px_4px_rgba(0,0,0,0.05)]"></div>
         <div className="absolute -bottom-10 -left-4 w-8 h-8 rounded-full bg-[#F8FAFC] shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]"></div>
       </div>
 
-      {/* RIGHT SIDE: Pricing Stub */}
       <div className={`w-full lg:w-[320px] xl:w-[340px] p-6 md:p-8 lg:p-10 shrink-0 relative z-10 flex flex-col justify-center border-t border-dashed lg:border-t-0 transition-colors ${stubBg} ${borderClass}`}>
         <div className="text-left lg:text-right w-full flex flex-col h-full justify-center">
           <div>
@@ -166,14 +156,13 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking }: any) {
 }
 
 // ----------------------------------------------------------------------
-// 2. MAIN RESULTS CONTENT (AIRPORT SEPARATION LOGIC)
+// 2. MAIN RESULTS CONTENT
 // ----------------------------------------------------------------------
 function ResultsContent() {
   const searchParams = useSearchParams();
   
   const [companies, setCompanies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [spotsLeft, setSpotsLeft] = useState<number | null>(null);
   
   const airport = searchParams.get("airport") || "Luton (LTN)";
   const dropoff = searchParams.get("dropoffDate") || "";
@@ -183,6 +172,7 @@ function ResultsContent() {
 
   useEffect(() => {
     async function getLiveRates() {
+      setLoading(true);
       const { data } = await supabase
         .from('companies')
         .select('*')
@@ -204,12 +194,11 @@ function ResultsContent() {
         setCompanies(filtered);
       }
       
-      const inventory = await checkAvailability(airport, dropoff, pickup);
-      setSpotsLeft(inventory.spotsLeft);
+      await checkAvailability(airport, dropoff, pickup);
       setLoading(false);
     }
     getLiveRates();
-  }, [serviceType, airport, dropoff, pickup]);
+  }, [serviceType, airport, dropoff, pickup, isHeathrow]);
 
   const duration = useMemo(() => {
     if (!dropoff || !pickup) return 1;
@@ -244,11 +233,11 @@ function ResultsContent() {
             <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-blue-600 text-white flex items-center justify-center font-black shadow-lg shadow-blue-500/30 border-4 border-[#F8FAFC] text-base md:text-lg transition-transform lg:hover:scale-110 cursor-default">1</div>
             <span className="text-[9px] md:text-[10px] font-black uppercase text-blue-600 tracking-[0.2em]">Select</span>
           </div>
-          <div className="flex flex-col items-center gap-2 md:gap-3">
+          <div className="flex flex-col items-center gap-2 md:gap-3 opacity-40">
             <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white text-slate-400 border-2 border-slate-200 flex items-center justify-center font-black text-base md:text-lg">2</div>
             <span className="text-[9px] md:text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Details</span>
           </div>
-          <div className="flex flex-col items-center gap-2 md:gap-3">
+          <div className="flex flex-col items-center gap-2 md:gap-3 opacity-40">
             <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white text-slate-400 border-2 border-slate-200 flex items-center justify-center font-black text-base md:text-lg">3</div>
             <span className="text-[9px] md:text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Payment</span>
           </div>
@@ -282,27 +271,106 @@ function ResultsContent() {
 // 3. MAIN PAGE WRAPPER
 // ----------------------------------------------------------------------
 export default function ResultsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // --- MODAL STATE ---
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editAirport, setEditAirport] = useState(searchParams.get("airport") || "Luton (LTN)");
+  const [editDropDate, setEditDropDate] = useState(searchParams.get("dropoffDate") || "");
+  const [editDropTime, setEditDropTime] = useState(searchParams.get("dropoffTime") || "");
+  const [editPickDate, setEditPickDate] = useState(searchParams.get("pickupDate") || "");
+  const [editPickTime, setEditPickTime] = useState(searchParams.get("pickupTime") || "");
+
+  const handleUpdateSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsEditModalOpen(false);
+    const query = new URLSearchParams({
+      airport: editAirport,
+      dropoffDate: editDropDate,
+      dropoffTime: editDropTime,
+      pickupDate: editPickDate,
+      pickupTime: editPickTime,
+      type: searchParams.get("type") || "meet-greet"
+    }).toString();
+    router.push(`/results?${query}`);
+  };
+
   return (
     <main suppressHydrationWarning className="min-h-[100dvh] bg-[#F8FAFC] font-sans antialiased pb-24 md:pb-32 selection:bg-blue-200 selection:text-blue-900 overflow-x-hidden">
-      {/* Top Navigation Bar */}
       <header className="sticky top-0 z-[100] bg-[#0A101D] border-b border-white/5 h-16 md:h-20 flex items-center px-4 md:px-8 justify-between shadow-2xl backdrop-blur-md">
         <Link href="/select-service" className="text-slate-400 hover:text-white transition-colors flex items-center gap-2 group touch-manipulation">
           <ArrowLeft className="w-4 h-4 md:w-5 md:h-5 lg:group-hover:-translate-x-1 transition-transform" /> 
-          <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] hidden md:block">Back to Services</span>
+          <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] hidden md:block">Edit Search</span>
         </Link>
         <Link href="/" className="flex items-center gap-1.5 md:gap-2 text-white font-black tracking-tighter text-xl md:text-2xl uppercase absolute left-1/2 -translate-x-1/2 group touch-manipulation">
           <Plane className="w-5 h-5 md:w-7 md:h-7 text-blue-500 rotate-45 lg:group-hover:scale-110 transition-transform" />AEROPARK<span className="text-blue-500">DIRECT</span>
         </Link>
-        <div className="text-right">
+        
+        {/* CLICKABLE SUMMARY */}
+        <button onClick={() => setIsEditModalOpen(true)} className="text-right group touch-manipulation cursor-pointer">
           <Suspense fallback={<div className="h-5 w-10 md:h-6 md:w-12 bg-slate-800 rounded animate-pulse" />}>
              <AirportTitle />
           </Suspense>
-        </div>
+        </button>
       </header>
 
       <Suspense fallback={<div className="p-24 md:p-40 text-center text-slate-400 font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-xs md:text-sm animate-pulse">Initializing Interface...</div>}>
         <ResultsContent />
       </Suspense>
+
+      {/* MODIFY SEARCH MODAL */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-[200] bg-slate-950/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4">
+          <div className="bg-white w-full max-w-lg rounded-t-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 shadow-2xl animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-8 duration-300 relative">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Modify Search</h2>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Update your travel details</p>
+              </div>
+              <button onClick={() => setIsEditModalOpen(false)} className="p-2.5 bg-slate-100 text-slate-600 rounded-full hover:bg-slate-200 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateSearch} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Departure Airport</label>
+                <select value={editAirport} onChange={(e)=>setEditAirport(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 font-black text-slate-900 text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 touch-manipulation">
+                  <option value="Luton (LTN)">Luton Airport (LTN)</option>
+                  <option value="Heathrow (LHR)">Heathrow Airport (LHR)</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 border-t border-slate-100 pt-4">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Drop-off Date</label>
+                  <input type="date" value={editDropDate} onChange={(e)=>setEditDropDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3.5 font-bold text-slate-900 text-sm outline-none focus:border-blue-500" required />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Time</label>
+                  <input type="time" value={editDropTime} onChange={(e)=>setEditDropTime(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3.5 font-bold text-slate-900 text-sm outline-none focus:border-blue-500" required />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 pb-2">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Pick-up Date</label>
+                  <input type="date" min={editDropDate} value={editPickDate} onChange={(e)=>setEditPickDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3.5 font-bold text-slate-900 text-sm outline-none focus:border-blue-500" required />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Time</label>
+                  <input type="time" value={editPickTime} onChange={(e)=>setEditPickTime(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3.5 font-bold text-slate-900 text-sm outline-none focus:border-blue-500" required />
+                </div>
+              </div>
+
+              <button type="submit" className="w-full mt-6 py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl text-sm uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-500/30 touch-manipulation">
+                Update Search
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
@@ -310,11 +378,22 @@ export default function ResultsPage() {
 function AirportTitle() {
   const searchParams = useSearchParams();
   const airport = searchParams.get("airport") || "Luton (LTN)";
+  const dropDate = searchParams.get("dropoffDate") || "";
+  const pickDate = searchParams.get("pickupDate") || "";
+  
+  const formatShortDate = (dateStr: string) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  };
+
   const code = airport.includes("Heathrow") ? "LHR" : "LTN";
+  const dateDisplay = dropDate && pickDate ? `${formatShortDate(dropDate)} - ${formatShortDate(pickDate)}` : "Selected";
+
   return (
     <div className="flex flex-col items-end">
-      <span className="text-sm md:text-base font-black text-white tracking-widest leading-none mb-0.5 md:mb-1">{code}</span>
-      <span className="text-[7px] md:text-[8px] font-black text-blue-500 uppercase tracking-[0.2em] leading-none">Selected</span>
+      <span className="text-sm md:text-base font-black text-white tracking-widest leading-none mb-0.5 md:mb-1 group-hover:text-blue-400 transition-colors">{code}</span>
+      <span className="text-[7px] md:text-[8px] font-black text-blue-500 uppercase tracking-[0.2em] leading-none">{dateDisplay}</span>
     </div>
   );
 }
