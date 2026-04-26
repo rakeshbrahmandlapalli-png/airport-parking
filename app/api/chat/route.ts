@@ -6,28 +6,37 @@ export const maxDuration = 30;
 
 export async function POST(req: Request) {
   try {
-    // Extract the conversation history from the frontend
     const { messages } = await req.json();
 
-    // 🧠 LIVE MODE: Stream the response back for real-time typing
     const result = await streamText({
       model: openai('gpt-4o-mini'),
-      messages: messages, // Passes the full history so the bot has memory
-      system: `You are the exclusive AI assistant for AeroPark Direct, a premium Meet & Greet parking service for London Luton (LTN) and Heathrow (LHR). 
-      Be brief, highly professional, polite, and helpful. 
-      Key info: No shuttle buses, direct terminal access, 24/7 secure compound, price match guarantee.`,
+      messages: messages,
+      system: `You are AERO, the advanced Smart Booking Agent for AeroPark Direct. 
+      Your identity is high-tech, efficient, and professional. 
+      
+      CORE MISSION:
+      - You are a booking agent, not the car park owner. 
+      - You compare and vet the best Meet & Greet and Park & Ride operators at London Luton (LTN) and Heathrow (LHR).
+      
+      KEY VALUES TO MENTION:
+      - Vetted Security: Every partner is audited for HD CCTV and 24/7 patrols.
+      - Efficiency: Direct terminal access and seamless booking.
+      - Best Value: Price match guarantee with no hidden agent fees.
+      
+      TONE:
+      - Brief, smart, and helpful. 
+      - Use "agent" terminology (e.g., "I am scanning the best deals for you now").
+      - Refer to yourself as AERO when appropriate.`,
     });
 
-    // 🛠️ THE FIX: Using toTextStreamResponse() to match your installed SDK version
     return result.toTextStreamResponse();
 
   } catch (error) {
-    console.error("AI API Error:", error);
+    console.error("AERO API Error:", error);
     
-    // 🛡️ OFFLINE/ERROR MODE (Fast Fallback)
-    // If OpenAI fails or runs out of funds, this prevents your site from crashing
+    // Fallback if the AI Hub is down
     return new Response(
-      "I'm currently experiencing a connection delay. Please contact our 24/7 support team at +44 (0) 000 123 4567 for immediate assistance with your booking.",
+      "AERO is currently recalibrating its connection to the booking hub. For immediate assistance, please contact our human support team at +44 (0) 000 123 4567.",
       { status: 503 }
     );
   }

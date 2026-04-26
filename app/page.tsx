@@ -7,6 +7,7 @@ import {
   Clock, 
   PlaneTakeoff,
   ShieldCheck,
+  Star,
   CreditCard,
   MapPin,
   CarFront,
@@ -18,7 +19,9 @@ import {
   CheckCircle2,
   Tag,
   Search,
-  Car
+  Car,
+  Laptop,
+  Building2
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -216,7 +219,6 @@ export default function HomePage() {
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-3 md:p-4 group/input transition-colors hover:bg-white/10">
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-300">Select Departure Airport</label>
-                    <div className="px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-[8px] md:text-[9px] font-black uppercase tracking-wider animate-pulse">Limited Spots</div>
                   </div>
                   <div className="relative">
                     <select name="airport" value={airport} onChange={(e) => setAirport(e.target.value)} className="w-full bg-transparent font-black text-white text-lg sm:text-xl md:text-2xl outline-none cursor-pointer appearance-none relative z-10">
@@ -234,10 +236,10 @@ export default function HomePage() {
                       <PlaneTakeoff className="w-3.5 h-3.5 md:w-4 md:h-4" />
                       <label className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-300">Drop-off</label>
                     </div>
-                    {/* flex-row guarantees they stay side-by-side. w-28 limits time width so date fits */}
-                    <div className="flex flex-row gap-2 h-12 md:h-11">
-                      <input type="date" name="dropoffDate" min={todayStr} value={dropoffDate} onChange={(e) => setDropoffDate(e.target.value)} className="flex-1 min-w-0 bg-white text-slate-900 rounded-xl px-2 md:px-3 font-bold text-base md:text-sm outline-none focus:ring-2 focus:ring-blue-500" />
-                      <input type="time" name="dropoffTime" value={dropoffTime} onChange={(e) => setDropoffTime(e.target.value)} className="w-28 sm:w-32 bg-white text-slate-900 rounded-xl px-2 font-bold text-base md:text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                    {/* CSS Grid ensures the date and time never squish on mobile */}
+                    <div className="grid grid-cols-[3fr_2fr] gap-2 h-12 md:h-11">
+                      <input type="date" name="dropoffDate" min={todayStr} value={dropoffDate} onChange={(e) => setDropoffDate(e.target.value)} className="w-full bg-white text-slate-900 rounded-xl px-2 md:px-3 font-bold text-base md:text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                      <input type="time" name="dropoffTime" value={dropoffTime} onChange={(e) => setDropoffTime(e.target.value)} className="w-full bg-white text-slate-900 rounded-xl px-2 font-bold text-base md:text-sm outline-none focus:ring-2 focus:ring-blue-500" />
                     </div>
                   </div>
 
@@ -247,9 +249,10 @@ export default function HomePage() {
                       <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4" />
                       <label className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-300">Pick-up</label>
                     </div>
-                    <div className="flex flex-row gap-2 h-12 md:h-11">
-                      <input type="date" name="pickupDate" min={dropoffDate || todayStr} value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="flex-1 min-w-0 bg-white text-slate-900 rounded-xl px-2 md:px-3 font-bold text-base md:text-sm outline-none focus:ring-2 focus:ring-blue-500" />
-                      <input type="time" name="pickupTime" value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} className="w-28 sm:w-32 bg-white text-slate-900 rounded-xl px-2 font-bold text-base md:text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                    {/* CSS Grid ensures the date and time never squish on mobile */}
+                    <div className="grid grid-cols-[3fr_2fr] gap-2 h-12 md:h-11">
+                      <input type="date" name="pickupDate" min={dropoffDate || todayStr} value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="w-full bg-white text-slate-900 rounded-xl px-2 md:px-3 font-bold text-base md:text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                      <input type="time" name="pickupTime" value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} className="w-full bg-white text-slate-900 rounded-xl px-2 font-bold text-base md:text-sm outline-none focus:ring-2 focus:ring-blue-500" />
                     </div>
                   </div>
                 </div>
@@ -268,49 +271,95 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="hidden relative z-20 -mt-12 px-6"> 
-        {/* Hidden section preserved per your original code */}
-      </section>
-
-      {/* 3. CORE BENEFITS BANNER */}
-      <div className="bg-slate-900 border-b border-white/10 py-10 md:py-14 relative z-20 shadow-2xl overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
-        <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 divide-y sm:divide-y-0 md:divide-x divide-white/10">
-            
-            <div className="flex items-center gap-4 md:gap-5 md:px-8 pt-0">
-              <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
-                <CarFront className="w-5 h-5 md:w-6 md:h-6 text-blue-400" />
-              </div>
-              <div>
-                <h4 className="text-white font-black text-base md:text-lg tracking-tight mb-0.5 md:mb-1">Valet At Terminal</h4>
-                <p className="text-slate-400 text-xs md:text-sm font-medium leading-snug">Direct meet & greet right at the airport drop-off zone.</p>
-              </div>
+      {/* 🟢 THE NEXT-LEVEL AERO CONCIERGE ANIMATION */}
+      <section className="py-24 bg-white overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+          
+          {/* TEXT SIDE (Left - 5 Columns) */}
+          <div className="lg:col-span-5 space-y-6">
+            <h2 className="text-5xl md:text-7xl font-black text-slate-900 leading-[0.85] tracking-tighter uppercase">
+              Smart <br/>
+              <span className="text-blue-600">Vetting.</span>
+            </h2>
+            <p className="text-xl text-slate-500 font-medium leading-relaxed max-w-sm">
+              Meet <strong>Aero</strong>, your digital concierge. Aero scans 100+ data points to ensure your provider is secure, vetted, and verified.
+            </p>
+            <div className="pt-6">
+               <div className="inline-flex items-center gap-3 px-6 py-3 bg-slate-900 rounded-2xl">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></div>
+                  <span className="text-white text-[10px] font-black uppercase tracking-widest">Aero is Online</span>
+               </div>
             </div>
-
-            <div className="flex items-center gap-4 md:gap-5 md:px-8 pt-6 sm:pt-0">
-              <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
-                <CreditCard className="w-5 h-5 md:w-6 md:h-6 text-blue-400" />
-              </div>
-              <div>
-                <h4 className="text-white font-black text-base md:text-lg tracking-tight mb-0.5 md:mb-1">All-Inclusive Rates</h4>
-                <p className="text-slate-400 text-xs md:text-sm font-medium leading-snug">Terminal entry and exit fees are fully covered by us.</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4 md:gap-5 md:px-8 pt-6 md:pt-0 sm:col-span-2 md:col-span-1 sm:border-t sm:border-white/10 md:border-t-0 sm:mt-2 md:mt-0">
-              <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
-                <ShieldCheck className="w-5 h-5 md:w-6 md:h-6 text-blue-400" />
-              </div>
-              <div>
-                <h4 className="text-white font-black text-base md:text-lg tracking-tight mb-0.5 md:mb-1">Premier Secure Parking</h4>
-                <p className="text-slate-400 text-xs md:text-sm font-medium leading-snug">Gated, fenced, and 24/7 manned facility security.</p>
-              </div>
-            </div>
-
           </div>
+
+          {/* ANIMATION SIDE (Right - 7 Columns) */}
+          <div className="lg:col-span-7 relative h-[500px] w-full rounded-[4rem] bg-slate-950 shadow-3xl overflow-hidden flex items-center justify-center border border-white/5">
+            
+            {/* Cyber Grid Background */}
+            <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/grid-me.png')]"></div>
+            
+            {/* 1. THE MASCOT: AERO */}
+            <div className="relative z-30 flex flex-col items-center animate-float">
+              {/* Aero's Body */}
+              <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] bg-gradient-to-br from-blue-600 to-blue-800 border-4 border-white/10 shadow-[0_0_50px_rgba(37,99,235,0.4)] flex items-center justify-center relative">
+                
+                {/* Aero's Digital Face */}
+                <div className="flex gap-4">
+                  <div className="w-3 h-6 bg-white rounded-full animate-pulse"></div>
+                  <div className="w-3 h-6 bg-white rounded-full animate-pulse"></div>
+                </div>
+
+                {/* Scanning Beams (Aero "Vetting" the providers) */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] pointer-events-none">
+                   <div className="absolute inset-0 border border-blue-500/20 rounded-full animate-ping"></div>
+                   <div className="absolute inset-0 border border-dashed border-blue-400/10 rounded-full animate-spin [animation-duration:10s]"></div>
+                </div>
+              </div>
+
+              {/* Aero's Hover Glow */}
+              <div className="mt-8 w-20 h-2 bg-blue-500/20 blur-md rounded-full animate-pulse"></div>
+            </div>
+
+            {/* 2. THE VETTED PROVIDERS (Orbiting Aero) */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              
+              {/* Provider 1: Meet & Greet */}
+              <div className="absolute animate-orbit [animation-duration:12s]">
+                <div className="p-4 bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex flex-col items-center gap-1 group">
+                  <CarFront className="w-6 h-6 text-blue-400" />
+                  <CheckCircle2 className="w-3 h-3 text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              </div>
+
+              {/* Provider 2: Park & Ride */}
+              <div className="absolute animate-orbit [animation-duration:15s] [animation-delay:-5s]">
+                <div className="p-4 bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex flex-col items-center gap-1 group">
+                  <Building2 className="w-6 h-6 text-purple-400" />
+                  <CheckCircle2 className="w-3 h-3 text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              </div>
+
+              {/* Provider 3: Security */}
+              <div className="absolute animate-orbit [animation-duration:18s] [animation-delay:-10s]">
+                <div className="p-4 bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex flex-col items-center gap-1 group">
+                  <ShieldCheck className="w-6 h-6 text-emerald-400" />
+                  <CheckCircle2 className="w-3 h-3 text-emerald-500 opacity-100" />
+                </div>
+              </div>
+
+            </div>
+
+            {/* Bottom HUD Status */}
+            <div className="absolute bottom-10 px-8 py-3 bg-black/40 backdrop-blur-xl border border-white/5 rounded-2xl">
+               <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-3">
+                 <span className="w-2 h-2 rounded-full bg-blue-500"></span> 
+                 Aero Search Engine: Active
+               </span>
+            </div>
+          </div>
+
         </div>
-      </div>
+      </section>
 
       {/* 4. THE BENTO BOX */}
       <section id="services" className="py-16 md:py-24 px-4 md:px-6 bg-white">
@@ -321,66 +370,75 @@ export default function HomePage() {
               <span className="text-blue-600">Excellence.</span>
             </h2>
             <p className="text-base md:text-lg text-slate-500 font-medium max-w-xl leading-relaxed border-l-4 border-blue-600 pl-4 md:pl-6">
-              We eliminated shuttle buses. Experience airport parking designed around your schedule, not ours.
+              From premium Meet & Greet to cost-effective Park & Ride. Find the perfect parking solution tailored to your schedule and budget.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-            <div className="md:col-span-2 bg-slate-50 rounded-[2rem] md:rounded-[3rem] p-6 sm:p-8 md:p-14 border border-slate-100 relative overflow-hidden flex flex-col justify-between min-h-[400px] md:min-h-[500px]">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-4 md:mb-6">
+            
+            {/* Big Left Card - Symbol Fixed to Car, Badge Fixed */}
+            <div className="lg:col-span-2 bg-slate-50 rounded-[2rem] md:rounded-[3rem] p-6 sm:p-8 md:p-14 border border-slate-100 relative overflow-hidden flex flex-col justify-between min-h-[400px] md:min-h-[500px]">
               <div className="absolute top-0 right-0 w-64 md:w-96 h-64 md:h-96 bg-blue-100/40 rounded-full blur-[80px] md:blur-[100px] -mr-10 md:-mr-20 -mt-10 md:-mt-20 pointer-events-none"></div>
               
               <div className="relative z-10">
                 <div className="w-14 h-14 md:w-20 md:h-20 bg-blue-600 rounded-[1.5rem] md:rounded-[2rem] flex items-center justify-center shadow-xl md:shadow-2xl shadow-blue-500/20 mb-6 md:mb-10 text-white">
-                  <Clock className="w-6 h-6 md:w-10 md:h-10" />
+                  {/* 🟢 FIXED: Symbol matched to Compare theme */}
+                  <Car className="w-6 h-6 md:w-10 md:h-10" />
                 </div>
-                <h3 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 mb-4 md:mb-8 tracking-tight leading-none">
-                  Zero Wait Time. <br/>Direct Access.
+                <h3 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 mb-4 md:mb-8 tracking-tight leading-[1.1]">
+                  Compare Trusted <br/>Airport Parking Operators.
                 </h3>
                 <p className="text-slate-500 font-semibold text-base sm:text-lg md:text-xl leading-relaxed max-w-lg">
-                  Hand your keys to our vetted chauffeurs exactly at terminal check-in. 
-                  Walk 2 minutes to the gate. It's that simple.
+                  We bring the top-rated providers together in one place so you can find the perfect balance of convenience and value for your trip.
                 </p>
               </div>
               
               <div className="relative z-10 mt-8 md:mt-10">
+                {/* 🟢 FIXED: confusing terminal text cleared up */}
                 <span className="px-4 md:px-5 py-2 bg-white border border-slate-200 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-400 inline-block">
-                  Terminal 2, 3, 4, 5 & LTN
+                  Serving LTN & LHR Terminals
                 </span>
               </div>
             </div>
 
-            <div className="md:col-span-1 flex flex-col gap-4 md:gap-6">
-              <div className="flex-1 bg-[#0F172A] rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 flex flex-col justify-between group overflow-hidden relative">
+            <div className="lg:col-span-1 flex flex-col gap-4 md:gap-6">
+              <div className="flex-1 bg-[#0F172A] rounded-[2rem] md:rounded-[3rem] p-6 md:p-8 flex flex-col justify-between group overflow-hidden relative">
                 <div className="absolute bottom-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all duration-500"></div>
-                <ShieldCheck className="w-10 h-10 md:w-14 md:h-14 text-blue-400 mb-6 md:mb-8" />
+                <ShieldCheck className="w-10 h-10 md:w-12 md:h-12 text-blue-400 mb-4 md:mb-6" />
                 <div>
-                  <h3 className="text-xl md:text-2xl font-black text-white mb-2 md:mb-4 uppercase tracking-tight">24/7 Security</h3>
+                  <h3 className="text-xl md:text-2xl font-black text-white mb-2 md:mb-3 uppercase tracking-tight">24/7 Security</h3>
                   <p className="text-slate-400 text-xs md:text-sm font-medium leading-relaxed">
                     Your vehicle is moved to a private compound with HD CCTV and manned regular patrols.
                   </p>
                 </div>
               </div>
 
-              <div className="flex-1 bg-white rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 border border-slate-200 shadow-sm flex flex-col justify-between group hover:border-blue-600 transition-colors duration-300">
-                <CreditCard className="w-10 h-10 md:w-14 md:h-14 text-slate-900 mb-6 md:mb-0 group-hover:scale-110 transition-transform duration-300" />
+              {/* 🟢 FIXED: Pricing card streamlined and copy updated */}
+              <div className="flex-1 bg-white rounded-[2rem] md:rounded-[3rem] p-6 md:p-8 border border-slate-200 shadow-sm flex flex-col justify-between group hover:border-blue-600 transition-colors duration-300">
+                <CreditCard className="w-10 h-10 md:w-12 md:h-12 text-slate-900 mb-4 md:mb-6 group-hover:scale-110 transition-transform duration-300" />
                 <div>
-                  <h3 className="text-xl md:text-2xl font-black text-slate-900 mb-4 md:mb-6 uppercase tracking-tight">Pricing</h3>
-                  <ul className="space-y-3 md:space-y-4">
-                    {["Price match guarantee", "No hidden drop-off fees"].map((item, idx) => (
-                      <li key={idx} className="flex items-center gap-2 md:gap-3 text-[10px] md:text-xs text-slate-600 font-black uppercase tracking-wider">
-                        <CheckCircle2 className="w-3.5 h-3.5 md:w-4 md:h-4 text-emerald-500 shrink-0" /> {item}
-                      </li>
-                    ))}
-                  </ul>
+                  <h3 className="text-xl md:text-2xl font-black text-slate-900 mb-3 md:mb-4 uppercase tracking-tight">Great Value</h3>
+                  <p className="text-slate-600 text-xs md:text-sm font-medium leading-relaxed">No hidden fees, ever. Our prices are transparent, with a price match guarantee for the best value on your airport parking.</p>
                 </div>
               </div>
+              
+              <div className="flex-1 bg-slate-50 rounded-[2rem] md:rounded-[3rem] p-6 md:p-8 border border-slate-200 shadow-sm flex flex-col justify-between group hover:border-amber-500 transition-colors duration-300">
+                <Star className="w-10 h-10 md:w-12 md:h-12 text-amber-400 mb-4 md:mb-6 group-hover:scale-110 transition-transform duration-300 fill-current" />
+                <div>
+                  <h3 className="text-xl md:text-2xl font-black text-slate-900 mb-2 md:mb-3 uppercase tracking-tight">Reliable Trust</h3>
+                  <p className="text-slate-500 text-xs md:text-sm font-medium leading-relaxed">
+                    Customer rated security you can rely on. Book with confidence.
+                  </p>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
       </section>
 
       {/* 4.5 HOW IT WORKS SECTION */}
-      <section className="py-16 md:py-24 bg-white">
+      <section className="py-16 md:py-24 bg-white border-t border-slate-50">
         <div className="max-w-7xl mx-auto px-4 md:px-6 text-center">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-10 md:mb-20">
             Seamless Departure in <span className="text-blue-600">3 Steps.</span>
@@ -390,7 +448,6 @@ export default function HomePage() {
             <div className="relative group">
               <div className="w-20 h-20 md:w-24 md:h-24 bg-white border-2 border-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 md:mb-8 shadow-xl group-hover:border-blue-500 transition-all duration-500 relative z-10">
                 <Search className="w-8 h-8 md:w-10 md:h-10 text-blue-600" />
-                <div className="absolute -top-1 -right-1 md:-top-2 md:-right-2 w-6 h-6 md:w-8 md:h-8 bg-slate-900 text-white rounded-full flex items-center justify-center text-[10px] md:text-xs font-black">01</div>
               </div>
               <h3 className="text-xl md:text-2xl font-black text-slate-900 mb-2 md:mb-4 tracking-tight">1. Choose</h3>
               <p className="text-slate-500 font-bold text-xs md:text-sm leading-relaxed max-w-[240px] mx-auto">
@@ -401,7 +458,6 @@ export default function HomePage() {
             <div className="relative group">
               <div className="w-20 h-20 md:w-24 md:h-24 bg-white border-2 border-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 md:mb-8 shadow-xl group-hover:border-blue-500 transition-all duration-500 relative z-10">
                 <CreditCard className="w-8 h-8 md:w-10 md:h-10 text-blue-600" />
-                <div className="absolute -top-1 -right-1 md:-top-2 md:-right-2 w-6 h-6 md:w-8 md:h-8 bg-slate-900 text-white rounded-full flex items-center justify-center text-[10px] md:text-xs font-black">02</div>
               </div>
               <h3 className="text-xl md:text-2xl font-black text-slate-900 mb-2 md:mb-4 tracking-tight">2. Book</h3>
               <p className="text-slate-500 font-bold text-xs md:text-sm leading-relaxed max-w-[240px] mx-auto">
@@ -412,7 +468,6 @@ export default function HomePage() {
             <div className="relative group">
               <div className="w-20 h-20 md:w-24 md:h-24 bg-white border-2 border-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 md:mb-8 shadow-xl group-hover:border-blue-500 transition-all duration-500 relative z-10">
                 <Car className="w-8 h-8 md:w-10 md:h-10 text-blue-600" />
-                <div className="absolute -top-1 -right-1 md:-top-2 md:-right-2 w-6 h-6 md:w-8 md:h-8 bg-slate-900 text-white rounded-full flex items-center justify-center text-[10px] md:text-xs font-black">03</div>
               </div>
               <h3 className="text-xl md:text-2xl font-black text-slate-900 mb-2 md:mb-4 tracking-tight">3. Park</h3>
               <p className="text-slate-500 font-bold text-xs md:text-sm leading-relaxed max-w-[240px] mx-auto">
