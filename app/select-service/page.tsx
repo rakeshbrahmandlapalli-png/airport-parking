@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { 
   Car, 
@@ -12,7 +12,8 @@ import {
   ShieldCheck, 
   MapPin,
   ArrowLeft,
-  Plane
+  Plane,
+  X
 } from "lucide-react";
 
 function ServiceSelectionContent() {
@@ -38,6 +39,39 @@ function ServiceSelectionContent() {
     : "Dates not set";
 
   const airportCode = airport.includes("Heathrow") ? "LHR" : "LTN";
+
+  // --- EDIT SEARCH MODAL STATE ---
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editAirport, setEditAirport] = useState(airport);
+  const [editDropDate, setEditDropDate] = useState(dropoffDate);
+  const [editDropTime, setEditDropTime] = useState(dropoffTime);
+  const [editPickDate, setEditPickDate] = useState(pickupDate);
+  const [editPickTime, setEditPickTime] = useState(pickupTime);
+
+  const openEditModal = () => {
+    setEditAirport(airport);
+    setEditDropDate(dropoffDate);
+    setEditDropTime(dropoffTime);
+    setEditPickDate(pickupDate);
+    setEditPickTime(pickupTime);
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsEditModalOpen(false);
+    
+    // Update the URL with the new times so the page refreshes
+    const query = new URLSearchParams({
+      airport: editAirport,
+      dropoffDate: editDropDate,
+      dropoffTime: editDropTime,
+      pickupDate: editPickDate,
+      pickupTime: editPickTime,
+    }).toString();
+    
+    router.push(`/select-service?${query}`);
+  };
 
   const handleSelect = (serviceType: string) => {
     const query = new URLSearchParams({
@@ -89,33 +123,33 @@ function ServiceSelectionContent() {
   return (
     <main suppressHydrationWarning className="min-h-[100dvh] bg-slate-50 font-sans antialiased overflow-x-hidden pb-16">
       
-      {/* PREMIUM DARK NAVBAR (Matches Results & Checkout) */}
+      {/* PREMIUM DARK NAVBAR */}
       <header className="sticky top-0 z-[100] bg-[#0A101D] border-b border-white/5 h-16 md:h-20 flex items-center px-4 md:px-8 justify-between shadow-2xl backdrop-blur-md">
-        <Link href="/" className="text-slate-400 hover:text-white transition-colors flex items-center gap-2 group touch-manipulation">
+        <button onClick={openEditModal} className="text-slate-400 hover:text-white transition-colors flex items-center gap-2 group touch-manipulation cursor-pointer">
           <ArrowLeft className="w-4 h-4 md:w-5 md:h-5 lg:group-hover:-translate-x-1 transition-transform" /> 
           <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] hidden md:block">Edit Search</span>
-        </Link>
+        </button>
         
         <Link href="/" className="flex items-center gap-1.5 md:gap-2 text-white font-black tracking-tighter text-xl md:text-2xl uppercase absolute left-1/2 -translate-x-1/2 group touch-manipulation">
           <Plane className="w-5 h-5 md:w-7 md:h-7 text-blue-500 rotate-45 lg:group-hover:scale-110 transition-transform" />AEROPARK<span className="text-blue-500">DIRECT</span>
         </Link>
 
-        {/* Dynamic Search Summary linking back to home for editing */}
-        <Link href="/" className="text-right group touch-manipulation">
+        {/* 🟢 FIXED: Button that opens the Edit Modal */}
+        <button onClick={openEditModal} className="text-right group touch-manipulation cursor-pointer">
            <div className="flex flex-col items-end">
               <span className="text-sm md:text-base font-black text-white tracking-widest leading-none mb-0.5 md:mb-1 group-hover:text-blue-400 transition-colors">{airportCode}</span>
               <span className="text-[7px] md:text-[8px] font-black text-blue-500 uppercase tracking-[0.2em] leading-none">{dateDisplay}</span>
            </div>
-        </Link>
+        </button>
       </header>
 
-      <div className="max-w-5xl mx-auto w-full pt-12 md:pt-16 px-4 sm:px-6">
+      <div className="max-w-5xl mx-auto w-full pt-12 md:pt-16 px-4 sm:px-6 relative z-10">
         
         {/* Header Section */}
         <div className="text-center mb-10 md:mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-200/50 text-slate-600 font-bold text-[10px] uppercase tracking-widest mb-6">
+          <button onClick={openEditModal} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-200/50 text-slate-600 font-bold text-[10px] uppercase tracking-widest mb-6 hover:bg-slate-200 transition-colors cursor-pointer touch-manipulation">
             <MapPin className="w-3 h-3" /> {airport}
-          </div>
+          </button>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4">
             How would you like to park?
           </h1>
@@ -150,7 +184,7 @@ function ServiceSelectionContent() {
                 {service.description}
               </p>
 
-              {/* Features List - 🟢 FIXED: Left Aligned with justify-start and text-left */}
+              {/* Features List */}
               <ul className="space-y-3 mb-6 md:mb-8 w-full">
                 {service.features.map((feature, idx) => (
                   <li key={idx} className="flex items-start md:items-center justify-start gap-3 text-xs font-bold text-slate-700 text-left">
@@ -172,8 +206,61 @@ function ServiceSelectionContent() {
             </div>
           ))}
         </div>
-
       </div>
+
+      {/* 🟢 THE NEW "EDIT SEARCH" MODAL */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-[200] bg-slate-950/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4">
+          <div className="bg-white w-full max-w-lg rounded-t-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 shadow-2xl animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-8 duration-300 relative">
+            
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Modify Search</h2>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Update your travel details</p>
+              </div>
+              <button onClick={() => setIsEditModalOpen(false)} className="p-2.5 bg-slate-100 text-slate-600 rounded-full hover:bg-slate-200 transition-colors touch-manipulation">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateSearch} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Departure Airport</label>
+                <select value={editAirport} onChange={(e)=>setEditAirport(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 font-black text-slate-900 text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 touch-manipulation">
+                  <option value="Luton (LTN)">Luton Airport (LTN)</option>
+                  <option value="Heathrow (LHR)">Heathrow Airport (LHR)</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 border-t border-slate-100 pt-4">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Drop-off Date</label>
+                  <input type="date" value={editDropDate} onChange={(e)=>setEditDropDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3.5 font-bold text-slate-900 text-sm outline-none focus:border-blue-500 touch-manipulation" required />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Time</label>
+                  <input type="time" value={editDropTime} onChange={(e)=>setEditDropTime(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3.5 font-bold text-slate-900 text-sm outline-none focus:border-blue-500 touch-manipulation" required />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 pb-2">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Pick-up Date</label>
+                  <input type="date" min={editDropDate} value={editPickDate} onChange={(e)=>setEditPickDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3.5 font-bold text-slate-900 text-sm outline-none focus:border-blue-500 touch-manipulation" required />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Time</label>
+                  <input type="time" value={editPickTime} onChange={(e)=>setEditPickTime(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3.5 font-bold text-slate-900 text-sm outline-none focus:border-blue-500 touch-manipulation" required />
+                </div>
+              </div>
+
+              <button type="submit" className="w-full mt-6 py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl text-sm uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-500/30 touch-manipulation">
+                Update Search
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
