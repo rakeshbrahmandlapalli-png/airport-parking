@@ -29,8 +29,8 @@ function CheckoutContent() {
   const dailyRate = Number(searchParams.get("price")) || 0;
   const dropDate = searchParams.get("dropoffDate");
   const pickDate = searchParams.get("pickupDate");
-  const dropTime = searchParams.get("dropoffTime") || ""; // 🔥 CAPTURED TIME
-  const pickTime = searchParams.get("pickupTime") || "";  // 🔥 CAPTURED TIME
+  const dropTime = searchParams.get("dropoffTime") || ""; 
+  const pickTime = searchParams.get("pickupTime") || "";  
   const type = searchParams.get("type") || "Premium Meet & Greet"; 
 
   // --- FORM STATES ---
@@ -60,7 +60,6 @@ function CheckoutContent() {
 
   const booking = calculateTotal();
 
-  // Helper to format dates for the UI
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "--";
     return new Date(dateString).toLocaleDateString("en-GB", { weekday: 'short', day: 'numeric', month: 'short' });
@@ -79,9 +78,10 @@ function CheckoutContent() {
     try {
       const shortId = "APD-" + Math.random().toString(36).substring(2, 8).toUpperCase();
       
-      // Simulate payment gateway delay before saving to DB
+      // Simulate payment gateway delay
       await new Promise(resolve => setTimeout(resolve, 1500));
 
+      // 1. Save to Database
       const { error: dbError } = await supabase
         .from('bookings')
         .insert([{ 
@@ -94,9 +94,9 @@ function CheckoutContent() {
           car_color: carColor,
           service_type: type,
           dropoff_date: dropDate,
-          dropoff_time: dropTime, // 🔥 SAVED TO SUPABASE
+          dropoff_time: dropTime, 
           pickup_date: pickDate,
-          pickup_time: pickTime,  // 🔥 SAVED TO SUPABASE
+          pickup_time: pickTime,  
           total_price: booking.total,
           flight_number: flightNumber.toUpperCase().trim(),
           airport: airport,
@@ -105,6 +105,29 @@ function CheckoutContent() {
 
       if (dbError) throw dbError;
       
+      // 🔥 2. NEW: Trigger the Email API
+      try {
+        await fetch('/api/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customerEmail: email,
+            flightNumber: flightNumber,
+            parkingType: type,
+            bookingRef: shortId,
+            customerPhone: phone,
+            carDetails: `${registration.toUpperCase()} - ${carMake} ${carColor}`,
+            airport: airport,
+            terminal: terminal
+          }),
+        });
+        console.log("Email triggered successfully");
+      } catch (emailError) {
+        // We catch this so the user still gets redirected to success even if email fails
+        console.error("Failed to send email:", emailError);
+      }
+      
+      // 3. Redirect to Success Page
       router.push(`/success?ref=${shortId}`);
       
     } catch (error: any) {
@@ -255,7 +278,7 @@ function CheckoutContent() {
               </div>
             </div>
 
-            {/* Mobile Submit Button (Visible only on small screens) */}
+            {/* Mobile Submit Button */}
             <div className="block lg:hidden mt-6">
               <button 
                 type="submit" 
@@ -277,7 +300,6 @@ function CheckoutContent() {
         {/* RIGHT COLUMN: ORDER SUMMARY */}
         <aside className="w-full lg:w-[400px] xl:w-[420px] lg:sticky lg:top-28">
           <div className="bg-slate-900 rounded-[2rem] md:rounded-[2.5rem] border border-blue-500/30 shadow-2xl overflow-hidden text-white relative">
-            {/* Glowing Accent */}
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600"></div>
             <div className="absolute top-4 right-4 bg-blue-600/20 text-blue-400 border border-blue-500/30 text-[8px] md:text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1.5">
               <ShieldCheck className="w-3 h-3" /> Secure
@@ -333,7 +355,7 @@ function CheckoutContent() {
                 <span className="text-4xl md:text-5xl font-black tracking-tighter text-blue-500 drop-shadow-md">£{booking.total.toFixed(2)}</span>
               </div>
 
-              {/* Desktop Submit Button (Hidden on Mobile) */}
+              {/* Desktop Submit Button */}
               <button 
                 type="submit" 
                 form="checkout-form"
@@ -367,13 +389,9 @@ function CheckoutContent() {
   );
 }
 
-// ----------------------------------------------------------------------
-// MAIN PAGE LAYOUT
-// ----------------------------------------------------------------------
 export default function CheckoutPage() {
   return (
     <main suppressHydrationWarning className="min-h-[100dvh] bg-[#F8FAFC] font-sans antialiased pb-24 selection:bg-blue-200 selection:text-blue-900 overflow-x-hidden">
-      {/* PREMIUM DARK NAVBAR */}
       <header className="sticky top-0 z-[100] bg-[#0A101D] border-b border-white/5 shadow-2xl backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 md:h-20 flex items-center justify-between">
           <Link href="/results" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group touch-manipulation [-webkit-tap-highlight-color:transparent]">
