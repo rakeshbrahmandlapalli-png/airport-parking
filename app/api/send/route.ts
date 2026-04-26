@@ -1,9 +1,36 @@
 import { NextResponse } from "next/server";
-import { sendBookingReceipt } from "@/app/lib/mail";
+import { sendBookingReceipt } from "@/app/lib/mail"; 
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    
+    // --- CASE 1: GENERAL CONTACT FORM INQUIRY ---
+    // This goes to YOU (info@aeroparkdirect.co.uk)
+    if (body.message) {
+      const { name, email, reference, message } = body;
+      
+      console.log(`📩 New Contact Inquiry from: ${email}`);
+
+      const result = await resend.emails.send({
+        // 🔥 Now using your verified domain for maximum trust
+        from: 'AeroPark Direct <info@aeroparkdirect.co.uk>', 
+        to: 'info@aeroparkdirect.co.uk',
+        subject: `NEW INQUIRY: ${name} (${reference || 'No Ref'})`,
+        replyTo: email, // Click 'Reply' in your inbox to email the customer back directly
+        text: `Name: ${name}\nEmail: ${email}\nRef: ${reference}\n\nMessage:\n${message}`,
+        tags: [{ name: "category", value: "contact_form" }],
+      });
+
+      if (result.error) throw result.error;
+      return NextResponse.json({ success: true });
+    }
+
+    // --- CASE 2: BOOKING RECEIPT ---
+    // This goes to the CUSTOMER
     const { 
       customerEmail, 
       flightNumber, 
@@ -12,17 +39,13 @@ export async function POST(req: Request) {
       customerPhone, 
       carDetails, 
       notes,
-      airport,    // NEW: Capture airport
-      terminal    // NEW: Capture terminal
+      airport,
+      terminal 
     } = body;
 
-    // 1. Normalize the email (Remove spaces and force lowercase)
     const targetEmail = customerEmail?.trim().toLowerCase();
+    console.log(`📤 Sending Receipt to: "${targetEmail}" | Ref: ${bookingRef}`);
 
-    // 2. Log exactly what we are sending to Resend for debugging
-    console.log(`📤 Sending to: "${targetEmail}" | Ref: ${bookingRef} | Loc: ${airport} ${terminal}`);
-
-    // 3. Trigger the mailer (Now passing airport and terminal!)
     const result = await sendBookingReceipt(
       targetEmail, 
       flightNumber || "TBA", 
@@ -31,25 +54,20 @@ export async function POST(req: Request) {
       customerPhone || "N/A", 
       carDetails || "Vehicle Pending", 
       notes || "",
-      airport || "Luton Airport (LTN)", // Pass to mailer
-      terminal || "Main Terminal"       // Pass to mailer
+      airport || "Luton Airport (LTN)",
+      terminal || "Main Terminal"
     );
     
     if (result.success) {
-      console.log("✅ Resend accepted the email!");
       return NextResponse.json({ success: true, data: result.data });
     } else {
-      // 🛡️ Fixed TypeScript Build Error for Vercel deployment
       const resendError = result.error as any;
-      
-      console.error("❌ Resend API Rejection:", JSON.stringify(resendError));
-      
       return NextResponse.json({ 
         error: "Resend rejected the request", 
-        debug_msg: resendError?.message || "Check Resend Dashboard",
-        resend_code: resendError?.name || "Validation_Error"
+        debug_msg: resendError?.message || "Check Resend Dashboard"
       }, { status: 403 });
     }
+
   } catch (error: any) {
     console.error("🔥 API Route Crash:", error.message);
     return NextResponse.json({ error: "Server Error", msg: error.message }, { status: 500 });
