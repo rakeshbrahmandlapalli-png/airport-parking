@@ -84,18 +84,20 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-blue-600 selection:text-white overflow-x-hidden">
-      {/* 1. PREMIUM NAVBAR */}
+     {/* 1. PREMIUM NAVBAR - FIXED LOGO VISIBILITY */}
       <nav className={`fixed top-0 w-full z-[100] bg-white/80 backdrop-blur-xl border-b border-slate-200 transition-all duration-1000 ${isLoaded ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
-        <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 md:h-24 flex items-center justify-between overflow-hidden">
           
-          <Link href="/" className="flex items-center z-50">
+          <Link href="/" className="flex items-center z-50 overflow-visible">
             <Image 
               src="/logo.png" 
               alt="AeroPark Direct"
-              width={350} 
+              width={400} 
               height={120}
               priority
-              className="h-16 md:h-24 w-auto object-contain scale-110 md:scale-[1.35] origin-left mix-blend-multiply" 
+              /* 🟢 THE FIX: Scale increased to 1.8 on mobile and 1.35 on desktop. 
+                 -translate-x-4 pulls the zoomed logo back into the safe area. */
+              className="h-12 md:h-20 w-auto object-contain scale-[1.8] md:scale-[1.35] origin-left mix-blend-multiply -translate-x-4 md:translate-x-0 ml-6 md:ml-0" 
             />
           </Link>
           
@@ -114,26 +116,26 @@ export default function HomePage() {
             </Link>
           </div>
           
-          <button onClick={() => setIsMenuOpen(true)} className="md:hidden p-2.5 text-slate-900 bg-slate-100 rounded-xl active:scale-90 transition-transform">
+          <button onClick={() => setIsMenuOpen(true)} className="md:hidden p-2.5 text-slate-900 bg-slate-100 rounded-xl active:scale-90 transition-transform relative z-50">
             <Menu className="w-6 h-6" />
           </button>
         </div>
       </nav>
 
-      {/* MOBILE MENU */}
+      {/* MOBILE MENU - LOGO FIX APPLIED HERE TOO */}
       <div 
         className={`md:hidden fixed inset-0 z-[9999] bg-white transition-all duration-500 ease-in-out flex flex-col ${
           isMenuOpen ? 'opacity-100 translate-x-0 visible' : 'opacity-0 translate-x-full invisible pointer-events-none'
         }`}
       >
-        <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100 shrink-0">
-          <Link href="/" onClick={() => setIsMenuOpen(false)} className="flex items-center">
+        <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100 shrink-0 overflow-hidden">
+          <Link href="/" onClick={() => setIsMenuOpen(false)} className="flex items-center overflow-visible">
             <Image 
               src="/logo.png" 
               alt="AeroPark Direct"
               width={250}
               height={80}
-              className="h-16 w-auto object-contain scale-110 origin-left mix-blend-multiply" 
+              className="h-12 w-auto object-contain scale-[1.8] origin-left mix-blend-multiply -translate-x-4 ml-6" 
             />
           </Link>
           <button onClick={() => setIsMenuOpen(false)} className="p-3 text-slate-900 bg-slate-100 rounded-full">
