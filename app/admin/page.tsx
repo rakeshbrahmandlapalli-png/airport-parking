@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
   Users, Trash2, LogOut, Phone, Car, Plane, MessageCircle, 
-  Search, TrendingUp, MapPin, PlaneTakeoff, Loader2, Filter, 
+  Search, TrendingUp, MapPin, Loader2, Filter, 
   LayoutDashboard, CalendarDays, Plus, Building2
 } from "lucide-react";
 
@@ -80,7 +80,7 @@ export default function AdminDashboard() {
     if (filter === "LTN") return b.airport?.includes("Luton") || b.airport?.includes("LTN");
     if (filter === "TODAY") return b.dropoff_date === todayStr || b.pickup_date === todayStr;
     
-    return true; // "ALL"
+    return true; 
   });
 
   const formatDate = (dateStr: string) => {
@@ -104,8 +104,8 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-[#0B1121] font-sans flex flex-col md:flex-row overflow-hidden text-slate-100 selection:bg-blue-600/30 selection:text-white antialiased">
       
-      {/* SIDEBAR NAVIGATION */}
-      <aside className="w-full md:w-64 bg-[#0B1121] text-slate-400 flex flex-col hidden md:flex sticky top-0 h-screen border-r border-slate-800/50 shadow-2xl z-50">
+      {/* 🟢 DESKTOP SIDEBAR */}
+      <aside className="w-full md:w-64 bg-[#0B1121] text-slate-400 hidden md:flex flex-col sticky top-0 h-screen border-r border-slate-800/50 shadow-2xl z-50">
         <div className="p-8 flex items-center gap-3 text-white">
           <Plane className="w-6 h-6 text-blue-500 rotate-45" />
           <span className="font-black text-xl tracking-tight uppercase">OPS <span className="text-blue-500">CENTER</span></span>
@@ -131,11 +131,12 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
-      {/* MAIN CONTENT AREA */}
-      <main className="flex-1 p-6 md:p-10 w-full overflow-y-auto h-screen relative">
+      {/* 🟢 MAIN CONTENT AREA */}
+      {/* ADDED pb-32 so the bottom nav doesn't cover the last table items */}
+      <main className="flex-1 p-4 md:p-10 w-full overflow-y-auto h-screen relative pb-32 md:pb-10">
         
         {/* MOBILE HEADER */}
-        <div className="md:hidden flex items-center justify-between mb-8 bg-[#0f172a] p-5 rounded-2xl text-white shadow-xl border border-slate-800">
+        <div className="md:hidden flex items-center justify-between mb-8 bg-[#0f172a] p-5 rounded-2xl text-white shadow-xl border border-slate-800 mx-2 mt-2">
           <div className="flex items-center gap-2 font-black text-lg uppercase tracking-tighter">
             <Plane className="w-5 h-5 text-blue-500 rotate-45" /> OPS<span className="text-blue-500">CENTER</span>
           </div>
@@ -145,7 +146,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* PAGE HEADER */}
-        <header className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-10">
+        <header className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-10 px-2 md:px-0">
           <div>
             <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">Command Center</h1>
             <p className="text-slate-400 font-medium mt-1">Manage live bookings and driver dispatch.</p>
@@ -153,15 +154,15 @@ export default function AdminDashboard() {
           
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full xl:w-auto">
             
-           {/* 🟢 PREMIUM GLASSMORPHISM SEARCH BAR */}
-            <div className="flex items-center bg-slate-900/50 backdrop-blur-md border border-slate-700/50 rounded-2xl px-5 py-3.5 focus-within:bg-slate-900 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/20 transition-all shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] flex-grow w-full sm:w-80 group">
-              <Search className="w-5 h-5 text-slate-400 mr-3 shrink-0 group-focus-within:text-blue-400 transition-colors" />
+            {/* 🟢 FIXED SEARCH BAR: Added !bg-transparent and text-white */}
+            <div className="flex items-center bg-[#0f172a] border border-slate-700/50 rounded-2xl px-5 py-3.5 focus-within:border-blue-500 transition-all shadow-sm flex-grow w-full sm:w-80 group">
+              <Search className="w-5 h-5 text-slate-500 mr-3 shrink-0 group-focus-within:text-blue-400 transition-colors" />
               <input 
                 type="text" 
                 placeholder="Search ref, name, or plate..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-transparent border-none text-sm font-medium outline-none placeholder:text-slate-500 text-black focus:ring-0"
+                className="w-full !bg-transparent border-none text-sm font-bold outline-none placeholder:text-slate-500 text-white focus:ring-0"
               />
             </div>
 
@@ -171,9 +172,8 @@ export default function AdminDashboard() {
           </div>
         </header>
 
-        {/* METRICS ROW (Premium Dark Theme) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-          {/* Revenue */}
+        {/* METRICS ROW */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10 px-2 md:px-0">
           <div className="bg-[#0f172a] p-8 rounded-[2rem] border border-emerald-900/30 shadow-[0_15px_30px_-5px_rgba(16,185,129,0.05)] flex items-center justify-between group hover:border-emerald-500/50 transition-colors">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 mb-2">Gross Revenue</p>
@@ -184,7 +184,6 @@ export default function AdminDashboard() {
             </div>
           </div>
           
-          {/* Bookings */}
           <div className="bg-[#0f172a] p-8 rounded-[2rem] border border-blue-900/30 shadow-[0_15px_30px_-5px_rgba(37,99,235,0.05)] flex items-center justify-between group hover:border-blue-500/50 transition-colors">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 mb-2">Total Bookings</p>
@@ -195,7 +194,6 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Arriving Today */}
           <div className="bg-gradient-to-br from-[#0f172a] to-[#0B1121] p-8 rounded-[2rem] border border-slate-800 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] flex items-center justify-between relative overflow-hidden sm:col-span-2 lg:col-span-1 text-white group hover:border-slate-700 transition-colors">
             <div className="relative z-10">
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400 mb-2">Arriving Today</p>
@@ -208,9 +206,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* DATA TABLE SECTION */}
-        <div className="bg-[#0f172a] rounded-[2rem] border border-slate-800/80 shadow-2xl overflow-hidden flex flex-col">
-          
-          {/* Filters */}
+        <div className="bg-[#0f172a] rounded-[2rem] border border-slate-800/80 shadow-2xl overflow-hidden flex flex-col mx-2 md:mx-0">
           <div className="p-6 border-b border-slate-800/80 flex items-center gap-3 bg-[#0B1121]/50 overflow-x-auto">
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mr-2 flex items-center gap-1.5 shrink-0">
               <Filter className="w-3.5 h-3.5" /> Filters:
@@ -226,7 +222,6 @@ export default function AdminDashboard() {
             ))}
           </div>
 
-          {/* Table Content */}
           <div className="overflow-x-auto min-h-[400px]">
             {filteredBookings.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-80 text-slate-500">
@@ -248,8 +243,6 @@ export default function AdminDashboard() {
                 <tbody className="divide-y divide-slate-800/80">
                   {filteredBookings.map((b) => (
                     <tr key={b.id} className="hover:bg-slate-800/30 transition-colors group">
-                      
-                      {/* CUSTOMER & REF */}
                       <td className="px-8 py-6">
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center font-black text-lg uppercase shrink-0 group-hover:bg-blue-500/20 group-hover:text-blue-400 transition-colors border border-slate-700">
@@ -264,8 +257,6 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                       </td>
-
-                      {/* VEHICLE (UK License Plate Style) */}
                       <td className="px-8 py-6">
                         <div className="inline-flex items-center justify-center px-3 py-1.5 bg-[#FACC15] text-slate-900 font-black font-mono text-xs rounded-md border border-yellow-600/50 shadow-sm uppercase tracking-[0.1em] mb-2">
                           {b.license_plate || "TBC"}
@@ -275,8 +266,6 @@ export default function AdminDashboard() {
                           {b.car_color || ""} {b.car_make || "Unknown Make"}
                         </div>
                       </td>
-
-                      {/* LOCATION */}
                       <td className="px-8 py-6">
                         <div className="font-bold text-white text-sm flex items-center gap-1.5 mb-2">
                           <MapPin className="w-4 h-4 text-blue-500" />
@@ -288,8 +277,6 @@ export default function AdminDashboard() {
                            <Plane className="w-3.5 h-3.5" /> {b.flight_number || "TBC"}
                         </div>
                       </td>
-
-                      {/* DATES */}
                       <td className="px-8 py-6">
                         <div className="flex flex-col gap-2">
                           <div className="text-xs font-bold text-slate-300 flex items-center gap-2">
@@ -302,8 +289,6 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                       </td>
-
-                      {/* ACTIONS */}
                       <td className="px-8 py-6 text-right">
                         <div className="flex items-center justify-end gap-3">
                           <button 
@@ -323,7 +308,6 @@ export default function AdminDashboard() {
                           </button>
                         </div>
                       </td>
-
                     </tr>
                   ))}
                 </tbody>
@@ -333,6 +317,40 @@ export default function AdminDashboard() {
         </div>
 
       </main>
+
+      {/* 🟢 MOBILE BOTTOM NAVIGATION */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] px-4 pb-6 pt-2 bg-gradient-to-t from-[#0B1121] via-[#0B1121]/90 to-transparent pointer-events-none">
+        <nav className="max-w-md mx-auto bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-2xl h-16 flex items-center justify-around px-2 shadow-2xl pointer-events-auto">
+          
+          <Link href="/admin" className="flex flex-col items-center justify-center flex-1 gap-1 text-blue-500">
+            <LayoutDashboard className="w-5 h-5" />
+            <span className="text-[8px] font-black uppercase tracking-widest">Live</span>
+          </Link>
+
+          <Link href="/admin/companies" className="flex flex-col items-center justify-center flex-1 gap-1 text-slate-500 hover:text-blue-400 transition-colors">
+            <Building2 className="w-5 h-5" />
+            <span className="text-[8px] font-black uppercase tracking-widest">Ops</span>
+          </Link>
+
+          <div className="relative -top-5 px-2">
+            <button className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/40 border-4 border-[#0B1121] active:scale-90 transition-transform">
+              <Plus className="w-7 h-7 text-white" />
+            </button>
+          </div>
+
+          <Link href="/admin/schedule" className="flex flex-col items-center justify-center flex-1 gap-1 text-slate-500 hover:text-blue-400 transition-colors">
+            <CalendarDays className="w-5 h-5" />
+            <span className="text-[8px] font-black uppercase tracking-widest">Plan</span>
+          </Link>
+
+          <button onClick={handleLogout} className="flex flex-col items-center justify-center flex-1 gap-1 text-slate-500 hover:text-red-400 transition-colors">
+            <LogOut className="w-5 h-5" />
+            <span className="text-[8px] font-black uppercase tracking-widest">Exit</span>
+          </button>
+
+        </nav>
+      </div>
+
     </div>
   );
 }

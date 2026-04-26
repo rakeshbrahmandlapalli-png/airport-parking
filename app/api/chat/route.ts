@@ -29,6 +29,7 @@ export async function POST(req: Request) {
       - Refer to yourself as AERO when appropriate.`,
     });
 
+    // 🔥 UPDATED: This is the correct method for the modern AI SDK
     return result.toTextStreamResponse();
 
   } catch (error) {
