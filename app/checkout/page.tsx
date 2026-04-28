@@ -16,7 +16,9 @@ import {
   Plane,
   Lock,
   CreditCard,
-  Calendar
+  Calendar,
+  Shield,
+  Sparkles
 } from "lucide-react";
 
 function CheckoutContent() {
@@ -105,7 +107,7 @@ function CheckoutContent() {
 
       if (dbError) throw dbError;
       
-      // 🔥 2. NEW: Trigger the Email API
+      // 2. Trigger the Email API
       try {
         await fetch('/api/send', {
           method: 'POST',
@@ -123,7 +125,6 @@ function CheckoutContent() {
         });
         console.log("Email triggered successfully");
       } catch (emailError) {
-        // We catch this so the user still gets redirected to success even if email fails
         console.error("Failed to send email:", emailError);
       }
       
@@ -137,8 +138,21 @@ function CheckoutContent() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-12 relative z-10">
       
+      {/* 🟢 AERO SECURE BANNER */}
+      <div className="max-w-3xl mx-auto mb-8 bg-[#0B1121] border border-blue-900/40 rounded-2xl p-4 md:p-5 flex items-center gap-4 shadow-xl relative overflow-hidden">
+        <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="w-10 h-10 bg-blue-600/20 border border-blue-500/50 rounded-xl flex flex-col items-center justify-center shrink-0">
+          <Shield className="w-5 h-5 text-blue-400 mb-0.5" />
+          <div className="w-1 h-1 bg-green-500 rounded-full shadow-[0_0_8px_#22c55e]"></div>
+        </div>
+        <div className="relative z-10">
+          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-400 mb-0.5">Aero Secure Checkout</p>
+          <p className="text-xs sm:text-sm text-slate-300 font-medium">Aero has locked your rate. Complete your details below.</p>
+        </div>
+      </div>
+
       {/* Stepper */}
       <div className="flex items-center justify-between mb-8 md:mb-10 max-w-3xl mx-auto px-2">
         <div className="flex flex-col items-center gap-2 flex-1 opacity-40">
@@ -147,7 +161,7 @@ function CheckoutContent() {
         </div>
         <div className="w-4 md:w-8 flex justify-center text-slate-300">—</div>
         <div className="flex flex-col items-center gap-2 flex-1">
-          <div className="h-1.5 w-full bg-blue-600 rounded-full"></div>
+          <div className="h-1.5 w-full bg-blue-600 rounded-full shadow-[0_0_12px_rgba(37,99,235,0.6)]"></div>
           <span className="text-[9px] md:text-[10px] font-black uppercase text-blue-600 tracking-[0.2em] hidden xs:block">Details & Pay</span>
         </div>
         <div className="w-4 md:w-8 flex justify-center text-slate-300">—</div>
@@ -177,16 +191,16 @@ function CheckoutContent() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
                 <div className="md:col-span-2">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Full Name</label>
-                  <input required type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 md:py-3.5 text-base md:text-sm font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all touch-manipulation" placeholder="James Bond" />
+                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Full Name</label>
+                  <input required type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-base font-bold text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all touch-manipulation" placeholder="James Bond" />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Email Address</label>
-                  <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 md:py-3.5 text-base md:text-sm font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all touch-manipulation" placeholder="james@example.com" />
+                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Email Address</label>
+                  <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-base font-bold text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all touch-manipulation" placeholder="james@example.com" />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Mobile Number</label>
-                  <input required type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 md:py-3.5 text-base md:text-sm font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all touch-manipulation" placeholder="+44 7700 900000" />
+                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Mobile Number</label>
+                  <input required type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-base font-bold text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all touch-manipulation" placeholder="+44 7700 900000" />
                 </div>
               </div>
             </div>
@@ -205,9 +219,9 @@ function CheckoutContent() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 mb-4 md:mb-5">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Departure Terminal</label>
+                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Departure Terminal</label>
                   <div className="relative">
-                    <select value={terminal} onChange={(e) => setTerminal(e.target.value)} className="w-full bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 md:py-3.5 text-base md:text-sm font-black text-blue-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all appearance-none cursor-pointer touch-manipulation">
+                    <select value={terminal} onChange={(e) => setTerminal(e.target.value)} className="w-full bg-blue-50 border border-blue-100 rounded-xl px-4 py-3.5 text-base font-black text-blue-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all appearance-none cursor-pointer touch-manipulation">
                       {airport.includes("Heathrow") ? (
                         <>
                           <option>Terminal 2</option>
@@ -222,23 +236,23 @@ function CheckoutContent() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Return Flight No. (Optional)</label>
-                  <input type="text" value={flightNumber} onChange={(e) => setFlightNumber(e.target.value.toUpperCase())} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 md:py-3.5 text-base md:text-sm font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all uppercase placeholder:normal-case touch-manipulation" placeholder="e.g. BA123" />
+                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Return Flight No. (Optional)</label>
+                  <input type="text" value={flightNumber} onChange={(e) => setFlightNumber(e.target.value.toUpperCase())} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-base font-bold text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all uppercase placeholder:normal-case touch-manipulation" placeholder="e.g. BA123" />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
                 <div className="md:col-span-3">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Registration Plate</label>
-                  <input required type="text" value={registration} onChange={(e) => setRegistration(e.target.value.toUpperCase())} className="w-full bg-[#fde047] border-2 border-yellow-400 rounded-xl px-4 py-3.5 md:py-4 font-black text-slate-900 text-lg md:text-2xl text-center uppercase tracking-[0.2em] focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all placeholder:text-yellow-600/50 shadow-inner touch-manipulation" placeholder="AB12 CDE" />
+                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Registration Plate</label>
+                  <input required type="text" value={registration} onChange={(e) => setRegistration(e.target.value.toUpperCase())} className="w-full bg-[#fde047] border-2 border-yellow-400 rounded-xl px-4 py-4 font-black text-slate-900 text-lg md:text-2xl text-center uppercase tracking-[0.2em] focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all placeholder:text-yellow-600/50 shadow-inner touch-manipulation" placeholder="AB12 CDE" />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Make & Model</label>
-                  <input required type="text" value={carMake} onChange={(e) => setCarMake(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 md:py-3.5 text-base md:text-sm font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all touch-manipulation" placeholder="e.g. Range Rover Sport" />
+                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Make & Model</label>
+                  <input required type="text" value={carMake} onChange={(e) => setCarMake(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-base font-bold text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all touch-manipulation" placeholder="e.g. Range Rover Sport" />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Color</label>
-                  <input type="text" value={carColor} onChange={(e) => setCarColor(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 md:py-3.5 text-base md:text-sm font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all touch-manipulation" placeholder="e.g. Black" />
+                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Color</label>
+                  <input type="text" value={carColor} onChange={(e) => setCarColor(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-base font-bold text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all touch-manipulation" placeholder="e.g. Black" />
                 </div>
               </div>
             </div>
@@ -262,29 +276,29 @@ function CheckoutContent() {
               
               <div className="bg-slate-50 p-5 md:p-6 rounded-2xl border border-slate-200 space-y-4">
                 <div>
-                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Card Number</label>
-                   <input type="text" placeholder="0000 0000 0000 0000" className="w-full p-3.5 md:p-4 bg-white border border-slate-200 rounded-xl text-base font-bold font-mono tracking-widest outline-none focus:border-blue-500 touch-manipulation" />
+                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Card Number</label>
+                   <input type="text" placeholder="0000 0000 0000 0000" className="w-full p-4 bg-white border border-slate-200 rounded-xl text-base font-bold text-slate-900 font-mono tracking-widest outline-none focus:border-blue-500 touch-manipulation" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Expiry Date</label>
-                     <input type="text" placeholder="MM/YY" className="w-full p-3.5 md:p-4 bg-white border border-slate-200 rounded-xl text-base font-bold text-center outline-none focus:border-blue-500 touch-manipulation" />
+                     <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Expiry Date</label>
+                     <input type="text" placeholder="MM/YY" className="w-full p-4 bg-white border border-slate-200 rounded-xl text-base font-bold text-slate-900 text-center outline-none focus:border-blue-500 touch-manipulation" />
                   </div>
                   <div>
-                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">CVC</label>
-                     <input type="text" placeholder="123" className="w-full p-3.5 md:p-4 bg-white border border-slate-200 rounded-xl text-base font-bold text-center outline-none focus:border-blue-500 touch-manipulation" />
+                     <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">CVC</label>
+                     <input type="text" placeholder="123" className="w-full p-4 bg-white border border-slate-200 rounded-xl text-base font-bold text-slate-900 text-center outline-none focus:border-blue-500 touch-manipulation" />
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Mobile Submit Button */}
-            <div className="block lg:hidden mt-6">
+            <div className="block lg:hidden mt-6 pb-6">
               <button 
                 type="submit" 
                 form="checkout-form"
                 disabled={isProcessing}
-                className="w-full h-16 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white font-black text-base rounded-2xl flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(37,99,235,0.4)] active:scale-95 transition-all uppercase tracking-widest touch-manipulation [-webkit-tap-highlight-color:transparent]"
+                className="w-full h-16 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white font-black text-base rounded-2xl flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(37,99,235,0.4)] active:scale-95 transition-all uppercase tracking-widest touch-manipulation"
               >
                 {isProcessing ? (
                   <><Loader2 className="w-5 h-5 animate-spin" /> Processing...</>
@@ -297,12 +311,14 @@ function CheckoutContent() {
           </form>
         </div>
 
-        {/* RIGHT COLUMN: ORDER SUMMARY */}
+        {/* RIGHT COLUMN: AERO ORDER SUMMARY */}
         <aside className="w-full lg:w-[400px] xl:w-[420px] lg:sticky lg:top-28">
-          <div className="bg-slate-900 rounded-[2rem] md:rounded-[2.5rem] border border-blue-500/30 shadow-2xl overflow-hidden text-white relative">
+          <div className="bg-[#0B1121] rounded-[2rem] md:rounded-[2.5rem] border border-blue-500/30 shadow-2xl overflow-hidden text-white relative">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600"></div>
-            <div className="absolute top-4 right-4 bg-blue-600/20 text-blue-400 border border-blue-500/30 text-[8px] md:text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1.5">
-              <ShieldCheck className="w-3 h-3" /> Secure
+            
+            {/* Aero Branding Badge */}
+            <div className="absolute top-4 right-4 bg-blue-500/10 text-blue-400 border border-blue-500/30 text-[8px] md:text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-[0_0_15px_rgba(37,99,235,0.2)]">
+              <Sparkles className="w-3 h-3 fill-current" /> Aero Verified
             </div>
             
             <div className="p-6 md:p-8 lg:p-10">
@@ -321,19 +337,19 @@ function CheckoutContent() {
               <div className="space-y-4 md:space-y-5 mb-6 md:mb-8 pb-6 md:pb-8 border-b border-white/10">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2 md:gap-3 text-slate-400">
-                    <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4" /> <span className="text-[10px] md:text-[11px] font-black uppercase tracking-widest">Drop-off</span>
+                    <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-500" /> <span className="text-[10px] md:text-[11px] font-black uppercase tracking-widest">Drop-off</span>
                   </div>
                   <div className="text-right">
-                    <span className="block text-xs md:text-sm font-bold">{formatDate(dropDate)}</span>
+                    <span className="block text-xs md:text-sm font-bold text-white">{formatDate(dropDate)}</span>
                     <span className="block text-[9px] md:text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{dropTime || "Time TBD"}</span>
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2 md:gap-3 text-slate-400">
-                    <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4" /> <span className="text-[10px] md:text-[11px] font-black uppercase tracking-widest">Pick-up</span>
+                    <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-500" /> <span className="text-[10px] md:text-[11px] font-black uppercase tracking-widest">Pick-up</span>
                   </div>
                   <div className="text-right">
-                    <span className="block text-xs md:text-sm font-bold">{formatDate(pickDate)}</span>
+                    <span className="block text-xs md:text-sm font-bold text-white">{formatDate(pickDate)}</span>
                     <span className="block text-[9px] md:text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{pickTime || "Time TBD"}</span>
                   </div>
                 </div>
@@ -342,7 +358,7 @@ function CheckoutContent() {
               <div className="space-y-3 md:space-y-4 mb-8 md:mb-10">
                 <div className="flex justify-between text-xs md:text-sm text-slate-400 font-medium">
                   <span>Parking Rate ({booking.days} {booking.days === 1 ? "day" : "days"})</span>
-                  <span>£{booking.total.toFixed(2)}</span>
+                  <span className="text-white font-bold">£{booking.total.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-xs md:text-sm text-slate-400 font-medium">
                   <span>Taxes & Airport Fees</span>
@@ -351,8 +367,8 @@ function CheckoutContent() {
               </div>
 
               <div className="flex flex-col items-end mb-6 md:mb-8">
-                <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Total Due Today</span>
-                <span className="text-4xl md:text-5xl font-black tracking-tighter text-blue-500 drop-shadow-md">£{booking.total.toFixed(2)}</span>
+                <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Total Due Today</span>
+                <span className="text-4xl md:text-5xl font-black tracking-tighter text-blue-400 drop-shadow-md">£{booking.total.toFixed(2)}</span>
               </div>
 
               {/* Desktop Submit Button */}
@@ -360,7 +376,7 @@ function CheckoutContent() {
                 type="submit" 
                 form="checkout-form"
                 disabled={isProcessing}
-                className="hidden lg:flex w-full h-14 md:h-16 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white font-black text-base md:text-lg rounded-2xl items-center justify-center gap-2 md:gap-3 shadow-[0_10px_30px_rgba(37,99,235,0.4)] active:scale-95 transition-all uppercase tracking-widest touch-manipulation [-webkit-tap-highlight-color:transparent]"
+                className="hidden lg:flex w-full h-14 md:h-16 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white font-black text-base md:text-lg rounded-2xl items-center justify-center gap-2 md:gap-3 shadow-[0_10px_30px_rgba(37,99,235,0.4)] active:scale-95 transition-all uppercase tracking-widest touch-manipulation"
               >
                 {isProcessing ? (
                   <><Loader2 className="w-5 h-5 md:w-6 md:h-6 animate-spin" /> Processing...</>
@@ -377,8 +393,8 @@ function CheckoutContent() {
                   <ShieldCheck className="w-4 h-4 md:w-5 md:h-5" />
                 </div>
                 <div>
-                  <p className="text-xs md:text-sm font-black text-slate-900 tracking-tight mb-1">Booking Guarantee</p>
-                  <p className="text-[11px] md:text-xs font-bold text-slate-500 leading-relaxed">Free cancellation up to 2 hours before your drop-off time. No questions asked.</p>
+                  <p className="text-xs md:text-sm font-black text-slate-900 tracking-tight mb-1">Aero Booking Guarantee</p>
+                  <p className="text-[11px] md:text-xs font-bold text-slate-500 leading-relaxed">Free cancellation up to 2 hours before your drop-off time. Fully protected and verified by Aero Concierge.</p>
                 </div>
              </div>
           </div>
@@ -391,15 +407,21 @@ function CheckoutContent() {
 
 export default function CheckoutPage() {
   return (
-    <main suppressHydrationWarning className="min-h-[100dvh] bg-[#F8FAFC] font-sans antialiased pb-24 selection:bg-blue-200 selection:text-blue-900 overflow-x-hidden">
+    <main suppressHydrationWarning className="min-h-[100dvh] bg-[#F8FAFC] font-sans antialiased pb-24 selection:bg-blue-200 selection:text-blue-900 overflow-x-hidden relative">
+      
+      {/* Background glow logic for desktop */}
+      <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0 flex justify-center overflow-hidden">
+         <div className="w-full max-w-[1000px] h-96 bg-blue-600/5 blur-[120px] rounded-full absolute -top-48"></div>
+      </div>
+
       <header className="sticky top-0 z-[100] bg-[#0A101D] border-b border-white/5 shadow-2xl backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 md:h-20 flex items-center justify-between">
-          <Link href="/results" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group touch-manipulation [-webkit-tap-highlight-color:transparent]">
+          <Link href="/results" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group touch-manipulation">
             <ArrowLeft className="w-4 h-4 md:w-5 md:h-5 lg:group-hover:-translate-x-1 transition-transform" />
             <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest hidden md:block">Back to Packages</span>
           </Link>
           
-          <Link href="/" className="flex items-center gap-1.5 md:gap-2 text-white font-black tracking-tighter text-lg md:text-xl uppercase absolute left-1/2 -translate-x-1/2 touch-manipulation [-webkit-tap-highlight-color:transparent]">
+          <Link href="/" className="flex items-center gap-1.5 md:gap-2 text-white font-black tracking-tighter text-lg md:text-xl uppercase absolute left-1/2 -translate-x-1/2 touch-manipulation">
             <Plane className="w-5 h-5 md:w-6 md:h-6 text-blue-500 rotate-45" /> AEROPARK<span className="text-blue-500">DIRECT</span>
           </Link>
 
@@ -410,7 +432,7 @@ export default function CheckoutPage() {
         </div>
       </header>
 
-      <Suspense fallback={<div className="p-24 md:p-40 text-center font-black uppercase tracking-[0.2em] md:tracking-widest text-xs md:text-sm text-slate-400 animate-pulse">Loading Secure Checkout...</div>}>
+      <Suspense fallback={<div className="p-24 md:p-40 text-center font-black uppercase tracking-[0.2em] md:tracking-widest text-xs md:text-sm text-slate-400 animate-pulse">Aero is Initializing Checkout...</div>}>
         <CheckoutContent />
       </Suspense>
     </main>
