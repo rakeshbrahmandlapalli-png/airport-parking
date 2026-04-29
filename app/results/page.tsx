@@ -6,17 +6,52 @@ import {
   ChevronDown, Plane, Calendar, Footprints,
   Star, Ban, Bus, BedDouble, Info, PlaneTakeoff, 
   PlaneLanding, Map as MapIcon, Navigation, Loader2,
-  AlertCircle, X, Shield, Sparkles, MessageSquare
+  AlertCircle, X, Shield, Sparkles, MessageSquare, Bot, Zap
 } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useState, useMemo, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "../lib/supabase";
 import { checkAvailability } from "../actions";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+// ----------------------------------------------------------------------
+// 🟢 CUSTOM AERO AVATAR (Matches Homepage Design)
+// ----------------------------------------------------------------------
+function AeroAvatar({ size = "md", thinking = false }: { size?: "sm" | "md" | "lg" | "xl", thinking?: boolean }) {
+  const sizeClasses = { sm: "w-8 h-8 rounded-lg", md: "w-14 h-14 rounded-2xl", lg: "w-20 h-20 rounded-3xl", xl: "w-32 h-32 rounded-[2.5rem]" };
+  const eyeWidth = { sm: "w-1", md: "w-1.5", lg: "w-2", xl: "w-3.5" };
+  const eyeHeight = { sm: "h-2.5", md: "h-4", lg: "h-6", xl: "h-10" };
+  const gap = { sm: "gap-1", md: "gap-1.5", lg: "gap-2", xl: "gap-3" };
+
+  return (
+    <div className={`relative flex items-center justify-center shrink-0 ${sizeClasses[size]}`}>
+      {/* Outer Glow Ring */}
+      <div className={`absolute inset-0 bg-blue-500/40 blur-xl ${thinking ? 'animate-pulse scale-110' : ''}`}></div>
+      
+      {/* Main Body - Sleek Blue Gradient matching your image */}
+      <div className={`relative w-full h-full bg-gradient-to-br from-blue-400 via-blue-600 to-blue-700 flex items-center justify-center shadow-[0_0_25px_rgba(37,99,235,0.5)] overflow-hidden group border border-blue-300/30 ${sizeClasses[size]}`}>
+        
+        {/* Subtle Inner Glow */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
+
+        {/* Scanning Line Effect (Activates on hover or when thinking) */}
+        <div className={`absolute left-0 w-full h-[2px] bg-white/60 shadow-[0_0_10px_white] z-20 ${thinking ? 'animate-scan opacity-100' : 'opacity-0 group-hover:opacity-100 group-hover:animate-scan'}`}></div>
+        
+        {/* Aero's Eyes (Two glowing white pills) */}
+        <div className={`flex ${gap[size]} z-10 ${thinking ? 'animate-pulse' : ''}`}>
+          {/* Left Eye */}
+          <div className={`${eyeWidth[size]} ${eyeHeight[size]} bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.9)] transition-all duration-300`}></div>
+          {/* Right Eye */}
+          <div className={`${eyeWidth[size]} ${eyeHeight[size]} bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.9)] transition-all duration-300`}></div>
+        </div>
+
+        {/* Online Status Light (Top right corner) */}
+        <div className="absolute top-2 right-2 flex items-center justify-center">
+          <div className="w-1.5 h-1.5 bg-green-400 rounded-full shadow-[0_0_6px_#4ade80] animate-pulse"></div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ----------------------------------------------------------------------
 // 1. PREMIUM PARKING CARD COMPONENT
@@ -239,11 +274,8 @@ function ResultsContent() {
 
   if (loading) return (
     <div className="max-w-4xl mx-auto py-32 md:py-40 text-center flex flex-col items-center px-4">
-      <div className="relative mb-8">
-        <div className="absolute inset-0 bg-blue-500 blur-xl opacity-20 rounded-full animate-pulse"></div>
-        <Plane className="w-12 h-12 md:w-16 md:h-16 text-blue-500 animate-bounce relative z-10" />
-      </div>
-      <h2 className="text-xl md:text-2xl font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-white">Aero is Searching</h2>
+      <AeroAvatar thinking={true} size="lg" />
+      <h2 className="text-xl md:text-2xl font-black uppercase tracking-[0.3em] text-white mt-8 animate-pulse">Aero is Scanning</h2>
       <p className="text-slate-400 mt-3 font-medium text-sm md:text-base">Securing live compound availability for {isHeathrow ? 'Heathrow (LHR)' : 'Luton (LTN)'}...</p>
     </div>
   );
@@ -251,16 +283,17 @@ function ResultsContent() {
   return (
     <div className="max-w-[1000px] mx-auto px-4 py-6 md:py-8">
       
-      {/* 🟢 AERO CONCIERGE BANNER */}
-      <div className="bg-[#0B1121] border border-blue-900/40 rounded-3xl p-5 md:p-6 flex flex-col sm:flex-row items-center gap-5 sm:gap-6 mb-10 shadow-[0_0_40px_rgba(37,99,235,0.1)] relative overflow-hidden">
-        <div className="absolute -right-20 -top-20 w-64 h-64 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="w-12 h-12 sm:w-14 sm:h-14 bg-blue-600/20 border border-blue-500/50 rounded-full flex flex-col items-center justify-center shrink-0 shadow-[0_0_15px_rgba(37,99,235,0.3)]">
-          <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400 mb-0.5" />
-          <div className="w-1.5 h-1.5 bg-green-500 rounded-full shadow-[0_0_8px_#22c55e]"></div>
-        </div>
+      {/* 🟢 AERO CONCIERGE BANNER WITH MASCOT */}
+      <div className="bg-[#0B1121] border border-blue-900/40 rounded-[2.5rem] p-5 md:p-7 flex flex-col sm:flex-row items-center gap-6 mb-10 shadow-2xl relative overflow-hidden">
+        <div className="absolute -right-20 -top-20 w-64 h-64 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <AeroAvatar />
         <div className="text-center sm:text-left relative z-10">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 mb-1">Aero Concierge System Active</p>
-          <h3 className="text-white text-base md:text-lg font-bold">Aero has securely verified <strong className="text-blue-400">{companies.length} approved compounds</strong> for your travel dates at {isHeathrow ? 'Heathrow' : 'Luton'}.</h3>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 mb-1 flex items-center justify-center sm:justify-start gap-2">
+            <Zap className="w-3 h-3 fill-current"/> Aero Concierge Active
+          </p>
+          <h3 className="text-white text-base md:text-xl font-bold leading-tight">
+            I have securely verified <strong className="text-blue-400">{companies.length} approved compounds</strong> for your travel dates at {isHeathrow ? 'Heathrow' : 'Luton'}.
+          </h3>
         </div>
       </div>
 
@@ -286,7 +319,7 @@ function ResultsContent() {
 
       <div className="space-y-6 md:space-y-10">
         {companies.length === 0 ? (
-          <div className="text-center py-16 md:py-24 bg-[#0B1121] rounded-[2rem] border border-dashed border-slate-700">
+          <div className="text-center py-16 md:py-24 bg-[#0B1121] rounded-[3rem] border border-dashed border-slate-700">
             <AlertCircle className="w-12 h-12 md:w-16 md:h-16 text-slate-700 mx-auto mb-4 md:mb-6" />
             <h3 className="text-xl md:text-2xl font-black text-white mb-2 tracking-tight">No Active Providers</h3>
             <p className="text-slate-500 font-medium text-sm md:text-base">Aero could not locate availability for {isHeathrow ? 'Heathrow' : 'Luton'} on these dates.</p>
@@ -384,14 +417,14 @@ function ResultsLayout() {
         <ResultsContent />
       </div>
 
-      {/* 🟢 FIXED: MODIFY SEARCH MODAL (Dark text visibility fixed) */}
+      {/* 🟢 FIXED: MODIFY SEARCH MODAL (Dark text visibility fixed & iOS zoom prevented) */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex items-end sm:items-center justify-center sm:p-4 animate-in fade-in">
-          <div className="bg-white border border-slate-200 w-full max-w-lg rounded-t-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 shadow-2xl animate-in slide-in-from-bottom-8 duration-300 relative">
-            <div className="flex justify-between items-center mb-6">
+          <div className="bg-white border border-slate-200 w-full max-w-lg rounded-t-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 md:p-12 shadow-2xl animate-in slide-in-from-bottom-8 duration-300 relative">
+            <div className="flex justify-between items-center mb-8">
               <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Modify Search</h2>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Aero is ready to re-scan for you</p>
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Modify Search</h2>
+                <p className="text-[10px] font-black uppercase text-slate-400 mt-2 tracking-widest">Aero is ready to re-scan for you</p>
               </div>
               <button onClick={() => setIsEditModalOpen(false)} className="p-2.5 bg-slate-100 text-slate-400 rounded-full hover:bg-slate-200 hover:text-slate-900 transition-colors">
                 <X className="w-5 h-5" />
@@ -401,35 +434,35 @@ function ResultsLayout() {
             <form onSubmit={handleUpdateSearch} className="space-y-4">
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Departure Airport</label>
-                <select value={editAirport} onChange={(e)=>setEditAirport(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 font-bold text-slate-900 text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
+                <select value={editAirport} onChange={(e)=>setEditAirport(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 font-bold text-slate-900 text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 appearance-none">
                   <option value="Luton (LTN)">Luton Airport (LTN)</option>
                   <option value="Heathrow (LHR)">Heathrow Airport (LHR)</option>
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 border-t border-slate-100 pt-4">
+              <div className="grid grid-cols-2 gap-4 border-t border-slate-50 pt-6">
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Drop-off Date</label>
-                  <input type="date" value={editDropDate} onChange={(e)=>setEditDropDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3.5 font-bold text-slate-900 text-sm outline-none focus:border-blue-500" required />
+                  <input type="date" value={editDropDate} onChange={(e)=>setEditDropDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-4 font-bold text-slate-900 text-base outline-none focus:border-blue-500" required />
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Time</label>
-                  <input type="time" value={editDropTime} onChange={(e)=>setEditDropTime(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3.5 font-bold text-slate-900 text-sm outline-none focus:border-blue-500" required />
+                  <input type="time" value={editDropTime} onChange={(e)=>setEditDropTime(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-4 font-bold text-slate-900 text-base outline-none focus:border-blue-500" required />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 pb-2">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Pick-up Date</label>
-                  <input type="date" min={editDropDate} value={editPickDate} onChange={(e)=>setEditPickDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3.5 font-bold text-slate-900 text-sm outline-none focus:border-blue-500" required />
+                  <input type="date" min={editDropDate} value={editPickDate} onChange={(e)=>setEditPickDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-4 font-bold text-slate-900 text-base outline-none focus:border-blue-500" required />
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Time</label>
-                  <input type="time" value={editPickTime} onChange={(e)=>setEditPickTime(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3.5 font-bold text-slate-900 text-sm outline-none focus:border-blue-500" required />
+                  <input type="time" value={editPickTime} onChange={(e)=>setEditPickTime(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-4 font-bold text-slate-900 text-base outline-none focus:border-blue-500" required />
                 </div>
               </div>
 
-              <button type="submit" className="w-full mt-6 py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl text-sm uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-600/30">
+              <button type="submit" className="w-full mt-6 py-4 md:py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl text-xs sm:text-sm uppercase tracking-widest transition-all active:scale-95 shadow-xl shadow-blue-600/30">
                 Update Search
               </button>
             </form>

@@ -5,7 +5,17 @@ module.exports = {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      keyframes: {
+        scan: {
+          '0%': { top: '0%' },
+          '100%': { top: '100%' },
+        }
+      },
+      animation: {
+        scan: 'scan 2s linear infinite',
+      }
+    },
   },
   plugins: [],
 }

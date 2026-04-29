@@ -18,8 +18,43 @@ import {
   CreditCard,
   Calendar,
   Shield,
-  Sparkles
+  Sparkles,
+  Tag,
+  AlertCircle,
+  CheckCircle2
 } from "lucide-react";
+
+// ----------------------------------------------------------------------
+// 🟢 CLEAN AERO AVATAR (Now Clickable!)
+// ----------------------------------------------------------------------
+function AeroAvatar({ size = "md", state = "idle", onClick }: { size?: "sm" | "md" | "lg" | "xl", state?: "idle" | "scanning" | "success", onClick?: () => void }) {
+  const sizeClasses = { sm: "w-8 h-8 rounded-lg", md: "w-14 h-14 rounded-2xl", lg: "w-20 h-20 rounded-3xl", xl: "w-32 h-32 rounded-[2.5rem]" };
+  const gap = { sm: "gap-1", md: "gap-1.5", lg: "gap-2", xl: "gap-3" };
+  const eyeSize = { sm: "w-1 h-2.5", md: "w-1.5 h-4", lg: "w-2 h-6", xl: "w-3.5 h-10" };
+
+  return (
+    <div 
+      onClick={onClick}
+      className={`relative flex items-center justify-center shrink-0 ${sizeClasses[size]} ${onClick ? 'cursor-pointer hover:scale-105 active:scale-95 transition-transform' : ''}`}
+    >
+      {/* Outer Glow */}
+      <div className={`absolute inset-0 bg-blue-500/40 blur-xl ${state === 'scanning' ? 'animate-pulse scale-125' : 'animate-pulse scale-105'}`}></div>
+
+      {/* Main Body - Clean Blue Gradient */}
+      <div className={`relative w-full h-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-[0_0_25px_rgba(37,99,235,0.5)] overflow-hidden ${sizeClasses[size]} transition-all duration-300`}>
+
+        {/* Scanning Laser Line */}
+        <div className={`absolute left-0 w-full h-[2px] bg-white/90 shadow-[0_0_15px_white] z-20 transition-opacity duration-300 ${state === 'scanning' ? 'opacity-100 animate-scan' : 'opacity-0'}`}></div>
+
+        {/* The Clean Pill Eyes */}
+        <div className={`flex ${gap[size]} z-10 items-center justify-center`}>
+          <div className={`${eyeSize[size]} bg-white rounded-full shadow-[0_0_15px_rgba(255,255,255,1)]`}></div>
+          <div className={`${eyeSize[size]} bg-white rounded-full shadow-[0_0_15px_rgba(255,255,255,1)]`}></div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function CheckoutContent() {
   const searchParams = useSearchParams();
@@ -45,6 +80,56 @@ function CheckoutContent() {
   const [carMake, setCarMake] = useState("");
   const [carColor, setCarColor] = useState("");
 
+  // --- PROMO CODE STATES ---
+  const [promoInput, setPromoInput] = useState("");
+  const [discount, setDiscount] = useState({ active: false, code: "", percent: 0 });
+  const [promoMessage, setPromoMessage] = useState("");
+  const [isPromoError, setIsPromoError] = useState(false);
+  
+  // --- SECRET EASTER EGG STATE ---
+  const [aeroClicks, setAeroClicks] = useState(0);
+
+  // --- PROMO CODE LOGIC ---
+  const handleApplyPromo = (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = promoInput.toUpperCase().trim();
+
+    if (code === "LAUNCH10") {
+      setDiscount({ active: true, code: "LAUNCH10", percent: 0.10 });
+      setPromoMessage("Launch discount applied! 10% off.");
+      setIsPromoError(false);
+    } else if (code === "AERO") {
+      setDiscount({ active: true, code: "AERO", percent: 0.15 });
+      setPromoMessage("Aero VIP discount applied! 15% off.");
+      setIsPromoError(false);
+    } else if (code === "SECRET3" || code === "AERO3") {
+      setDiscount({ active: true, code: "AERO3", percent: 0.03 });
+      setPromoMessage("Secret Aero Discount Unlocked! 3% off.");
+      setIsPromoError(false);
+    } else {
+      setDiscount({ active: false, code: "", percent: 0 });
+      setPromoMessage("Invalid or expired promo code.");
+      setIsPromoError(true);
+    }
+  };
+
+  // --- EASTER EGG LOGIC ---
+  const handleAeroClick = () => {
+    // Only allow the easter egg if they haven't already applied a bigger discount
+    if (discount.active && discount.percent >= 0.03) return;
+
+    const newClicks = aeroClicks + 1;
+    setAeroClicks(newClicks);
+
+    if (newClicks === 3) {
+      setDiscount({ active: true, code: "AERO3", percent: 0.03 });
+      setPromoMessage("Secret Aero Discount Unlocked! 3% off.");
+      setIsPromoError(false);
+      setPromoInput("AERO3"); // Automatically fill the input box
+      setAeroClicks(0); // Reset clicks
+    }
+  };
+
   // --- SYNCED CALCULATION ---
   const calculateTotal = () => {
     if (!dropDate || !pickDate) return { days: 1, total: dailyRate };
@@ -54,13 +139,13 @@ function CheckoutContent() {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     const finalDays = diffDays <= 0 ? 1 : diffDays;
     
-    return { 
-      days: finalDays, 
-      total: dailyRate * finalDays 
-    };
+    return { days: finalDays, total: dailyRate * finalDays };
   };
 
   const booking = calculateTotal();
+  const originalTotal = booking.total;
+  const discountAmount = originalTotal * discount.percent;
+  const finalTotal = originalTotal - discountAmount;
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "--";
@@ -83,7 +168,7 @@ function CheckoutContent() {
       // Simulate payment gateway delay
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // 1. Save to Database
+      // 1. Save to Database (USING THE FINAL DISCOUNTED TOTAL)
       const { error: dbError } = await supabase
         .from('bookings')
         .insert([{ 
@@ -99,7 +184,7 @@ function CheckoutContent() {
           dropoff_time: dropTime, 
           pickup_date: pickDate,
           pickup_time: pickTime,  
-          total_price: booking.total,
+          total_price: finalTotal, // <--- SAVING DISCOUNTED PRICE
           flight_number: flightNumber.toUpperCase().trim(),
           airport: airport,
           terminal: terminal
@@ -140,15 +225,15 @@ function CheckoutContent() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-12 relative z-10">
       
-      {/* 🟢 AERO SECURE BANNER */}
-      <div className="max-w-3xl mx-auto mb-8 bg-[#0B1121] border border-blue-900/40 rounded-2xl p-4 md:p-5 flex items-center gap-4 shadow-xl relative overflow-hidden">
+      {/* 🟢 AERO SECURE BANNER (Now with easter egg!) */}
+      <div className="max-w-3xl mx-auto mb-8 bg-[#0B1121] border border-blue-900/40 rounded-2xl p-4 md:p-5 flex items-center gap-5 shadow-xl relative overflow-hidden">
         <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="w-10 h-10 bg-blue-600/20 border border-blue-500/50 rounded-xl flex flex-col items-center justify-center shrink-0">
-          <Shield className="w-5 h-5 text-blue-400 mb-0.5" />
-          <div className="w-1 h-1 bg-green-500 rounded-full shadow-[0_0_8px_#22c55e]"></div>
-        </div>
+        
+        {/* Pass the onClick handler here */}
+        <AeroAvatar state="idle" size="md" onClick={handleAeroClick} />
+        
         <div className="relative z-10">
-          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-400 mb-0.5">Aero Secure Checkout</p>
+          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-400 mb-1 flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5"/> Aero Secure Checkout</p>
           <p className="text-xs sm:text-sm text-slate-300 font-medium">Aero has locked your rate. Complete your details below.</p>
         </div>
       </div>
@@ -303,7 +388,7 @@ function CheckoutContent() {
                 {isProcessing ? (
                   <><Loader2 className="w-5 h-5 animate-spin" /> Processing...</>
                 ) : (
-                  <><Lock className="w-4 h-4" /> Pay £{booking.total.toFixed(2)}</>
+                  <><Lock className="w-4 h-4" /> Pay £{finalTotal.toFixed(2)}</>
                 )}
               </button>
             </div>
@@ -355,11 +440,54 @@ function CheckoutContent() {
                 </div>
               </div>
 
+              {/* 🟢 PROMO CODE SECTION */}
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-5 mb-6 md:mb-8">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
+                  <Tag className="w-3.5 h-3.5" /> Have a Promo Code?
+                </label>
+                
+                <form onSubmit={handleApplyPromo} className="flex gap-2">
+                  <input 
+                    type="text" 
+                    value={promoInput}
+                    onChange={(e) => setPromoInput(e.target.value)}
+                    placeholder="Enter code" 
+                    disabled={discount.active}
+                    className="flex-1 w-full min-w-0 bg-white/5 border border-white/10 rounded-xl px-3 py-3 font-bold text-white text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:bg-white/5 disabled:text-slate-500 uppercase placeholder:text-slate-600 touch-manipulation"
+                  />
+                  {!discount.active ? (
+                    <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white px-4 shrink-0 rounded-xl font-black text-xs uppercase tracking-widest transition-colors active:scale-95 touch-manipulation">
+                      Apply
+                    </button>
+                  ) : (
+                    <button type="button" onClick={() => { setDiscount({ active: false, code: "", percent: 0 }); setPromoInput(""); setPromoMessage(""); }} className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/20 px-4 shrink-0 rounded-xl font-black text-xs uppercase tracking-widest transition-colors active:scale-95 touch-manipulation">
+                      Remove
+                    </button>
+                  )}
+                </form>
+
+                {promoMessage && (
+                  <div className={`mt-3 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 ${isPromoError ? 'text-red-400' : 'text-emerald-400'}`}>
+                    {isPromoError ? <AlertCircle className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                    {promoMessage}
+                  </div>
+                )}
+              </div>
+
+              {/* 🟢 TOTALS (Updated for Promo) */}
               <div className="space-y-3 md:space-y-4 mb-8 md:mb-10">
                 <div className="flex justify-between text-xs md:text-sm text-slate-400 font-medium">
                   <span>Parking Rate ({booking.days} {booking.days === 1 ? "day" : "days"})</span>
-                  <span className="text-white font-bold">£{booking.total.toFixed(2)}</span>
+                  <span className={`font-bold ${discount.active ? 'text-slate-500 line-through' : 'text-white'}`}>£{originalTotal.toFixed(2)}</span>
                 </div>
+                
+                {discount.active && (
+                  <div className="flex justify-between text-xs md:text-sm text-emerald-400 font-medium">
+                    <span>Discount ({discount.code})</span>
+                    <span className="font-bold">- £{discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+
                 <div className="flex justify-between text-xs md:text-sm text-slate-400 font-medium">
                   <span>Taxes & Airport Fees</span>
                   <span className="text-emerald-400 font-bold uppercase tracking-widest text-[9px] md:text-[10px]">Included</span>
@@ -368,7 +496,7 @@ function CheckoutContent() {
 
               <div className="flex flex-col items-end mb-6 md:mb-8">
                 <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Total Due Today</span>
-                <span className="text-4xl md:text-5xl font-black tracking-tighter text-blue-400 drop-shadow-md">£{booking.total.toFixed(2)}</span>
+                <span className="text-4xl md:text-5xl font-black tracking-tighter text-blue-400 drop-shadow-md">£{finalTotal.toFixed(2)}</span>
               </div>
 
               {/* Desktop Submit Button */}
