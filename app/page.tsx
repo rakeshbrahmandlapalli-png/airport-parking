@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import AeroFeature from "@/components/AeroFeature";
+import { supabase } from "./lib/supabase"; // <-- ADDED SUPABASE IMPORT FOR FAST-TRACK
 import { 
   User, 
   Calendar, 
@@ -42,6 +43,7 @@ export default function HomePage() {
   const [isLoaded, setIsLoaded] = useState(false); 
 
   // --- SEARCH STATES ---
+  const [activeTab, setActiveTab] = useState<'manual' | 'magic'>('manual');
   const [airport, setAirport] = useState("Luton (LTN)");
   const [dropoffDate, setDropoffDate] = useState("");
   const [dropoffTime, setDropoffTime] = useState("");
@@ -52,6 +54,7 @@ export default function HomePage() {
   const [magicText, setMagicText] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
+  const [fastTrackStatus, setFastTrackStatus] = useState(""); // UI feedback for zero-click
 
   useEffect(() => {
     const today = new Date();
@@ -87,18 +90,18 @@ export default function HomePage() {
       return;
     }
 
+    // 🟢 FIXED: Added 'URL' before SearchParams
     const query = new URLSearchParams({
       airport, dropoffDate, dropoffTime, pickupDate, pickupTime
     }).toString();
-    router.push(`/select-service?${query}`);
+    
+    router.push(`/results?${query}`);
   };
 
-  // 🎙️ BULLETPROOF SPEECH RECOGNITION LOGIC
+  // 🎙️ SPEECH RECOGNITION LOGIC
   const startListening = (e: React.MouseEvent) => {
-    e.preventDefault(); // Stop form submission
-    
+    e.preventDefault(); 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    
     if (!SpeechRecognition) {
       alert("Your browser doesn't support Voice Search. Please type your request instead!");
       return;
@@ -109,45 +112,30 @@ export default function HomePage() {
       recognition.continuous = false;
       recognition.lang = 'en-GB';
       
-      recognition.onstart = () => {
-        console.log("Mic started successfully");
-        setIsListening(true);
-      };
-      
+      recognition.onstart = () => setIsListening(true);
       recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        console.log("Heard:", transcript);
-        setMagicText(transcript);
+        setMagicText(event.results[0][0].transcript);
         setIsListening(false);
       };
-      
       recognition.onerror = (event: any) => {
-        console.error("Mic Error:", event.error);
         setIsListening(false);
         if (event.error === 'not-allowed') {
           alert("Microphone access blocked! Look for the tiny camera/mic icon in your URL bar to allow access.");
-        } else if (event.error !== 'no-speech') {
-          alert(`Microphone error: ${event.error}`);
         }
       };
-      
-      recognition.onend = () => {
-        console.log("Mic session ended");
-        setIsListening(false);
-      };
-      
+      recognition.onend = () => setIsListening(false);
       recognition.start();
     } catch (err) {
-      console.error("Failed to start mic:", err);
       setIsListening(false);
-      alert("Microphone failed to start. Please check browser permissions.");
     }
   };
 
-  // 🤖 MAGIC AI SUBMIT LOGIC
+  // 🚀 AERO FAST-TRACK LOGIC
   const handleMagicSubmit = async () => {
     if (!magicText.trim()) return;
     setIsThinking(true);
+    setFastTrackStatus("Aero is parsing your request...");
+
     try {
       const res = await fetch('/api/aero-magic', {
         method: 'POST',
@@ -157,14 +145,78 @@ export default function HomePage() {
       const data = await res.json();
       
       if (data.airport && data.dropoffDate) {
-        const query = new URLSearchParams(data).toString();
-        router.push(`/select-service?${query}`);
+        
+        // 🟢 ZERO-CLICK BOOKING ACTIVATED 
+        if (data.isReadyToBook && data.servicePreference) {
+           setFastTrackStatus("Fast-Track Activated. Finding best operator...");
+           const isHeathrow = data.airport.includes("Heathrow");
+           
+           // Fetch live compounds
+           const { data: companies } = await supabase.from('companies').select('*');
+           
+           if (companies) {
+              // Filter active, correct airport, correct category, not sold out
+              const available = companies.filter(c => {
+                 const cat = c.category?.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-').trim();
+                 const rightCat = cat === data.servicePreference;
+                 const rightAir = isHeathrow ? c.operates_at_heathrow : c.operates_at_luton;
+                 const soldOut = isHeathrow ? c.lhr_sold_out : c.ltn_sold_out;
+                 return rightCat && rightAir && c.is_active && !soldOut;
+              });
+
+              if (available.length > 0) {
+                 // Sort by premium/featured first
+                 available.sort((a, b) => {
+                    const aPremium = isHeathrow ? a.lhr_featured : a.ltn_featured;
+                    const bPremium = isHeathrow ? b.lhr_featured : b.ltn_featured;
+                    if (aPremium && !bPremium) return -1;
+                    if (!aPremium && bPremium) return 1;
+                    return 0;
+                 });
+
+                 // Grab the #1 Recommended Compound
+                 const bestOption = available[0];
+                 const dailyRate = isHeathrow ? bestOption.heathrow_price : bestOption.luton_price;
+
+                 setFastTrackStatus(`Secured ${bestOption.name}. Teleporting to Checkout...`);
+
+                 const checkoutQuery = new URLSearchParams({
+                   airport: data.airport,
+                   dropoffDate: data.dropoffDate,
+                   dropoffTime: data.dropoffTime,
+                   pickupDate: data.pickupDate,
+                   pickupTime: data.pickupTime,
+                   type: bestOption.name,
+                   price: dailyRate.toString(),
+                   ...(data.flightNumber ? { flightNumber: data.flightNumber.toUpperCase() } : {})
+                 }).toString();
+
+                 router.push(`/checkout?${checkoutQuery}`);
+                 return; // Stop execution, we are going to checkout!
+              }
+           }
+        }
+
+        // 🟡 NORMAL ROUTE: Needs more options, send to Results Page
+        setFastTrackStatus("Loading available operators...");
+        const queryParams: any = {
+          airport: data.airport,
+          dropoffDate: data.dropoffDate,
+          dropoffTime: data.dropoffTime,
+          pickupDate: data.pickupDate,
+          pickupTime: data.pickupTime,
+        };
+        if (data.servicePreference) queryParams.type = data.servicePreference;
+        
+        const query = new URLSearchParams(queryParams).toString();
+        router.push(`/results?${query}`);
+
       } else {
-        alert("Aero couldn't fully understand that. Please try typing it differently or use Manual Search.");
+        alert("Aero couldn't fully understand that. Please try typing it differently.");
         setIsThinking(false);
       }
     } catch (e) {
-      alert("AI Services are currently taking a break. Please use Manual Search.");
+      alert("AI Services are taking a break. Please use Manual Search.");
       setIsThinking(false);
     }
   };
@@ -311,13 +363,12 @@ export default function HomePage() {
                   
                   <div className="relative flex items-center bg-[#0B1121]/60 backdrop-blur-md border border-white/20 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/20 rounded-2xl p-1.5 transition-all shadow-inner group">
                     
-                    {/* Fixed Input: Overrides browser autofill styles */}
                     <input 
                       type="text"
                       value={magicText}
                       onChange={(e) => setMagicText(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleMagicSubmit()}
-                      placeholder={isListening ? "Listening... Speak now" : "e.g. Heathrow next Friday to Monday..."}
+                      placeholder={isListening ? "Listening... Speak now" : "e.g. Meet and Greet at Heathrow next Friday, flight BA123..."}
                       autoComplete="off"
                       spellCheck="false"
                       className="flex-1 w-full min-w-0 bg-transparent text-white text-sm md:text-base px-4 py-3 outline-none placeholder:text-slate-400 font-medium touch-manipulation"
@@ -343,6 +394,10 @@ export default function HomePage() {
                       </button>
                     </div>
                   </div>
+                  {/* Dynamic Fast-Track Feedback Message */}
+                  <p className="text-center text-[8px] md:text-[9px] text-blue-300/70 uppercase tracking-widest mt-2 h-4">
+                    {isThinking ? fastTrackStatus : "✨ Powered by Aero Intelligence"}
+                  </p>
                 </div>
 
                 {/* ➖ SUBTLE DIVIDER ➖ */}

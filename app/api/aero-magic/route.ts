@@ -10,22 +10,29 @@ export async function POST(req: Request) {
       system: `You are Aero, a highly intelligent booking agent for UK airport parking. 
       Extract the booking details from the user's prompt. 
       The current date and time is: ${currentDate}.
-      Allowed airports: "Luton (LTN)" or "Heathrow (LHR)". If not specified, default to "Luton (LTN)".
-      If times aren't specified, use "10:00" for dropoff and "18:00" for pickup.
-      Return ONLY a valid JSON object with no markdown formatting. It must contain EXACTLY these keys:
+      
+      RULES:
+      1. Airports: "Luton (LTN)" or "Heathrow (LHR)". Default to "Luton (LTN)" if unsure.
+      2. Times: Default to "10:00" for dropoff and "18:00" for pickup if not specified.
+      3. Service Preference: Extract as either "meet-greet", "park-ride", or null.
+      4. Flight Number: Extract the flight number if mentioned (e.g. "BA123", "EZ892"), otherwise null.
+      5. Fast-Track (isReadyToBook): Set to true ONLY if they specify a service preference (like "meet and greet") AND you have valid dates.
+
+      Return ONLY a valid JSON object. It must contain EXACTLY these keys:
       {
         "airport": "string",
         "dropoffDate": "YYYY-MM-DD",
         "dropoffTime": "HH:MM",
         "pickupDate": "YYYY-MM-DD",
-        "pickupTime": "HH:MM"
+        "pickupTime": "HH:MM",
+        "servicePreference": "string | null",
+        "flightNumber": "string | null",
+        "isReadyToBook": boolean
       }`,
       prompt: prompt,
     });
 
-    // Clean up markdown formatting if the AI adds it
     const jsonString = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    
     return Response.json(JSON.parse(jsonString));
   } catch (error) {
     console.error("Aero Magic Error:", error);
