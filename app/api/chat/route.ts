@@ -1,20 +1,9 @@
 import { openai } from '@ai-sdk/openai';
-import { streamText, tool } from 'ai';
+import { streamText } from 'ai';
 import { z } from 'zod';
 
 // Allow responses up to 30 seconds
 export const maxDuration = 30;
-
-const bookingSchema = z.object({
-  airport: z.string().describe("Must be 'Luton (LTN)' or 'Heathrow (LHR)'"),
-  dropoffDate: z.string().describe("Format YYYY-MM-DD"),
-  pickupDate: z.string().describe("Format YYYY-MM-DD"),
-  hasPet: z.boolean().describe("True if traveling with a pet"),
-  ulezRisk: z.boolean().describe("True if going to Heathrow with an older vehicle"),
-  isCorporate: z.boolean().describe("True if traveling for business/work"),
-  isLastMinute: z.boolean().describe("True if travel is within 48 hours"),
-  travelGroupType: z.enum(['solo', 'couple', 'family', 'group', 'corporate'])
-});
 
 export async function POST(req: Request) {
   try {
@@ -50,12 +39,19 @@ export async function POST(req: Request) {
       
       // 2. INJECT "HANDS" (FUNCTION CALLING)
       tools: {
-        // @ts-ignore - Bypassing Vercel AI SDK's strict overload type bug
-        buildCustomBooking: tool({
+        buildCustomBooking: {
           description: 'Generates a custom URL to the Results Page based on the user intent.',
-          parameters: bookingSchema,
+          parameters: z.object({
+            airport: z.string().describe("Must be 'Luton (LTN)' or 'Heathrow (LHR)'"),
+            dropoffDate: z.string().describe("Format YYYY-MM-DD"),
+            pickupDate: z.string().describe("Format YYYY-MM-DD"),
+            hasPet: z.boolean().describe("True if traveling with a pet"),
+            ulezRisk: z.boolean().describe("True if going to Heathrow with an older vehicle"),
+            isCorporate: z.boolean().describe("True if traveling for business/work"),
+            isLastMinute: z.boolean().describe("True if travel is within 48 hours"),
+            travelGroupType: z.enum(['solo', 'couple', 'family', 'group', 'corporate'])
+          }),
           execute: async (args: any) => {
-            
             const params = new URLSearchParams({
               airport: args.airport,
               dropoffDate: args.dropoffDate,
@@ -73,7 +69,7 @@ export async function POST(req: Request) {
               message: "URL generated successfully. Present this markdown link to the user."
             };
           },
-        }),
+        } as any, // Safety net to prevent TS from complaining about the missing tool() wrapper
       },
     });
 
@@ -82,7 +78,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("AERO API Error:", error);
     return new Response(
-      "AERO is currently recalibrating. For immediate assistance, please contact our support team at +44 (0) 000 123 4567.",
+      "AERO is currently recalibrating. For immediate assistance, please contact our support team.",
       { status: 503 }
     );
   }
