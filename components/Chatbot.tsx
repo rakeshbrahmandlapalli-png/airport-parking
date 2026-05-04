@@ -144,7 +144,7 @@ export default function Chatbot() {
               />
               <button 
                 type="submit"
-                disabled={!input.trim() || isLoading}
+                disabled={!input?.trim() || isLoading}
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 text-white rounded-xl transition-all shadow-lg shadow-blue-500/20 active:scale-95"
               >
                 <Send className="w-5 h-5" />
