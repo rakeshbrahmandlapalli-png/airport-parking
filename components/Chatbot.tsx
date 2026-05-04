@@ -130,10 +130,15 @@ export default function Chatbot() {
             </div>
           )}
         </div>
-
-        {/* Input Control Center */}
+{/* Input Control Center */}
         <div className="p-6 bg-white border-t border-slate-100 shrink-0">
-          <form onSubmit={handleSubmit} className="flex items-center gap-3 relative">
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSubmit(e);
+            }} 
+            className="flex items-center gap-3 relative"
+          >
             <div className="relative w-full">
               <input 
                 type="text" 
@@ -144,7 +149,7 @@ export default function Chatbot() {
               />
               <button 
                 type="submit"
-                disabled={!input?.trim() || isLoading}
+                disabled={isLoading}
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 text-white rounded-xl transition-all shadow-lg shadow-blue-500/20 active:scale-95"
               >
                 <Send className="w-5 h-5" />
