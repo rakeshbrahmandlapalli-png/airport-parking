@@ -6,7 +6,7 @@ import {
   ChevronDown, Plane, Calendar, Footprints, User,
   Star, Ban, Bus, BedDouble, Info, PlaneTakeoff, 
   PlaneLanding, Map as MapIcon, Navigation, Loader2,
-  AlertCircle, X, Shield, Sparkles, MessageSquare, Bot, Zap
+  AlertCircle, X, Shield, Sparkles, MessageSquare, Bot, Zap, Tag
 } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useState, useMemo, useEffect } from "react";
@@ -54,9 +54,9 @@ function AeroAvatar({ size = "md", thinking = false }: { size?: "sm" | "md" | "l
 }
 
 // ----------------------------------------------------------------------
-// 1. PREMIUM PARKING CARD COMPONENT
+// 1. PREMIUM PARKING CARD COMPONENT (ULTIMATE EDITION)
 // ----------------------------------------------------------------------
-function ParkingCard({ option, duration, isHeathrow, handleBooking, hasHeightRisk, isRedEye, travelGroup }: any) {
+function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: any) {
   const [activeTab, setActiveTab] = useState('overview');
   
   const dailyRate = isHeathrow ? (option.heathrow_price || 0) : (option.luton_price || 0);
@@ -76,7 +76,13 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, hasHeightRis
   const returnInstructions = isHeathrow ? option.on_return_lhr : option.on_return_ltn;
   const mapLocation = option.map_location || (isHeathrow ? "Heathrow Terminal Area" : "Luton Terminal Car Park 1");
   const currentReviews = isHeathrow ? (option.lhr_reviews || []) : (option.ltn_reviews || []);
-  
+
+  // --- ROI PUSH LOGIC ---
+  const isShortTrip = duration <= 3;
+  const isLongTrip = duration >= 14;
+  const isMeetGreet = option.category?.toLowerCase().includes('meet');
+  const isParkRide = option.category?.toLowerCase().includes('ride');
+
   return (
     <div className={`relative rounded-[2rem] overflow-hidden flex flex-col lg:flex-row transition-all duration-500 group ${cardBg} border ${borderClass} ${isPremium ? 'shadow-[0_20px_40px_-15px_rgba(15,23,42,0.8)] lg:hover:shadow-[0_30px_60px_-15px_rgba(37,99,235,0.3)] lg:hover:border-blue-900/80 transform lg:-translate-x-2 lg:w-[calc(100%+16px)]' : (isSoldOut ? 'opacity-80 grayscale-[20%]' : 'shadow-lg lg:hover:shadow-xl lg:hover:border-blue-200 lg:hover:-translate-y-1')}`}>
       {isPremium && !isSoldOut && (
@@ -86,32 +92,61 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, hasHeightRis
       <div className="flex-1 p-6 md:p-8 lg:p-10 relative z-10 flex flex-col">
         <div className="mb-6 md:mb-8">
           
-          {/* 🟢 DYNAMIC AI BADGES */}
+          {/* 🟢 DYNAMIC AI BADGES (All 24 Concepts Logic) */}
           <div className="flex flex-wrap gap-2 mb-4">
+            {/* Scarcity / Last Minute (#8) */}
+            {aiData.isLastMinute === 'true' && !isSoldOut && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-600/20 text-rose-400 border border-rose-600/30 rounded-full text-[9px] font-black uppercase tracking-[0.2em] animate-pulse">
+                <Zap className="w-3 h-3 fill-current" /> High Demand - Final Spots
+              </div>
+            )}
+
+            {/* Premium / ROI Logic (#18) */}
             {isPremium && !isSoldOut && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 text-blue-400 border border-blue-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(37,99,235,0.2)]">
-                <Sparkles className="w-3 h-3 text-blue-400" /> Aero Recommended
+                <Sparkles className="w-3 h-3 text-blue-400" /> {isShortTrip && isMeetGreet ? "Best Weekend Value" : isLongTrip && isParkRide ? "Best Long-Stay Saver" : "Aero Recommended"}
+              </div>
+            )}
+
+            {/* ULEZ Warning (#15) */}
+            {aiData.ulezRisk === 'true' && isHeathrow && !isSoldOut && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
+                <AlertCircle className="w-3 h-3" /> ULEZ Zone Warning
+              </div>
+            )}
+
+            {/* Business Travel (#9) */}
+            {aiData.isCorporate === 'true' && !isSoldOut && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-500/10 text-slate-400 border border-slate-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
+                <ShieldCheck className="w-3 h-3" /> VAT Receipt Ready
+              </div>
+            )}
+
+            {/* Oversized Luggage (#6) */}
+            {aiData.hasOversizedLuggage === 'true' && isMeetGreet && !isSoldOut && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
+                <Footprints className="w-3 h-3" /> Best for Large Items
               </div>
             )}
             
-            {/* Height Warning Badge */}
-            {hasHeightRisk && !isSoldOut && (
+            {/* Height Warning Badge (#2) */}
+            {aiData.hasHeightRisk === 'true' && !isSoldOut && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
-                <AlertCircle className="w-3 h-3 text-amber-500" /> Max Height {isHeathrow ? '2.0m' : '2.1m'}
+                <AlertCircle className="w-3 h-3" /> Max Height {isHeathrow ? '2.0m' : '2.1m'}
               </div>
             )}
 
-            {/* Red-Eye / Late Night Badge */}
-            {isRedEye && option.category?.toLowerCase().includes('meet') && !isSoldOut && (
+            {/* Red-Eye Badge (#1) */}
+            {aiData.isRedEye === 'true' && isMeetGreet && !isSoldOut && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
-                <Clock className="w-3 h-3 text-indigo-400" /> Best for Late Flights
+                <Clock className="w-3 h-3 text-indigo-400" /> Swift Red-Eye Entry
               </div>
             )}
 
-            {/* Family Badge */}
-            {travelGroup === 'family' && option.category?.toLowerCase().includes('meet') && !isSoldOut && (
+            {/* Pet Friendly (#16) */}
+            {aiData.hasPet === 'true' && isMeetGreet && !isSoldOut && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
-                <User className="w-3 h-3 text-purple-400" /> Top Pick for Families
+                <Sparkles className="w-3 h-3" /> Pet Friendly Selection
               </div>
             )}
           </div>
@@ -126,6 +161,10 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, hasHeightRis
             </div>
             <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-white/5 text-slate-300 border border-white/5' : 'bg-slate-50 text-slate-600 border border-slate-200'}`}>
               <BadgeIcon className="w-3.5 h-3.5" /> Terminal Verified
+            </div>
+            {/* Terminal Drop-off Fee Awareness (#19) */}
+            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-white/5 text-emerald-400 border border-emerald-400/20' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'}`}>
+              <Tag className="w-3.5 h-3.5" /> {isMeetGreet ? "£5 Fee Included" : "No Entry Fees"}
             </div>
           </div>
         </div>
@@ -233,7 +272,6 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, hasHeightRis
     </div>
   );
 }
-
 // ----------------------------------------------------------------------
 // 2. MAIN RESULTS CONTENT
 // ----------------------------------------------------------------------

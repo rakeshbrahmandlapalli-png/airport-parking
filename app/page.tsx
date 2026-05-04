@@ -138,17 +138,27 @@ export default function HomePage() {
       
       if (data.airport && data.dropoffDate) {
         
-        // 🟢 Pass the NEW Magic Flags to the Results Page
+        // 🟢 Pass ALL 24 Magic Flags to the URL
         const baseParams: any = {
           airport: data.airport,
           dropoffDate: data.dropoffDate,
           dropoffTime: data.dropoffTime,
           pickupDate: data.pickupDate,
           pickupTime: data.pickupTime,
-          travelGroupType: data.travelGroupType || 'solo',
-          hasHeightRisk: String(data.hasHeightRisk || false), 
-          isRedEye: String(data.isRedEye || false),           
+          terminal: data.terminal || '',
+          travelGroupType: data.travelGroupType,
+          hasOversizedLuggage: String(data.hasOversizedLuggage || false),
+          isRedEye: String(data.isRedEye || false),
+          isLastMinute: String(data.isLastMinute || false),
+          isBudgetFocused: String(data.isBudgetFocused || false),
+          isFrequentFlyer: String(data.isFrequentFlyer || false),
+          ulezRisk: String(data.ulezRisk || false),
+          hasPet: String(data.hasPet || false),
+          isWinter: String(data.isWinter || false),
+          requiresCoveredParking: String(data.requiresCoveredParking || false),
           aeroTip: data.aeroTip || '',
+          upsells: data.suggestedAncillaries?.join(',') || '',
+          isCorporate: String(data.travelGroupType === 'corporate')
         };
 
         if (data.servicePreference) baseParams.type = data.servicePreference;

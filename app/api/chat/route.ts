@@ -5,6 +5,17 @@ import { z } from 'zod';
 // Allow responses up to 30 seconds
 export const maxDuration = 30;
 
+const bookingSchema = z.object({
+  airport: z.string().describe("Must be 'Luton (LTN)' or 'Heathrow (LHR)'"),
+  dropoffDate: z.string().describe("Format YYYY-MM-DD"),
+  pickupDate: z.string().describe("Format YYYY-MM-DD"),
+  hasPet: z.boolean().describe("True if traveling with a pet"),
+  ulezRisk: z.boolean().describe("True if going to Heathrow with an older vehicle"),
+  isCorporate: z.boolean().describe("True if traveling for business/work"),
+  isLastMinute: z.boolean().describe("True if travel is within 48 hours"),
+  travelGroupType: z.enum(['solo', 'couple', 'family', 'group', 'corporate'])
+});
+
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
@@ -32,36 +43,30 @@ export async function POST(req: Request) {
       - Format the link beautifully in markdown like this: [👉 View Your Custom Parking Options](link)
       
       TONE:
-      - Brief, smart, and helpful. Speak like an elite private concierge.`,
+      - Warm, conversational, and deeply empathetic to the stress of flying.
+      - Speak like a friendly local expert, not a stiff robot. 
+      - Be reassuring. Use phrases like "Let's get this sorted for you" or "I'll make sure your car is in good hands."
+      - Remain highly professional when discussing payments, security, or data.`,
       
       // 2. INJECT "HANDS" (FUNCTION CALLING)
       tools: {
+        // @ts-ignore - Bypassing Vercel AI SDK's strict overload type bug
         buildCustomBooking: tool({
           description: 'Generates a custom URL to the Results Page based on the user intent.',
-          parameters: z.object({
-            airport: z.string().describe("Must be 'Luton (LTN)' or 'Heathrow (LHR)'"),
-            dropoffDate: z.string().describe("Format YYYY-MM-DD"),
-            pickupDate: z.string().describe("Format YYYY-MM-DD"),
-            hasPet: z.boolean().describe("True if traveling with a pet"),
-            ulezRisk: z.boolean().describe("True if going to Heathrow with an older vehicle"),
-            isCorporate: z.boolean().describe("True if traveling for business/work"),
-            isLastMinute: z.boolean().describe("True if travel is within 48 hours"),
-            travelGroupType: z.enum(['solo', 'couple', 'family', 'group', 'corporate'])
-          }),
-          execute: async ({ airport, dropoffDate, pickupDate, hasPet, ulezRisk, isCorporate, isLastMinute, travelGroupType }) => {
-            // This function takes what the AI learned from the chat and builds a URL to your Results Page!
+          parameters: bookingSchema,
+          execute: async (args: any) => {
+            
             const params = new URLSearchParams({
-              airport,
-              dropoffDate,
-              pickupDate,
-              hasPet: String(hasPet),
-              ulezRisk: String(ulezRisk),
-              isCorporate: String(isCorporate),
-              isLastMinute: String(isLastMinute),
-              travelGroupType
+              airport: args.airport,
+              dropoffDate: args.dropoffDate,
+              pickupDate: args.pickupDate,
+              hasPet: String(args.hasPet),
+              ulezRisk: String(args.ulezRisk),
+              isCorporate: String(args.isCorporate),
+              isLastMinute: String(args.isLastMinute),
+              travelGroupType: args.travelGroupType
             });
             
-            // Return the URL back to the AI so it can show it to the user
             return { 
               success: true, 
               url: `/results?${params.toString()}`,
