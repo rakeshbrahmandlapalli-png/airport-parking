@@ -473,6 +473,26 @@ function CheckoutContent() {
                 </button>
               </div>
 
+              {/* 🟢 DYNAMIC AI CONCIERGE TIP */}
+            {aiData.aeroTip && (
+              <div className="mb-6 bg-blue-500/10 border border-blue-500/30 rounded-2xl p-4 relative overflow-hidden group">
+                <div className="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform">
+                  <Sparkles className="w-12 h-12 text-blue-400" />
+                </div>
+                <div className="flex gap-3 items-start relative z-10">
+                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shrink-0 shadow-lg shadow-blue-900/20">
+                    <Sparkles className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-1">Aero Intelligence</p>
+                    <p className="text-[11px] font-bold text-blue-100 leading-relaxed italic">
+                      "{aiData.aeroTip}"
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
               {/* 🟢 DYNAMIC AI BADGES IN SUMMARY */}
               <div className="flex flex-wrap gap-2 mb-6">
                 <div className="bg-blue-500/10 text-blue-400 border border-blue-500/30 text-[8px] md:text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-[0_0_15px_rgba(37,99,235,0.2)]">
