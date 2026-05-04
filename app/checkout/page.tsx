@@ -24,7 +24,12 @@ import {
   CheckCircle2,
   Coffee,
   Zap,
-  Star
+  Star,
+  Settings2,
+  Clock,
+  Footprints,
+  ChevronDown,
+  Navigation
 } from "lucide-react";
 
 // ----------------------------------------------------------------------
@@ -56,22 +61,34 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isEditingSearch, setIsEditingSearch] = useState(false);
   
   // --- CAPTURE URL DATA & AI FLAGS ---
   const airport = searchParams.get("airport") || "Luton (LTN)";
   const dailyRate = Number(searchParams.get("price")) || 0;
-  const dropDate = searchParams.get("dropoffDate");
-  const pickDate = searchParams.get("pickupDate");
-  const dropTime = searchParams.get("dropoffTime") || ""; 
-  const pickTime = searchParams.get("pickupTime") || "";  
   const type = searchParams.get("type") || "Premium Meet & Greet"; 
   const urlFlightNumber = searchParams.get("flightNumber") || "";
   
-  // 🟢 NEW AI DATA
-  const isFrequentFlyer = searchParams.get("isFrequentFlyer") === "true";
-  const loyaltyMessage = searchParams.get("loyaltyMessage") || "";
+  // 🟢 NEW AI DATA CAPTURE
+  const aiData = {
+    isFrequentFlyer: searchParams.get("isFrequentFlyer") === "true",
+    loyaltyMessage: searchParams.get("loyaltyMessage") || "",
+    hasPet: searchParams.get("hasPet") === "true",
+    isCorporate: searchParams.get("isCorporate") === "true",
+    hasOversizedLuggage: searchParams.get("hasOversizedLuggage") === "true",
+    ulezRisk: searchParams.get("ulezRisk") === "true",
+    isLastMinute: searchParams.get("isLastMinute") === "true",
+    aeroTip: searchParams.get("aeroTip") || ""
+  };
+
   const rawUpsells = searchParams.get("upsells") || "";
   const suggestedAncillaries = rawUpsells.split(',').filter(Boolean);
+
+  // --- EDITABLE SEARCH STATES ---
+  const [dropDate, setDropDate] = useState(searchParams.get("dropoffDate") || "");
+  const [pickDate, setPickDate] = useState(searchParams.get("pickupDate") || "");
+  const [dropTime, setDropTime] = useState(searchParams.get("dropoffTime") || "09:00");
+  const [pickTime, setPickTime] = useState(searchParams.get("pickupTime") || "09:00");
 
   // --- FORM STATES ---
   const [fullName, setFullName] = useState("");
@@ -94,17 +111,16 @@ function CheckoutContent() {
   const [discount, setDiscount] = useState({ active: false, code: "", percent: 0 });
   const [promoMessage, setPromoMessage] = useState("");
   const [isPromoError, setIsPromoError] = useState(false);
-  
   const [aeroClicks, setAeroClicks] = useState(0);
 
   // 🟢 AUTO-APPLY LOYALTY DISCOUNT ON LOAD
   useEffect(() => {
-    if (isFrequentFlyer && !discount.active) {
+    if (aiData.isFrequentFlyer && !discount.active) {
       setDiscount({ active: true, code: "AERO VIP", percent: 0.15 });
-      setPromoMessage(loyaltyMessage || "Loyalty recognized! 15% discount auto-applied.");
+      setPromoMessage(aiData.loyaltyMessage || "Loyalty recognized! 15% discount auto-applied.");
       setIsPromoError(false);
     }
-  }, [isFrequentFlyer, loyaltyMessage]);
+  }, [aiData.isFrequentFlyer, aiData.loyaltyMessage]);
 
   const handleApplyPromo = (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,18 +167,13 @@ function CheckoutContent() {
     const diffTime = end.getTime() - start.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     const finalDays = diffDays <= 0 ? 1 : diffDays;
-    
     return { days: finalDays, total: dailyRate * finalDays };
   };
 
   const booking = calculateTotal();
   const baseTotal = booking.total;
   const discountAmount = baseTotal * discount.percent;
-  
-  // Calculate Add-ons
   const addOnsTotal = (wantsLounge ? LOUNGE_PRICE : 0) + (wantsFastTrack ? FAST_TRACK_PRICE : 0);
-  
-  // Final calculation
   const finalTotal = (baseTotal - discountAmount) + addOnsTotal;
 
   const formatDate = (dateString: string | null) => {
@@ -172,14 +183,12 @@ function CheckoutContent() {
 
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault(); 
-    
     if (!fullName || !email || !phone || !registration || !carMake) {
       alert("Please complete all required fields.");
       return;
     }
     
     setIsProcessing(true);
-    
     try {
       const shortId = "APD-" + Math.random().toString(36).substring(2, 8).toUpperCase();
       await new Promise(resolve => setTimeout(resolve, 1500));
@@ -203,7 +212,6 @@ function CheckoutContent() {
           flight_number: flightNumber.toUpperCase().trim(),
           airport: airport,
           terminal: terminal,
-          // Could add ancillary data here if your DB schema supports it later
         }]);
 
       if (dbError) throw dbError;
@@ -228,7 +236,6 @@ function CheckoutContent() {
       }
       
       router.push(`/success?ref=${shortId}`);
-      
     } catch (error: any) {
       alert(`Error: ${error.message}`);
       setIsProcessing(false);
@@ -245,7 +252,7 @@ function CheckoutContent() {
         <div className="relative z-10">
           <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-400 mb-1 flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5"/> Aero Secure Checkout</p>
           <p className="text-xs sm:text-sm text-slate-300 font-medium">
-            {isFrequentFlyer ? "Welcome back! I've automatically applied your loyalty discount." : "Aero has locked your rate. Complete your details below."}
+            {aiData.isFrequentFlyer ? "Welcome back! I've automatically applied your loyalty discount." : "Aero has locked your rate. Complete your details below."}
           </p>
         </div>
       </div>
@@ -455,12 +462,48 @@ function CheckoutContent() {
           <div className="bg-[#0B1121] rounded-[2rem] md:rounded-[2.5rem] border border-blue-500/30 shadow-2xl overflow-hidden text-white relative">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600"></div>
             
-            <div className="absolute top-4 right-4 bg-blue-500/10 text-blue-400 border border-blue-500/30 text-[8px] md:text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-[0_0_15px_rgba(37,99,235,0.2)]">
-              <Sparkles className="w-3 h-3 fill-current" /> Aero Verified
-            </div>
-            
             <div className="p-6 md:p-8 lg:p-10">
-              <h3 className="text-xl md:text-2xl font-black tracking-tight mb-6 md:mb-8">Order Summary</h3>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl md:text-2xl font-black tracking-tight">Order Summary</h3>
+                <button 
+                  onClick={() => setIsEditingSearch(!isEditingSearch)}
+                  className="text-[9px] font-black uppercase text-blue-400 border border-blue-400/30 px-2 py-1 rounded hover:bg-blue-400 hover:text-white transition-all flex items-center gap-1"
+                >
+                  <Settings2 className="w-3 h-3"/> {isEditingSearch ? "Close Edit" : "Modify Search"}
+                </button>
+              </div>
+
+              {/* 🟢 DYNAMIC AI BADGES IN SUMMARY */}
+              <div className="flex flex-wrap gap-2 mb-6">
+                <div className="bg-blue-500/10 text-blue-400 border border-blue-500/30 text-[8px] md:text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-[0_0_15px_rgba(37,99,235,0.2)]">
+                  <Sparkles className="w-3 h-3 fill-current" /> Aero Verified
+                </div>
+                {aiData.hasPet && (
+                  <div className="bg-purple-500/20 text-purple-400 border border-purple-500/30 px-2 py-1.5 rounded text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                    <Sparkles className="w-2.5 h-2.5"/> Pet Friendly Choice
+                  </div>
+                )}
+                {aiData.ulezRisk && airport.includes("Heathrow") && (
+                  <div className="bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-1.5 rounded text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                    <AlertCircle className="w-2.5 h-2.5"/> ULEZ Zone Alert
+                  </div>
+                )}
+                {aiData.hasOversizedLuggage && (
+                  <div className="bg-orange-500/20 text-orange-400 border border-orange-500/30 px-2 py-1.5 rounded text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                    <Footprints className="w-2.5 h-2.5"/> Large Luggage Pick
+                  </div>
+                )}
+                {aiData.isCorporate && (
+                  <div className="bg-slate-500/20 text-slate-300 border border-slate-500/30 px-2 py-1.5 rounded text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                    <ShieldCheck className="w-2.5 h-2.5"/> Business / VAT Ready
+                  </div>
+                )}
+                {aiData.isLastMinute && (
+                  <div className="bg-rose-500/20 text-rose-400 border border-rose-500/30 px-2 py-1.5 rounded text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 animate-pulse">
+                    <Zap className="w-2.5 h-2.5"/> High Demand Spot
+                  </div>
+                )}
+              </div>
               
               <div className="flex items-start gap-4 mb-6 md:mb-8 pb-6 md:pb-8 border-b border-white/10">
                 <div className="w-12 h-12 md:w-14 md:h-14 bg-blue-600 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
@@ -472,29 +515,55 @@ function CheckoutContent() {
                 </div>
               </div>
 
-              <div className="space-y-4 md:space-y-5 mb-6 md:mb-8 pb-6 md:pb-8 border-b border-white/10">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2 md:gap-3 text-slate-400">
-                    <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-500" /> <span className="text-[10px] md:text-[11px] font-black uppercase tracking-widest">Drop-off</span>
+              {/* 🟢 EDITABLE SEARCH PANEL */}
+              {isEditingSearch ? (
+                <div className="space-y-4 mb-6 bg-white/5 p-4 rounded-2xl border border-white/10 animate-in fade-in zoom-in-95">
+                  <div>
+                    <label className="text-[9px] font-black uppercase text-slate-400 mb-2 block">Drop-off</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input type="date" value={dropDate} onChange={(e)=>setDropDate(e.target.value)} className="bg-slate-800 text-white text-[10px] p-2 rounded-lg outline-none border border-white/10" />
+                      <input type="time" value={dropTime} onChange={(e)=>setDropTime(e.target.value)} className="bg-slate-800 text-white text-[10px] p-2 rounded-lg outline-none border border-white/10" />
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className="block text-xs md:text-sm font-bold text-white">{formatDate(dropDate)}</span>
-                    <span className="block text-[9px] md:text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{dropTime || "Time TBD"}</span>
+                  <div>
+                    <label className="text-[9px] font-black uppercase text-slate-400 mb-2 block">Return</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input type="date" value={pickDate} onChange={(e)=>setPickDate(e.target.value)} className="bg-slate-800 text-white text-[10px] p-2 rounded-lg outline-none border border-white/10" />
+                      <input type="time" value={pickTime} onChange={(e)=>setPickTime(e.target.value)} className="bg-slate-800 text-white text-[10px] p-2 rounded-lg outline-none border border-white/10" />
+                    </div>
+                  </div>
+                  <button 
+                    onClick={()=>setIsEditingSearch(false)} 
+                    className="w-full py-2 bg-blue-600 text-[9px] font-black uppercase rounded-lg hover:bg-blue-500 transition-colors"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4 md:space-y-5 mb-6 md:mb-8 pb-6 md:pb-8 border-b border-white/10">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2 md:gap-3 text-slate-400">
+                      <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-500" /> <span className="text-[10px] md:text-[11px] font-black uppercase tracking-widest">Drop-off</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="block text-xs md:text-sm font-bold text-white">{formatDate(dropDate)}</span>
+                      <span className="block text-[9px] md:text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{dropTime || "Time TBD"}</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2 md:gap-3 text-slate-400">
+                      <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-500" /> <span className="text-[10px] md:text-[11px] font-black uppercase tracking-widest">Pick-up</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="block text-xs md:text-sm font-bold text-white">{formatDate(pickDate)}</span>
+                      <span className="block text-[9px] md:text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{pickTime || "Time TBD"}</span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2 md:gap-3 text-slate-400">
-                    <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-500" /> <span className="text-[10px] md:text-[11px] font-black uppercase tracking-widest">Pick-up</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="block text-xs md:text-sm font-bold text-white">{formatDate(pickDate)}</span>
-                    <span className="block text-[9px] md:text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{pickTime || "Time TBD"}</span>
-                  </div>
-                </div>
-              </div>
+              )}
 
               {/* Promo Code Section - Hidden if Auto-Discount applied */}
-              {!isFrequentFlyer && (
+              {!aiData.isFrequentFlyer && (
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-5 mb-6 md:mb-8">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
                     <Tag className="w-3.5 h-3.5" /> Have a Promo Code?
@@ -529,7 +598,7 @@ function CheckoutContent() {
                 </div>
               )}
 
-              {isFrequentFlyer && (
+              {aiData.isFrequentFlyer && (
                 <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 md:p-5 mb-6 md:mb-8 text-center">
                   <Star className="w-6 h-6 text-emerald-400 mx-auto mb-2" />
                   <p className="text-emerald-400 font-bold text-xs uppercase tracking-widest">VIP Loyalty Active</p>
@@ -592,15 +661,15 @@ function CheckoutContent() {
           </div>
 
           <div className="mt-4 md:mt-6 flex flex-col gap-4">
-             <div className="bg-white rounded-[1.5rem] p-5 md:p-6 border border-slate-200 shadow-sm flex items-start gap-3 md:gap-4">
+              <div className="bg-white rounded-[1.5rem] p-5 md:p-6 border border-slate-200 shadow-sm flex items-start gap-3 md:gap-4">
                 <div className="w-8 h-8 md:w-10 md:h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">
                   <ShieldCheck className="w-4 h-4 md:w-5 md:h-5" />
                 </div>
                 <div>
                   <p className="text-xs md:text-sm font-black text-slate-900 tracking-tight mb-1">Aero Booking Guarantee</p>
-                  <p className="text-[11px] md:text-xs font-bold text-slate-500 leading-relaxed">Free cancellation up to 2 hours before your drop-off time. Fully protected and verified by Aero Concierge.</p>
+                  <p className="text-[11px] md:text-xs font-bold text-slate-500 leading-relaxed">Free cancellation up to <span className="text-blue-600">24 hours</span> before your drop-off time. Fully protected and verified by Aero Concierge.</p>
                 </div>
-             </div>
+              </div>
           </div>
         </aside>
 
