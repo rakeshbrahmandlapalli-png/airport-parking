@@ -1,148 +1,159 @@
 "use client";
 
-import { useState } from "react";
-import { X, Send, Minus } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { X, Send, Minus, Bot, Sparkles, ShieldCheck } from "lucide-react";
+import { useChat } from "@ai-sdk/react";
 
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    { sender: "aero", text: "Hi, I'm Aero! How can I assist with your secure parking today?" }
-  ]);
-  const [input, setInput] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim()) return;
+// Vercel AI SDK Hook - The 'as any' bypasses the version mismatch errors
+  const { messages, input, handleInputChange, handleSubmit, isLoading, error } = (useChat as any)({
+    api: '/api/chat',
+    initialMessages: [
+      { 
+        id: 'welcome', 
+        role: 'assistant', 
+        content: "Hi, I'm Aero! ✈️ I'm currently scanning live rates for Heathrow and Luton. How can I assist with your secure parking today?" 
+      }
+    ],
+  });
 
-    const userMessage = input;
-    
-    // 1. Add user message to screen
-    setMessages(prev => [...prev, { sender: "user", text: userMessage }]);
-    setInput("");
-
-    // 2. Add a temporary "Aero is typing..." message
-    setMessages(prev => [...prev, { sender: "aero", text: "..." }]);
-
-    try {
-      // 3. Ping your new OpenAI API
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMessage }),
-      });
-
-      const data = await res.json();
-
-      // 4. Replace the "..." with Aero's real answer from OpenAI
-      setMessages(prev => {
-        const newMsgs = [...prev];
-        newMsgs[newMsgs.length - 1] = { 
-          sender: "aero", 
-          text: data.reply || "My connection to the mainframe was interrupted. Please try again." 
-        };
-        return newMsgs;
-      });
-
-    } catch (error) {
-      setMessages(prev => {
-        const newMsgs = [...prev];
-        newMsgs[newMsgs.length - 1] = { sender: "aero", text: "I am experiencing network interference. Please contact info@aeroparkdirect.co.uk." };
-        return newMsgs;
+  // Auto-scroll logic for a smooth experience
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: "smooth",
       });
     }
-  };
+  }, [messages, isLoading]);
 
   return (
     <>
-      {/* THE AERO FLOATING BUTTON */}
+      {/* --- THE AERO FLOATING TRIGGER --- */}
       <button
         onClick={() => setIsOpen(true)}
         className={`fixed bottom-6 right-6 z-50 group transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
-          isOpen ? "scale-0 opacity-0 pointer-events-none" : "scale-100 opacity-100 cursor-pointer"
+          isOpen ? "scale-0 opacity-0 pointer-events-none" : "scale-100 opacity-100"
         }`}
       >
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-          Ask Aero
+        {/* Tooltip */}
+        <div className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 shadow-xl border border-white/10">
+          Initialize Aero
           <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
         </div>
 
-        <div className="w-14 h-14 md:w-16 md:h-16 bg-blue-600 rounded-2xl flex items-center justify-center gap-1.5 shadow-[0_10px_30px_rgba(37,99,235,0.4)] border border-blue-400/30 overflow-hidden relative transition-transform duration-300 group-hover:scale-105 active:scale-95">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-transparent mix-blend-overlay"></div>
-          <div className="w-1.5 h-5 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.8)] animate-pulse"></div>
-          <div className="w-1.5 h-5 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.8)] animate-pulse delay-75"></div>
-          <div className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 border-2 border-blue-600 rounded-full"></div>
+        {/* Floating Icon */}
+        <div className="w-16 h-16 bg-blue-600 rounded-[2rem] flex items-center justify-center gap-1.5 shadow-[0_15px_40px_-10px_rgba(37,99,235,0.6)] border border-blue-400/30 overflow-hidden relative transition-all duration-300 group-hover:rounded-2xl group-hover:rotate-3 active:scale-90">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent mix-blend-overlay"></div>
+          <div className="w-1.5 h-6 bg-white rounded-full shadow-[0_0_15px_rgba(255,255,255,1)] animate-[pulse_1.5s_infinite]"></div>
+          <div className="w-1.5 h-6 bg-white rounded-full shadow-[0_0_15px_rgba(255,255,255,1)] animate-[pulse_1.5s_infinite_0.2s]"></div>
+          
+          {/* Notification Dot */}
+          <div className="absolute top-4 right-4 w-3 h-3 bg-emerald-500 border-2 border-blue-600 rounded-full animate-bounce"></div>
         </div>
       </button>
 
-      {/* THE AERO CHAT WINDOW */}
+      {/* --- THE AERO CHAT WINDOW --- */}
       <div 
-        className={`fixed bottom-4 right-4 md:bottom-6 md:right-6 w-[calc(100%-2rem)] md:w-[380px] bg-white rounded-3xl shadow-2xl border border-slate-200 z-50 overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] origin-bottom-right flex flex-col ${
-          isOpen ? "scale-100 opacity-100 pointer-events-auto h-[450px]" : "scale-50 opacity-0 pointer-events-none h-0"
+        className={`fixed bottom-4 right-4 md:bottom-6 md:right-6 w-[calc(100%-2rem)] md:w-[400px] bg-white rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] border border-slate-200 z-50 overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] origin-bottom-right flex flex-col ${
+          isOpen ? "scale-100 opacity-100 h-[600px]" : "scale-75 opacity-0 pointer-events-none h-0"
         }`}
       >
-        {/* Header */}
-        <div className="bg-[#0A101D] p-4 flex items-center justify-between relative overflow-hidden shrink-0">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-emerald-400"></div>
+        {/* Dynamic Glassmorphic Header */}
+        <div className="bg-[#0A101D] p-5 flex items-center justify-between relative shrink-0">
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-blue-400 to-transparent animate-shimmer"></div>
           
-          <div className="flex items-center gap-3 relative z-10">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center gap-1 shadow-lg border border-blue-400/30 relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-transparent mix-blend-overlay rounded-xl"></div>
-              <div className="w-1 h-3 bg-white rounded-full shadow-[0_0_5px_rgba(255,255,255,0.8)] animate-pulse"></div>
-              <div className="w-1 h-3 bg-white rounded-full shadow-[0_0_5px_rgba(255,255,255,0.8)] animate-pulse delay-75"></div>
+          <div className="flex items-center gap-4 relative z-10">
+            <div className="relative">
+              <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center gap-1 shadow-lg border border-blue-400/30">
+                <div className="w-1 h-4 bg-white rounded-full animate-pulse"></div>
+                <div className="w-1 h-4 bg-white rounded-full animate-pulse delay-150"></div>
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-[#0A101D] rounded-full"></div>
             </div>
             
             <div>
-              <h3 className="text-white font-black uppercase tracking-widest text-sm">Aero Assistant</h3>
-              <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                <span className="text-emerald-400 text-[9px] font-bold uppercase tracking-widest">Online & Scanning</span>
+              <h3 className="text-white font-black uppercase tracking-[0.15em] text-xs flex items-center gap-2">
+                Aero Intelligence <ShieldCheck className="w-3 h-3 text-blue-400" />
+              </h3>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest animate-pulse">Neural Link Active</span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-1 relative z-10">
-            <button onClick={() => setIsOpen(false)} className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
-              <Minus className="w-4 h-4" />
-            </button>
-            <button onClick={() => setIsOpen(false)} className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
-              <X className="w-4 h-4" />
+          <div className="flex items-center gap-2 relative z-10">
+            <button onClick={() => setIsOpen(false)} className="p-2.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all">
+              <Minus className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* Chat Area */}
-        <div className="flex-1 bg-slate-50 p-4 overflow-y-auto flex flex-col gap-4">
-          {messages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[85%] rounded-2xl p-3 text-sm font-medium leading-relaxed ${
-                msg.sender === 'user' 
-                  ? 'bg-blue-600 text-white rounded-br-sm' 
-                  : 'bg-white border border-slate-200 text-slate-700 rounded-bl-sm shadow-sm'
+        {/* Message Thread Area */}
+        <div 
+          ref={scrollRef}
+          className="flex-1 bg-[#F8FAFC] p-6 overflow-y-auto flex flex-col gap-5 scrollbar-thin scrollbar-thumb-slate-200"
+        >
+          {messages.map((m:any) => (
+            <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
+              <div className={`max-w-[85%] px-5 py-4 text-sm font-semibold leading-relaxed shadow-sm transition-all ${
+                m.role === 'user' 
+                  ? 'bg-blue-600 text-white rounded-[1.5rem] rounded-tr-none' 
+                  : 'bg-white border border-slate-200 text-slate-700 rounded-[1.5rem] rounded-tl-none'
               }`}>
-                {msg.text}
+                <div className="whitespace-pre-wrap break-words">{m.content}</div>
               </div>
             </div>
           ))}
+
+          {/* Scanning / Thinking State */}
+          {isLoading && messages[messages.length - 1]?.role === 'user' && (
+             <div className="flex justify-start items-center gap-3">
+                <div className="bg-white border border-slate-200 rounded-full px-5 py-3 flex items-center gap-3 shadow-sm">
+                  <div className="flex gap-1">
+                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce"></div>
+                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Scanning Database</span>
+                </div>
+             </div>
+          )}
+
+          {/* Error State */}
+          {error && (
+            <div className="bg-red-50 border border-red-100 p-4 rounded-2xl text-red-600 text-[11px] font-bold uppercase tracking-wider text-center">
+              Connection Interrupted. Please check your network.
+            </div>
+          )}
         </div>
 
-        {/* Input Area */}
-        <div className="p-4 bg-white border-t border-slate-100 shrink-0">
-          <form onSubmit={handleSend} className="flex items-center gap-2 relative">
-            <input 
-              type="text" 
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about cancellation, security..." 
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-4 pr-12 py-3 text-sm font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-            />
-            <button 
-              type="submit"
-              disabled={!input.trim()}
-              className="absolute right-2 p-2 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-300 text-white rounded-lg transition-colors"
-            >
-              <Send className="w-4 h-4" />
-            </button>
+        {/* Input Control Center */}
+        <div className="p-6 bg-white border-t border-slate-100 shrink-0">
+          <form onSubmit={handleSubmit} className="flex items-center gap-3 relative">
+            <div className="relative w-full">
+              <input 
+                type="text" 
+                value={input}
+                onChange={handleInputChange}
+                placeholder="Ask Aero about parking, ULEZ, or rates..." 
+                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl pl-5 pr-14 py-4 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/5 transition-all placeholder:text-slate-400"
+              />
+              <button 
+                type="submit"
+                disabled={!input.trim() || isLoading}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 text-white rounded-xl transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+              >
+                <Send className="w-5 h-5" />
+              </button>
+            </div>
           </form>
+          <p className="text-center text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-4 flex items-center justify-center gap-2">
+            <Bot className="w-3 h-3" /> Powered by Aero Intelligence v3.4
+          </p>
         </div>
       </div>
     </>
