@@ -3,7 +3,7 @@
 import { useSearchParams, useRouter } from "next/navigation";
 import { 
   MapPin, Clock, ShieldCheck, ChevronRight, ThumbsUp, ArrowLeft,
-  ChevronDown, Plane, Calendar, Footprints,
+  ChevronDown, Plane, Calendar, Footprints, User,
   Star, Ban, Bus, BedDouble, Info, PlaneTakeoff, 
   PlaneLanding, Map as MapIcon, Navigation, Loader2,
   AlertCircle, X, Shield, Sparkles, MessageSquare, Bot, Zap
@@ -56,7 +56,7 @@ function AeroAvatar({ size = "md", thinking = false }: { size?: "sm" | "md" | "l
 // ----------------------------------------------------------------------
 // 1. PREMIUM PARKING CARD COMPONENT
 // ----------------------------------------------------------------------
-function ParkingCard({ option, duration, isHeathrow, handleBooking }: any) {
+function ParkingCard({ option, duration, isHeathrow, handleBooking, hasHeightRisk, isRedEye, travelGroup }: any) {
   const [activeTab, setActiveTab] = useState('overview');
   
   const dailyRate = isHeathrow ? (option.heathrow_price || 0) : (option.luton_price || 0);
@@ -85,11 +85,36 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking }: any) {
 
       <div className="flex-1 p-6 md:p-8 lg:p-10 relative z-10 flex flex-col">
         <div className="mb-6 md:mb-8">
-          {isPremium && !isSoldOut && (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 text-blue-400 border border-blue-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em] mb-4 shadow-[0_0_15px_rgba(37,99,235,0.2)]">
-              <Sparkles className="w-3 h-3 text-blue-400" /> Aero Recommended
-            </div>
-          )}
+          
+          {/* 🟢 DYNAMIC AI BADGES */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {isPremium && !isSoldOut && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 text-blue-400 border border-blue-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(37,99,235,0.2)]">
+                <Sparkles className="w-3 h-3 text-blue-400" /> Aero Recommended
+              </div>
+            )}
+            
+            {/* Height Warning Badge */}
+            {hasHeightRisk && !isSoldOut && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
+                <AlertCircle className="w-3 h-3 text-amber-500" /> Max Height {isHeathrow ? '2.0m' : '2.1m'}
+              </div>
+            )}
+
+            {/* Red-Eye / Late Night Badge */}
+            {isRedEye && option.category?.toLowerCase().includes('meet') && !isSoldOut && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
+                <Clock className="w-3 h-3 text-indigo-400" /> Best for Late Flights
+              </div>
+            )}
+
+            {/* Family Badge */}
+            {travelGroup === 'family' && option.category?.toLowerCase().includes('meet') && !isSoldOut && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
+                <User className="w-3 h-3 text-purple-400" /> Top Pick for Families
+              </div>
+            )}
+          </div>
 
           <h2 className={`text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight mb-4 ${textPrimary}`}>
             {option.name}
@@ -225,6 +250,12 @@ function ResultsContent() {
   const serviceType = searchParams.get("type") || "meet-greet"; 
   const isHeathrow = airport.includes("Heathrow");
 
+  // --- 🟢 NEW: PULL AI MAGIC FLAGS ---
+  const hasHeightRisk = searchParams.get("hasHeightRisk") === "true";
+  const isRedEye = searchParams.get("isRedEye") === "true";
+  const travelGroup = searchParams.get("travelGroupType") || "solo";
+  const aeroTip = searchParams.get("aeroTip") || "";
+
   useEffect(() => {
     async function getLiveRates() {
       setLoading(true);
@@ -283,17 +314,25 @@ function ResultsContent() {
   return (
     <div className="max-w-[1000px] mx-auto px-4 py-6 md:py-8">
       
-      {/* 🟢 AERO CONCIERGE BANNER WITH MASCOT */}
+      {/* 🟢 AERO CONCIERGE BANNER WITH MASCOT & TIPS */}
       <div className="bg-[#0B1121] border border-blue-900/40 rounded-[2.5rem] p-5 md:p-7 flex flex-col sm:flex-row items-center gap-6 mb-10 shadow-2xl relative overflow-hidden">
         <div className="absolute -right-20 -top-20 w-64 h-64 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
         <AeroAvatar />
-        <div className="text-center sm:text-left relative z-10">
+        <div className="text-center sm:text-left relative z-10 w-full">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 mb-1 flex items-center justify-center sm:justify-start gap-2">
             <Zap className="w-3 h-3 fill-current"/> Aero Concierge Active
           </p>
           <h3 className="text-white text-base md:text-xl font-bold leading-tight">
             I have securely verified <strong className="text-blue-400">{companies.length} approved compounds</strong> for your travel dates at {isHeathrow ? 'Heathrow' : 'Luton'}.
           </h3>
+          
+          {/* 🟢 AERO TIP BUBBLE */}
+          {aeroTip && (
+             <div className="mt-4 bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 md:p-4 text-xs md:text-sm text-blue-200 flex items-start gap-3 shadow-inner">
+               <Info className="w-4 h-4 md:w-5 md:h-5 shrink-0 mt-0.5 text-blue-400" />
+               <p className="font-medium leading-relaxed">{aeroTip}</p>
+             </div>
+          )}
         </div>
       </div>
 
@@ -332,6 +371,9 @@ function ResultsContent() {
               duration={duration} 
               isHeathrow={isHeathrow}
               handleBooking={handleBooking}
+              hasHeightRisk={hasHeightRisk} // 🟢 Passes Height logic
+              isRedEye={isRedEye}           // 🟢 Passes RedEye logic
+              travelGroup={travelGroup}     // 🟢 Passes Family logic
             />
           ))
         )}

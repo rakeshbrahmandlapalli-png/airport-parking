@@ -2,33 +2,26 @@
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import AeroFeature from "@/components/AeroFeature";
-import { supabase } from "./lib/supabase"; // <-- ADDED SUPABASE IMPORT FOR FAST-TRACK
+import { supabase } from "./lib/supabase"; 
 import { 
   User, 
   Calendar, 
-  Clock, 
   PlaneTakeoff,
   ShieldCheck,
   Star,
   CreditCard,
-  MapPin,
-  CarFront,
   Menu,
   X,
   ChevronRight,
   Info,
   ChevronDown,
-  CheckCircle2,
-  Tag,
   Search,
   Car,
-  Laptop,
-  Building2,
   Mic,
   Sparkles,
-  Wand2,
   Loader2,
-  ArrowRight
+  ArrowRight,
+  Zap
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -54,7 +47,7 @@ export default function HomePage() {
   const [magicText, setMagicText] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
-  const [fastTrackStatus, setFastTrackStatus] = useState(""); // UI feedback for zero-click
+  const [fastTrackStatus, setFastTrackStatus] = useState(""); 
 
   useEffect(() => {
     const today = new Date();
@@ -90,7 +83,6 @@ export default function HomePage() {
       return;
     }
 
-    // 🟢 FIXED: Added 'URL' before SearchParams
     const query = new URLSearchParams({
       airport, dropoffDate, dropoffTime, pickupDate, pickupTime
     }).toString();
@@ -146,16 +138,30 @@ export default function HomePage() {
       
       if (data.airport && data.dropoffDate) {
         
+        // 🟢 Pass the NEW Magic Flags to the Results Page
+        const baseParams: any = {
+          airport: data.airport,
+          dropoffDate: data.dropoffDate,
+          dropoffTime: data.dropoffTime,
+          pickupDate: data.pickupDate,
+          pickupTime: data.pickupTime,
+          travelGroupType: data.travelGroupType || 'solo',
+          hasHeightRisk: String(data.hasHeightRisk || false), 
+          isRedEye: String(data.isRedEye || false),           
+          aeroTip: data.aeroTip || '',
+        };
+
+        if (data.servicePreference) baseParams.type = data.servicePreference;
+        if (data.flightNumber) baseParams.flightNumber = data.flightNumber.toUpperCase();
+
         // 🟢 ZERO-CLICK BOOKING ACTIVATED 
         if (data.isReadyToBook && data.servicePreference) {
            setFastTrackStatus("Fast-Track Activated. Finding best operator...");
            const isHeathrow = data.airport.includes("Heathrow");
            
-           // Fetch live compounds
            const { data: companies } = await supabase.from('companies').select('*');
            
            if (companies) {
-              // Filter active, correct airport, correct category, not sold out
               const available = companies.filter(c => {
                  const cat = c.category?.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-').trim();
                  const rightCat = cat === data.servicePreference;
@@ -165,7 +171,6 @@ export default function HomePage() {
               });
 
               if (available.length > 0) {
-                 // Sort by premium/featured first
                  available.sort((a, b) => {
                     const aPremium = isHeathrow ? a.lhr_featured : a.ltn_featured;
                     const bPremium = isHeathrow ? b.lhr_featured : b.ltn_featured;
@@ -174,41 +179,26 @@ export default function HomePage() {
                     return 0;
                  });
 
-                 // Grab the #1 Recommended Compound
                  const bestOption = available[0];
                  const dailyRate = isHeathrow ? bestOption.heathrow_price : bestOption.luton_price;
 
                  setFastTrackStatus(`Secured ${bestOption.name}. Teleporting to Checkout...`);
 
                  const checkoutQuery = new URLSearchParams({
-                   airport: data.airport,
-                   dropoffDate: data.dropoffDate,
-                   dropoffTime: data.dropoffTime,
-                   pickupDate: data.pickupDate,
-                   pickupTime: data.pickupTime,
+                   ...baseParams,
                    type: bestOption.name,
                    price: dailyRate.toString(),
-                   ...(data.flightNumber ? { flightNumber: data.flightNumber.toUpperCase() } : {})
                  }).toString();
 
                  router.push(`/checkout?${checkoutQuery}`);
-                 return; // Stop execution, we are going to checkout!
+                 return; 
               }
            }
         }
 
         // 🟡 NORMAL ROUTE: Needs more options, send to Results Page
         setFastTrackStatus("Loading available operators...");
-        const queryParams: any = {
-          airport: data.airport,
-          dropoffDate: data.dropoffDate,
-          dropoffTime: data.dropoffTime,
-          pickupDate: data.pickupDate,
-          pickupTime: data.pickupTime,
-        };
-        if (data.servicePreference) queryParams.type = data.servicePreference;
-        
-        const query = new URLSearchParams(queryParams).toString();
+        const query = new URLSearchParams(baseParams).toString();
         router.push(`/results?${query}`);
 
       } else {

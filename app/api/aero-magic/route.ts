@@ -1,41 +1,67 @@
 import { openai } from '@ai-sdk/openai';
-import { generateText } from 'ai';
+import { generateObject } from 'ai';
+import { z } from 'zod';
 
 export async function POST(req: Request) {
   try {
     const { prompt, currentDate } = await req.json();
 
-    const { text } = await generateText({
+    const { object } = await generateObject({
       model: openai('gpt-4o-mini'),
-      system: `You are Aero, a highly intelligent booking agent for UK airport parking. 
-      Extract the booking details from the user's prompt. 
-      The current date and time is: ${currentDate}.
-      
-      RULES:
-      1. Airports: "Luton (LTN)" or "Heathrow (LHR)". Default to "Luton (LTN)" if unsure.
-      2. Times: Default to "10:00" for dropoff and "18:00" for pickup if not specified.
-      3. Service Preference: Extract as either "meet-greet", "park-ride", or null.
-      4. Flight Number: Extract the flight number if mentioned (e.g. "BA123", "EZ892"), otherwise null.
-      5. Fast-Track (isReadyToBook): Set to true ONLY if they specify a service preference (like "meet and greet") AND you have valid dates.
+      system: `You are Aero, the elite AI Concierge for AeroPark Direct. 
+      Your goal is to parse user intent and optimize their UK airport parking experience.
 
-      Return ONLY a valid JSON object. It must contain EXACTLY these keys:
-      {
-        "airport": "string",
-        "dropoffDate": "YYYY-MM-DD",
-        "dropoffTime": "HH:MM",
-        "pickupDate": "YYYY-MM-DD",
-        "pickupTime": "HH:MM",
-        "servicePreference": "string | null",
-        "flightNumber": "string | null",
-        "isReadyToBook": boolean
-      }`,
+      CORE INTELLIGENCE MODULES:
+      1. ULEZ AWARENESS: Heathrow is inside London ULEZ (£12.50/day for non-compliant cars). Luton is NOT. Flag 'ulezRisk' if Heathrow + older car mentioned.
+      2. PACE OF TRAVEL: If 'toddlers', 'babies', or 'elderly' are mentioned, add a 45-min buffer to dropoffDate/Time.
+      3. CUSTOMS & BAGGAGE: 
+         - Domestic flight return: +45 min buffer. 
+         - International/Long-haul: +90 min buffer.
+         - Oversized (Golf/Skis/Surfing): Flag 'hasOversizedLuggage' and strongly push Meet & Greet.
+      4. TERMINAL MAPPING: 
+         - British Airways/Virgin: Usually Heathrow T5/T3. 
+         - easyJet/Ryanair: Luton Main or Heathrow T2/T4.
+      5. BUSINESS LOGIC: If 'work', 'business', or 'expense' mentioned, flag 'isCorporate'.
+      6. PET LOGIC: If 'dog' or 'pet' mentioned, RESTRICT to Meet & Greet (Pets usually banned on Park & Ride shuttles).
+      7. WINTER LOGIC: If currentDate is Nov-Feb, emphasize Meet & Greet to avoid cold shuttle waits.
+      8. SCARCITY: If travel is within 48hrs of ${currentDate}, flag 'isLastMinute'.
+      9. SPLIT PARTY: If user says they'll drop family first then park, push 'park-ride' as the cost-saver.
+      10. DURATION ROI: Short trips (1-3 days) push Meet & Greet. Long trips (14+ days) push Park & Ride.`,
+      
+      schema: z.object({
+        airport: z.string().describe("e.g., 'Luton (LTN)' or 'Heathrow (LHR)'"),
+        dropoffDate: z.string(),
+        dropoffTime: z.string(),
+        pickupDate: z.string(),
+        pickupTime: z.string(),
+        terminal: z.string().nullable(),
+        servicePreference: z.enum(['meet-greet', 'park-ride']).nullable(),
+        
+        // --- ADVANCED MAGIC FLAGS ---
+        travelGroupType: z.enum(['solo', 'couple', 'family', 'group', 'corporate']),
+        hasOversizedLuggage: z.boolean(),
+        isRedEye: z.boolean(),
+        isLastMinute: z.boolean(),
+        isBudgetFocused: z.boolean(),
+        isFrequentFlyer: z.boolean(),
+        ulezRisk: z.boolean().describe("True if older car + Heathrow"),
+        hasPet: z.boolean(),
+        isWinter: z.boolean(),
+        requiresCoveredParking: z.boolean().describe("True if luxury car mentioned"),
+        
+        // --- UI & TIPS ---
+        aeroTip: z.string().describe("Bespoke advice based on their specific situation."),
+        suggestedAncillaries: z.array(z.string()).describe("'lounge', 'fast-track'"),
+        isReadyToBook: z.boolean().describe("True if we have enough to skip to checkout"),
+        confidence: z.number()
+      }),
       prompt: prompt,
     });
 
-    const jsonString = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    return Response.json(JSON.parse(jsonString));
+    return Response.json(object);
+
   } catch (error) {
     console.error("Aero Magic Error:", error);
-    return Response.json({ error: "Failed to parse intent" }, { status: 500 });
+    return Response.json({ error: "Aero recalibrating..." }, { status: 500 });
   }
 }

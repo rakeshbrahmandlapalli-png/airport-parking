@@ -1,7 +1,7 @@
 "use client";
 
 import { supabase } from "../lib/supabase";
-import { useState, Suspense } from "react"; 
+import { useState, Suspense, useEffect } from "react"; 
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
@@ -21,11 +21,14 @@ import {
   Sparkles,
   Tag,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Coffee,
+  Zap,
+  Star
 } from "lucide-react";
 
 // ----------------------------------------------------------------------
-// 🟢 CLEAN AERO AVATAR (Now Clickable!)
+// 🟢 CLEAN AERO AVATAR 
 // ----------------------------------------------------------------------
 function AeroAvatar({ size = "md", state = "idle", onClick }: { size?: "sm" | "md" | "lg" | "xl", state?: "idle" | "scanning" | "success", onClick?: () => void }) {
   const sizeClasses = { sm: "w-8 h-8 rounded-lg", md: "w-14 h-14 rounded-2xl", lg: "w-20 h-20 rounded-3xl", xl: "w-32 h-32 rounded-[2.5rem]" };
@@ -37,16 +40,9 @@ function AeroAvatar({ size = "md", state = "idle", onClick }: { size?: "sm" | "m
       onClick={onClick}
       className={`relative flex items-center justify-center shrink-0 ${sizeClasses[size]} ${onClick ? 'cursor-pointer hover:scale-105 active:scale-95 transition-transform' : ''}`}
     >
-      {/* Outer Glow */}
       <div className={`absolute inset-0 bg-blue-500/40 blur-xl ${state === 'scanning' ? 'animate-pulse scale-125' : 'animate-pulse scale-105'}`}></div>
-
-      {/* Main Body - Clean Blue Gradient */}
       <div className={`relative w-full h-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-[0_0_25px_rgba(37,99,235,0.5)] overflow-hidden ${sizeClasses[size]} transition-all duration-300`}>
-
-        {/* Scanning Laser Line */}
         <div className={`absolute left-0 w-full h-[2px] bg-white/90 shadow-[0_0_15px_white] z-20 transition-opacity duration-300 ${state === 'scanning' ? 'opacity-100 animate-scan' : 'opacity-0'}`}></div>
-
-        {/* The Clean Pill Eyes */}
         <div className={`flex ${gap[size]} z-10 items-center justify-center`}>
           <div className={`${eyeSize[size]} bg-white rounded-full shadow-[0_0_15px_rgba(255,255,255,1)]`}></div>
           <div className={`${eyeSize[size]} bg-white rounded-full shadow-[0_0_15px_rgba(255,255,255,1)]`}></div>
@@ -61,7 +57,7 @@ function CheckoutContent() {
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
   
-  // --- CAPTURE URL DATA ---
+  // --- CAPTURE URL DATA & AI FLAGS ---
   const airport = searchParams.get("airport") || "Luton (LTN)";
   const dailyRate = Number(searchParams.get("price")) || 0;
   const dropDate = searchParams.get("dropoffDate");
@@ -69,16 +65,29 @@ function CheckoutContent() {
   const dropTime = searchParams.get("dropoffTime") || ""; 
   const pickTime = searchParams.get("pickupTime") || "";  
   const type = searchParams.get("type") || "Premium Meet & Greet"; 
+  const urlFlightNumber = searchParams.get("flightNumber") || "";
+  
+  // 🟢 NEW AI DATA
+  const isFrequentFlyer = searchParams.get("isFrequentFlyer") === "true";
+  const loyaltyMessage = searchParams.get("loyaltyMessage") || "";
+  const rawUpsells = searchParams.get("upsells") || "";
+  const suggestedAncillaries = rawUpsells.split(',').filter(Boolean);
 
   // --- FORM STATES ---
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState(""); 
   const [phone, setPhone] = useState("");
   const [terminal, setTerminal] = useState(airport.includes("Heathrow") ? "Terminal 2" : "Main Terminal");
-  const [flightNumber, setFlightNumber] = useState("");
+  const [flightNumber, setFlightNumber] = useState(urlFlightNumber);
   const [registration, setRegistration] = useState(""); 
   const [carMake, setCarMake] = useState("");
   const [carColor, setCarColor] = useState("");
+
+  // --- UPSELL STATES ---
+  const [wantsLounge, setWantsLounge] = useState(false);
+  const [wantsFastTrack, setWantsFastTrack] = useState(false);
+  const LOUNGE_PRICE = 35.00;
+  const FAST_TRACK_PRICE = 8.50;
 
   // --- PROMO CODE STATES ---
   const [promoInput, setPromoInput] = useState("");
@@ -86,10 +95,17 @@ function CheckoutContent() {
   const [promoMessage, setPromoMessage] = useState("");
   const [isPromoError, setIsPromoError] = useState(false);
   
-  // --- SECRET EASTER EGG STATE ---
   const [aeroClicks, setAeroClicks] = useState(0);
 
-  // --- PROMO CODE LOGIC ---
+  // 🟢 AUTO-APPLY LOYALTY DISCOUNT ON LOAD
+  useEffect(() => {
+    if (isFrequentFlyer && !discount.active) {
+      setDiscount({ active: true, code: "AERO VIP", percent: 0.15 });
+      setPromoMessage(loyaltyMessage || "Loyalty recognized! 15% discount auto-applied.");
+      setIsPromoError(false);
+    }
+  }, [isFrequentFlyer, loyaltyMessage]);
+
   const handleApplyPromo = (e: React.FormEvent) => {
     e.preventDefault();
     const code = promoInput.toUpperCase().trim();
@@ -113,11 +129,8 @@ function CheckoutContent() {
     }
   };
 
-  // --- EASTER EGG LOGIC ---
   const handleAeroClick = () => {
-    // Only allow the easter egg if they haven't already applied a bigger discount
     if (discount.active && discount.percent >= 0.03) return;
-
     const newClicks = aeroClicks + 1;
     setAeroClicks(newClicks);
 
@@ -125,8 +138,8 @@ function CheckoutContent() {
       setDiscount({ active: true, code: "AERO3", percent: 0.03 });
       setPromoMessage("Secret Aero Discount Unlocked! 3% off.");
       setIsPromoError(false);
-      setPromoInput("AERO3"); // Automatically fill the input box
-      setAeroClicks(0); // Reset clicks
+      setPromoInput("AERO3"); 
+      setAeroClicks(0); 
     }
   };
 
@@ -143,9 +156,14 @@ function CheckoutContent() {
   };
 
   const booking = calculateTotal();
-  const originalTotal = booking.total;
-  const discountAmount = originalTotal * discount.percent;
-  const finalTotal = originalTotal - discountAmount;
+  const baseTotal = booking.total;
+  const discountAmount = baseTotal * discount.percent;
+  
+  // Calculate Add-ons
+  const addOnsTotal = (wantsLounge ? LOUNGE_PRICE : 0) + (wantsFastTrack ? FAST_TRACK_PRICE : 0);
+  
+  // Final calculation
+  const finalTotal = (baseTotal - discountAmount) + addOnsTotal;
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "--";
@@ -164,11 +182,8 @@ function CheckoutContent() {
     
     try {
       const shortId = "APD-" + Math.random().toString(36).substring(2, 8).toUpperCase();
-      
-      // Simulate payment gateway delay
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // 1. Save to Database (USING THE FINAL DISCOUNTED TOTAL)
       const { error: dbError } = await supabase
         .from('bookings')
         .insert([{ 
@@ -184,15 +199,15 @@ function CheckoutContent() {
           dropoff_time: dropTime, 
           pickup_date: pickDate,
           pickup_time: pickTime,  
-          total_price: finalTotal, // <--- SAVING DISCOUNTED PRICE
+          total_price: finalTotal, 
           flight_number: flightNumber.toUpperCase().trim(),
           airport: airport,
-          terminal: terminal
+          terminal: terminal,
+          // Could add ancillary data here if your DB schema supports it later
         }]);
 
       if (dbError) throw dbError;
       
-      // 2. Trigger the Email API
       try {
         await fetch('/api/send', {
           method: 'POST',
@@ -208,12 +223,10 @@ function CheckoutContent() {
             terminal: terminal
           }),
         });
-        console.log("Email triggered successfully");
       } catch (emailError) {
         console.error("Failed to send email:", emailError);
       }
       
-      // 3. Redirect to Success Page
       router.push(`/success?ref=${shortId}`);
       
     } catch (error: any) {
@@ -225,20 +238,18 @@ function CheckoutContent() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-12 relative z-10">
       
-      {/* 🟢 AERO SECURE BANNER (Now with easter egg!) */}
+      {/* 🟢 AERO SECURE BANNER */}
       <div className="max-w-3xl mx-auto mb-8 bg-[#0B1121] border border-blue-900/40 rounded-2xl p-4 md:p-5 flex items-center gap-5 shadow-xl relative overflow-hidden">
         <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
-        
-        {/* Pass the onClick handler here */}
         <AeroAvatar state="idle" size="md" onClick={handleAeroClick} />
-        
         <div className="relative z-10">
           <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-400 mb-1 flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5"/> Aero Secure Checkout</p>
-          <p className="text-xs sm:text-sm text-slate-300 font-medium">Aero has locked your rate. Complete your details below.</p>
+          <p className="text-xs sm:text-sm text-slate-300 font-medium">
+            {isFrequentFlyer ? "Welcome back! I've automatically applied your loyalty discount." : "Aero has locked your rate. Complete your details below."}
+          </p>
         </div>
       </div>
 
-      {/* Stepper */}
       <div className="flex items-center justify-between mb-8 md:mb-10 max-w-3xl mx-auto px-2">
         <div className="flex flex-col items-center gap-2 flex-1 opacity-40">
           <div className="h-1 w-full bg-blue-600 rounded-full"></div>
@@ -258,11 +269,9 @@ function CheckoutContent() {
 
       <div className="flex flex-col-reverse lg:flex-row gap-8 md:gap-10 items-start">
         
-        {/* LEFT COLUMN: FORMS */}
         <div className="flex-1 w-full">
           <form id="checkout-form" onSubmit={handlePayment} className="space-y-6 md:space-y-8">
             
-            {/* 1. PERSONAL DETAILS */}
             <div className="bg-white p-6 md:p-8 rounded-[2rem] border border-slate-200 shadow-sm relative overflow-hidden">
               <div className="flex items-center gap-3 mb-6 md:mb-8 pb-5 md:pb-6 border-b border-slate-100">
                 <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
@@ -290,7 +299,6 @@ function CheckoutContent() {
               </div>
             </div>
 
-            {/* 2. VEHICLE & TRAVEL */}
             <div className="bg-white p-6 md:p-8 rounded-[2rem] border border-slate-200 shadow-sm relative overflow-hidden">
               <div className="flex items-center gap-3 mb-6 md:mb-8 pb-5 md:pb-6 border-b border-slate-100">
                 <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
@@ -342,7 +350,55 @@ function CheckoutContent() {
               </div>
             </div>
 
-            {/* 3. PAYMENT MOCKUP */}
+            {/* 🟢 AI UPSELL SECTION */}
+            {suggestedAncillaries.length > 0 && (
+              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 md:p-8 rounded-[2rem] border border-indigo-100 shadow-sm relative overflow-hidden">
+                <div className="flex items-center gap-3 mb-6 pb-5 border-b border-indigo-200/50">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-indigo-600 rounded-xl flex items-center justify-center shrink-0 shadow-lg">
+                    <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg md:text-xl font-black text-indigo-900 tracking-tight">Enhance Your Trip</h2>
+                    <p className="text-[10px] md:text-xs font-bold text-indigo-500 uppercase tracking-widest mt-1">Recommended for you</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {suggestedAncillaries.includes("lounge") && (
+                    <label className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${wantsLounge ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-white border-transparent hover:border-indigo-200 text-slate-900'}`}>
+                      <div className="flex items-center gap-3">
+                        <Coffee className={`w-5 h-5 ${wantsLounge ? 'text-indigo-200' : 'text-indigo-500'}`} />
+                        <div>
+                          <p className="font-bold text-sm">VIP Airport Lounge</p>
+                          <p className={`text-[10px] ${wantsLounge ? 'text-indigo-200' : 'text-slate-500'}`}>Relax before your flight</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className="font-black">+£{LOUNGE_PRICE.toFixed(2)}</span>
+                        <input type="checkbox" checked={wantsLounge} onChange={() => setWantsLounge(!wantsLounge)} className="w-5 h-5 accent-indigo-400" />
+                      </div>
+                    </label>
+                  )}
+
+                  {suggestedAncillaries.includes("fast-track") && (
+                    <label className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${wantsFastTrack ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-white border-transparent hover:border-indigo-200 text-slate-900'}`}>
+                      <div className="flex items-center gap-3">
+                        <Zap className={`w-5 h-5 ${wantsFastTrack ? 'text-indigo-200' : 'text-amber-500'}`} />
+                        <div>
+                          <p className="font-bold text-sm">Fast Track Security</p>
+                          <p className={`text-[10px] ${wantsFastTrack ? 'text-indigo-200' : 'text-slate-500'}`}>Skip the queues</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className="font-black">+£{FAST_TRACK_PRICE.toFixed(2)}</span>
+                        <input type="checkbox" checked={wantsFastTrack} onChange={() => setWantsFastTrack(!wantsFastTrack)} className="w-5 h-5 accent-indigo-400" />
+                      </div>
+                    </label>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="bg-white p-6 md:p-8 rounded-[2rem] border border-slate-200 shadow-sm relative overflow-hidden">
               <div className="flex items-center justify-between mb-6 md:mb-8 pb-5 md:pb-6 border-b border-slate-100">
                 <div className="flex items-center gap-3">
@@ -377,7 +433,6 @@ function CheckoutContent() {
               </div>
             </div>
 
-            {/* Mobile Submit Button */}
             <div className="block lg:hidden mt-6 pb-6">
               <button 
                 type="submit" 
@@ -396,12 +451,10 @@ function CheckoutContent() {
           </form>
         </div>
 
-        {/* RIGHT COLUMN: AERO ORDER SUMMARY */}
         <aside className="w-full lg:w-[400px] xl:w-[420px] lg:sticky lg:top-28">
           <div className="bg-[#0B1121] rounded-[2rem] md:rounded-[2.5rem] border border-blue-500/30 shadow-2xl overflow-hidden text-white relative">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600"></div>
             
-            {/* Aero Branding Badge */}
             <div className="absolute top-4 right-4 bg-blue-500/10 text-blue-400 border border-blue-500/30 text-[8px] md:text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-[0_0_15px_rgba(37,99,235,0.2)]">
               <Sparkles className="w-3 h-3 fill-current" /> Aero Verified
             </div>
@@ -440,45 +493,55 @@ function CheckoutContent() {
                 </div>
               </div>
 
-              {/* 🟢 PROMO CODE SECTION */}
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-5 mb-6 md:mb-8">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
-                  <Tag className="w-3.5 h-3.5" /> Have a Promo Code?
-                </label>
-                
-                <form onSubmit={handleApplyPromo} className="flex gap-2">
-                  <input 
-                    type="text" 
-                    value={promoInput}
-                    onChange={(e) => setPromoInput(e.target.value)}
-                    placeholder="Enter code" 
-                    disabled={discount.active}
-                    className="flex-1 w-full min-w-0 bg-white/5 border border-white/10 rounded-xl px-3 py-3 font-bold text-white text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:bg-white/5 disabled:text-slate-500 uppercase placeholder:text-slate-600 touch-manipulation"
-                  />
-                  {!discount.active ? (
-                    <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white px-4 shrink-0 rounded-xl font-black text-xs uppercase tracking-widest transition-colors active:scale-95 touch-manipulation">
-                      Apply
-                    </button>
-                  ) : (
-                    <button type="button" onClick={() => { setDiscount({ active: false, code: "", percent: 0 }); setPromoInput(""); setPromoMessage(""); }} className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/20 px-4 shrink-0 rounded-xl font-black text-xs uppercase tracking-widest transition-colors active:scale-95 touch-manipulation">
-                      Remove
-                    </button>
+              {/* Promo Code Section - Hidden if Auto-Discount applied */}
+              {!isFrequentFlyer && (
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-5 mb-6 md:mb-8">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
+                    <Tag className="w-3.5 h-3.5" /> Have a Promo Code?
+                  </label>
+                  
+                  <form onSubmit={handleApplyPromo} className="flex gap-2">
+                    <input 
+                      type="text" 
+                      value={promoInput}
+                      onChange={(e) => setPromoInput(e.target.value)}
+                      placeholder="Enter code" 
+                      disabled={discount.active}
+                      className="flex-1 w-full min-w-0 bg-white/5 border border-white/10 rounded-xl px-3 py-3 font-bold text-white text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:bg-white/5 disabled:text-slate-500 uppercase placeholder:text-slate-600 touch-manipulation"
+                    />
+                    {!discount.active ? (
+                      <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white px-4 shrink-0 rounded-xl font-black text-xs uppercase tracking-widest transition-colors active:scale-95 touch-manipulation">
+                        Apply
+                      </button>
+                    ) : (
+                      <button type="button" onClick={() => { setDiscount({ active: false, code: "", percent: 0 }); setPromoInput(""); setPromoMessage(""); }} className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/20 px-4 shrink-0 rounded-xl font-black text-xs uppercase tracking-widest transition-colors active:scale-95 touch-manipulation">
+                        Remove
+                      </button>
+                    )}
+                  </form>
+
+                  {promoMessage && (
+                    <div className={`mt-3 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 ${isPromoError ? 'text-red-400' : 'text-emerald-400'}`}>
+                      {isPromoError ? <AlertCircle className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                      {promoMessage}
+                    </div>
                   )}
-                </form>
+                </div>
+              )}
 
-                {promoMessage && (
-                  <div className={`mt-3 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 ${isPromoError ? 'text-red-400' : 'text-emerald-400'}`}>
-                    {isPromoError ? <AlertCircle className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                    {promoMessage}
-                  </div>
-                )}
-              </div>
+              {isFrequentFlyer && (
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 md:p-5 mb-6 md:mb-8 text-center">
+                  <Star className="w-6 h-6 text-emerald-400 mx-auto mb-2" />
+                  <p className="text-emerald-400 font-bold text-xs uppercase tracking-widest">VIP Loyalty Active</p>
+                  <p className="text-emerald-300/80 text-[10px] mt-1">{promoMessage}</p>
+                </div>
+              )}
 
-              {/* 🟢 TOTALS (Updated for Promo) */}
+              {/* 🟢 TOTALS INC. ADD-ONS */}
               <div className="space-y-3 md:space-y-4 mb-8 md:mb-10">
                 <div className="flex justify-between text-xs md:text-sm text-slate-400 font-medium">
                   <span>Parking Rate ({booking.days} {booking.days === 1 ? "day" : "days"})</span>
-                  <span className={`font-bold ${discount.active ? 'text-slate-500 line-through' : 'text-white'}`}>£{originalTotal.toFixed(2)}</span>
+                  <span className={`font-bold ${discount.active ? 'text-slate-500 line-through' : 'text-white'}`}>£{baseTotal.toFixed(2)}</span>
                 </div>
                 
                 {discount.active && (
@@ -488,7 +551,21 @@ function CheckoutContent() {
                   </div>
                 )}
 
-                <div className="flex justify-between text-xs md:text-sm text-slate-400 font-medium">
+                {wantsLounge && (
+                  <div className="flex justify-between text-xs md:text-sm text-indigo-300 font-medium">
+                    <span>VIP Lounge Access</span>
+                    <span className="font-bold">+ £{LOUNGE_PRICE.toFixed(2)}</span>
+                  </div>
+                )}
+
+                {wantsFastTrack && (
+                  <div className="flex justify-between text-xs md:text-sm text-indigo-300 font-medium">
+                    <span>Fast Track Security</span>
+                    <span className="font-bold">+ £{FAST_TRACK_PRICE.toFixed(2)}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between text-xs md:text-sm text-slate-400 font-medium pt-3 border-t border-white/10">
                   <span>Taxes & Airport Fees</span>
                   <span className="text-emerald-400 font-bold uppercase tracking-widest text-[9px] md:text-[10px]">Included</span>
                 </div>
@@ -499,7 +576,6 @@ function CheckoutContent() {
                 <span className="text-4xl md:text-5xl font-black tracking-tighter text-blue-400 drop-shadow-md">£{finalTotal.toFixed(2)}</span>
               </div>
 
-              {/* Desktop Submit Button */}
               <button 
                 type="submit" 
                 form="checkout-form"
