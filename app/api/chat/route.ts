@@ -4,7 +4,6 @@ import { streamText, tool } from 'ai';
 import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
 
-// 1. Initialize Supabase Connection
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -17,17 +16,12 @@ export async function POST(req: Request) {
     const { messages } = await req.json();
     const currentDate = new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' });
 
-    // 🔴 THE CIRCUIT BREAKER
-    // If the last message was a 'tool' result, it means we JUST got the data from Supabase.
-    // We force toolChoice to 'none' so the AI is FORCED to speak the answer instead of looping.
-    const lastMessage = messages[messages.length - 1];
-    const isToolResult = lastMessage?.role === 'tool';
-    const toolChoiceControl = isToolResult ? 'none' : 'auto';
-
     const result = await streamText({
       model: openai('gpt-4o-mini') as any,
-      toolChoice: toolChoiceControl, 
       messages: messages,
+      // 🟢 PROPER WAY: Built-in loop protection. 
+      // It allows the AI to call a tool and then respond in a single request.
+      maxSteps: 5, 
       system: `You are AERO, the elite AI Concierge for AeroPark Direct.
       
       CURRENT REALITY:
@@ -40,12 +34,12 @@ export async function POST(req: Request) {
       
       HANDLING PRICE QUESTIONS:
       - If a user asks for a price/rate, call 'checkLivePrices' IMMEDIATELY.
-      - Once the tool returns data, STOP. Provide the quote using the 'dailyRate' in the history.
+      - Once the database results are in, provide the quote using the 'dailyRate' found.
       - Do NOT apologize for not having dates; just give the estimate and ask for their travel dates.
       
       CRITICAL COMMAND FOR BOOKING:
       - Once you have Airport AND Travel Dates, execute the 'buildCustomBooking' tool immediately.
-      - Do not ask for confirmation. Push the button and stop talking.`,
+      - Push the button and stop talking.`,
       
       tools: {
         checkLivePrices: tool({
@@ -69,7 +63,7 @@ export async function POST(req: Request) {
             return { 
               airport, 
               rates, 
-              message: "DATA DISCOVERED. Use these rates to quote the user now. Do not call this tool again." 
+              message: "Rates retrieved successfully. Display them to the user now." 
             };
           }
         }),
@@ -101,20 +95,20 @@ export async function POST(req: Request) {
             return { 
               success: true, 
               url: `/results?${params.toString()}`,
-              message: "URL generated successfully."
+              message: "URL generated."
             };
           },
         }),
       },
     });
 
-    // Matches your installed package version (ai@3.1.36)
-    return result.toAIStreamResponse();
+    // 🟢 PROPER WAY: Modern stream response for @ai-sdk/react
+    return result.toDataStreamResponse();
 
   } catch (error) {
     console.error("AERO API Error:", error);
     return new Response(
-      "AERO is currently recalibrating. For immediate assistance, please contact our support team.",
+      "AERO is currently recalibrating.",
       { status: 503 }
     );
   }
