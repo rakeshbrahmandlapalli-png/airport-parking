@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase"; 
+import { supabase } from "@/app/lib/supabase"; // 🟢 FIXED IMPORT PATH
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
@@ -30,8 +30,7 @@ export default function AdminDashboard() {
     
     checkUser();
 
-    // 🟢 NEW: REAL-TIME SUPABASE LISTENER
-    // This automatically refreshes the dashboard the exact second a new booking comes in from Stripe
+    // 🟢 REAL-TIME SUPABASE LISTENER
     const subscription = supabase
       .channel('live-bookings')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, (payload) => {
@@ -69,16 +68,20 @@ export default function AdminDashboard() {
   const sendToWhatsApp = (booking: any) => {
     const airport = booking.airport || "Luton (LTN)";
     const terminal = booking.terminal || "Main Terminal";
-    const message = `*NEW JOB: ${booking.booking_ref}*\n👤 Name: ${booking.full_name}\n🚗 Car: ${booking.car_color || ''} ${booking.car_make} [${booking.license_plate}]\n📱 Phone: ${booking.phone_number}\n📍 Airport: ${airport}\n🏢 Terminal: ${terminal}\n✈️ Flight: ${booking.flight_number || 'TBC'}\n📅 Drop: ${booking.dropoff_date} at ${booking.dropoff_time || 'TBC'}`;
+    const message = `*NEW JOB: ${booking.booking_ref}*\n👤 Name: ${booking.full_name}\n🚗 Car: ${booking.car_color || ''} ${booking.car_make} [${booking.license_plate}]\n📱 Phone: ${booking.phone_number}\n📍 Airport: ${airport}\n🏢 Terminal: ${terminal}\n✈️ Flight: ${booking.flight_number || 'TBC'}\n📅 Drop: ${formatDate(booking.dropoff_date)} at ${booking.dropoff_time || 'TBC'}`;
     
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
   };
 
-  // 4. METRICS CALCULATION
+  // 4. METRICS CALCULATION (🟢 Fixed timezone & timestamp matching logic)
+  const d = new Date();
+  const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  
   const totalRevenue = bookings.reduce((a, b) => a + Number(b.total_price || 0), 0);
   const activeCount = bookings.length;
-  const todayStr = new Date().toISOString().split('T')[0];
-  const arrivingToday = bookings.filter(b => b.dropoff_date === todayStr).length;
+  
+  // Safely check if the database string starts with today's YYYY-MM-DD
+  const arrivingToday = bookings.filter(b => b.dropoff_date && String(b.dropoff_date).startsWith(todayStr)).length;
 
   // 5. FILTER LOGIC
   const filteredBookings = bookings.filter(b => {
@@ -93,7 +96,10 @@ export default function AdminDashboard() {
 
     if (filter === "LHR") return b.airport?.includes("Heathrow") || b.airport?.includes("LHR");
     if (filter === "LTN") return b.airport?.includes("Luton") || b.airport?.includes("LTN");
-    if (filter === "TODAY") return b.dropoff_date === todayStr || b.pickup_date === todayStr;
+    if (filter === "TODAY") {
+      return (b.dropoff_date && String(b.dropoff_date).startsWith(todayStr)) || 
+             (b.pickup_date && String(b.pickup_date).startsWith(todayStr));
+    }
     
     return true; 
   });
@@ -120,7 +126,7 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-[#0B1121] font-sans flex flex-col md:flex-row overflow-hidden text-slate-100 selection:bg-blue-600/30 selection:text-white antialiased">
       
       {/* 🟢 DESKTOP SIDEBAR */}
-      <aside className="w-full md:w-64 bg-[#0B1121] text-slate-400 hidden md:flex flex-col sticky top-0 h-screen border-r border-slate-800/50 shadow-2xl z-50">
+      <aside className="w-full md:w-64 bg-[#0B1121] text-slate-400 hidden md:flex flex-col sticky top-0 h-screen border-r border-slate-800/50 shadow-2xl z-50 shrink-0">
         <div className="p-8 flex items-center gap-3 text-white">
           <Plane className="w-6 h-6 text-blue-500 rotate-45" />
           <span className="font-black text-xl tracking-tight uppercase">OPS <span className="text-blue-500">CENTER</span></span>

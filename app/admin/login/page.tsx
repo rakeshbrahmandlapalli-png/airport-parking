@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "../../lib/supabase"; 
+import { supabase } from "@/app/lib/supabase"; // 🟢 Fixed import path
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
@@ -13,7 +13,6 @@ import {
   ArrowLeft,
   AlertTriangle,
   Zap,
-  ChevronRight
 } from "lucide-react";
 
 export default function AdminLogin() {
@@ -28,20 +27,10 @@ export default function AdminLogin() {
     setLoading(true);
     setError("");
 
-    // --- 1. MASTER BYPASS (Fires before anything else) ---
     const cleanEmail = email.trim().toLowerCase();
     const cleanPass = password.trim();
 
-    if (cleanEmail === "admin" && cleanPass === "1234") {
-      console.log("Master Bypass Triggered");
-      // Small delay to simulate authentication feel
-      setTimeout(() => {
-        router.push("/admin");
-      }, 600);
-      return;
-    }
-
-    // --- 2. STANDARD SUPABASE AUTH (Only runs if bypass fails) ---
+    // --- 🟢 STANDARD SUPABASE AUTH (100% Secure) ---
     try {
       const { data, error: authError } = await supabase.auth.signInWithPassword({ 
         email: cleanEmail, 
@@ -49,13 +38,13 @@ export default function AdminLogin() {
       });
 
       if (authError) {
-        setError(authError.message);
+        setError("Invalid credentials or unauthorized device.");
         setLoading(false);
       } else {
         router.push("/admin");
       }
     } catch (err) {
-      setError("Database Connection Offline. Use Master Bypass.");
+      setError("Database Connection Offline. Please contact support.");
       setLoading(false);
     }
   };
@@ -101,12 +90,13 @@ export default function AdminLogin() {
             <div className="relative group">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 z-20 pointer-events-none group-focus-within:text-blue-400 transition-colors" />
               <input 
-                type="text" 
-                placeholder="Agent ID or Email" 
-                autoComplete="off"
+                type="email" 
+                placeholder="info@aeroparkdirect.co.uk" 
+                autoComplete="email"
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
                 className="!bg-slate-950 !pl-12 w-full pr-4 py-4 border border-slate-800 rounded-2xl font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all placeholder:text-slate-600 shadow-xl" 
+                required
               />
             </div>
           </div>
@@ -122,6 +112,7 @@ export default function AdminLogin() {
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 className="!bg-slate-950 !pl-12 w-full pr-4 py-4 border border-slate-800 rounded-2xl font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all placeholder:text-slate-600 tracking-widest shadow-xl" 
+                required
               />
             </div>
           </div>

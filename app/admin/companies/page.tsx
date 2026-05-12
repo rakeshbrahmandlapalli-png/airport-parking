@@ -34,8 +34,8 @@ export default function AdminCompaniesPage() {
     category: "meet-greet",
     luton_price: 0,
     heathrow_price: 0,
-    commission_rate: 15, // 🟢 NEW: Default 15% commission
-    logo_url: "", // 🟢 NEW: Logo URL
+    commission_rate: 15,
+    logo_url: "",
     is_active: true,
     operates_at_luton: true,
     operates_at_heathrow: false,
@@ -184,7 +184,6 @@ export default function AdminCompaniesPage() {
     }
   };
 
-  // 🟢 NEW: Calculate average rating for visual display
   const getAvgRating = (reviews: Review[]) => {
     if (!reviews || reviews.length === 0) return "New";
     const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
@@ -269,11 +268,8 @@ export default function AdminCompaniesPage() {
               <tbody className="divide-y divide-slate-800/80">
                 {filteredCompanies.map((c) => (
                   <tr key={c.id} className={`transition-colors ${c.is_active ? 'hover:bg-slate-800/30' : 'opacity-40 grayscale'}`}>
-                    
-                    {/* 🟢 NEW: Partner details cell with Logo and Commission Badge */}
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-4">
-                        {/* Logo Box */}
                         {c.logo_url ? (
                           <img src={c.logo_url} alt={c.name} className="w-12 h-12 rounded-xl object-contain bg-white p-1 border border-slate-700 shrink-0" />
                         ) : (
@@ -290,8 +286,6 @@ export default function AdminCompaniesPage() {
                               {c.commission_rate || 15}% Cut
                             </span>
                           </div>
-                          
-                          {/* 🟢 NEW: Ratings Overview */}
                           <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
                             {c.operates_at_luton && <span className="flex items-center gap-1"><Car className="w-3 h-3 text-slate-500"/> {getAvgRating(c.ltn_reviews)}</span>}
                             {c.operates_at_heathrow && <span className="flex items-center gap-1"><PlaneTakeoff className="w-3 h-3 text-slate-500"/> {getAvgRating(c.lhr_reviews)}</span>}
@@ -305,8 +299,8 @@ export default function AdminCompaniesPage() {
                          {c.is_active ? 'ACTIVE' : 'OFFLINE'}
                        </button>
                     </td>
-                    <td className="px-8 py-5 text-right font-black text-white">£{c.luton_price?.toFixed(2)}</td>
-                    <td className="px-8 py-5 text-right font-black text-white">£{c.heathrow_price?.toFixed(2)}</td>
+                    <td className="px-8 py-5 text-right font-black text-white">£{Number(c.luton_price || 0).toFixed(2)}</td>
+                    <td className="px-8 py-5 text-right font-black text-white">£{Number(c.heathrow_price || 0).toFixed(2)}</td>
                     <td className="px-8 py-5 text-right">
                       <div className="flex items-center gap-3 justify-end">
                         <button onClick={() => setEditingCompany(c)} className="p-2.5 bg-slate-800/50 hover:bg-blue-600/20 rounded-xl transition-all border border-slate-700 hover:border-blue-500/30 shadow-sm"><Settings2 className="w-4 h-4" /></button>
@@ -341,13 +335,12 @@ export default function AdminCompaniesPage() {
             
             <form onSubmit={editingCompany ? handleUpdateCompany : handleAddCompany} className="p-8 space-y-8">
               
-              {/* 🟢 NEW: Added Commission Rate & Logo URL inputs here */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="md:col-span-2"><label className="text-[10px] font-black uppercase text-slate-500 block mb-2 tracking-widest ml-1">Brand Name</label><input required type="text" value={editingCompany?.name || newCompany.name} onChange={(e) => editingCompany ? setEditingCompany({...editingCompany, name: e.target.value}) : setNewCompany({...newCompany, name: e.target.value})} className="w-full bg-[#0B1121] border border-slate-800 rounded-xl px-5 py-3.5 text-white font-bold outline-none focus:border-blue-500" /></div>
                 <div className="md:col-span-2"><label className="text-[10px] font-black uppercase text-slate-500 block mb-2 tracking-widest ml-1">Category</label><select value={editingCompany?.category || newCompany.category} onChange={(e) => editingCompany ? setEditingCompany({...editingCompany, category: e.target.value}) : setNewCompany({...newCompany, category: e.target.value})} className="w-full bg-[#0B1121] border border-slate-800 rounded-xl px-5 py-3.5 text-white font-bold outline-none focus:border-blue-500"><option value="meet-greet">Meet & Greet</option><option value="park-ride">Park & Ride</option><option value="hotel">Hotel & Parking</option></select></div>
                 
                 <div className="md:col-span-2"><label className="text-[10px] font-black uppercase text-slate-500 block mb-2 tracking-widest ml-1 flex items-center gap-1"><ImageIcon className="w-3 h-3"/> Logo URL</label><input type="text" placeholder="https://example.com/logo.png" value={editingCompany?.logo_url || newCompany.logo_url} onChange={(e) => editingCompany ? setEditingCompany({...editingCompany, logo_url: e.target.value}) : setNewCompany({...newCompany, logo_url: e.target.value})} className="w-full bg-[#0B1121] border border-slate-800 rounded-xl px-5 py-3.5 text-white text-sm outline-none focus:border-blue-500" /></div>
-                <div className="md:col-span-2"><label className="text-[10px] font-black uppercase text-slate-500 block mb-2 tracking-widest ml-1 flex items-center gap-1"><Percent className="w-3 h-3"/> Commission Cut (%)</label><input required type="number" step="0.1" value={editingCompany?.commission_rate ?? newCompany.commission_rate} onChange={(e) => editingCompany ? setEditingCompany({...editingCompany, commission_rate: parseFloat(e.target.value)}) : setNewCompany({...newCompany, commission_rate: parseFloat(e.target.value)})} className="w-full bg-[#0B1121] border border-slate-800 rounded-xl px-5 py-3.5 text-white font-bold outline-none focus:border-emerald-500" /></div>
+                <div className="md:col-span-2"><label className="text-[10px] font-black uppercase text-slate-500 block mb-2 tracking-widest ml-1 flex items-center gap-1"><Percent className="w-3 h-3"/> Commission Cut (%)</label><input required type="number" step="0.1" value={editingCompany?.commission_rate ?? newCompany.commission_rate} onChange={(e) => editingCompany ? setEditingCompany({...editingCompany, commission_rate: parseFloat(e.target.value) || 0}) : setNewCompany({...newCompany, commission_rate: parseFloat(e.target.value) || 0})} className="w-full bg-[#0B1121] border border-slate-800 rounded-xl px-5 py-3.5 text-white font-bold outline-none focus:border-emerald-500" /></div>
 
                 <div className="md:col-span-4"><label className="text-[10px] font-black uppercase text-slate-500 block mb-2 tracking-widest ml-1">Marketing Overview</label><textarea rows={2} value={editingCompany?.overview || newCompany.overview} onChange={(e) => editingCompany ? setEditingCompany({...editingCompany, overview: e.target.value}) : setNewCompany({...newCompany, overview: e.target.value})} className="w-full bg-[#0B1121] border border-slate-800 rounded-xl px-5 py-3.5 text-white text-sm outline-none focus:border-blue-500" /></div>
               </div>
@@ -358,7 +351,7 @@ export default function AdminCompaniesPage() {
                 {/* LUTON CONTROLS */}
                 <div className="p-6 bg-[#0B1121] rounded-3xl border border-blue-900/30 space-y-4">
                   <div className="flex justify-between items-center mb-2"><h3 className="text-blue-400 font-black text-sm uppercase flex items-center gap-2"><Car className="w-4 h-4"/> LUTON (LTN)</h3><input type="checkbox" checked={editingCompany?.operates_at_luton ?? newCompany.operates_at_luton} onChange={(e) => editingCompany ? setEditingCompany({...editingCompany, operates_at_luton: e.target.checked}) : setNewCompany({...newCompany, operates_at_luton: e.target.checked})} className="accent-blue-500 w-5 h-5" /></div>
-                  <input type="number" placeholder="Daily Rate £" value={editingCompany?.luton_price ?? newCompany.luton_price} onChange={(e) => editingCompany ? setEditingCompany({...editingCompany, luton_price: parseFloat(e.target.value)}) : setNewCompany({...newCompany, luton_price: parseFloat(e.target.value)})} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-white font-black outline-none focus:border-blue-500" />
+                  <input type="number" step="0.01" placeholder="Daily Rate £" value={editingCompany?.luton_price ?? newCompany.luton_price} onChange={(e) => editingCompany ? setEditingCompany({...editingCompany, luton_price: parseFloat(e.target.value) || 0}) : setNewCompany({...newCompany, luton_price: parseFloat(e.target.value) || 0})} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-white font-black outline-none focus:border-blue-500" />
                   <div className="flex gap-2">
                      <button type="button" onClick={() => editingCompany ? setEditingCompany({...editingCompany, ltn_sold_out: !editingCompany.ltn_sold_out}) : setNewCompany({...newCompany, ltn_sold_out: !newCompany.ltn_sold_out})} className={`flex-1 py-3 rounded-xl text-[10px] font-black border transition-all ${editingCompany?.ltn_sold_out || newCompany.ltn_sold_out ? 'bg-red-500 text-white border-red-500 shadow-lg' : 'bg-slate-800/50 text-slate-500 border-slate-700'}`}>SOLD OUT</button>
                      <button type="button" onClick={() => editingCompany ? setEditingCompany({...editingCompany, ltn_featured: !editingCompany.ltn_featured}) : setNewCompany({...newCompany, ltn_featured: !newCompany.ltn_featured})} className={`flex-1 py-3 rounded-xl text-[10px] font-black border transition-all ${editingCompany?.ltn_featured || newCompany.ltn_featured ? 'bg-amber-500 text-white border-amber-500 shadow-lg' : 'bg-slate-800/50 text-slate-500 border-slate-700'}`}>FEATURED</button>
@@ -387,7 +380,7 @@ export default function AdminCompaniesPage() {
                 {/* HEATHROW CONTROLS */}
                 <div className="p-6 bg-[#0B1121] rounded-3xl border border-purple-900/30 space-y-4">
                   <div className="flex justify-between items-center mb-2"><h3 className="text-purple-400 font-black text-sm uppercase flex items-center gap-2"><PlaneTakeoff className="w-4 h-4"/> HEATHROW (LHR)</h3><input type="checkbox" checked={editingCompany?.operates_at_heathrow ?? newCompany.operates_at_heathrow} onChange={(e) => editingCompany ? setEditingCompany({...editingCompany, operates_at_heathrow: e.target.checked}) : setNewCompany({...newCompany, operates_at_heathrow: e.target.checked})} className="accent-purple-500 w-5 h-5" /></div>
-                  <input type="number" placeholder="Daily Rate £" value={editingCompany?.heathrow_price ?? newCompany.heathrow_price} onChange={(e) => editingCompany ? setEditingCompany({...editingCompany, heathrow_price: parseFloat(e.target.value)}) : setNewCompany({...newCompany, heathrow_price: parseFloat(e.target.value)})} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-white font-black outline-none focus:border-purple-500" />
+                  <input type="number" step="0.01" placeholder="Daily Rate £" value={editingCompany?.heathrow_price ?? newCompany.heathrow_price} onChange={(e) => editingCompany ? setEditingCompany({...editingCompany, heathrow_price: parseFloat(e.target.value) || 0}) : setNewCompany({...newCompany, heathrow_price: parseFloat(e.target.value) || 0})} className="w-full bg-[#0f172a] border border-slate-800 rounded-xl px-4 py-3 text-white font-black outline-none focus:border-purple-500" />
                   <div className="flex gap-2">
                      <button type="button" onClick={() => editingCompany ? setEditingCompany({...editingCompany, lhr_sold_out: !editingCompany.lhr_sold_out}) : setNewCompany({...newCompany, lhr_sold_out: !newCompany.lhr_sold_out})} className={`flex-1 py-3 rounded-xl text-[10px] font-black border transition-all ${editingCompany?.lhr_sold_out || newCompany.lhr_sold_out ? 'bg-red-500 text-white border-red-500 shadow-lg' : 'bg-slate-800/50 text-slate-500 border-slate-700'}`}>SOLD OUT</button>
                      <button type="button" onClick={() => editingCompany ? setEditingCompany({...editingCompany, lhr_featured: !editingCompany.lhr_featured}) : setNewCompany({...newCompany, lhr_featured: !newCompany.lhr_featured})} className={`flex-1 py-3 rounded-xl text-[10px] font-black border transition-all ${editingCompany?.lhr_featured || newCompany.lhr_featured ? 'bg-amber-500 text-white border-amber-500 shadow-lg' : 'bg-slate-800/50 text-slate-500 border-slate-700'}`}>FEATURED</button>

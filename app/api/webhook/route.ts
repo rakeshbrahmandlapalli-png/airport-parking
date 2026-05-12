@@ -1,8 +1,8 @@
 // @ts-nocheck
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { prismadb } from "@/lib/prismadb"; // Your prisma client
-import { sendBookingReceipt, sendAmendmentAlerts } from "@/lib/mail";
+import prismadb from "@/app/lib/prismadb"; // 🟢 FIXED PATH
+import { sendBookingReceipt, sendAmendmentAlerts } from "@/app/lib/mail"; // 🟢 FIXED PATH
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!; // You'll get this from Stripe Dashboard
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
       });
 
       // Notify you and the customer
-      await sendAmendmentAlerts(updatedBooking);
+      await sendAmendmentAlerts(updatedBooking, updatedBooking.company);
       
     } else {
       // 🆕 SCENARIO B: BRAND NEW BOOKING
