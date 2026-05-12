@@ -3,6 +3,10 @@
 @tailwind components;
 @tailwind utilities;
 
+*{
+box-sizing: border-box;
+}
+
 /* 2. BASE STYLES - Safety net for the "VIP" look */
 :root {
   --primary-blue: #2563eb;
