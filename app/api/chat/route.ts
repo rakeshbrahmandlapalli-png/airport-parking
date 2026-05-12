@@ -17,52 +17,43 @@ export async function POST(req: Request) {
     const { messages } = await req.json();
     const currentDate = new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' });
 
-    // 🔴 THE BUG RESOLVER: THE "HARD STOP"
-    // We look at the very last message. If it came from a "tool", it means
-    // the database just finished scanning. In that case, we set toolChoice to 'none'
-    // to FORCE the AI to stop scanning and start talking.
+    // 🔴 THE CIRCUIT BREAKER: REFINED
+    // If the last message was a tool result, we MUST force the AI to speak.
+    // If we don't, it might try to "re-verify" the data by calling the tool again.
     const lastMessage = messages[messages.length - 1];
-    const toolResultFound = lastMessage?.role === 'tool' || (lastMessage?.role === 'assistant' && lastMessage.tool_calls);
-    const toolChoiceControl = toolResultFound ? 'none' : 'auto';
+    const isToolResult = lastMessage?.role === 'tool';
+    const toolChoiceControl = isToolResult ? 'none' : 'auto';
 
-    // 2. Restore Full Power AI Instructions
+    // 2. Full Power AI Instructions with explicit Workflow
     const result = await streamText({
       model: openai('gpt-4o-mini') as any,
-      toolChoice: toolChoiceControl, // This stops the loop
+      toolChoice: toolChoiceControl, 
       messages: messages,
       system: `You are AERO, the elite AI Concierge for AeroPark Direct.
       
       CURRENT REALITY:
       - The current date and time is: ${currentDate}.
       
-      CORE MISSION & CAPABILITIES:
-      - You compare and vet the best parking operators at London Luton (LTN) and Heathrow (LHR).
-      - Warning: ULEZ applies ONLY at Heathrow (LHR) for older cars. Luton (LTN) does NOT have ULEZ.
-      - Safety: If passengers include toddlers or elderly, you MUST advise a 45-min buffer.
+      WORKFLOW RULES:
+      1. If the user asks for a price, call 'checkLivePrices' IMMEDIATELY.
+      2. As soon as you receive the tool results, YOU ARE FINISHED SCANNING.
+      3. Do NOT call the tool a second time. Use the dailyRate from the history to quote the user.
+      4. Always advise a 45-min buffer for toddlers/elderly.
+      5. ULEZ only applies at Heathrow (LHR).
       
-      HANDLING PRICE QUESTIONS:
-      - If a user asks for a price/rate (e.g., "What is the price for Luton?"):
-        1. Immediately execute 'checkLivePrices' to scan the database.
-        2. Once the database returns the results, STOP SCANNING.
-        3. Use the 'dailyRate' to provide a confident estimate to the user.
-        4. Do NOT apologize for not having dates; just give the estimate and ask for their travel dates.
+      QUOTING STYLE:
+      - Be confident. Say: "I've scanned our live database. Meet & Greet at [Airport] is currently starting at £[Rate] per day."
+      - Follow up by asking for their specific travel dates so you can build their link.
       
       CRITICAL COMMAND FOR BOOKING:
-      - Once you have the Airport AND the Travel Dates, you have all the data you need!
-      - DO NOT say "I will generate the link" or "One moment". 
-      - STOP TALKING and IMMEDIATELY execute the 'buildCustomBooking' tool. 
-      - If you don't know the pet or corporate status, assume false. JUST PUSH THE BUTTON.
-      
-      BEHAVIORAL OVERRIDE:
-      - If the chat history shows you just scanned the database, DO NOT scan again. 
-      - Read the results from the previous tool call and provide the answer.`,
+      - Once you have Airport + Dates, STOP TALKING and execute 'buildCustomBooking'.
+      - Do not ask for confirmation. Push the button.`,
       
       tools: {
-        // 🟢 RESTORED: THE LIVE SCANNER
         checkLivePrices: tool({
-          description: 'Scans the Supabase database for live daily parking rates at Luton or Heathrow.',
+          description: 'Fetch live daily parking rates from Supabase.',
           parameters: z.object({
-            airport: z.string().describe("Must be 'Luton' or 'Heathrow'"),
+            airport: z.string().describe("Luton or Heathrow"),
           }),
           execute: async ({ airport }) => {
             console.log("🚀 AERO DB SCAN TRIGGERED FOR:", airport);
@@ -77,21 +68,22 @@ export async function POST(req: Request) {
               dailyRate: isHeathrow ? c.heathrow_price : c.luton_price
             })).filter(c => c.dailyRate && c.dailyRate > 0);
 
+            // Returning a concise summary helps the AI not get confused by big data objects
             return { 
               airport, 
               rates, 
-              message: "DATA DISCOVERED. Do not call this tool again. Quote the dailyRate to the user now." 
+              status: "SUCCESS",
+              finalInstruction: "You have the data. Provide the quote to the user now. DO NOT call this tool again." 
             };
           }
         }),
 
-        // 🔵 RESTORED: THE BOOKING BUTTON BUILDER
         buildCustomBooking: tool({
-          description: 'Generates a custom URL to the Results Page based on the user intent.',
+          description: 'Generates a custom URL to the Results Page.',
           parameters: z.object({
-            airport: z.string().describe("Must be 'Luton (LTN)' or 'Heathrow (LHR)'"),
-            dropoffDate: z.string().describe("Format YYYY-MM-DD"),
-            pickupDate: z.string().describe("Format YYYY-MM-DD"),
+            airport: z.string().describe("Luton (LTN) or Heathrow (LHR)"),
+            dropoffDate: z.string().describe("YYYY-MM-DD"),
+            pickupDate: z.string().describe("YYYY-MM-DD"),
             hasPet: z.boolean().default(false),
             ulezRisk: z.boolean().default(false),
             isCorporate: z.boolean().default(false),
@@ -113,14 +105,13 @@ export async function POST(req: Request) {
             return { 
               success: true, 
               url: `/results?${params.toString()}`,
-              message: "URL generated successfully."
+              message: "URL generated."
             };
           },
         }),
       },
     });
 
-    // 🟢 Stable response method for version 3.1.36
     return result.toAIStreamResponse();
 
   } catch (error) {
