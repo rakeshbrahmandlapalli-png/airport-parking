@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import Stripe from "stripe";
-import prismadb from "./prismadb"; 
+import prismadb from "./lib/prismadb"; 
 import { sendBookingReceipt } from "./lib/mail"; 
 
 export async function createCheckoutSession(formData: FormData) {

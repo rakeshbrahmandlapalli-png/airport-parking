@@ -17,7 +17,7 @@ export default function AdminDashboard() {
   const [filter, setFilter] = useState("ALL");
   const router = useRouter();
 
-  // 1. AUTH PROTECTION & INITIAL FETCH
+  // 1. AUTH PROTECTION, INITIAL FETCH & REAL-TIME SYNC
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -27,11 +27,26 @@ export default function AdminDashboard() {
         fetchBookings();
       }
     };
+    
     checkUser();
+
+    // 🟢 NEW: REAL-TIME SUPABASE LISTENER
+    // This automatically refreshes the dashboard the exact second a new booking comes in from Stripe
+    const subscription = supabase
+      .channel('live-bookings')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, (payload) => {
+        console.log('Real-time update received:', payload);
+        fetchBookings(); // Re-fetch to get the latest sorted data
+      })
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, [router]);
 
   const fetchBookings = async () => {
-    setLoading(true);
     const { data } = await supabase
       .from("bookings")
       .select("*")
@@ -132,7 +147,6 @@ export default function AdminDashboard() {
       </aside>
 
       {/* 🟢 MAIN CONTENT AREA */}
-      {/* ADDED pb-32 so the bottom nav doesn't cover the last table items */}
       <main className="flex-1 p-4 md:p-10 w-full overflow-y-auto h-screen relative pb-32 md:pb-10">
         
         {/* MOBILE HEADER */}
@@ -154,7 +168,7 @@ export default function AdminDashboard() {
           
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full xl:w-auto">
             
-            {/* 🟢 FIXED SEARCH BAR: Added !bg-transparent and text-white */}
+            {/* SEARCH BAR */}
             <div className="flex items-center bg-[#0f172a] border border-slate-700/50 rounded-2xl px-5 py-3.5 focus-within:border-blue-500 transition-all shadow-sm flex-grow w-full sm:w-80 group">
               <Search className="w-5 h-5 text-slate-500 mr-3 shrink-0 group-focus-within:text-blue-400 transition-colors" />
               <input 

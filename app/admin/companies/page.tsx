@@ -7,7 +7,7 @@ import Link from "next/link";
 import { 
   Search, Plus, Save, Car, Bus, Hotel, CheckCircle2, XCircle, 
   Loader2, X, Trash2, Star, MapPin, PlaneTakeoff, Power,
-  PlaneLanding, Settings2, LayoutDashboard, Building2, CalendarDays, LogOut, Plane, Network, Filter, MessageSquare
+  PlaneLanding, Settings2, LayoutDashboard, Building2, CalendarDays, LogOut, Plane, Network, Filter, MessageSquare, Percent, Image as ImageIcon
 } from "lucide-react";
 
 interface Review {
@@ -34,6 +34,8 @@ export default function AdminCompaniesPage() {
     category: "meet-greet",
     luton_price: 0,
     heathrow_price: 0,
+    commission_rate: 15, // 🟢 NEW: Default 15% commission
+    logo_url: "", // 🟢 NEW: Logo URL
     is_active: true,
     operates_at_luton: true,
     operates_at_heathrow: false,
@@ -182,6 +184,13 @@ export default function AdminCompaniesPage() {
     }
   };
 
+  // 🟢 NEW: Calculate average rating for visual display
+  const getAvgRating = (reviews: Review[]) => {
+    if (!reviews || reviews.length === 0) return "New";
+    const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+    return `★ ${avg.toFixed(1)}`;
+  };
+
   if (loading) return (
     <div className="min-h-screen bg-[#0B1121] flex flex-col items-center justify-center text-white">
       <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-6" />
@@ -260,14 +269,37 @@ export default function AdminCompaniesPage() {
               <tbody className="divide-y divide-slate-800/80">
                 {filteredCompanies.map((c) => (
                   <tr key={c.id} className={`transition-colors ${c.is_active ? 'hover:bg-slate-800/30' : 'opacity-40 grayscale'}`}>
+                    
+                    {/* 🟢 NEW: Partner details cell with Logo and Commission Badge */}
                     <td className="px-8 py-5">
-                      <p className="font-bold text-white text-base">{c.name}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] font-black uppercase text-slate-500">{c.category?.replace('-', ' ')}</span>
-                        <span className={`px-1.5 py-0.5 rounded text-[8px] font-black border ${c.operates_at_luton ? 'text-blue-400 border-blue-500/20' : 'text-slate-700 border-slate-800'}`}>LTN</span>
-                        <span className={`px-1.5 py-0.5 rounded text-[8px] font-black border ${c.operates_at_heathrow ? 'text-purple-400 border-purple-500/20' : 'text-slate-700 border-slate-800'}`}>LHR</span>
+                      <div className="flex items-center gap-4">
+                        {/* Logo Box */}
+                        {c.logo_url ? (
+                          <img src={c.logo_url} alt={c.name} className="w-12 h-12 rounded-xl object-contain bg-white p-1 border border-slate-700 shrink-0" />
+                        ) : (
+                          <div className="w-12 h-12 rounded-xl bg-slate-800 text-slate-500 flex items-center justify-center font-black text-lg border border-slate-700 shrink-0">
+                            {c.name.charAt(0)}
+                          </div>
+                        )}
+                        
+                        <div>
+                          <p className="font-bold text-white text-base leading-tight mb-1.5">{c.name}</p>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-[10px] font-black uppercase text-slate-500">{c.category?.replace('-', ' ')}</span>
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
+                              {c.commission_rate || 15}% Cut
+                            </span>
+                          </div>
+                          
+                          {/* 🟢 NEW: Ratings Overview */}
+                          <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
+                            {c.operates_at_luton && <span className="flex items-center gap-1"><Car className="w-3 h-3 text-slate-500"/> {getAvgRating(c.ltn_reviews)}</span>}
+                            {c.operates_at_heathrow && <span className="flex items-center gap-1"><PlaneTakeoff className="w-3 h-3 text-slate-500"/> {getAvgRating(c.lhr_reviews)}</span>}
+                          </div>
+                        </div>
                       </div>
                     </td>
+
                     <td className="px-8 py-5 text-center">
                        <button onClick={() => handleToggleActive(c)} className={`px-4 py-1.5 rounded-full text-[10px] font-black border ${c.is_active ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
                          {c.is_active ? 'ACTIVE' : 'OFFLINE'}
@@ -308,10 +340,16 @@ export default function AdminCompaniesPage() {
             </div>
             
             <form onSubmit={editingCompany ? handleUpdateCompany : handleAddCompany} className="p-8 space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div><label className="text-[10px] font-black uppercase text-slate-500 block mb-2 tracking-widest ml-1">Brand Name</label><input required type="text" value={editingCompany?.name || newCompany.name} onChange={(e) => editingCompany ? setEditingCompany({...editingCompany, name: e.target.value}) : setNewCompany({...newCompany, name: e.target.value})} className="w-full bg-[#0B1121] border border-slate-800 rounded-xl px-5 py-3.5 text-white font-bold outline-none focus:border-blue-500" /></div>
-                <div><label className="text-[10px] font-black uppercase text-slate-500 block mb-2 tracking-widest ml-1">Category</label><select value={editingCompany?.category || newCompany.category} onChange={(e) => editingCompany ? setEditingCompany({...editingCompany, category: e.target.value}) : setNewCompany({...newCompany, category: e.target.value})} className="w-full bg-[#0B1121] border border-slate-800 rounded-xl px-5 py-3.5 text-white font-bold outline-none"><option value="meet-greet">Meet & Greet</option><option value="park-ride">Park & Ride</option><option value="hotel">Hotel & Parking</option></select></div>
-                <div className="md:col-span-2"><label className="text-[10px] font-black uppercase text-slate-500 block mb-2 tracking-widest ml-1">Marketing Overview</label><textarea rows={2} value={editingCompany?.overview || newCompany.overview} onChange={(e) => editingCompany ? setEditingCompany({...editingCompany, overview: e.target.value}) : setNewCompany({...newCompany, overview: e.target.value})} className="w-full bg-[#0B1121] border border-slate-800 rounded-xl px-5 py-3.5 text-white text-sm outline-none focus:border-blue-500" /></div>
+              
+              {/* 🟢 NEW: Added Commission Rate & Logo URL inputs here */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="md:col-span-2"><label className="text-[10px] font-black uppercase text-slate-500 block mb-2 tracking-widest ml-1">Brand Name</label><input required type="text" value={editingCompany?.name || newCompany.name} onChange={(e) => editingCompany ? setEditingCompany({...editingCompany, name: e.target.value}) : setNewCompany({...newCompany, name: e.target.value})} className="w-full bg-[#0B1121] border border-slate-800 rounded-xl px-5 py-3.5 text-white font-bold outline-none focus:border-blue-500" /></div>
+                <div className="md:col-span-2"><label className="text-[10px] font-black uppercase text-slate-500 block mb-2 tracking-widest ml-1">Category</label><select value={editingCompany?.category || newCompany.category} onChange={(e) => editingCompany ? setEditingCompany({...editingCompany, category: e.target.value}) : setNewCompany({...newCompany, category: e.target.value})} className="w-full bg-[#0B1121] border border-slate-800 rounded-xl px-5 py-3.5 text-white font-bold outline-none focus:border-blue-500"><option value="meet-greet">Meet & Greet</option><option value="park-ride">Park & Ride</option><option value="hotel">Hotel & Parking</option></select></div>
+                
+                <div className="md:col-span-2"><label className="text-[10px] font-black uppercase text-slate-500 block mb-2 tracking-widest ml-1 flex items-center gap-1"><ImageIcon className="w-3 h-3"/> Logo URL</label><input type="text" placeholder="https://example.com/logo.png" value={editingCompany?.logo_url || newCompany.logo_url} onChange={(e) => editingCompany ? setEditingCompany({...editingCompany, logo_url: e.target.value}) : setNewCompany({...newCompany, logo_url: e.target.value})} className="w-full bg-[#0B1121] border border-slate-800 rounded-xl px-5 py-3.5 text-white text-sm outline-none focus:border-blue-500" /></div>
+                <div className="md:col-span-2"><label className="text-[10px] font-black uppercase text-slate-500 block mb-2 tracking-widest ml-1 flex items-center gap-1"><Percent className="w-3 h-3"/> Commission Cut (%)</label><input required type="number" step="0.1" value={editingCompany?.commission_rate ?? newCompany.commission_rate} onChange={(e) => editingCompany ? setEditingCompany({...editingCompany, commission_rate: parseFloat(e.target.value)}) : setNewCompany({...newCompany, commission_rate: parseFloat(e.target.value)})} className="w-full bg-[#0B1121] border border-slate-800 rounded-xl px-5 py-3.5 text-white font-bold outline-none focus:border-emerald-500" /></div>
+
+                <div className="md:col-span-4"><label className="text-[10px] font-black uppercase text-slate-500 block mb-2 tracking-widest ml-1">Marketing Overview</label><textarea rows={2} value={editingCompany?.overview || newCompany.overview} onChange={(e) => editingCompany ? setEditingCompany({...editingCompany, overview: e.target.value}) : setNewCompany({...newCompany, overview: e.target.value})} className="w-full bg-[#0B1121] border border-slate-800 rounded-xl px-5 py-3.5 text-white text-sm outline-none focus:border-blue-500" /></div>
               </div>
 
               {/* SPLIT AIRPORTS SECTION */}

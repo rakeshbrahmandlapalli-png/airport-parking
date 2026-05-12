@@ -150,8 +150,7 @@ export default function ManageBooking() {
       alert("Extension failed: " + err.message);
     } finally {
       setExtensionLoading(false);
-    }
-  };
+    }  };
 
   const getMinExtensionDate = () => {
     if (!booking) return "";

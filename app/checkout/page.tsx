@@ -4,10 +4,6 @@ import { supabase } from "../lib/supabase";
 import { useState, Suspense, useEffect } from "react"; 
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { loadStripe } from "@stripe/stripe-js";
-
-// Initialize Stripe outside the component to avoid re-renders
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 import { 
   ShieldCheck, 
@@ -73,6 +69,7 @@ function CheckoutContent() {
   const dailyRate = Number(searchParams.get("price")) || 0;
   const type = searchParams.get("type") || "Premium Meet & Greet"; 
   const urlFlightNumber = searchParams.get("flightNumber") || "";
+  const companyId = searchParams.get("companyId") || ""; // Crucial for Webhook instructions
   
   // 🟢 AI DATA CAPTURE
   const aiData = {
@@ -188,54 +185,67 @@ function CheckoutContent() {
 
   // 🟢 STRIPE PAYMENT REDIRECT
   const handlePayment = async (e: React.FormEvent) => {
-  e.preventDefault(); 
-  if (!fullName || !email || !phone || !registration || !carMake) {
-    alert("Please complete all required fields.");
-    return;
-  }
-  
-  setIsProcessing(true);
-
-  try {
-    const response = await fetch('/api/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        price: finalTotal,
-        airport: airport,
-        provider: type,
-        metadata: {
-          fullName,
-          email,
-          phone,
-          registration: registration.toUpperCase(),
-          carMake,
-          carColor,
-          terminal,
-          flightNumber: flightNumber.toUpperCase(),
-          dropDate,
-          pickDate,
-          dropTime,
-          pickTime
-        }
-      }),
-    });
-
-    const data = await response.json();
-
-    if (data.error) throw new Error(data.error);
-
-    // 🟢 THE FIX: Simply redirect the window to the Stripe URL
-    if (data.url) {
-      window.location.href = data.url;
+    e.preventDefault(); 
+    if (!fullName || !email || !phone || !registration || !carMake || !dropDate || !pickDate) {
+      alert("Please complete all required fields and ensure dates are selected.");
+      return;
     }
+    
+    setIsProcessing(true);
 
-  } catch (error: any) {
-    console.error("Payment failed:", error);
-    alert(`Payment Error: ${error.message}`);
-    setIsProcessing(false);
-  }
-};
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          price: finalTotal,
+          airport: airport,
+          provider: type,
+          // 🟢 CRITICAL: Syncing metadata for both Webhook AND Success Page
+          metadata: {
+            // Keys expected by the Webhook for Prisma DB
+            full_name: fullName,
+            license_plate: registration.toUpperCase(),
+            car_make: carMake,
+            car_color: carColor,
+            airport: airport,
+            terminal: terminal,
+            dropoff_date: dropDate,
+            pickup_date: pickDate,
+            company_id: companyId,
+            
+            // Keys expected by the Success Page Fallback
+            fullName,
+            email,
+            phone,
+            registration: registration.toUpperCase(),
+            carMake,
+            carColor,
+            
+            flightNumber: flightNumber.toUpperCase(),
+            dropDate,
+            pickDate,
+            dropTime,
+            pickTime,
+            type
+          }
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.error) throw new Error(data.error);
+
+      if (data.url) {
+        window.location.href = data.url;
+      }
+
+    } catch (error: any) {
+      console.error("Payment failed:", error);
+      alert(`Payment Error: ${error.message}`);
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-12 relative z-10">
