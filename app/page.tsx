@@ -87,7 +87,8 @@ export default function HomePage() {
       airport, dropoffDate, dropoffTime, pickupDate, pickupTime
     }).toString();
     
-    router.push(`/results?${query}`);
+    // 🟢 CHANGED: Now redirects to select-service instead of results
+    router.push(`/select-service?${query}`);
   };
 
   // 🎙️ SPEECH RECOGNITION LOGIC
@@ -356,6 +357,7 @@ export default function HomePage() {
               <div className="relative z-10 w-full">
                 
                 {/* 🌟 1. SLEEK AERO MAGIC SEARCH */}
+                
                 <div className="mb-6 md:mb-8">
                   <label className="flex items-center justify-center gap-2 text-[10px] md:text-xs font-black uppercase tracking-widest text-blue-300 mb-4">
                     <Sparkles className="w-3.5 h-3.5 animate-pulse" /> Aero Magic Search

@@ -113,8 +113,20 @@ export async function checkAvailability(airport: string, dropoffStr: string, pic
   const MAX_CAPACITY = 50; 
 
   try {
+    // 🟢 1. THE BOUNCER: Stop blank dates from crashing the database
+    if (!dropoffStr || !pickupStr) {
+      console.log("No dates provided, skipping inventory check.");
+      return { isAvailable: true, spotsLeft: MAX_CAPACITY }; 
+    }
+
     const requestedStart = new Date(dropoffStr);
     const requestedEnd = new Date(pickupStr);
+
+    // 🟢 2. DOUBLE CHECK: Stop Invalid Date objects from crashing Prisma
+    if (isNaN(requestedStart.getTime()) || isNaN(requestedEnd.getTime())) {
+       console.log("Invalid dates provided, skipping inventory check.");
+       return { isAvailable: true, spotsLeft: MAX_CAPACITY };
+    }
 
     // Ask the database: How many cars are parked at this airport between these two dates?
     const overlappingCars = await prismadb.booking.count({

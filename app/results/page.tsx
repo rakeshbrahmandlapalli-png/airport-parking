@@ -24,27 +24,14 @@ function AeroAvatar({ size = "md", thinking = false }: { size?: "sm" | "md" | "l
 
   return (
     <div className={`relative flex items-center justify-center shrink-0 ${sizeClasses[size]}`}>
-      {/* Outer Glow Ring */}
       <div className={`absolute inset-0 bg-blue-500/40 blur-xl ${thinking ? 'animate-pulse scale-110' : ''}`}></div>
-      
-      {/* Main Body - Sleek Blue Gradient matching your image */}
       <div className={`relative w-full h-full bg-gradient-to-br from-blue-400 via-blue-600 to-blue-700 flex items-center justify-center shadow-[0_0_25px_rgba(37,99,235,0.5)] overflow-hidden group border border-blue-300/30 ${sizeClasses[size]}`}>
-        
-        {/* Subtle Inner Glow */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
-
-        {/* Scanning Line Effect (Activates on hover or when thinking) */}
         <div className={`absolute left-0 w-full h-[2px] bg-white/60 shadow-[0_0_10px_white] z-20 ${thinking ? 'animate-scan opacity-100' : 'opacity-0 group-hover:opacity-100 group-hover:animate-scan'}`}></div>
-        
-        {/* Aero's Eyes (Two glowing white pills) */}
         <div className={`flex ${gap[size]} z-10 ${thinking ? 'animate-pulse' : ''}`}>
-          {/* Left Eye */}
           <div className={`${eyeWidth[size]} ${eyeHeight[size]} bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.9)] transition-all duration-300`}></div>
-          {/* Right Eye */}
           <div className={`${eyeWidth[size]} ${eyeHeight[size]} bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.9)] transition-all duration-300`}></div>
         </div>
-
-        {/* Online Status Light (Top right corner) */}
         <div className="absolute top-2 right-2 flex items-center justify-center">
           <div className="w-1.5 h-1.5 bg-green-400 rounded-full shadow-[0_0_6px_#4ade80] animate-pulse"></div>
         </div>
@@ -92,58 +79,57 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
       <div className="flex-1 p-6 md:p-8 lg:p-10 relative z-10 flex flex-col">
         <div className="mb-6 md:mb-8">
           
-          {/* 🟢 DYNAMIC AI BADGES (All 24 Concepts Logic) */}
           <div className="flex flex-wrap gap-2 mb-4">
-            {/* Scarcity / Last Minute (#8) */}
+            {/* Scarcity / Last Minute */}
             {aiData.isLastMinute === 'true' && !isSoldOut && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-600/20 text-rose-400 border border-rose-600/30 rounded-full text-[9px] font-black uppercase tracking-[0.2em] animate-pulse">
                 <Zap className="w-3 h-3 fill-current" /> High Demand - Final Spots
               </div>
             )}
 
-            {/* Premium / ROI Logic (#18) */}
+            {/* Premium / ROI Logic */}
             {isPremium && !isSoldOut && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 text-blue-400 border border-blue-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(37,99,235,0.2)]">
                 <Sparkles className="w-3 h-3 text-blue-400" /> {isShortTrip && isMeetGreet ? "Best Weekend Value" : isLongTrip && isParkRide ? "Best Long-Stay Saver" : "Aero Recommended"}
               </div>
             )}
 
-            {/* ULEZ Warning (#15) */}
+            {/* ULEZ Warning */}
             {aiData.ulezRisk === 'true' && isHeathrow && !isSoldOut && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
                 <AlertCircle className="w-3 h-3" /> ULEZ Zone Warning
               </div>
             )}
 
-            {/* Business Travel (#9) */}
+            {/* Business Travel */}
             {aiData.isCorporate === 'true' && !isSoldOut && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-500/10 text-slate-400 border border-slate-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
                 <ShieldCheck className="w-3 h-3" /> VAT Receipt Ready
               </div>
             )}
 
-            {/* Oversized Luggage (#6) */}
+            {/* Oversized Luggage */}
             {aiData.hasOversizedLuggage === 'true' && isMeetGreet && !isSoldOut && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
                 <Footprints className="w-3 h-3" /> Best for Large Items
               </div>
             )}
             
-            {/* Height Warning Badge (#2) */}
+            {/* Height Warning */}
             {aiData.hasHeightRisk === 'true' && !isSoldOut && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
                 <AlertCircle className="w-3 h-3" /> Max Height {isHeathrow ? '2.0m' : '2.1m'}
               </div>
             )}
 
-            {/* Red-Eye Badge (#1) */}
+            {/* Red-Eye Badge */}
             {aiData.isRedEye === 'true' && isMeetGreet && !isSoldOut && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
                 <Clock className="w-3 h-3 text-indigo-400" /> Swift Red-Eye Entry
               </div>
             )}
 
-            {/* Pet Friendly (#16) */}
+            {/* Pet Friendly */}
             {aiData.hasPet === 'true' && isMeetGreet && !isSoldOut && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
                 <Sparkles className="w-3 h-3" /> Pet Friendly Selection
@@ -162,7 +148,6 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
             <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-white/5 text-slate-300 border border-white/5' : 'bg-slate-50 text-slate-600 border border-slate-200'}`}>
               <BadgeIcon className="w-3.5 h-3.5" /> Terminal Verified
             </div>
-            {/* Terminal Drop-off Fee Awareness (#19) */}
             <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-white/5 text-emerald-400 border border-emerald-400/20' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'}`}>
               <Tag className="w-3.5 h-3.5" /> {isMeetGreet ? "£5 Fee Included" : "No Entry Fees"}
             </div>
@@ -199,12 +184,9 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
             </div>
 
             <div className="p-4 sm:p-6 min-h-[100px]">
-              {activeTab === 'overview' && <p className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-600'}`}>{option.overview || "Professional secure parking service with 24/7 patrols. Detailed instructions will be provided upon booking."}</p>}
-              
+              {activeTab === 'overview' && <p className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-600'}`}>{option.overview || "Professional secure parking service with 24/7 patrols. Approved compound."}</p>}
               {activeTab === 'arrival' && <p className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-600'}`}>{arrivalInstructions || "Drive directly to the terminal and call 20 mins before arrival."}</p>}
-              
               {activeTab === 'return' && <p className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-600'}`}>{returnInstructions || "Call the dispatch team after clearing customs and collecting luggage."}</p>}
-              
               {activeTab === 'map' && (
                 <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
                   <div className="flex-1">
@@ -212,7 +194,7 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
                     <p className={`text-xs sm:text-sm font-bold ${isPremium ? 'text-white' : 'text-slate-900'}`}>{mapLocation}</p>
                     <p className={`text-[11px] sm:text-xs mt-1 ${isPremium ? 'text-slate-400' : 'text-slate-500'}`}>Postcode: {isHeathrow ? "TW6 1EW" : "LU2 9LY"}</p>
                     {!isSoldOut && (
-                      <a href="https://maps.google.com" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 sm:gap-2 mt-3 sm:mt-4 text-[9px] sm:text-[10px] font-black uppercase text-blue-500 hover:text-blue-400 transition-colors touch-manipulation"><Navigation className="w-3 h-3"/> Get Directions</a>
+                      <a href="#" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 sm:gap-2 mt-3 sm:mt-4 text-[9px] sm:text-[10px] font-black uppercase text-blue-500 hover:text-blue-400 transition-colors touch-manipulation"><Navigation className="w-3 h-3"/> Get Directions</a>
                     )}
                   </div>
                   <div className="flex-1 h-24 sm:h-32 bg-slate-200/20 rounded-xl overflow-hidden relative border border-slate-200/10 flex items-center justify-center">
@@ -220,15 +202,14 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
                   </div>
                 </div>
               )}
-
               {activeTab === 'reviews' && (
                 <div className="space-y-4 max-h-60 overflow-y-auto no-scrollbar">
                    {currentReviews.length > 0 ? currentReviews.map((r: any) => (
-                     <div key={r.id} className={`border-b ${isPremium ? 'border-white/5' : 'border-slate-100'} pb-4 last:border-0 animate-in fade-in slide-in-from-bottom-2 duration-300`}>
+                     <div key={r.id} className={`border-b ${isPremium ? 'border-white/5' : 'border-slate-100'} pb-4 last:border-0`}>
                        <div className={`flex items-center gap-2 font-bold text-xs ${isPremium ? 'text-blue-400' : 'text-blue-600'}`}>{r.author} • <div className="flex text-amber-400 tracking-tighter"><Star className="w-2.5 h-2.5 fill-current"/> {r.rating}/5</div></div>
                        <p className={`mt-1 text-xs leading-relaxed italic ${isPremium ? 'text-slate-400' : 'text-slate-500'}`}>"{r.comment}"</p>
                      </div>
-                   )) : <p className={`text-xs ${isPremium ? 'text-slate-500' : 'text-slate-400'}`}>Aero verified: No recent customer reviews for this provider at {isHeathrow ? 'Heathrow' : 'Luton'}.</p>}
+                   )) : <p className={`text-xs ${isPremium ? 'text-slate-500' : 'text-slate-400'}`}>Aero verified: No recent customer reviews found.</p>}
                 </div>
               )}
             </div>
@@ -237,8 +218,8 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
       </div>
 
       <div className={`hidden lg:block w-px border-l-2 border-dashed my-8 relative z-20 ${borderClass}`}>
-        <div className={`absolute -top-10 -left-4 w-8 h-8 rounded-full ${isPremium ? 'bg-[#0A101D] shadow-[inset_0_-2px_4px_rgba(0,0,0,0.5)]' : 'bg-[#F8FAFC] shadow-[inset_0_-2px_4px_rgba(0,0,0,0.05)]'}`}></div>
-        <div className={`absolute -bottom-10 -left-4 w-8 h-8 rounded-full ${isPremium ? 'bg-[#0A101D] shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)]' : 'bg-[#F8FAFC] shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]'}`}></div>
+        <div className={`absolute -top-10 -left-4 w-8 h-8 rounded-full ${isPremium ? 'bg-[#0A101D]' : 'bg-[#F8FAFC]'}`}></div>
+        <div className={`absolute -bottom-10 -left-4 w-8 h-8 rounded-full ${isPremium ? 'bg-[#0A101D]' : 'bg-[#F8FAFC]'}`}></div>
       </div>
 
       <div className={`w-full lg:w-[320px] xl:w-[340px] p-6 md:p-8 lg:p-10 shrink-0 relative z-10 flex flex-col justify-center border-t border-dashed lg:border-t-0 lg:border-l transition-colors ${stubBg} ${borderClass}`}>
@@ -249,19 +230,17 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
               £{totalPrice.toFixed(2)}
             </p>
             <p className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-widest mb-6 lg:mb-8 ${isPremium ? 'text-blue-400' : 'text-blue-600'}`}>
-              {isSoldOut ? 'Sold Out for these dates' : `Just £${dailyRate.toFixed(2)} / Day`}
+              {isSoldOut ? 'Sold Out' : `Just £${dailyRate.toFixed(2)} / Day`}
             </p>
           </div>
           
           <button 
             disabled={isSoldOut}
             onClick={() => handleBooking(option, dailyRate)}
-            className={`group touch-manipulation [-webkit-tap-highlight-color:transparent] w-full h-12 sm:h-14 font-black rounded-xl flex items-center justify-center gap-2 sm:gap-3 uppercase tracking-[0.15em] text-[10px] sm:text-xs transition-all duration-300 active:scale-95 overflow-hidden relative ${
+            className={`group w-full h-12 sm:h-14 font-black rounded-xl flex items-center justify-center gap-2 sm:gap-3 uppercase tracking-[0.15em] text-[10px] sm:text-xs transition-all duration-300 active:scale-95 shadow-2xl ${
               isSoldOut 
-                ? 'bg-slate-200/10 text-slate-500 cursor-not-allowed border border-slate-200/20' 
-                : (isPremium 
-                  ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_20px_rgba(37,99,235,0.4)] border border-blue-500' 
-                  : 'bg-[#0B1121] lg:hover:bg-blue-600 text-white shadow-xl shadow-slate-900/20')
+                ? 'bg-slate-200/10 text-slate-500 cursor-not-allowed' 
+                : (isPremium ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/40 border border-blue-500' : 'bg-[#0B1121] text-white hover:bg-blue-600')
             }`}
           >
             {isSoldOut ? <Ban className="w-3.5 h-3.5 sm:w-4 sm:h-4"/> : <span className="relative z-10">Select Option</span>}
@@ -272,6 +251,7 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
     </div>
   );
 }
+
 // ----------------------------------------------------------------------
 // 2. MAIN RESULTS CONTENT
 // ----------------------------------------------------------------------
@@ -288,18 +268,24 @@ function ResultsContent() {
   const serviceType = searchParams.get("type") || "meet-greet"; 
   const isHeathrow = airport.includes("Heathrow");
 
-  // --- 🟢 NEW: PULL AI MAGIC FLAGS ---
-  const hasHeightRisk = searchParams.get("hasHeightRisk") === "true";
-  const isRedEye = searchParams.get("isRedEye") === "true";
-  const travelGroup = searchParams.get("travelGroupType") || "solo";
+  // --- 🟢 FIXED: THE AI DATA BUNDLE ---
+  const aiData = useMemo(() => ({
+    isLastMinute: searchParams.get("isLastMinute"),
+    ulezRisk: searchParams.get("ulezRisk"),
+    isCorporate: searchParams.get("isCorporate"),
+    hasOversizedLuggage: searchParams.get("hasOversizedLuggage"),
+    hasHeightRisk: searchParams.get("hasHeightRisk"),
+    isRedEye: searchParams.get("isRedEye"),
+    hasPet: searchParams.get("hasPet"),
+    travelGroupType: searchParams.get("travelGroupType") || "solo"
+  }), [searchParams]);
+
   const aeroTip = searchParams.get("aeroTip") || "";
 
   useEffect(() => {
     async function getLiveRates() {
       setLoading(true);
-      const { data } = await supabase
-        .from('companies')
-        .select('*');
+      const { data } = await supabase.from('companies').select('*');
       
       if (data) {
         const filtered = data.filter(c => {
@@ -309,12 +295,11 @@ function ResultsContent() {
           return isCorrectCategory && isCorrectAirport && c.is_active;
         });
 
-        // Independent Sorting Logic
         filtered.sort((a, b) => {
-           const aSoldOut = isHeathrow ? a.lhr_sold_out : a.ltn_sold_out;
-           const bSoldOut = isHeathrow ? b.lhr_sold_out : b.ltn_sold_out;
-           if (aSoldOut && !bSoldOut) return 1;
-           if (!aSoldOut && bSoldOut) return -1;
+           const aSold = isHeathrow ? a.lhr_sold_out : a.ltn_sold_out;
+           const bSold = isHeathrow ? b.lhr_sold_out : b.ltn_sold_out;
+           if (aSold && !bSold) return 1;
+           if (!aSold && bSold) return -1;
            return 0;
         });
 
@@ -345,14 +330,14 @@ function ResultsContent() {
     <div className="max-w-4xl mx-auto py-32 md:py-40 text-center flex flex-col items-center px-4">
       <AeroAvatar thinking={true} size="lg" />
       <h2 className="text-xl md:text-2xl font-black uppercase tracking-[0.3em] text-white mt-8 animate-pulse">Aero is Scanning</h2>
-      <p className="text-slate-400 mt-3 font-medium text-sm md:text-base">Securing live compound availability for {isHeathrow ? 'Heathrow (LHR)' : 'Luton (LTN)'}...</p>
+      <p className="text-slate-400 mt-3 font-medium">Securing live compound availability for {airport}...</p>
     </div>
   );
 
   return (
     <div className="max-w-[1000px] mx-auto px-4 py-6 md:py-8">
       
-      {/* 🟢 AERO CONCIERGE BANNER WITH MASCOT & TIPS */}
+      {/* 🟢 AERO CONCIERGE BANNER */}
       <div className="bg-[#0B1121] border border-blue-900/40 rounded-[2.5rem] p-5 md:p-7 flex flex-col sm:flex-row items-center gap-6 mb-10 shadow-2xl relative overflow-hidden">
         <div className="absolute -right-20 -top-20 w-64 h-64 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
         <AeroAvatar />
@@ -364,20 +349,18 @@ function ResultsContent() {
             I have securely verified <strong className="text-blue-400">{companies.length} approved compounds</strong> for your travel dates at {isHeathrow ? 'Heathrow' : 'Luton'}.
           </h3>
           
-          {/* 🟢 AERO TIP BUBBLE */}
           {aeroTip && (
              <div className="mt-4 bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 md:p-4 text-xs md:text-sm text-blue-200 flex items-start gap-3 shadow-inner">
-               <Info className="w-4 h-4 md:w-5 md:h-5 shrink-0 mt-0.5 text-blue-400" />
                <p className="font-medium leading-relaxed">{aeroTip}</p>
              </div>
           )}
         </div>
       </div>
 
-      {/* Sleek Stepper */}
+      {/* Stepper UI */}
       <div className="relative mb-10 md:mb-16 max-w-2xl mx-auto px-2 mt-2 md:mt-4">
         <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-800 -translate-y-1/2 rounded-full"></div>
-        <div className="absolute top-1/2 left-0 w-[15%] h-1 bg-blue-600 -translate-y-1/2 rounded-full shadow-[0_0_12px_rgba(37,99,235,0.6)] transition-all duration-1000"></div>
+        <div className="absolute top-1/2 left-0 w-[15%] h-1 bg-blue-600 -translate-y-1/2 rounded-full shadow-[0_0_12px_rgba(37,99,235,0.6)]"></div>
         <div className="relative z-10 flex justify-between items-center text-white font-bold">
           <div className="flex flex-col items-center gap-2">
             <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-blue-600 text-white flex items-center justify-center font-black shadow-lg border-4 border-[#0A101D]">1</div>
@@ -398,8 +381,7 @@ function ResultsContent() {
         {companies.length === 0 ? (
           <div className="text-center py-16 md:py-24 bg-[#0B1121] rounded-[3rem] border border-dashed border-slate-700">
             <AlertCircle className="w-12 h-12 md:w-16 md:h-16 text-slate-700 mx-auto mb-4 md:mb-6" />
-            <h3 className="text-xl md:text-2xl font-black text-white mb-2 tracking-tight">No Active Providers</h3>
-            <p className="text-slate-500 font-medium text-sm md:text-base">Aero could not locate availability for {isHeathrow ? 'Heathrow' : 'Luton'} on these dates.</p>
+            <h3 className="text-xl md:text-2xl font-black text-white">No Active Providers Found</h3>
           </div>
         ) : (
           companies.map((option) => (
@@ -409,9 +391,7 @@ function ResultsContent() {
               duration={duration} 
               isHeathrow={isHeathrow}
               handleBooking={handleBooking}
-              hasHeightRisk={hasHeightRisk} // 🟢 Passes Height logic
-              isRedEye={isRedEye}           // 🟢 Passes RedEye logic
-              travelGroup={travelGroup}     // 🟢 Passes Family logic
+              aiData={aiData}
             />
           ))
         )}
@@ -420,6 +400,9 @@ function ResultsContent() {
   );
 }
 
+// ----------------------------------------------------------------------
+// 3. MAIN PAGE WRAPPER (WITH MODAL AND LAYOUT)
+// ----------------------------------------------------------------------
 function AirportTitle() {
   const searchParams = useSearchParams();
   const airport = searchParams.get("airport") || "Luton (LTN)";
@@ -437,15 +420,12 @@ function AirportTitle() {
 
   return (
     <div className="flex flex-col items-end">
-      <span className="text-sm md:text-base font-black text-white tracking-widest leading-none mb-0.5 md:mb-1 group-hover:text-blue-400 transition-colors">{code}</span>
+      <span className="text-sm md:text-base font-black text-white tracking-widest leading-none mb-1 group-hover:text-blue-400 transition-colors">{code}</span>
       <span className="text-[7px] md:text-[8px] font-black text-blue-500 uppercase tracking-[0.2em] leading-none">{dateDisplay}</span>
     </div>
   );
 }
 
-// ----------------------------------------------------------------------
-// 3. MAIN PAGE WRAPPER (WITH MODAL AND SUSPENSE)
-// ----------------------------------------------------------------------
 function ResultsLayout() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -454,9 +434,9 @@ function ResultsLayout() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editAirport, setEditAirport] = useState(searchParams.get("airport") || "Luton (LTN)");
   const [editDropDate, setEditDropDate] = useState(searchParams.get("dropoffDate") || "");
-  const [editDropTime, setEditDropTime] = useState(searchParams.get("dropoffTime") || "");
+  const [editDropTime, setEditDropTime] = useState(searchParams.get("dropoffTime") || "10:00");
   const [editPickDate, setEditPickDate] = useState(searchParams.get("pickupDate") || "");
-  const [editPickTime, setEditPickTime] = useState(searchParams.get("pickupTime") || "");
+  const [editPickTime, setEditPickTime] = useState(searchParams.get("pickupTime") || "10:00");
 
   const handleUpdateSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -473,8 +453,7 @@ function ResultsLayout() {
   };
 
   return (
-    <main suppressHydrationWarning className="min-h-[100dvh] bg-[#0A101D] font-sans antialiased pb-24 md:pb-32 selection:bg-blue-500/30 selection:text-white overflow-x-hidden relative">
-      {/* Background ambient glow */}
+    <main suppressHydrationWarning className="min-h-screen bg-[#0A101D] font-sans antialiased pb-24 md:pb-32 selection:bg-blue-500/30 overflow-x-hidden relative">
       <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0 flex justify-center overflow-hidden">
          <div className="w-full max-w-[1000px] h-96 bg-blue-600/5 blur-[120px] rounded-full absolute -top-48"></div>
       </div>
@@ -485,7 +464,7 @@ function ResultsLayout() {
           <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] hidden md:block">Edit Search</span>
         </Link>
         <Link href="/" className="flex items-center gap-1.5 md:gap-2 text-white font-black tracking-tighter text-xl md:text-2xl uppercase absolute left-1/2 -translate-x-1/2 group touch-manipulation">
-          <Plane className="w-5 h-5 md:w-7 md:h-7 text-blue-500 rotate-45 lg:group-hover:scale-110 transition-transform" />AEROPARK<span className="text-blue-500">DIRECT</span>
+          <Plane className="w-5 h-5 md:w-7 md:h-7 text-blue-500 rotate-45" />AEROPARK<span className="text-blue-500">DIRECT</span>
         </Link>
         
         <button onClick={() => setIsEditModalOpen(true)} className="text-right group touch-manipulation cursor-pointer">
@@ -493,28 +472,25 @@ function ResultsLayout() {
         </button>
       </header>
 
-      <div className="relative z-10">
-        <ResultsContent />
-      </div>
+      <div className="relative z-10"><ResultsContent /></div>
 
-      {/* 🟢 FIXED: MODIFY SEARCH MODAL (Dark text visibility fixed & iOS zoom prevented) */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex items-end sm:items-center justify-center sm:p-4 animate-in fade-in">
-          <div className="bg-white border border-slate-200 w-full max-w-lg rounded-t-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 md:p-12 shadow-2xl animate-in slide-in-from-bottom-8 duration-300 relative">
+          <div className="bg-white border border-slate-200 w-full max-w-lg rounded-t-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 md:p-12 shadow-2xl animate-in slide-in-from-bottom-8 relative">
             <div className="flex justify-between items-center mb-8">
               <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Modify Search</h2>
-                <p className="text-[10px] font-black uppercase text-slate-400 mt-2 tracking-widest">Aero is ready to re-scan for you</p>
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Modify Search</h2>
+                <p className="text-[10px] font-black uppercase text-slate-400 mt-2 tracking-widest">Aero is ready to re-scan</p>
               </div>
-              <button onClick={() => setIsEditModalOpen(false)} className="p-2.5 bg-slate-100 text-slate-400 rounded-full hover:bg-slate-200 hover:text-slate-900 transition-colors">
+              <button onClick={() => setIsEditModalOpen(false)} className="p-2.5 bg-slate-100 text-slate-400 rounded-full hover:text-slate-900 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleUpdateSearch} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Departure Airport</label>
-                <select value={editAirport} onChange={(e)=>setEditAirport(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 font-bold text-slate-900 text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 appearance-none">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Departure Airport</label>
+                <select value={editAirport} onChange={(e)=>setEditAirport(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 font-bold text-slate-900 outline-none focus:border-blue-500">
                   <option value="Luton (LTN)">Luton Airport (LTN)</option>
                   <option value="Heathrow (LHR)">Heathrow Airport (LHR)</option>
                 </select>
@@ -522,27 +498,27 @@ function ResultsLayout() {
 
               <div className="grid grid-cols-2 gap-4 border-t border-slate-50 pt-6">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Drop-off Date</label>
-                  <input type="date" value={editDropDate} onChange={(e)=>setEditDropDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-4 font-bold text-slate-900 text-base outline-none focus:border-blue-500" required />
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Drop-off Date</label>
+                  <input type="date" value={editDropDate} onChange={(e)=>setEditDropDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-4 font-bold text-slate-900" required />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Time</label>
-                  <input type="time" value={editDropTime} onChange={(e)=>setEditDropTime(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-4 font-bold text-slate-900 text-base outline-none focus:border-blue-500" required />
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Time</label>
+                  <input type="time" value={editDropTime} onChange={(e)=>setEditDropTime(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-4 font-bold text-slate-900" required />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Pick-up Date</label>
-                  <input type="date" min={editDropDate} value={editPickDate} onChange={(e)=>setEditPickDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-4 font-bold text-slate-900 text-base outline-none focus:border-blue-500" required />
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Pick-up Date</label>
+                  <input type="date" min={editDropDate} value={editPickDate} onChange={(e)=>setEditPickDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-4 font-bold text-slate-900" required />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Time</label>
-                  <input type="time" value={editPickTime} onChange={(e)=>setEditPickTime(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-4 font-bold text-slate-900 text-base outline-none focus:border-blue-500" required />
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Time</label>
+                  <input type="time" value={editPickTime} onChange={(e)=>setEditPickTime(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-4 font-bold text-slate-900" required />
                 </div>
               </div>
 
-              <button type="submit" className="w-full mt-6 py-4 md:py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl text-xs sm:text-sm uppercase tracking-widest transition-all active:scale-95 shadow-xl shadow-blue-600/30">
+              <button type="submit" className="w-full mt-6 py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl uppercase tracking-widest transition-all active:scale-95 shadow-xl shadow-blue-600/30">
                 Update Search
               </button>
             </form>
@@ -555,7 +531,7 @@ function ResultsLayout() {
 
 export default function ResultsPage() {
   return (
-    <Suspense fallback={<div className="min-h-[100dvh] bg-[#0A101D] flex flex-col items-center justify-center font-black text-slate-400 uppercase tracking-[0.2em] text-xs">Aero is Initializing...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-[#0A101D] flex flex-col items-center justify-center font-black text-slate-400 uppercase tracking-[0.2em] text-xs">Aero is Initializing...</div>}>
       <ResultsLayout />
     </Suspense>
   );
