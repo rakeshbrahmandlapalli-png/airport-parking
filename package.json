@@ -9,14 +9,14 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^0.0.36",
+    "@ai-sdk/openai": "^3.0.63",
     "@ai-sdk/react": "^3.0.179",
     "@next/third-parties": "^16.2.4",
     "@stripe/stripe-js": "^9.0.0",
     "@supabase/auth-helpers-nextjs": "^0.15.0",
     "@supabase/supabase-js": "^2.104.1",
     "@vercel/analytics": "^2.0.1",
-    "ai": "^3.1.36",
+    "ai": "^6.0.177",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.7.0",
     "next": "16.2.1",
