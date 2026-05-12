@@ -22,13 +22,13 @@ export async function createCheckoutSession(formData: FormData) {
   const airport = formData.get("airport") as string || "Luton Airport (LTN)";
   const terminal = formData.get("terminal") as string || "Main Terminal";
 
-  // 🔥 NEW: Extract Drop-off and Pick-up dates for inventory tracking
+  // 🔥 Extract Drop-off and Pick-up dates for inventory tracking
   const dropoffDateStr = formData.get("dropoffDate") as string;
   const pickupDateStr = formData.get("pickupDate") as string;
   
   // Convert strings to proper DateTime objects for the database
-  const dropoffDate = dropoffDateStr ? new Date(dropoffDateStr) : null;
-  const pickupDate = pickupDateStr ? new Date(pickupDateStr) : null;
+  const dropoffDate = dropoffDateStr ? new Date(dropoffDateStr) : new Date();
+  const pickupDate = pickupDateStr ? new Date(pickupDateStr) : new Date();
 
   // Generate a temporary Reference ID
   const tempRef = "VIP-" + Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -37,37 +37,44 @@ export async function createCheckoutSession(formData: FormData) {
 
   // 3. DATABASE, EMAIL & STRIPE LOGIC
   try {
-    // A. Save the booking to Neon Database
-    await prismadb.booking.create({
+    // A. Save the booking to Supabase Database (Using the updated schema columns!)
+    await prismadb.bookings.create({
       data: {
-        customerName,
-        customerEmail,
-        customerPhone,
-        flightNumber,
-        licensePlate,
-        parkingType,
-        totalPrice,
+        full_name: customerName,
+        email: customerEmail,
+        phone_number: customerPhone,
+        flight_number: flightNumber,
+        license_plate: licensePlate,
+        service_type: parkingType,
+        total_price: totalPrice,
         status: "pending",
-        airport,    
-        terminal,   
-        dropoffDate, // 🔥 ADDED: Save drop-off date to DB
-        pickupDate,  // 🔥 ADDED: Save pick-up date to DB
+        airport: airport,    
+        terminal: terminal,   
+        dropoff_date: dropoffDate,
+        pickup_date: pickupDate,  
       },
     });
 
     // B. Fire off the email receipt via Resend ✈️
     if (customerEmail) {
-      await sendBookingReceipt(
-        customerEmail, 
-        flightNumber || "TBA", 
-        parkingType, 
-        tempRef,
-        customerPhone || "N/A", 
-        `License: ${licensePlate || "N/A"}`, 
-        "Direct Stripe Booking", 
-        airport,  
-        terminal  
-      );
+      // Create a temporary booking object matching the new format expected by your mail.ts
+      const tempBookingObj = {
+        email: customerEmail,
+        customerEmail: customerEmail,
+        booking_ref: tempRef,
+        license_plate: licensePlate,
+        licensePlate: licensePlate,
+        airport: airport,
+        terminal: terminal,
+        phone_number: customerPhone,
+        customerPhone: customerPhone,
+        flight_number: flightNumber,
+        flightNumber: flightNumber,
+        service_type: parkingType,
+        parkingType: parkingType
+      };
+
+      await sendBookingReceipt(tempBookingObj, null, false);
     }
 
     // C. Create the Stripe Checkout Session 💳
@@ -129,12 +136,12 @@ export async function checkAvailability(airport: string, dropoffStr: string, pic
     }
 
     // Ask the database: How many cars are parked at this airport between these two dates?
-    const overlappingCars = await prismadb.booking.count({
+    const overlappingCars = await prismadb.bookings.count({
       where: {
         airport: airport,
         status: { not: "cancelled" }, // Don't count cancelled bookings!
-        dropoffDate: { lte: requestedEnd }, // Their dropoff is before or on our pickup
-        pickupDate: { gte: requestedStart }, // Their pickup is after or on our dropoff
+        dropoff_date: { lte: requestedEnd }, // Their dropoff is before or on our pickup
+        pickup_date: { gte: requestedStart }, // Their pickup is after or on our dropoff
       }
     });
 
