@@ -4,6 +4,11 @@ import { supabase } from "../lib/supabase";
 import { useState, Suspense, useEffect } from "react"; 
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { loadStripe } from "@stripe/stripe-js";
+
+// Initialize Stripe outside the component to avoid re-renders
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+
 import { 
   ShieldCheck, 
   ArrowRight, 
@@ -69,7 +74,7 @@ function CheckoutContent() {
   const type = searchParams.get("type") || "Premium Meet & Greet"; 
   const urlFlightNumber = searchParams.get("flightNumber") || "";
   
-  // 🟢 NEW AI DATA CAPTURE
+  // 🟢 AI DATA CAPTURE
   const aiData = {
     isFrequentFlyer: searchParams.get("isFrequentFlyer") === "true",
     loyaltyMessage: searchParams.get("loyaltyMessage") || "",
@@ -181,66 +186,56 @@ function CheckoutContent() {
     return new Date(dateString).toLocaleDateString("en-GB", { weekday: 'short', day: 'numeric', month: 'short' });
   };
 
+  // 🟢 STRIPE PAYMENT REDIRECT
   const handlePayment = async (e: React.FormEvent) => {
-    e.preventDefault(); 
-    if (!fullName || !email || !phone || !registration || !carMake) {
-      alert("Please complete all required fields.");
-      return;
-    }
-    
-    setIsProcessing(true);
-    try {
-      const shortId = "APD-" + Math.random().toString(36).substring(2, 8).toUpperCase();
-      await new Promise(resolve => setTimeout(resolve, 1500));
+  e.preventDefault(); 
+  if (!fullName || !email || !phone || !registration || !carMake) {
+    alert("Please complete all required fields.");
+    return;
+  }
+  
+  setIsProcessing(true);
 
-      const { error: dbError } = await supabase
-        .from('bookings')
-        .insert([{ 
-          booking_ref: shortId, 
-          full_name: fullName, 
-          email: email.trim().toLowerCase(),
-          phone_number: phone,
-          license_plate: registration.toUpperCase(), 
-          car_make: carMake,
-          car_color: carColor,
-          service_type: type,
-          dropoff_date: dropDate,
-          dropoff_time: dropTime, 
-          pickup_date: pickDate,
-          pickup_time: pickTime,  
-          total_price: finalTotal, 
-          flight_number: flightNumber.toUpperCase().trim(),
-          airport: airport,
-          terminal: terminal,
-        }]);
+  try {
+    const response = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        price: finalTotal,
+        airport: airport,
+        provider: type,
+        metadata: {
+          fullName,
+          email,
+          phone,
+          registration: registration.toUpperCase(),
+          carMake,
+          carColor,
+          terminal,
+          flightNumber: flightNumber.toUpperCase(),
+          dropDate,
+          pickDate,
+          dropTime,
+          pickTime
+        }
+      }),
+    });
 
-      if (dbError) throw dbError;
-      
-      try {
-        await fetch('/api/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            customerEmail: email,
-            flightNumber: flightNumber,
-            parkingType: type,
-            bookingRef: shortId,
-            customerPhone: phone,
-            carDetails: `${registration.toUpperCase()} - ${carMake} ${carColor}`,
-            airport: airport,
-            terminal: terminal
-          }),
-        });
-      } catch (emailError) {
-        console.error("Failed to send email:", emailError);
-      }
-      
-      router.push(`/success?ref=${shortId}`);
-    } catch (error: any) {
-      alert(`Error: ${error.message}`);
-      setIsProcessing(false);
+    const data = await response.json();
+
+    if (data.error) throw new Error(data.error);
+
+    // 🟢 THE FIX: Simply redirect the window to the Stripe URL
+    if (data.url) {
+      window.location.href = data.url;
     }
-  };
+
+  } catch (error: any) {
+    console.error("Payment failed:", error);
+    alert(`Payment Error: ${error.message}`);
+    setIsProcessing(false);
+  }
+};
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-12 relative z-10">
@@ -406,15 +401,16 @@ function CheckoutContent() {
               </div>
             )}
 
+            {/* 🟢 SECURE STRIPE REDIRECT SECTION */}
             <div className="bg-white p-6 md:p-8 rounded-[2rem] border border-slate-200 shadow-sm relative overflow-hidden">
               <div className="flex items-center justify-between mb-6 md:mb-8 pb-5 md:pb-6 border-b border-slate-100">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-100 rounded-xl flex items-center justify-center shrink-0">
-                    <CreditCard className="w-5 h-5 md:w-6 md:h-6 text-slate-600" />
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
+                    <ShieldCheck className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
                   </div>
                   <div>
                     <h2 className="text-lg md:text-xl font-black text-slate-900 tracking-tight">3. Secure Payment</h2>
-                    <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">256-bit Encrypted</p>
+                    <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">PCI Compliant Redirect</p>
                   </div>
                 </div>
                 <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-widest border border-emerald-100">
@@ -422,21 +418,13 @@ function CheckoutContent() {
                 </div>
               </div>
               
-              <div className="bg-slate-50 p-5 md:p-6 rounded-2xl border border-slate-200 space-y-4">
-                <div>
-                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Card Number</label>
-                   <input type="text" placeholder="0000 0000 0000 0000" className="w-full p-4 bg-white border border-slate-200 rounded-xl text-base font-bold text-slate-900 font-mono tracking-widest outline-none focus:border-blue-500 touch-manipulation" />
+              <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 flex items-center gap-4">
+                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm shrink-0">
+                  <CreditCard className="w-6 h-6 text-blue-600" />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                     <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Expiry Date</label>
-                     <input type="text" placeholder="MM/YY" className="w-full p-4 bg-white border border-slate-200 rounded-xl text-base font-bold text-slate-900 text-center outline-none focus:border-blue-500 touch-manipulation" />
-                  </div>
-                  <div>
-                     <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">CVC</label>
-                     <input type="text" placeholder="123" className="w-full p-4 bg-white border border-slate-200 rounded-xl text-base font-bold text-slate-900 text-center outline-none focus:border-blue-500 touch-manipulation" />
-                  </div>
-                </div>
+                <p className="text-sm font-bold text-blue-900 leading-snug">
+                  You will be redirected to <span className="text-blue-600">Stripe</span> to complete your payment securely. We never store your card details.
+                </p>
               </div>
             </div>
 
@@ -448,7 +436,7 @@ function CheckoutContent() {
                 className="w-full h-16 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white font-black text-base rounded-2xl flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(37,99,235,0.4)] active:scale-95 transition-all uppercase tracking-widest touch-manipulation"
               >
                 {isProcessing ? (
-                  <><Loader2 className="w-5 h-5 animate-spin" /> Processing...</>
+                  <><Loader2 className="w-5 h-5 animate-spin" /> Preparing...</>
                 ) : (
                   <><Lock className="w-4 h-4" /> Pay £{finalTotal.toFixed(2)}</>
                 )}
@@ -582,7 +570,7 @@ function CheckoutContent() {
                 </div>
               )}
 
-              {/* Promo Code Section - Hidden if Auto-Discount applied */}
+              {/* Promo Code Section */}
               {!aiData.isFrequentFlyer && (
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-5 mb-6 md:mb-8">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
@@ -672,9 +660,9 @@ function CheckoutContent() {
                 className="hidden lg:flex w-full h-14 md:h-16 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white font-black text-base md:text-lg rounded-2xl items-center justify-center gap-2 md:gap-3 shadow-[0_10px_30px_rgba(37,99,235,0.4)] active:scale-95 transition-all uppercase tracking-widest touch-manipulation"
               >
                 {isProcessing ? (
-                  <><Loader2 className="w-5 h-5 md:w-6 md:h-6 animate-spin" /> Processing...</>
+                  <><Loader2 className="w-5 h-5 md:w-6 md:h-6 animate-spin" /> Connecting to Stripe...</>
                 ) : (
-                  <><Lock className="w-4 h-4 md:w-5 md:h-5" /> Confirm & Pay</>
+                  <><Lock className="w-4 h-4 md:w-5 md:h-5" /> Proceed to Payment</>
                 )}
               </button>
             </div>
@@ -687,7 +675,7 @@ function CheckoutContent() {
                 </div>
                 <div>
                   <p className="text-xs md:text-sm font-black text-slate-900 tracking-tight mb-1">Aero Booking Guarantee</p>
-                  <p className="text-[11px] md:text-xs font-bold text-slate-500 leading-relaxed">Free cancellation up to <span className="text-blue-600">24 hours</span> before your drop-off time. Fully protected and verified by Aero Concierge.</p>
+                  <p className="text-[11px] md:text-xs font-bold text-slate-500 leading-relaxed">Free cancellation up to <span className="text-blue-600">24 hours</span> before your drop-off. Encrypted by Stripe.</p>
                 </div>
               </div>
           </div>

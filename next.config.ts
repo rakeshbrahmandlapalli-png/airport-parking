@@ -1,14 +1,7 @@
-// @ts-nocheck
 import type { NextConfig } from "next";
 
-const nextConfig = {
-  /* config options here */
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+const nextConfig: NextConfig = {
+  /* Your other config like images or experimental features */
 };
 
-export default nextConfig as any;
+export default nextConfig;

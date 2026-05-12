@@ -14,56 +14,146 @@ import {
   Loader2,
   Phone,
   Clock,
-  CreditCard
+  CreditCard,
+  AlertCircle
 } from "lucide-react";
 
 function SuccessContent() {
   const searchParams = useSearchParams();
-  const bookingId = searchParams.get("ref") || "APD-PENDING";
+  // 🟢 CHANGE: We now look for Stripe's session_id instead of just a ref
+  const sessionId = searchParams.get("session_id");
 
-  // --- STATE FOR DB FETCH ---
   const [booking, setBooking] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [status, setStatus] = useState<"verifying" | "success" | "error">("verifying");
+  const [errorMsg, setErrorMsg] = useState("");
 
-  // --- FETCH BOOKING DETAILS ---
   useEffect(() => {
-    const fetchBooking = async () => {
-      if (bookingId === "APD-PENDING") {
-        setIsLoading(false);
+    const finalizePayment = async () => {
+      if (!sessionId) {
+        setStatus("error");
+        setErrorMsg("No session ID found. Please contact support.");
         return;
       }
-      
-      const { data, error } = await supabase
-        .from('bookings')
-        .select('*')
-        .eq('booking_ref', bookingId)
-        .single();
+
+      try {
+        // 1. Verify the session with our internal API
+        const verifyRes = await fetch(`/api/verify-session?session_id=${sessionId}`);
+        const data = await verifyRes.json();
+
+        if (!verifyRes.ok || data.status !== "success") {
+          throw new Error(data.error || "Payment verification failed.");
+        }
+
+        const m = data.metadata; // This contains carMake, registration, etc.
+
+        // 2. CHECK: Has this session already been saved? (Prevents duplicates on refresh)
+        const { data: existing } = await supabase
+          .from('bookings')
+          .select('booking_ref')
+          .eq('stripe_session_id', sessionId)
+          .single();
+
+        if (existing) {
+          // Already saved, just fetch and show
+          const { data: bData } = await supabase
+            .from('bookings')
+            .select('*')
+            .eq('booking_ref', existing.booking_ref)
+            .single();
+          setBooking(bData);
+          setStatus("success");
+          return;
+        }
+
+        // 3. GENERATE REF & SAVE TO SUPABASE
+        const shortId = "APD-" + Math.random().toString(36).substring(2, 8).toUpperCase();
         
-      if (data) {
-        setBooking(data);
+        const { data: newBooking, error: dbError } = await supabase
+          .from('bookings')
+          .insert([{ 
+            booking_ref: shortId, 
+            stripe_session_id: sessionId, // 🟢 Important: Store this to track payments
+            full_name: m.fullName, 
+            email: m.email.trim().toLowerCase(),
+            phone_number: m.phone,
+            license_plate: m.registration, 
+            car_make: m.carMake,
+            car_color: m.carColor,
+            service_type: "Premium Meet & Greet",
+            dropoff_date: m.dropDate,
+            dropoff_time: m.dropTime, 
+            pickup_date: m.pickDate,
+            pickup_time: m.pickTime,  
+            total_price: data.amount, 
+            flight_number: m.flightNumber,
+            airport: "Luton (LTN)", // You can also pass this in metadata
+            terminal: m.terminal,
+          }])
+          .select()
+          .single();
+
+        if (dbError) throw dbError;
+
+        // 4. SEND CONFIRMATION EMAIL
+        try {
+          await fetch('/api/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              customerEmail: m.email,
+              bookingRef: shortId,
+              customerName: m.fullName,
+              carDetails: `${m.registration} - ${m.carMake}`,
+              airport: "Luton (LTN)",
+              terminal: m.terminal
+            }),
+          });
+        } catch (e) {
+          console.error("Email failed to trigger", e);
+        }
+
+        setBooking(newBooking);
+        setStatus("success");
+
+      } catch (err: any) {
+        console.error("Finalization error:", err);
+        setErrorMsg(err.message);
+        setStatus("error");
       }
-      setIsLoading(false);
     };
 
-    fetchBooking();
-  }, [bookingId]);
+    finalizePayment();
+  }, [sessionId]);
 
-  // PREMIUM LOADING STATE
-  if (isLoading) {
+  // --- UI STATES ---
+
+  if (status === "verifying") {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-slate-900 px-4">
-        <div className="relative w-16 h-16 md:w-20 md:h-20 mb-6 md:mb-8">
+        <div className="relative w-16 h-16 md:w-20 md:h-20 mb-8">
           <div className="absolute inset-0 border-4 border-blue-100 rounded-full"></div>
           <div className="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
-          <CheckCircle2 className="absolute inset-0 m-auto w-5 h-5 md:w-6 md:h-6 text-blue-600 animate-pulse" />
+          <CreditCard className="absolute inset-0 m-auto w-5 h-5 md:w-6 md:h-6 text-blue-600 animate-pulse" />
         </div>
-        <h2 className="text-xl md:text-2xl font-black tracking-tight mb-2 text-center">Generating Secure Voucher...</h2>
-        <p className="text-slate-500 font-medium text-sm md:text-base text-center">Retrieving your confirmed booking details.</p>
+        <h2 className="text-xl md:text-2xl font-black tracking-tight mb-2 text-center">Verifying Payment...</h2>
+        <p className="text-slate-500 font-medium text-sm md:text-base text-center">Aero is confirming your secure transaction with Stripe.</p>
       </div>
     );
   }
 
-  // Fallback values if DB fetch fails, otherwise use real data
+  if (status === "error") {
+    return (
+      <div className="bg-white rounded-[2rem] p-12 shadow-2xl border border-red-100 text-center max-w-lg mx-auto">
+        <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-6" />
+        <h2 className="text-2xl font-black text-slate-900 mb-2">Booking Issue</h2>
+        <p className="text-slate-500 font-medium mb-8">{errorMsg || "We couldn't verify your payment. Please check your email or contact support."}</p>
+        <Link href="/contact" className="btn-primary w-full inline-flex">Contact Support</Link>
+      </div>
+    );
+  }
+
+  // --- SUCCESS UI (Using Booking Data) ---
+  const bookingId = booking?.booking_ref || "APD-ERROR";
   const airport = booking?.airport || "Luton (LTN)";
   const terminal = booking?.terminal || "Main Terminal";
   const totalPrice = booking?.total_price ? `£${booking.total_price.toFixed(2)}` : "Paid";
@@ -73,7 +163,6 @@ function SuccessContent() {
     <div className="relative z-10 max-w-2xl w-full">
       <div className="bg-white rounded-[2rem] md:rounded-[3rem] p-6 sm:p-8 md:p-12 shadow-2xl border border-slate-200 text-center relative overflow-hidden">
         
-        {/* DECORATIVE BACKGROUND */}
         <div className="absolute -top-32 -right-32 w-64 h-64 bg-emerald-500/10 rounded-full blur-[80px] pointer-events-none hidden sm:block"></div>
         <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] pointer-events-none hidden sm:block"></div>
         
@@ -195,7 +284,7 @@ function SuccessContent() {
 export default function SuccessPage() {
   return (
     <main suppressHydrationWarning className="min-h-[100dvh] bg-[#F8FAFC] flex flex-col items-center justify-center p-4 sm:p-6 relative font-sans antialiased overflow-x-hidden selection:bg-blue-600 selection:text-white">
-      {/* Subtle Background Gradient */}
+      
       <div className="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-blue-600/5 to-transparent"></div>
       
       <Suspense fallback={
