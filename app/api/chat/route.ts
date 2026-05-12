@@ -17,14 +17,13 @@ export async function POST(req: Request) {
     const { messages } = await req.json();
     const currentDate = new Date().toLocaleString('en-GB', { timeZone: 'Europe/London' });
 
-    // 🔴 THE CIRCUIT BREAKER: REFINED
-    // If the last message was a tool result, we MUST force the AI to speak.
-    // If we don't, it might try to "re-verify" the data by calling the tool again.
+    // 🔴 THE CIRCUIT BREAKER
+    // If the last message was a 'tool' result, it means we JUST got the data from Supabase.
+    // We force toolChoice to 'none' so the AI is FORCED to speak the answer instead of looping.
     const lastMessage = messages[messages.length - 1];
     const isToolResult = lastMessage?.role === 'tool';
     const toolChoiceControl = isToolResult ? 'none' : 'auto';
 
-    // 2. Full Power AI Instructions with explicit Workflow
     const result = await streamText({
       model: openai('gpt-4o-mini') as any,
       toolChoice: toolChoiceControl, 
@@ -34,24 +33,23 @@ export async function POST(req: Request) {
       CURRENT REALITY:
       - The current date and time is: ${currentDate}.
       
-      WORKFLOW RULES:
-      1. If the user asks for a price, call 'checkLivePrices' IMMEDIATELY.
-      2. As soon as you receive the tool results, YOU ARE FINISHED SCANNING.
-      3. Do NOT call the tool a second time. Use the dailyRate from the history to quote the user.
-      4. Always advise a 45-min buffer for toddlers/elderly.
-      5. ULEZ only applies at Heathrow (LHR).
+      CORE MISSION & CAPABILITIES:
+      - Compare and vet parking operators at London Luton (LTN) and Heathrow (LHR).
+      - Warning: ULEZ applies ONLY at Heathrow (LHR). Luton (LTN) does NOT have ULEZ.
+      - Safety: If passengers include toddlers or elderly, you MUST advise a 45-min buffer.
       
-      QUOTING STYLE:
-      - Be confident. Say: "I've scanned our live database. Meet & Greet at [Airport] is currently starting at £[Rate] per day."
-      - Follow up by asking for their specific travel dates so you can build their link.
+      HANDLING PRICE QUESTIONS:
+      - If a user asks for a price/rate, call 'checkLivePrices' IMMEDIATELY.
+      - Once the tool returns data, STOP. Provide the quote using the 'dailyRate' in the history.
+      - Do NOT apologize for not having dates; just give the estimate and ask for their travel dates.
       
       CRITICAL COMMAND FOR BOOKING:
-      - Once you have Airport + Dates, STOP TALKING and execute 'buildCustomBooking'.
-      - Do not ask for confirmation. Push the button.`,
+      - Once you have Airport AND Travel Dates, execute the 'buildCustomBooking' tool immediately.
+      - Do not ask for confirmation. Push the button and stop talking.`,
       
       tools: {
         checkLivePrices: tool({
-          description: 'Fetch live daily parking rates from Supabase.',
+          description: 'Fetch live daily parking rates from the Supabase database.',
           parameters: z.object({
             airport: z.string().describe("Luton or Heathrow"),
           }),
@@ -68,12 +66,10 @@ export async function POST(req: Request) {
               dailyRate: isHeathrow ? c.heathrow_price : c.luton_price
             })).filter(c => c.dailyRate && c.dailyRate > 0);
 
-            // Returning a concise summary helps the AI not get confused by big data objects
             return { 
               airport, 
               rates, 
-              status: "SUCCESS",
-              finalInstruction: "You have the data. Provide the quote to the user now. DO NOT call this tool again." 
+              message: "DATA DISCOVERED. Use these rates to quote the user now. Do not call this tool again." 
             };
           }
         }),
@@ -82,8 +78,8 @@ export async function POST(req: Request) {
           description: 'Generates a custom URL to the Results Page.',
           parameters: z.object({
             airport: z.string().describe("Luton (LTN) or Heathrow (LHR)"),
-            dropoffDate: z.string().describe("YYYY-MM-DD"),
-            pickupDate: z.string().describe("YYYY-MM-DD"),
+            dropoffDate: z.string().describe("Format YYYY-MM-DD"),
+            pickupDate: z.string().describe("Format YYYY-MM-DD"),
             hasPet: z.boolean().default(false),
             ulezRisk: z.boolean().default(false),
             isCorporate: z.boolean().default(false),
@@ -105,13 +101,14 @@ export async function POST(req: Request) {
             return { 
               success: true, 
               url: `/results?${params.toString()}`,
-              message: "URL generated."
+              message: "URL generated successfully."
             };
           },
         }),
       },
     });
 
+    // Matches your installed package version (ai@3.1.36)
     return result.toAIStreamResponse();
 
   } catch (error) {

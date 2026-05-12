@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npx prisma generate && NEXT_DISABLE_TYPECHECK=1 next build",
+    "build": "npx prisma generate && next build",
     "start": "next start",
     "lint": "next lint"
   },
@@ -39,5 +39,12 @@
     "prisma": "^6.19.2",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
+  },
+  "overrides": {
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "@ai-sdk/react": {
+      "swr": "2.2.0"
+    }
   }
 }
