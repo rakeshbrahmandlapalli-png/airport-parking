@@ -91,7 +91,7 @@ export default function AdminLogin() {
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 z-20 pointer-events-none group-focus-within:text-blue-400 transition-colors" />
               <input 
                 type="email" 
-                placeholder="info@aeroparkdirect.co.uk" 
+                placeholder="info@xyz.co.uk" 
                 autoComplete="email"
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
