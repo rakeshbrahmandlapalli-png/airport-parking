@@ -6,35 +6,14 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
 import { 
-  ShieldCheck, 
-  ArrowRight, 
-  ArrowLeft, 
-  Loader2,
-  CarFront,
-  User,
-  MapPin,
-  PlaneTakeoff,
-  Plane,
-  Lock,
-  CreditCard,
-  Calendar,
-  Shield,
-  Sparkles,
-  Tag,
-  AlertCircle,
-  CheckCircle2,
-  Coffee,
-  Zap,
-  Star,
-  Settings2,
-  Clock,
-  Footprints,
-  ChevronDown,
-  Navigation
+  ShieldCheck, ArrowRight, ArrowLeft, Loader2, CarFront, User,
+  MapPin, PlaneTakeoff, Plane, Lock, CreditCard, Calendar, Shield,
+  Sparkles, Tag, AlertCircle, CheckCircle2, Coffee, Zap, Star,
+  Settings2, Clock, Footprints, ChevronDown, Navigation
 } from "lucide-react";
 
 // ----------------------------------------------------------------------
-// 🟢 CLEAN AERO AVATAR 
+// 🟢 CUSTOM AERO AVATAR 
 // ----------------------------------------------------------------------
 function AeroAvatar({ size = "md", state = "idle", onClick }: { size?: "sm" | "md" | "lg" | "xl", state?: "idle" | "scanning" | "success", onClick?: () => void }) {
   const sizeClasses = { sm: "w-8 h-8 rounded-lg", md: "w-14 h-14 rounded-2xl", lg: "w-20 h-20 rounded-3xl", xl: "w-32 h-32 rounded-[2.5rem]" };
@@ -64,12 +43,14 @@ function CheckoutContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isEditingSearch, setIsEditingSearch] = useState(false);
   
-  // --- CAPTURE URL DATA & AI FLAGS ---
+  // --- CAPTURE URL DATA ---
   const airport = searchParams.get("airport") || "Luton (LTN)";
-  const dailyRate = Number(searchParams.get("price")) || 0;
   const type = searchParams.get("type") || "Premium Meet & Greet"; 
   const urlFlightNumber = searchParams.get("flightNumber") || "";
-  const companyId = searchParams.get("companyId") || ""; // Crucial for Webhook instructions
+  const companyId = searchParams.get("companyId") || ""; 
+  
+  // The final calculated price is safely passed from the Results page.
+  const baseRateFromUrl = Number(searchParams.get("price")) || 0;
   
   // 🟢 AI DATA CAPTURE
   const aiData = {
@@ -122,7 +103,7 @@ function CheckoutContent() {
       setPromoMessage(aiData.loyaltyMessage || "Loyalty recognized! 15% discount auto-applied.");
       setIsPromoError(false);
     }
-  }, [aiData.isFrequentFlyer, aiData.loyaltyMessage]);
+  }, [aiData.isFrequentFlyer, aiData.loyaltyMessage, discount.active]);
 
   const handleApplyPromo = (e: React.FormEvent) => {
     e.preventDefault();
@@ -161,19 +142,18 @@ function CheckoutContent() {
     }
   };
 
-  // --- SYNCED CALCULATION ---
-  const calculateTotal = () => {
-    if (!dropDate || !pickDate) return { days: 1, total: dailyRate };
+  // 🟢 FIXED: Date calculations use Math.abs to prevent negative numbers
+  const calculateDays = () => {
+    if (!dropDate || !pickDate) return 1;
     const start = new Date(dropDate);
     const end = new Date(pickDate);
-    const diffTime = end.getTime() - start.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    const finalDays = diffDays <= 0 ? 1 : diffDays;
-    return { days: finalDays, total: dailyRate * finalDays };
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return diffDays <= 0 ? 1 : diffDays;
   };
 
-  const booking = calculateTotal();
-  const baseTotal = booking.total;
+  const bookingDays = calculateDays();
+  const baseTotal = baseRateFromUrl; // Uses the dynamic price from the Results page
   const discountAmount = baseTotal * discount.percent;
   const addOnsTotal = (wantsLounge ? LOUNGE_PRICE : 0) + (wantsFastTrack ? FAST_TRACK_PRICE : 0);
   const finalTotal = (baseTotal - discountAmount) + addOnsTotal;
@@ -181,6 +161,19 @@ function CheckoutContent() {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "--";
     return new Date(dateString).toLocaleDateString("en-GB", { weekday: 'short', day: 'numeric', month: 'short' });
+  };
+
+  // 🟢 FIXED: If they change dates on the checkout page, redirect back to Results to recalculate DB pricing
+  const handleUpdateSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsEditingSearch(false);
+    const query = new URLSearchParams(searchParams.toString());
+    query.set("dropoffDate", dropDate);
+    query.set("dropoffTime", dropTime);
+    query.set("pickupDate", pickDate);
+    query.set("pickupTime", pickTime);
+    query.delete("price"); // Clear old price so Results page recalculates it
+    router.push(`/results?${query.toString()}`);
   };
 
   // 🟢 STRIPE PAYMENT REDIRECT
@@ -193,6 +186,11 @@ function CheckoutContent() {
     
     setIsProcessing(true);
 
+    // Determines service type for the database to prevent null constraints
+    let finalServiceType = "Meet & Greet";
+    if (type.toLowerCase().includes("park")) finalServiceType = "Park & Ride";
+    if (type.toLowerCase().includes("hotel")) finalServiceType = "Hotel & Parking";
+
     try {
       const response = await fetch('/api/checkout', {
         method: 'POST',
@@ -201,7 +199,6 @@ function CheckoutContent() {
           price: finalTotal,
           airport: airport,
           provider: type,
-          // 🟢 CRITICAL: Syncing metadata for both Webhook AND Success Page
           metadata: {
             // Keys expected by the Webhook for Prisma DB
             full_name: fullName,
@@ -213,6 +210,7 @@ function CheckoutContent() {
             dropoff_date: dropDate,
             pickup_date: pickDate,
             company_id: companyId,
+            service_type: finalServiceType,
             
             // Keys expected by the Success Page Fallback
             fullName,
@@ -221,7 +219,6 @@ function CheckoutContent() {
             registration: registration.toUpperCase(),
             carMake,
             carColor,
-            
             flightNumber: flightNumber.toUpperCase(),
             dropDate,
             pickDate,
@@ -298,15 +295,15 @@ function CheckoutContent() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
                 <div className="md:col-span-2">
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Full Name</label>
-                  <input required type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-base font-bold text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all touch-manipulation" placeholder="James Bond" />
+                  <input required type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-base font-bold text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all touch-manipulation shadow-[0_0_0_1000px_#f8fafc_inset] [-webkit-text-fill-color:#0f172a]" placeholder="James Bond" />
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Email Address</label>
-                  <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-base font-bold text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all touch-manipulation" placeholder="james@example.com" />
+                  <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-base font-bold text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all touch-manipulation shadow-[0_0_0_1000px_#f8fafc_inset] [-webkit-text-fill-color:#0f172a]" placeholder="james@example.com" />
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Mobile Number</label>
-                  <input required type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-base font-bold text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all touch-manipulation" placeholder="+44 7700 900000" />
+                  <input required type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-base font-bold text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all touch-manipulation shadow-[0_0_0_1000px_#f8fafc_inset] [-webkit-text-fill-color:#0f172a]" placeholder="+44 7700 900000" />
                 </div>
               </div>
             </div>
@@ -342,22 +339,22 @@ function CheckoutContent() {
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Return Flight No. (Optional)</label>
-                  <input type="text" value={flightNumber} onChange={(e) => setFlightNumber(e.target.value.toUpperCase())} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-base font-bold text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all uppercase placeholder:normal-case touch-manipulation" placeholder="e.g. BA123" />
+                  <input type="text" value={flightNumber} onChange={(e) => setFlightNumber(e.target.value.toUpperCase())} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-base font-bold text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all uppercase placeholder:normal-case touch-manipulation shadow-[0_0_0_1000px_#f8fafc_inset] [-webkit-text-fill-color:#0f172a]" placeholder="e.g. BA123" />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
                 <div className="md:col-span-3">
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Registration Plate</label>
-                  <input required type="text" value={registration} onChange={(e) => setRegistration(e.target.value.toUpperCase())} className="w-full bg-[#fde047] border-2 border-yellow-400 rounded-xl px-4 py-4 font-black text-slate-900 text-lg md:text-2xl text-center uppercase tracking-[0.2em] focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all placeholder:text-yellow-600/50 shadow-inner touch-manipulation" placeholder="AB12 CDE" />
+                  <input required type="text" value={registration} onChange={(e) => setRegistration(e.target.value.toUpperCase())} className="w-full bg-[#fde047] border-2 border-yellow-400 rounded-xl px-4 py-4 font-black text-slate-900 text-lg md:text-2xl text-center uppercase tracking-[0.2em] focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all placeholder:text-yellow-600/50 shadow-[0_0_0_1000px_#fde047_inset] [-webkit-text-fill-color:#0f172a] touch-manipulation" placeholder="AB12 CDE" />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Make & Model</label>
-                  <input required type="text" value={carMake} onChange={(e) => setCarMake(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-base font-bold text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all touch-manipulation" placeholder="e.g. Range Rover Sport" />
+                  <input required type="text" value={carMake} onChange={(e) => setCarMake(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-base font-bold text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all touch-manipulation shadow-[0_0_0_1000px_#f8fafc_inset] [-webkit-text-fill-color:#0f172a]" placeholder="e.g. Range Rover Sport" />
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Color</label>
-                  <input type="text" value={carColor} onChange={(e) => setCarColor(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-base font-bold text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all touch-manipulation" placeholder="e.g. Black" />
+                  <input type="text" value={carColor} onChange={(e) => setCarColor(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-base font-bold text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all touch-manipulation shadow-[0_0_0_1000px_#f8fafc_inset] [-webkit-text-fill-color:#0f172a]" placeholder="e.g. Black" />
                 </div>
               </div>
             </div>
@@ -535,28 +532,28 @@ function CheckoutContent() {
 
               {/* 🟢 EDITABLE SEARCH PANEL */}
               {isEditingSearch ? (
-                <div className="space-y-4 mb-6 bg-white/5 p-4 rounded-2xl border border-white/10 animate-in fade-in zoom-in-95">
+                <form onSubmit={handleUpdateSearch} className="space-y-4 mb-6 bg-white/5 p-4 rounded-2xl border border-white/10 animate-in fade-in zoom-in-95">
                   <div>
                     <label className="text-[9px] font-black uppercase text-slate-400 mb-2 block">Drop-off</label>
                     <div className="grid grid-cols-2 gap-2">
-                      <input type="date" value={dropDate} onChange={(e)=>setDropDate(e.target.value)} className="bg-slate-800 text-white text-[10px] p-2 rounded-lg outline-none border border-white/10" />
-                      <input type="time" value={dropTime} onChange={(e)=>setDropTime(e.target.value)} className="bg-slate-800 text-white text-[10px] p-2 rounded-lg outline-none border border-white/10" />
+                      <input type="date" value={dropDate} onChange={(e)=>setDropDate(e.target.value)} className="bg-slate-800 text-white text-[10px] p-2 rounded-lg outline-none border border-white/10" required />
+                      <input type="time" value={dropTime} onChange={(e)=>setDropTime(e.target.value)} className="bg-slate-800 text-white text-[10px] p-2 rounded-lg outline-none border border-white/10" required />
                     </div>
                   </div>
                   <div>
                     <label className="text-[9px] font-black uppercase text-slate-400 mb-2 block">Return</label>
                     <div className="grid grid-cols-2 gap-2">
-                      <input type="date" value={pickDate} onChange={(e)=>setPickDate(e.target.value)} className="bg-slate-800 text-white text-[10px] p-2 rounded-lg outline-none border border-white/10" />
-                      <input type="time" value={pickTime} onChange={(e)=>setPickTime(e.target.value)} className="bg-slate-800 text-white text-[10px] p-2 rounded-lg outline-none border border-white/10" />
+                      <input type="date" min={dropDate} value={pickDate} onChange={(e)=>setPickDate(e.target.value)} className="bg-slate-800 text-white text-[10px] p-2 rounded-lg outline-none border border-white/10" required />
+                      <input type="time" value={pickTime} onChange={(e)=>setPickTime(e.target.value)} className="bg-slate-800 text-white text-[10px] p-2 rounded-lg outline-none border border-white/10" required />
                     </div>
                   </div>
                   <button 
-                    onClick={()=>setIsEditingSearch(false)} 
+                    type="submit"
                     className="w-full py-2 bg-blue-600 text-[9px] font-black uppercase rounded-lg hover:bg-blue-500 transition-colors"
                   >
-                    Save Changes
+                    Update Search & Recalculate
                   </button>
-                </div>
+                </form>
               ) : (
                 <div className="space-y-4 md:space-y-5 mb-6 md:mb-8 pb-6 md:pb-8 border-b border-white/10">
                   <div className="flex justify-between items-center">
@@ -627,7 +624,7 @@ function CheckoutContent() {
               {/* 🟢 TOTALS INC. ADD-ONS */}
               <div className="space-y-3 md:space-y-4 mb-8 md:mb-10">
                 <div className="flex justify-between text-xs md:text-sm text-slate-400 font-medium">
-                  <span>Parking Rate ({booking.days} {booking.days === 1 ? "day" : "days"})</span>
+                  <span>Parking Rate ({bookingDays} {bookingDays === 1 ? "day" : "days"})</span>
                   <span className={`font-bold ${discount.active ? 'text-slate-500 line-through' : 'text-white'}`}>£{baseTotal.toFixed(2)}</span>
                 </div>
                 

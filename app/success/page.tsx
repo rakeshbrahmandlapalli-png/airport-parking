@@ -61,27 +61,28 @@ function SuccessContent() {
         // 3. GENERATE REF & SAVE TO SUPABASE (Backup if Webhook is slow)
         const shortId = "APD-" + Math.random().toString(36).substring(2, 8).toUpperCase();
         
-        // Match these fields exactly to your schema.prisma
+        // 🟢 FIXED: Match fields to schema.prisma and ensure company_id is linked
         const { data: newBooking, error: dbError } = await supabase
           .from('bookings')
           .insert([{ 
             booking_ref: shortId, 
             stripe_session_id: sessionId,
-            full_name: m.fullName || "Valued Customer", 
+            full_name: m.full_name || m.fullName || "Valued Customer", 
             email: data.customerEmail || m.email?.trim().toLowerCase(),
             phone_number: data.customerPhone || m.phone || "N/A",
-            license_plate: m.registration || m.licensePlate, 
-            car_make: m.carMake || "N/A",
-            car_color: m.carColor || "N/A",
-            service_type: m.type || "Premium Meet & Greet",
-            dropoff_date: m.dropDate,
-            dropoff_time: m.dropTime, 
-            pickup_date: m.pickDate,
-            pickup_time: m.pickTime,  
+            license_plate: m.license_plate || m.registration || m.licensePlate, 
+            car_make: m.car_make || m.carMake || "N/A",
+            car_color: m.car_color || m.carColor || "N/A",
+            service_type: m.service_type || m.type || "Premium Meet & Greet",
+            dropoff_date: m.dropoff_date || m.dropDate,
+            dropoff_time: m.dropoff_time || m.dropTime, 
+            pickup_date: m.pickup_date || m.pickDate,
+            pickup_time: m.pickup_time || m.pickTime,  
             total_price: data.amount, 
-            flight_number: m.flightNumber || "TBC",
+            flight_number: m.flight_number || m.flightNumber || "TBC",
             airport: m.airport || "Luton (LTN)",
             terminal: m.terminal || "Main Terminal",
+            company_id: m.company_id || null, // 🟢 CRITICAL: Links to partner for financials
             status: "confirmed"
           }])
           .select()
@@ -184,9 +185,9 @@ function SuccessContent() {
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Booking Reference</p>
               <p className="text-3xl md:text-4xl font-black text-blue-400 tracking-widest font-mono">{bookingId}</p>
             </div>
-            <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center border border-white/10">
+            <button onClick={() => window.print()} className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center border border-white/10 hover:bg-white/20 transition-colors cursor-pointer">
               <Printer className="w-5 h-5 text-white" />
-            </div>
+            </button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 border-t border-white/10 pt-8">
@@ -237,7 +238,7 @@ function SuccessContent() {
               <div className="absolute left-[11px] top-6 bottom-[-24px] w-px bg-slate-200"></div>
               <div className="w-6 h-6 bg-slate-900 text-white rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-black relative z-10">1</div>
               <p className="text-slate-600 text-sm font-bold leading-relaxed pt-0.5">
-                Call the chauffeur on <span className="text-blue-600 font-black">07XXX XXXXXX</span> exactly <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-black">20-30 MINS</span> before you reach the airport terminal.
+                Call the chauffeur exactly <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-black">20-30 MINS</span> before you reach the airport terminal. Number is inside your email voucher.
               </p>
             </li>
             <li className="flex gap-4 items-start">

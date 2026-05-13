@@ -14,7 +14,7 @@ import { supabase } from "../lib/supabase";
 import { checkAvailability } from "../actions";
 
 // ----------------------------------------------------------------------
-// 🟢 CUSTOM AERO AVATAR (Matches Homepage Design)
+// 🟢 CUSTOM AERO AVATAR 
 // ----------------------------------------------------------------------
 function AeroAvatar({ size = "md", thinking = false }: { size?: "sm" | "md" | "lg" | "xl", thinking?: boolean }) {
   const sizeClasses = { sm: "w-8 h-8 rounded-lg", md: "w-14 h-14 rounded-2xl", lg: "w-20 h-20 rounded-3xl", xl: "w-32 h-32 rounded-[2.5rem]" };
@@ -41,13 +41,29 @@ function AeroAvatar({ size = "md", thinking = false }: { size?: "sm" | "md" | "l
 }
 
 // ----------------------------------------------------------------------
-// 1. PREMIUM PARKING CARD COMPONENT (ULTIMATE EDITION)
+// 1. PREMIUM PARKING CARD COMPONENT
 // ----------------------------------------------------------------------
 function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: any) {
   const [activeTab, setActiveTab] = useState('overview');
   
-  const dailyRate = isHeathrow ? (option.heathrow_price || 0) : (option.luton_price || 0);
-  const totalPrice = dailyRate * duration;
+  // 🟢 DYNAMIC PRICING MATH (Pulls directly from your Companies DB)
+  const baseRate = isHeathrow ? Number(option.heathrow_price || 0) : Number(option.luton_price || 0);
+  const tier1Rate = Number(option.tier1_extra_rate ?? 1.99);
+  const tier2Rate = Number(option.tier2_extra_rate ?? 2.99);
+
+  let totalPrice = baseRate;
+  if (duration > 1) {
+    const extraDays = duration - 1;
+    const tier1Days = Math.min(extraDays, 5); // Days 2 to 6
+    totalPrice += (tier1Days * tier1Rate);
+    
+    if (extraDays > 5) {
+      const tier2Days = extraDays - 5; // Days 7 and beyond
+      totalPrice += (tier2Days * tier2Rate);
+    }
+  }
+
+  const avgDailyRate = totalPrice / duration;
   
   const isSoldOut = isHeathrow ? option.lhr_sold_out : option.ltn_sold_out;
   const isPremium = (isHeathrow ? option.lhr_featured : option.ltn_featured) || option.name.toLowerCase().includes("24/7");
@@ -64,7 +80,6 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
   const mapLocation = option.map_location || (isHeathrow ? "Heathrow Terminal Area" : "Luton Terminal Car Park 1");
   const currentReviews = isHeathrow ? (option.lhr_reviews || []) : (option.ltn_reviews || []);
 
-  // --- ROI PUSH LOGIC ---
   const isShortTrip = duration <= 3;
   const isLongTrip = duration >= 14;
   const isMeetGreet = option.category?.toLowerCase().includes('meet');
@@ -80,56 +95,41 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
         <div className="mb-6 md:mb-8">
           
           <div className="flex flex-wrap gap-2 mb-4">
-            {/* Scarcity / Last Minute */}
             {aiData.isLastMinute === 'true' && !isSoldOut && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-600/20 text-rose-400 border border-rose-600/30 rounded-full text-[9px] font-black uppercase tracking-[0.2em] animate-pulse">
                 <Zap className="w-3 h-3 fill-current" /> High Demand - Final Spots
               </div>
             )}
-
-            {/* Premium / ROI Logic */}
             {isPremium && !isSoldOut && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 text-blue-400 border border-blue-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(37,99,235,0.2)]">
                 <Sparkles className="w-3 h-3 text-blue-400" /> {isShortTrip && isMeetGreet ? "Best Weekend Value" : isLongTrip && isParkRide ? "Best Long-Stay Saver" : "Aero Recommended"}
               </div>
             )}
-
-            {/* ULEZ Warning */}
             {aiData.ulezRisk === 'true' && isHeathrow && !isSoldOut && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
                 <AlertCircle className="w-3 h-3" /> ULEZ Zone Warning
               </div>
             )}
-
-            {/* Business Travel */}
             {aiData.isCorporate === 'true' && !isSoldOut && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-500/10 text-slate-400 border border-slate-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
                 <ShieldCheck className="w-3 h-3" /> VAT Receipt Ready
               </div>
             )}
-
-            {/* Oversized Luggage */}
             {aiData.hasOversizedLuggage === 'true' && isMeetGreet && !isSoldOut && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
                 <Footprints className="w-3 h-3" /> Best for Large Items
               </div>
             )}
-            
-            {/* Height Warning */}
             {aiData.hasHeightRisk === 'true' && !isSoldOut && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
                 <AlertCircle className="w-3 h-3" /> Max Height {isHeathrow ? '2.0m' : '2.1m'}
               </div>
             )}
-
-            {/* Red-Eye Badge */}
             {aiData.isRedEye === 'true' && isMeetGreet && !isSoldOut && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
                 <Clock className="w-3 h-3 text-indigo-400" /> Swift Red-Eye Entry
               </div>
             )}
-
-            {/* Pet Friendly */}
             {aiData.hasPet === 'true' && isMeetGreet && !isSoldOut && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
                 <Sparkles className="w-3 h-3" /> Pet Friendly Selection
@@ -230,13 +230,13 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
               £{totalPrice.toFixed(2)}
             </p>
             <p className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-widest mb-6 lg:mb-8 ${isPremium ? 'text-blue-400' : 'text-blue-600'}`}>
-              {isSoldOut ? 'Sold Out' : `Just £${dailyRate.toFixed(2)} / Day`}
+              {isSoldOut ? 'Sold Out' : `Averaging £${avgDailyRate.toFixed(2)} / Day`}
             </p>
           </div>
           
           <button 
             disabled={isSoldOut}
-            onClick={() => handleBooking(option, dailyRate)}
+            onClick={() => handleBooking(option, totalPrice)}
             className={`group w-full h-12 sm:h-14 font-black rounded-xl flex items-center justify-center gap-2 sm:gap-3 uppercase tracking-[0.15em] text-[10px] sm:text-xs transition-all duration-300 active:scale-95 shadow-2xl ${
               isSoldOut 
                 ? 'bg-slate-200/10 text-slate-500 cursor-not-allowed' 
@@ -268,7 +268,6 @@ function ResultsContent() {
   const serviceType = searchParams.get("type") || "meet-greet"; 
   const isHeathrow = airport.includes("Heathrow");
 
-  // --- 🟢 FIXED: THE AI DATA BUNDLE ---
   const aiData = useMemo(() => ({
     isLastMinute: searchParams.get("isLastMinute"),
     ulezRisk: searchParams.get("ulezRisk"),
@@ -312,17 +311,21 @@ function ResultsContent() {
     getLiveRates();
   }, [serviceType, airport, dropoff, pickup, isHeathrow]);
 
+  // 🟢 FIXED PRICING BUG: Math.abs and + 1 ensures day 1 and 2 calculate correctly
   const duration = useMemo(() => {
     if (!dropoff || !pickup) return 1;
-    const diff = new Date(pickup).getTime() - new Date(dropoff).getTime();
-    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-    return days <= 0 ? 1 : days;
+    const start = new Date(dropoff);
+    const end = new Date(pickup);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return totalDays <= 0 ? 1 : totalDays;
   }, [dropoff, pickup]);
 
-  const handleBooking = (option: any, rate: number) => {
+  const handleBooking = (option: any, finalPrice: number) => {
     const query = new URLSearchParams(searchParams.toString());
     query.set('type', option.name);
-    query.set('price', rate.toString());
+    query.set('price', finalPrice.toString());
+    query.set('companyId', option.id); 
     router.push(`/checkout?${query.toString()}`);
   };
 
@@ -337,7 +340,6 @@ function ResultsContent() {
   return (
     <div className="max-w-[1000px] mx-auto px-4 py-6 md:py-8">
       
-      {/* 🟢 AERO CONCIERGE BANNER */}
       <div className="bg-[#0B1121] border border-blue-900/40 rounded-[2.5rem] p-5 md:p-7 flex flex-col sm:flex-row items-center gap-6 mb-10 shadow-2xl relative overflow-hidden">
         <div className="absolute -right-20 -top-20 w-64 h-64 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
         <AeroAvatar />
@@ -432,11 +434,22 @@ function ResultsLayout() {
 
   // --- MODAL STATE ---
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editAirport, setEditAirport] = useState(searchParams.get("airport") || "Luton (LTN)");
-  const [editDropDate, setEditDropDate] = useState(searchParams.get("dropoffDate") || "");
-  const [editDropTime, setEditDropTime] = useState(searchParams.get("dropoffTime") || "10:00");
-  const [editPickDate, setEditPickDate] = useState(searchParams.get("pickupDate") || "");
-  const [editPickTime, setEditPickTime] = useState(searchParams.get("pickupTime") || "10:00");
+  const [editAirport, setEditAirport] = useState("");
+  const [editDropDate, setEditDropDate] = useState("");
+  const [editDropTime, setEditDropTime] = useState("");
+  const [editPickDate, setEditPickDate] = useState("");
+  const [editPickTime, setEditPickTime] = useState("");
+
+  // 🟢 FIXED MODAL MEMORY: Always populates with current URL params when opened
+  useEffect(() => {
+    if (isEditModalOpen) {
+      setEditAirport(searchParams.get("airport") || "Luton (LTN)");
+      setEditDropDate(searchParams.get("dropoffDate") || "");
+      setEditDropTime(searchParams.get("dropoffTime") || "10:00");
+      setEditPickDate(searchParams.get("pickupDate") || "");
+      setEditPickTime(searchParams.get("pickupTime") || "10:00");
+    }
+  }, [isEditModalOpen, searchParams]);
 
   const handleUpdateSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -476,50 +489,53 @@ function ResultsLayout() {
 
       {isEditModalOpen && (
         <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex items-end sm:items-center justify-center sm:p-4 animate-in fade-in">
-          <div className="bg-white border border-slate-200 w-full max-w-lg rounded-t-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 md:p-12 shadow-2xl animate-in slide-in-from-bottom-8 relative">
+          <div className="bg-[#0B1121] border border-slate-800 w-full max-w-lg rounded-t-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 md:p-12 shadow-2xl animate-in slide-in-from-bottom-8 relative">
             <div className="flex justify-between items-center mb-8">
               <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Modify Search</h2>
-                <p className="text-[10px] font-black uppercase text-slate-400 mt-2 tracking-widest">Aero is ready to re-scan</p>
+                <h2 className="text-2xl font-black text-white tracking-tight">Modify Search</h2>
+                <p className="text-[10px] font-black uppercase text-blue-500 mt-2 tracking-[0.2em]">Aero is ready to re-scan</p>
               </div>
-              <button onClick={() => setIsEditModalOpen(false)} className="p-2.5 bg-slate-100 text-slate-400 rounded-full hover:text-slate-900 transition-colors">
+              <button onClick={() => setIsEditModalOpen(false)} className="p-2.5 bg-slate-800/80 text-slate-400 rounded-full hover:text-white transition-colors border border-white/5">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleUpdateSearch} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Departure Airport</label>
-                <select value={editAirport} onChange={(e)=>setEditAirport(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 font-bold text-slate-900 outline-none focus:border-blue-500">
-                  <option value="Luton (LTN)">Luton Airport (LTN)</option>
-                  <option value="Heathrow (LHR)">Heathrow Airport (LHR)</option>
-                </select>
+                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Departure Airport</label>
+                <div className="relative">
+                  <select value={editAirport} onChange={(e)=>setEditAirport(e.target.value)} className="w-full appearance-none bg-[#0f172a] border border-slate-700 rounded-2xl px-5 py-4 font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer">
+                    <option value="Luton (LTN)">Luton Airport (LTN)</option>
+                    <option value="Heathrow (LHR)">Heathrow Airport (LHR)</option>
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 pointer-events-none" />
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 border-t border-slate-50 pt-6">
+              <div className="grid grid-cols-2 gap-4 border-t border-slate-800 pt-6">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Drop-off Date</label>
-                  <input type="date" value={editDropDate} onChange={(e)=>setEditDropDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-4 font-bold text-slate-900" required />
+                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Drop-off Date</label>
+                  <input type="date" value={editDropDate} onChange={(e)=>setEditDropDate(e.target.value)} className="w-full bg-[#0f172a] border border-slate-700 rounded-2xl px-4 py-4 font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50" required />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Time</label>
-                  <input type="time" value={editDropTime} onChange={(e)=>setEditDropTime(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-4 font-bold text-slate-900" required />
+                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Time</label>
+                  <input type="time" value={editDropTime} onChange={(e)=>setEditDropTime(e.target.value)} className="w-full bg-[#0f172a] border border-slate-700 rounded-2xl px-4 py-4 font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50" required />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Pick-up Date</label>
-                  <input type="date" min={editDropDate} value={editPickDate} onChange={(e)=>setEditPickDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-4 font-bold text-slate-900" required />
+                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Pick-up Date</label>
+                  <input type="date" min={editDropDate} value={editPickDate} onChange={(e)=>setEditPickDate(e.target.value)} className="w-full bg-[#0f172a] border border-slate-700 rounded-2xl px-4 py-4 font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50" required />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Time</label>
-                  <input type="time" value={editPickTime} onChange={(e)=>setEditPickTime(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-4 font-bold text-slate-900" required />
+                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Time</label>
+                  <input type="time" value={editPickTime} onChange={(e)=>setEditPickTime(e.target.value)} className="w-full bg-[#0f172a] border border-slate-700 rounded-2xl px-4 py-4 font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50" required />
                 </div>
               </div>
 
-              <button type="submit" className="w-full mt-6 py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl uppercase tracking-widest transition-all active:scale-95 shadow-xl shadow-blue-600/30">
-                Update Search
+              <button type="submit" className="w-full mt-8 py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-[1.2rem] uppercase tracking-widest transition-all active:scale-95 shadow-[0_15px_30px_-5px_rgba(37,99,235,0.4)]">
+                Update Search & Recalculate
               </button>
             </form>
           </div>

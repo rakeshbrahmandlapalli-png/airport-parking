@@ -47,6 +47,11 @@ model companies {
   category             String
   luton_price          Decimal    @db.Decimal
   heathrow_price       Decimal    @db.Decimal
+  
+  // 🟢 NEW: Dynamic Pricing Tiers controlled from the Admin Dashboard
+  tier1_extra_rate     Decimal?   @default(1.99) @db.Decimal // e.g., Days 2 to 6
+  tier2_extra_rate     Decimal?   @default(2.99) @db.Decimal // e.g., Days 7+
+
   is_sold_out          Boolean?   @default(false)
   updated_at           DateTime?  @default(now()) @db.Timestamptz(6)
   is_recommended       Boolean?   @default(false)
