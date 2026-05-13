@@ -34,7 +34,9 @@ export default function AdminDashboard() {
     full_name: "", email: "", phone_number: "", license_plate: "", 
     car_make: "", car_color: "", flight_number: "", dropoff_date: "", 
     dropoff_time: "", pickup_date: "", pickup_time: "", total_price: 0, 
-    status: "confirmed", airport: "Luton (LTN)", terminal: "Main Terminal", company_id: "ALL"
+    status: "confirmed", airport: "Luton (LTN)", terminal: "Main Terminal", 
+    company_id: "ALL",
+    service_type: "Premium Meet & Greet" // ✅ FIX: matches DB value
   };
   const [newBooking, setNewBooking] = useState<any>(defaultNewBooking);
 
@@ -92,7 +94,8 @@ export default function AdminDashboard() {
           license_plate: editingBooking.license_plate, car_make: editingBooking.car_make, car_color: editingBooking.car_color,
           flight_number: editingBooking.flight_number, dropoff_date: editingBooking.dropoff_date, dropoff_time: editingBooking.dropoff_time,
           pickup_date: editingBooking.pickup_date, pickup_time: editingBooking.pickup_time, total_price: editingBooking.total_price,
-          status: editingBooking.status, airport: editingBooking.airport, terminal: editingBooking.terminal
+          status: editingBooking.status, airport: editingBooking.airport, terminal: editingBooking.terminal,
+          service_type: editingBooking.service_type // ✅ FIX: include service_type in updates
         })
         .eq('id', editingBooking.id);
 
@@ -186,9 +189,9 @@ export default function AdminDashboard() {
     });
   }, [bookings, searchTerm, airportFilter, statusFilter, timeFilter, companyFilter, todayStr, companies]);
 
-  // 🟢 EXPORT TO EXCEL / CSV
+  // EXPORT TO CSV
   const exportToCSV = () => {
-    let csv = "Booking Ref,Customer Name,Email,Phone,License Plate,Car Make,Color,Airport,Terminal,Flight No,Drop-off Date,Drop-off Time,Pick-up Date,Pick-up Time,Total Paid (£),Status,Assigned Partner\n";
+    let csv = "Booking Ref,Customer Name,Email,Phone,License Plate,Car Make,Color,Airport,Terminal,Flight No,Drop-off Date,Drop-off Time,Pick-up Date,Pick-up Time,Total Paid (£),Status,Service Type,Assigned Partner\n";
     
     filteredBookings.forEach(b => {
       const partner = getCompanyName(b.company_id);
@@ -197,7 +200,7 @@ export default function AdminDashboard() {
         b.license_plate, b.car_make, b.car_color,
         b.airport, b.terminal, b.flight_number,
         b.dropoff_date, b.dropoff_time, b.pickup_date, b.pickup_time,
-        b.total_price, b.status, partner
+        b.total_price, b.status, b.service_type, partner
       ].map(val => `"${String(val || '').replace(/"/g, '""')}"`).join(',');
       
       csv += row + "\n";
@@ -208,7 +211,6 @@ export default function AdminDashboard() {
     const a = document.createElement('a');
     a.setAttribute('href', url);
     
-    // Name the file based on the filter used
     let filenameName = "All_Bookings";
     if (companyFilter === "DIRECT") filenameName = "Direct_Bookings";
     else if (companyFilter !== "ALL") filenameName = getCompanyName(companyFilter).replace(/\s+/g, '_');
@@ -303,9 +305,8 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* 🟢 MODERN ADVANCED FILTER RIBBON */}
+        {/* ADVANCED FILTER RIBBON */}
         <div className="bg-[#0f172a]/80 backdrop-blur-xl rounded-[2rem] border border-slate-700/50 shadow-2xl p-3 mb-6 mx-2 md:mx-0 flex flex-col xl:flex-row xl:items-center gap-3">
-          {/* 🟢 FIXED: Auto-fill hack added to Search Box */}
           <div className="relative flex-1 group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-400 transition-colors z-10" />
             <input 
@@ -318,7 +319,6 @@ export default function AdminDashboard() {
             />
           </div>
           
-          {/* Dropdown Filters */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full xl:w-auto shrink-0">
             <div className="relative">
               <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 z-10" />
@@ -355,7 +355,6 @@ export default function AdminDashboard() {
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-500 pointer-events-none" />
             </div>
-
           </div>
         </div>
 
@@ -426,6 +425,9 @@ export default function AdminDashboard() {
                       <td className="px-8 py-6">
                         {getStatusBadge(b.status)}
                         <div className="mt-2 text-[10px] font-black text-white">£{Number(b.total_price || 0).toFixed(2)}</div>
+                        <div className="mt-1 text-[9px] font-black uppercase tracking-widest text-slate-500">
+                          {b.service_type?.replace(/_/g, ' ') || 'N/A'}
+                        </div>
                         <div className="mt-1.5 flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-slate-500">
                           <Building2 className="w-3 h-3" /> {getCompanyName(b.company_id)}
                         </div>
@@ -447,6 +449,7 @@ export default function AdminDashboard() {
         </div>
       </main>
 
+      {/* MOBILE NAV */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] px-4 pb-6 pt-2 bg-gradient-to-t from-[#0B1121] via-[#0B1121]/90 to-transparent pointer-events-none">
         <nav className="max-w-md mx-auto bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-2xl h-16 flex items-center justify-around px-2 shadow-2xl pointer-events-auto">
           <Link href="/admin" className="flex flex-col items-center justify-center flex-1 gap-1 text-blue-500"><LayoutDashboard className="w-5 h-5" /><span className="text-[8px] font-black uppercase tracking-widest">Live</span></Link>
@@ -457,7 +460,7 @@ export default function AdminDashboard() {
         </nav>
       </div>
 
-      {/* 🟢 EDIT BOOKING MODAL */}
+      {/* EDIT BOOKING MODAL */}
       {editingBooking && (
         <div className="fixed inset-0 bg-[#0B1121]/95 backdrop-blur-xl z-[300] flex items-center justify-center p-4 sm:p-6">
           <div className="bg-[#0f172a] border border-slate-800 w-full max-w-4xl rounded-[2.5rem] max-h-[95vh] overflow-hidden shadow-2xl relative flex flex-col">
@@ -545,7 +548,18 @@ export default function AdminDashboard() {
 
               <div>
                 <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-4 border-b border-slate-800 pb-2">Status & Billing</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-500 block mb-2 tracking-widest ml-1">Service Type</label>
+                    <div className="relative">
+                      {/* ✅ FIX: service_type field added to edit modal */}
+                      <select value={editingBooking.service_type || "Premium Meet & Greet"} onChange={(e) => setEditingBooking({...editingBooking, service_type: e.target.value})} className="w-full appearance-none !bg-[#0B1121] border border-slate-800 rounded-xl px-5 py-3.5 !text-white font-bold outline-none focus:border-blue-500 cursor-pointer">
+                        <option value="Premium Meet & Greet">Premium Meet & Greet</option>
+                        <option value="Self Park">Self Park</option>
+                      </select>
+                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                    </div>
+                  </div>
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-500 block mb-2 tracking-widest ml-1">Current Status</label>
                     <div className="relative">
@@ -577,7 +591,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* 🟢 MANUAL BOOKING MODAL */}
+      {/* MANUAL BOOKING MODAL */}
       {showManualModal && (
         <div className="fixed inset-0 bg-[#0B1121]/95 backdrop-blur-xl z-[300] flex items-center justify-center p-4 sm:p-6">
           <div className="bg-[#0f172a] border border-slate-800 w-full max-w-4xl rounded-[2.5rem] max-h-[95vh] overflow-hidden shadow-2xl relative flex flex-col">
@@ -665,7 +679,20 @@ export default function AdminDashboard() {
 
               <div>
                 <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-4 border-b border-slate-800 pb-2">Admin Configuration</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  
+                  {/* ✅ FIX: Service Type field added to manual booking modal */}
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-500 block mb-2 tracking-widest ml-1">Service Type</label>
+                    <div className="relative">
+                      <select value={newBooking.service_type} onChange={(e) => setNewBooking({...newBooking, service_type: e.target.value})} className="w-full appearance-none !bg-[#0B1121] border border-slate-800 rounded-xl px-5 py-3.5 !text-white font-bold outline-none focus:border-blue-500 cursor-pointer">
+                        <option value="Premium Meet & Greet">Premium Meet & Greet</option>
+                        <option value="Self Park">Self Park</option>
+                      </select>
+                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                    </div>
+                  </div>
+
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-500 block mb-2 tracking-widest ml-1">Assign to Partner</label>
                     <div className="relative">
@@ -678,6 +705,7 @@ export default function AdminDashboard() {
                       <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                     </div>
                   </div>
+
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-500 block mb-2 tracking-widest ml-1">Status</label>
                     <div className="relative">
@@ -690,10 +718,12 @@ export default function AdminDashboard() {
                       <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                     </div>
                   </div>
+
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-500 block mb-2 tracking-widest ml-1">Total Charged (£)</label>
                     <input type="number" step="0.01" value={newBooking.total_price} onChange={(e) => setNewBooking({...newBooking, total_price: parseFloat(e.target.value) || 0})} className="w-full !bg-[#0B1121] border border-slate-800 rounded-xl px-5 py-3.5 !text-white font-bold outline-none focus:border-emerald-500 shadow-[0_0_0_1000px_#0B1121_inset] [-webkit-text-fill-color:white]" />
                   </div>
+
                 </div>
               </div>
 
