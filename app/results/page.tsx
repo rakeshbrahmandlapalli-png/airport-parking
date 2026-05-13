@@ -149,7 +149,7 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
               <BadgeIcon className="w-3.5 h-3.5" /> Terminal Verified
             </div>
             <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-white/5 text-emerald-400 border border-emerald-400/20' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'}`}>
-              <Tag className="w-3.5 h-3.5" /> {isMeetGreet ? "£5 Fee Included" : "No Entry Fees"}
+              <Tag className="w-3.5 h-3.5" /> {isMeetGreet ? "£10 Fee Exclued" : "No Entry Fees"}
             </div>
           </div>
         </div>

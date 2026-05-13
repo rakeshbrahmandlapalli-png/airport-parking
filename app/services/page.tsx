@@ -75,7 +75,7 @@ export default function ServicesPage() {
                   <div className="w-14 h-14 shrink-0 bg-white text-blue-600 rounded-2xl flex items-center justify-center font-black text-xl shadow-lg border border-slate-100 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">1</div>
                   <div className="pt-2">
                     <h3 className="text-xl font-black text-slate-900 mb-3">Head to Terminal Car Park 1</h3>
-                    <p className="text-slate-500 font-medium leading-relaxed text-sm md:text-base">Follow the signs for London Luton Airport. As you approach, follow the specific signs for <strong className="text-slate-900">Terminal Car Park 1</strong>. Take a ticket at the barrier (we cover the exit fee).</p>
+                    <p className="text-slate-500 font-medium leading-relaxed text-sm md:text-base">Follow the signs for London Luton Airport. As you approach, follow the specific signs for <strong className="text-slate-900">Terminal Car Park 1</strong>. Take a ticket at the barrier (we don't cover the exit fee).</p>
                   </div>
                 </div>
 

@@ -197,3 +197,52 @@ export const sendAmendmentAlerts = async (booking: any, company: any) => {
     console.error("Failed to send amendment alerts:", error);
   }
 };
+
+/**
+ * 🟢 NEW: Automated 5-Star Review Request Email
+ * Call this from the dashboard when a booking is marked as 'Completed'
+ */
+export const sendReviewRequest = async (customerEmail: string, customerName: string, bookingRef: string) => {
+  try {
+    await resend.emails.send({
+      from: "AeroPark Direct <info@aeroparkdirect.co.uk>",
+      to: customerEmail,
+      subject: `Welcome back! How was your parking experience? (${bookingRef})`,
+      html: `
+        <div style="font-family: -apple-system, system-ui, sans-serif; max-width: 600px; margin: auto; padding: 30px; background-color: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0;">
+          
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #0f172a; margin: 0; font-size: 24px; font-weight: 900;">AEROPARK<span style="color: #3b82f6;">DIRECT</span></h1>
+          </div>
+
+          <div style="background-color: #ffffff; padding: 40px 30px; border-radius: 20px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); text-align: center;">
+            <h2 style="color: #0f172a; margin-top: 0;">Welcome Home, ${customerName.split(' ')[0]}! ✈️</h2>
+            <p style="color: #475569; line-height: 1.6; font-size: 15px;">We hope you had a fantastic trip and a smooth journey back.</p>
+            <p style="color: #475569; line-height: 1.6; font-size: 15px;">At <strong>AeroPark Direct</strong>, we are a growing business, and your feedback means the world to us. Would you mind taking 60 seconds to tell us how we did?</p>
+            
+            <div style="margin: 40px 0;">
+              <a href="https://uk.trustpilot.com/evaluate/aeroparkdirect.co.uk" 
+                 style="background-color: #059669; color: white; padding: 18px 32px; text-decoration: none; border-radius: 16px; font-weight: 900; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: inline-block; box-shadow: 0 10px 15px -3px rgba(5, 150, 105, 0.3);">
+                 Leave a 5-Star Review
+              </a>
+            </div>
+
+            <div style="background-color: #f1f5f9; padding: 20px; border-radius: 12px; margin-top: 20px;">
+              <p style="margin: 0; font-size: 12px; color: #64748b; line-height: 1.5;">
+                If you had any issues at all, please reply directly to this email. Our management team reads every reply and wants to ensure you are 100% satisfied.
+              </p>
+            </div>
+          </div>
+          
+          <div style="text-align: center; margin-top: 30px;">
+            <p style="font-size: 11px; color: #94a3b8; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">Ref: ${bookingRef} | AeroPark Direct Ltd</p>
+          </div>
+        </div>
+      `,
+    });
+    return { success: true };
+  } catch (error) {
+    console.error("Review Email Error:", error);
+    return { success: false, error };
+  }
+};
