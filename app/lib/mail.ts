@@ -2,6 +2,12 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+const formatEmailDate = (dateStr: string) => {
+  if (!dateStr) return "TBC";
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }); // e.g., "Wed 13 May"
+};
+
 /**
  * Sends a highly polished, mobile-responsive booking confirmation or update.
  * Pulls dynamic arrival/return instructions from the partner company profile.
@@ -20,9 +26,20 @@ export const sendBookingReceipt = async (booking: any, company: any, isAmendment
       ? company?.on_return_ltn 
       : company?.on_return_lhr;
 
-    // 3. Setup Navigation Link
+    // 3. Setup Navigation & Dates
     const mapsQuery = encodeURIComponent(`${booking.airport} ${company?.postcode || ''}`);
-    const mapsLink = `https://www.google.com/maps/search/?api=1&query=$${mapsQuery}`;
+    const mapsLink = `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
+    
+    // 🟢 DUAL PHONE NUMBER LOGIC
+    const phone1 = company?.phone_number || '07700 900 123';
+    const phone2 = company?.phone_number_2 || '';
+    
+    // Clean spaces for the actual click links
+    const phone1Link = phone1.replace(/\s+/g, '');
+    const phone2Link = phone2.replace(/\s+/g, '');
+    
+    const dropDate = formatEmailDate(booking.dropoff_date || booking.dropDate);
+    const pickDate = formatEmailDate(booking.pickup_date || booking.pickDate);
 
     // 4. Dynamic Text based on whether it's a new booking or an update
     const statusText = isAmendment ? "Updated" : "Confirmed";
@@ -44,10 +61,11 @@ export const sendBookingReceipt = async (booking: any, company: any, isAmendment
           @media only screen and (max-width: 600px) {
             .main-wrapper { padding: 10px !important; }
             .container { width: 100% !important; border-radius: 12px !important; border: none !important; }
-            .content-pad { padding: 30px 20px !important; }
-            .ref-code { font-size: 32px !important; letter-spacing: 2px !important; }
+            .content-pad { padding: 25px 20px !important; }
+            .ref-code { font-size: 36px !important; letter-spacing: 2px !important; }
             .mobile-stack { display: block !important; width: 100% !important; padding: 0 !important; margin-bottom: 20px !important; box-sizing: border-box !important; }
             .hide-border-mobile { border-bottom: 1px dashed #cbd5e1 !important; padding-bottom: 20px !important; }
+            .btn-phone { display: block !important; width: 100% !important; margin-right: 0 !important; margin-bottom: 10px !important; text-align: center !important; box-sizing: border-box !important; }
           }
         </style>
       </head>
@@ -102,34 +120,42 @@ export const sendBookingReceipt = async (booking: any, company: any, isAmendment
                           </td>
                           <td class="mobile-stack" width="50%" valign="top" style="padding-left: 10px;">
                             <p style="margin: 0; font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 900;">Service & Flight</p>
-                            <p style="margin: 6px 0 0 0; font-size: 14px; font-weight: 700; color: #334155;">${booking.flight_number || booking.flightNumber || 'TBC'}<br>${booking.service_type || booking.parkingType}</p>
+                            <p style="margin: 6px 0 0 0; font-size: 14px; font-weight: 700; color: #334155;">${booking.flight_number || booking.flightNumber || 'TBC'}<br>${booking.service_type || booking.parkingType || 'Meet & Greet'}</p>
                           </td>
                         </tr>
                       </table>
                     </div>
                     
-                    <div style="margin-top: 30px; background-color: #0f172a; border: 1px solid #1e293b; padding: 24px; border-radius: 16px;">
-                      <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                        <tr>
-                          <td width="20" valign="top" style="padding-top: 2px;">
-                            <div style="width: 8px; height: 8px; background-color: #10b981; border-radius: 50%; box-shadow: 0 0 8px #10b981;"></div>
-                          </td>
-                          <td>
-                            <p style="margin: 0; font-size: 10px; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px;">Aero Concierge System</p>
-                            
-                            <p style="margin: 0 0 10px 0; font-size: 13px; font-weight: 900; color: #3b82f6; text-transform: uppercase;">Arrival Instructions:</p>
-                            <p style="margin: 0 0 20px 0; font-size: 14px; color: #e2e8f0; line-height: 1.6; white-space: pre-line;">${arrivalInstructions || 'Please call the driver 20 minutes before arrival.'}</p>
+                    <div style="background-color: #0f172a; border-radius: 20px; padding: 24px; margin-top: 30px; border: 1px solid #1e293b;">
+                      <h3 style="color: #ffffff; font-size: 14px; font-weight: 900; margin: 0 0 20px 0; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #334155; padding-bottom: 15px;">Aero Concierge System</h3>
 
-                            <p style="margin: 0 0 10px 0; font-size: 13px; font-weight: 900; color: #3b82f6; text-transform: uppercase;">On Your Return:</p>
-                            <p style="margin: 0; font-size: 14px; color: #e2e8f0; line-height: 1.6; white-space: pre-line;">${returnInstructions || 'Instructions will be provided at the terminal.'}</p>
-                          </td>
-                        </tr>
-                      </table>
+                      <div style="background-color: #1e293b; border-left: 4px solid #3b82f6; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+                        <p style="margin: 0 0 8px 0; font-size: 11px; font-weight: 900; color: #3b82f6; text-transform: uppercase; letter-spacing: 1px;">Inbound • ${dropDate} @ ${booking.dropoff_time || 'TBC'}</p>
+                        <p style="margin: 0 0 16px 0; font-size: 14px; color: #f8fafc; line-height: 1.6;">${arrivalInstructions || 'Please call the driver 20 minutes before arrival to confirm your exact arrival time.'}</p>
+                        
+                        <div style="border-top: 1px solid #334155; padding-top: 16px;">
+                          <p style="margin: 0 0 10px 0; font-size: 11px; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;">Dispatch Numbers</p>
+                          <a href="tel:${phone1Link}" class="btn-phone" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 8px; font-weight: 900; font-size: 14px; margin-right: 8px; margin-bottom: 8px;">📞 ${phone1}</a>
+                          ${phone2 ? `<a href="tel:${phone2Link}" class="btn-phone" style="display: inline-block; background-color: #334155; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 8px; font-weight: 900; font-size: 14px; border: 1px solid #475569; margin-bottom: 8px;">📞 ${phone2}</a>` : ''}
+                        </div>
+                      </div>
+
+                      <div style="background-color: #1e293b; border-left: 4px solid #10b981; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+                        <p style="margin: 0 0 8px 0; font-size: 11px; font-weight: 900; color: #10b981; text-transform: uppercase; letter-spacing: 1px;">Return • ${pickDate} @ ${booking.pickup_time || 'TBC'}</p>
+                        <p style="margin: 0 0 16px 0; font-size: 14px; color: #f8fafc; line-height: 1.6;">${returnInstructions || 'Instructions for vehicle collection will be provided at the terminal or via phone.'}</p>
+
+                        <div style="border-top: 1px solid #334155; padding-top: 16px;">
+                          <p style="margin: 0 0 10px 0; font-size: 11px; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;">Dispatch Numbers</p>
+                          <a href="tel:${phone1Link}" class="btn-phone" style="display: inline-block; background-color: #10b981; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 8px; font-weight: 900; font-size: 14px; margin-right: 8px; margin-bottom: 8px;">📞 ${phone1}</a>
+                          ${phone2 ? `<a href="tel:${phone2Link}" class="btn-phone" style="display: inline-block; background-color: #334155; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 8px; font-weight: 900; font-size: 14px; border: 1px solid #475569; margin-bottom: 8px;">📞 ${phone2}</a>` : ''}
+                        </div>
+                      </div>
+
+                      <a href="${mapsLink}" style="background-color: #334155; color: #ffffff; text-decoration: none; padding: 16px 0; border-radius: 12px; font-weight: 900; font-size: 12px; display: block; text-align: center; text-transform: uppercase; letter-spacing: 1px;">📍 View Airport Directions</a>
                     </div>
-                    
-                    <div style="margin-top: 40px; text-align: center;">
-                      <a href="${mapsLink}" style="background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 18px 36px; border-radius: 16px; font-weight: 900; font-size: 13px; display: block; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 10px 15px rgba(37, 99, 235, 0.3); margin-bottom: 15px;">Navigate to Airport</a>
-                      <a href="https://aeroparkdirect.co.uk/manage" style="font-size: 12px; color: #64748b; text-decoration: none; font-weight: 700;">Manage Your Trip Online</a>
+
+                    <div style="margin-top: 30px; text-align: center;">
+                      <a href="https://aeroparkdirect.co.uk/manage" style="font-size: 13px; color: #64748b; text-decoration: underline; font-weight: 700;">Manage Your Trip Online</a>
                     </div>
 
                   </td>
@@ -182,9 +208,9 @@ export const sendAmendmentAlerts = async (booking: any, company: any) => {
           <div style="background: #f8fafc; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; margin-top: 20px;">
             <p><strong>Ref:</strong> ${booking.booking_ref}</p>
             <p><strong>Vehicle:</strong> ${booking.license_plate || booking.licensePlate}</p>
-            <p style="color: #2563eb;"><strong>New Drop-off:</strong> ${new Date(booking.dropoff_date).toLocaleDateString()}</p>
-            <p style="color: #2563eb;"><strong>New Return:</strong> ${new Date(booking.pickup_date).toLocaleDateString()}</p>
-            <p><strong>Provider:</strong> ${company?.name || 'N/A'}</p>
+            <p style="color: #2563eb;"><strong>New Drop-off:</strong> ${new Date(booking.dropoff_date).toLocaleDateString()} @ ${booking.dropoff_time}</p>
+            <p style="color: #2563eb;"><strong>New Return:</strong> ${new Date(booking.pickup_date).toLocaleDateString()} @ ${booking.pickup_time}</p>
+            <p><strong>Provider:</strong> ${company?.name || 'Aero Direct'}</p>
           </div>
         </div>
       `
@@ -223,7 +249,7 @@ export const sendReviewRequest = async (customerEmail: string, customerName: str
             <div style="margin: 40px 0;">
               <a href="https://uk.trustpilot.com/evaluate/aeroparkdirect.co.uk" 
                  style="background-color: #059669; color: white; padding: 18px 32px; text-decoration: none; border-radius: 16px; font-weight: 900; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: inline-block; box-shadow: 0 10px 15px -3px rgba(5, 150, 105, 0.3);">
-                 Leave a 5-Star Review
+                Leave a 5-Star Review
               </a>
             </div>
 

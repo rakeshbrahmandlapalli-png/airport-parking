@@ -46,19 +46,19 @@ function AeroAvatar({ size = "md", thinking = false }: { size?: "sm" | "md" | "l
 function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: any) {
   const [activeTab, setActiveTab] = useState('overview');
   
-  // 🟢 DYNAMIC PRICING MATH (Pulls directly from your Companies DB)
+  // 🟢 DYNAMIC PRICING MATH (FIXED: Now uses split tier rates)
   const baseRate = isHeathrow ? Number(option.heathrow_price || 0) : Number(option.luton_price || 0);
-  const tier1Rate = Number(option.tier1_extra_rate ?? 1.99);
-  const tier2Rate = Number(option.tier2_extra_rate ?? 2.99);
+  const tier1Rate = isHeathrow ? Number(option.lhr_tier1_extra_rate ?? 1.99) : Number(option.ltn_tier1_extra_rate ?? 1.99);
+  const tier2Rate = isHeathrow ? Number(option.lhr_tier2_extra_rate ?? 2.99) : Number(option.ltn_tier2_extra_rate ?? 2.99);
 
   let totalPrice = baseRate;
   if (duration > 1) {
     const extraDays = duration - 1;
-    const tier1Days = Math.min(extraDays, 5); // Days 2 to 6
+    const tier1Days = Math.min(extraDays, 5); 
     totalPrice += (tier1Days * tier1Rate);
     
     if (extraDays > 5) {
-      const tier2Days = extraDays - 5; // Days 7 and beyond
+      const tier2Days = extraDays - 5; 
       totalPrice += (tier2Days * tier2Rate);
     }
   }
@@ -68,10 +68,10 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
   const isSoldOut = isHeathrow ? option.lhr_sold_out : option.ltn_sold_out;
   const isPremium = (isHeathrow ? option.lhr_featured : option.ltn_featured) || option.name.toLowerCase().includes("24/7");
 
-  const cardBg = isPremium ? 'bg-gradient-to-br from-[#0B1121] to-[#0f172a]' : (isSoldOut ? 'bg-slate-50' : 'bg-white');
-  const stubBg = isPremium ? 'bg-[#0f172a]/80' : (isSoldOut ? 'bg-slate-100/50' : 'bg-slate-50/80');
-  const borderClass = isPremium ? 'border-slate-800' : (isSoldOut ? 'border-slate-200' : 'border-slate-200');
-  const textPrimary = isPremium ? 'text-white' : (isSoldOut ? 'text-slate-400' : 'text-slate-900');
+  const cardBg = isPremium ? 'bg-gradient-to-br from-[#0B1120] to-[#0F1523]' : (isSoldOut ? 'bg-[#060A14]/50' : 'bg-[#0F1523]');
+  const stubBg = isPremium ? 'bg-[#0F1523]/80' : (isSoldOut ? 'bg-[#060A14]/30' : 'bg-[#060A14]/60');
+  const borderClass = isPremium ? 'border-slate-700/50' : (isSoldOut ? 'border-slate-800/50' : 'border-slate-800');
+  const textPrimary = isPremium ? 'text-white' : (isSoldOut ? 'text-slate-500' : 'text-slate-100');
   
   const BadgeIcon = option.category?.toLowerCase().includes('bus') || option.category?.toLowerCase().includes('ride') ? Bus : option.category?.toLowerCase().includes('hotel') ? BedDouble : Footprints;
 
@@ -86,9 +86,9 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
   const isParkRide = option.category?.toLowerCase().includes('ride');
 
   return (
-    <div className={`relative rounded-[2rem] overflow-hidden flex flex-col lg:flex-row transition-all duration-500 group ${cardBg} border ${borderClass} ${isPremium ? 'shadow-[0_20px_40px_-15px_rgba(15,23,42,0.8)] lg:hover:shadow-[0_30px_60px_-15px_rgba(37,99,235,0.3)] lg:hover:border-blue-900/80 transform lg:-translate-x-2 lg:w-[calc(100%+16px)]' : (isSoldOut ? 'opacity-80 grayscale-[20%]' : 'shadow-lg lg:hover:shadow-xl lg:hover:border-blue-200 lg:hover:-translate-y-1')}`}>
+    <div className={`relative rounded-[2rem] overflow-hidden flex flex-col lg:flex-row transition-all duration-500 group ${cardBg} border ${borderClass} ${isPremium ? 'shadow-[0_20px_40px_-15px_rgba(0,0,0,0.8)] lg:hover:shadow-[0_30px_60px_-15px_rgba(37,99,235,0.2)] lg:hover:border-blue-500/50 transform lg:-translate-x-2 lg:w-[calc(100%+16px)]' : (isSoldOut ? 'opacity-70 grayscale-[50%]' : 'shadow-2xl lg:hover:shadow-blue-900/20 lg:hover:border-slate-600 lg:hover:-translate-y-1')}`}>
       {isPremium && !isSoldOut && (
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 z-20"></div>
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 via-indigo-500 to-emerald-500 z-20"></div>
       )}
 
       <div className="flex-1 p-6 md:p-8 lg:p-10 relative z-10 flex flex-col">
@@ -96,42 +96,42 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
           
           <div className="flex flex-wrap gap-2 mb-4">
             {aiData.isLastMinute === 'true' && !isSoldOut && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-600/20 text-rose-400 border border-rose-600/30 rounded-full text-[9px] font-black uppercase tracking-[0.2em] animate-pulse">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] animate-pulse">
                 <Zap className="w-3 h-3 fill-current" /> High Demand - Final Spots
               </div>
             )}
             {isPremium && !isSoldOut && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 text-blue-400 border border-blue-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(37,99,235,0.2)]">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(37,99,235,0.15)]">
                 <Sparkles className="w-3 h-3 text-blue-400" /> {isShortTrip && isMeetGreet ? "Best Weekend Value" : isLongTrip && isParkRide ? "Best Long-Stay Saver" : "Aero Recommended"}
               </div>
             )}
             {aiData.ulezRisk === 'true' && isHeathrow && !isSoldOut && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-[9px] font-black uppercase tracking-[0.2em]">
                 <AlertCircle className="w-3 h-3" /> ULEZ Zone Warning
               </div>
             )}
             {aiData.isCorporate === 'true' && !isSoldOut && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-500/10 text-slate-400 border border-slate-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800 text-slate-300 border border-slate-700 rounded-lg text-[9px] font-black uppercase tracking-[0.2em]">
                 <ShieldCheck className="w-3 h-3" /> VAT Receipt Ready
               </div>
             )}
             {aiData.hasOversizedLuggage === 'true' && isMeetGreet && !isSoldOut && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-lg text-[9px] font-black uppercase tracking-[0.2em]">
                 <Footprints className="w-3 h-3" /> Best for Large Items
               </div>
             )}
             {aiData.hasHeightRisk === 'true' && !isSoldOut && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-lg text-[9px] font-black uppercase tracking-[0.2em]">
                 <AlertCircle className="w-3 h-3" /> Max Height {isHeathrow ? '2.0m' : '2.1m'}
               </div>
             )}
             {aiData.isRedEye === 'true' && isMeetGreet && !isSoldOut && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-lg text-[9px] font-black uppercase tracking-[0.2em]">
                 <Clock className="w-3 h-3 text-indigo-400" /> Swift Red-Eye Entry
               </div>
             )}
             {aiData.hasPet === 'true' && isMeetGreet && !isSoldOut && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-lg text-[9px] font-black uppercase tracking-[0.2em]">
                 <Sparkles className="w-3 h-3" /> Pet Friendly Selection
               </div>
             )}
@@ -142,26 +142,26 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
           </h2>
           
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-white/5 text-slate-300 border border-white/5' : 'bg-slate-50 text-slate-600 border border-slate-200'}`}>
+            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-[#1A2235] text-slate-300 border border-slate-700/50' : 'bg-slate-900/50 text-slate-400 border border-slate-800'}`}>
               <ThumbsUp className="w-3.5 h-3.5" /> {option.category?.replace('-', ' ')}
             </div>
-            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-white/5 text-slate-300 border border-white/5' : 'bg-slate-50 text-slate-600 border border-slate-200'}`}>
+            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-[#1A2235] text-slate-300 border border-slate-700/50' : 'bg-slate-900/50 text-slate-400 border border-slate-800'}`}>
               <BadgeIcon className="w-3.5 h-3.5" /> Terminal Verified
             </div>
-            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-white/5 text-emerald-400 border border-emerald-400/20' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'}`}>
-              <Tag className="w-3.5 h-3.5" /> {isMeetGreet ? "£10 Fee Exclued" : "No Entry Fees"}
+            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-emerald-500/5 text-emerald-500/80 border border-emerald-500/10'}`}>
+              <Tag className="w-3.5 h-3.5" /> {isMeetGreet ? "£10 Fee Excluded" : "No Entry Fees"}
             </div>
           </div>
         </div>
 
         <details className="group/details mt-auto relative">
-          <summary className={`inline-flex items-center gap-2 text-[11px] sm:text-xs font-black uppercase tracking-widest cursor-pointer list-none select-none transition-colors touch-manipulation [-webkit-tap-highlight-color:transparent] [&::-webkit-details-marker]:hidden ${isPremium ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}>
+          <summary className={`inline-flex items-center gap-2 text-[11px] sm:text-xs font-black uppercase tracking-widest cursor-pointer list-none select-none transition-colors touch-manipulation [-webkit-tap-highlight-color:transparent] [&::-webkit-details-marker]:hidden ${isPremium ? 'text-blue-400 hover:text-blue-300' : 'text-slate-400 hover:text-white'}`}>
             <span>View Details, Instructions & Reviews</span>
             <ChevronDown className="w-4 h-4 transition-transform duration-300 group-open/details:rotate-180" />
           </summary>
           
-          <div className={`mt-5 md:mt-6 rounded-2xl border overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300 ${isPremium ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-            <div className={`flex flex-wrap items-center gap-1.5 sm:gap-2 p-2 sm:p-3 border-b overflow-x-auto no-scrollbar ${isPremium ? 'border-slate-800' : 'border-slate-200'}`}>
+          <div className={`mt-5 md:mt-6 rounded-2xl border overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300 ${isPremium ? 'bg-[#060A14] border-slate-800' : 'bg-slate-900/40 border-slate-800'}`}>
+            <div className={`flex flex-wrap items-center gap-1.5 sm:gap-2 p-2 sm:p-3 border-b overflow-x-auto no-scrollbar ${isPremium ? 'border-slate-800' : 'border-slate-800/50'}`}>
               {[
                 { id: 'overview', label: 'Overview', icon: Info },
                 { id: 'arrival', label: 'Arrival', icon: PlaneTakeoff },
@@ -172,10 +172,10 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
                 <button
                   key={tab.id}
                   onClick={(e) => { e.preventDefault(); setActiveTab(tab.id); }}
-                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded-full transition-all whitespace-nowrap touch-manipulation ${
+                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded-lg transition-all whitespace-nowrap touch-manipulation ${
                     activeTab === tab.id 
-                      ? (isPremium ? 'bg-blue-600 text-white shadow-lg' : 'bg-blue-600 text-white shadow-md') 
-                      : (isPremium ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5' : 'text-slate-500 hover:text-slate-900 hover:bg-white')
+                      ? (isPremium ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-700 text-white shadow-sm') 
+                      : (isPremium ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5')
                   }`}
                 >
                   <tab.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 hidden xs:block" /> {tab.label}
@@ -184,32 +184,32 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
             </div>
 
             <div className="p-4 sm:p-6 min-h-[100px]">
-              {activeTab === 'overview' && <p className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-600'}`}>{option.overview || "Professional secure parking service with 24/7 patrols. Approved compound."}</p>}
-              {activeTab === 'arrival' && <p className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-600'}`}>{arrivalInstructions || "Drive directly to the terminal and call 20 mins before arrival."}</p>}
-              {activeTab === 'return' && <p className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-600'}`}>{returnInstructions || "Call the dispatch team after clearing customs and collecting luggage."}</p>}
+              {activeTab === 'overview' && <p className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-400'}`}>{option.overview || "Professional secure parking service with 24/7 patrols. Approved compound."}</p>}
+              {activeTab === 'arrival' && <p className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-400'}`}>{arrivalInstructions || "Drive directly to the terminal and call 20 mins before arrival."}</p>}
+              {activeTab === 'return' && <p className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-400'}`}>{returnInstructions || "Call the dispatch team after clearing customs and collecting luggage."}</p>}
               {activeTab === 'map' && (
                 <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
                   <div className="flex-1">
-                    <h4 className={`text-[9px] sm:text-[10px] font-black uppercase tracking-widest mb-1 ${isPremium ? 'text-blue-400' : 'text-blue-600'}`}>Arrival Location</h4>
-                    <p className={`text-xs sm:text-sm font-bold ${isPremium ? 'text-white' : 'text-slate-900'}`}>{mapLocation}</p>
+                    <h4 className={`text-[9px] sm:text-[10px] font-black uppercase tracking-widest mb-1 ${isPremium ? 'text-blue-400' : 'text-slate-300'}`}>Arrival Location</h4>
+                    <p className={`text-xs sm:text-sm font-bold ${isPremium ? 'text-white' : 'text-slate-200'}`}>{mapLocation}</p>
                     <p className={`text-[11px] sm:text-xs mt-1 ${isPremium ? 'text-slate-400' : 'text-slate-500'}`}>Postcode: {isHeathrow ? "TW6 1EW" : "LU2 9LY"}</p>
                     {!isSoldOut && (
-                      <a href="#" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 sm:gap-2 mt-3 sm:mt-4 text-[9px] sm:text-[10px] font-black uppercase text-blue-500 hover:text-blue-400 transition-colors touch-manipulation"><Navigation className="w-3 h-3"/> Get Directions</a>
+                      <a href="#" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 sm:gap-2 mt-3 sm:mt-4 text-[9px] sm:text-[10px] font-black uppercase text-blue-400 hover:text-blue-300 transition-colors touch-manipulation"><Navigation className="w-3 h-3"/> Get Directions</a>
                     )}
                   </div>
-                  <div className="flex-1 h-24 sm:h-32 bg-slate-200/20 rounded-xl overflow-hidden relative border border-slate-200/10 flex items-center justify-center">
-                    <div className="text-slate-400 text-[9px] sm:text-[10px] font-black uppercase flex flex-col items-center gap-2"><MapPin className="w-4 h-4 sm:w-5 sm:h-5"/> Map Preview</div>
+                  <div className="flex-1 h-24 sm:h-32 bg-[#0A101D] rounded-xl overflow-hidden relative border border-slate-800 flex items-center justify-center shadow-inner">
+                    <div className="text-slate-500 text-[9px] sm:text-[10px] font-black uppercase flex flex-col items-center gap-2"><MapPin className="w-4 h-4 sm:w-5 sm:h-5"/> Map Preview</div>
                   </div>
                 </div>
               )}
               {activeTab === 'reviews' && (
-                <div className="space-y-4 max-h-60 overflow-y-auto no-scrollbar">
+                <div className="space-y-4 max-h-60 overflow-y-auto custom-scrollbar pr-2">
                    {currentReviews.length > 0 ? currentReviews.map((r: any) => (
-                     <div key={r.id} className={`border-b ${isPremium ? 'border-white/5' : 'border-slate-100'} pb-4 last:border-0`}>
-                       <div className={`flex items-center gap-2 font-bold text-xs ${isPremium ? 'text-blue-400' : 'text-blue-600'}`}>{r.author} • <div className="flex text-amber-400 tracking-tighter"><Star className="w-2.5 h-2.5 fill-current"/> {r.rating}/5</div></div>
+                     <div key={r.id} className={`border-b ${isPremium ? 'border-slate-800' : 'border-slate-800/50'} pb-4 last:border-0`}>
+                       <div className={`flex items-center gap-2 font-bold text-xs ${isPremium ? 'text-blue-400' : 'text-slate-300'}`}>{r.author} • <div className="flex text-amber-400 tracking-tighter"><Star className="w-2.5 h-2.5 fill-current"/> {r.rating}/5</div></div>
                        <p className={`mt-1 text-xs leading-relaxed italic ${isPremium ? 'text-slate-400' : 'text-slate-500'}`}>"{r.comment}"</p>
                      </div>
-                   )) : <p className={`text-xs ${isPremium ? 'text-slate-500' : 'text-slate-400'}`}>Aero verified: No recent customer reviews found.</p>}
+                   )) : <p className={`text-xs ${isPremium ? 'text-slate-500' : 'text-slate-600'}`}>Aero verified: No recent customer reviews found.</p>}
                 </div>
               )}
             </div>
@@ -217,19 +217,19 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
         </details>
       </div>
 
-      <div className={`hidden lg:block w-px border-l-2 border-dashed my-8 relative z-20 ${borderClass}`}>
-        <div className={`absolute -top-10 -left-4 w-8 h-8 rounded-full ${isPremium ? 'bg-[#0A101D]' : 'bg-[#F8FAFC]'}`}></div>
-        <div className={`absolute -bottom-10 -left-4 w-8 h-8 rounded-full ${isPremium ? 'bg-[#0A101D]' : 'bg-[#F8FAFC]'}`}></div>
+      <div className={`hidden lg:block w-px border-l border-dashed my-8 relative z-20 ${borderClass}`}>
+        <div className={`absolute -top-10 -left-4 w-8 h-8 rounded-full ${isPremium ? 'bg-[#060A14]' : 'bg-[#0B1120]'}`}></div>
+        <div className={`absolute -bottom-10 -left-4 w-8 h-8 rounded-full ${isPremium ? 'bg-[#060A14]' : 'bg-[#0B1120]'}`}></div>
       </div>
 
       <div className={`w-full lg:w-[320px] xl:w-[340px] p-6 md:p-8 lg:p-10 shrink-0 relative z-10 flex flex-col justify-center border-t border-dashed lg:border-t-0 lg:border-l transition-colors ${stubBg} ${borderClass}`}>
         <div className="text-left lg:text-right w-full flex flex-col h-full justify-center">
           <div>
             <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] mb-1 sm:mb-2 text-slate-500">Total Stay Cost</p>
-            <p className={`text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter mb-2 ${textPrimary} ${isSoldOut ? 'line-through opacity-30' : ''}`}>
+            <p className={`text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter mb-2 ${textPrimary} ${isSoldOut ? 'line-through opacity-30' : 'drop-shadow-md'}`}>
               £{totalPrice.toFixed(2)}
             </p>
-            <p className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-widest mb-6 lg:mb-8 ${isPremium ? 'text-blue-400' : 'text-blue-600'}`}>
+            <p className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-widest mb-6 lg:mb-8 ${isPremium ? 'text-blue-400' : 'text-slate-400'}`}>
               {isSoldOut ? 'Sold Out' : `Averaging £${avgDailyRate.toFixed(2)} / Day`}
             </p>
           </div>
@@ -237,10 +237,10 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
           <button 
             disabled={isSoldOut}
             onClick={() => handleBooking(option, totalPrice)}
-            className={`group w-full h-12 sm:h-14 font-black rounded-xl flex items-center justify-center gap-2 sm:gap-3 uppercase tracking-[0.15em] text-[10px] sm:text-xs transition-all duration-300 active:scale-95 shadow-2xl ${
+            className={`group w-full h-12 sm:h-14 font-black rounded-xl flex items-center justify-center gap-2 sm:gap-3 uppercase tracking-[0.15em] text-[10px] sm:text-xs transition-all duration-300 active:scale-95 shadow-lg ${
               isSoldOut 
-                ? 'bg-slate-200/10 text-slate-500 cursor-not-allowed' 
-                : (isPremium ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/40 border border-blue-500' : 'bg-[#0B1121] text-white hover:bg-blue-600')
+                ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' 
+                : (isPremium ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/30 border border-blue-500' : 'bg-[#1A2235] text-white hover:bg-slate-700 border border-slate-700')
             }`}
           >
             {isSoldOut ? <Ban className="w-3.5 h-3.5 sm:w-4 sm:h-4"/> : <span className="relative z-10">Select Option</span>}
@@ -281,6 +281,16 @@ function ResultsContent() {
 
   const aeroTip = searchParams.get("aeroTip") || "";
 
+  // 🟢 FIXED DURATION MATH
+  const duration = useMemo(() => {
+    if (!dropoff || !pickup) return 1;
+    const start = new Date(dropoff);
+    const end = new Date(pickup);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return totalDays <= 0 ? 1 : totalDays;
+  }, [dropoff, pickup]);
+
   useEffect(() => {
     async function getLiveRates() {
       setLoading(true);
@@ -294,12 +304,32 @@ function ResultsContent() {
           return isCorrectCategory && isCorrectAirport && c.is_active;
         });
 
+        // 🟢 FIXED: SORTING LOGIC (Featured top -> Then cheapest total price)
         filtered.sort((a, b) => {
            const aSold = isHeathrow ? a.lhr_sold_out : a.ltn_sold_out;
            const bSold = isHeathrow ? b.lhr_sold_out : b.ltn_sold_out;
            if (aSold && !bSold) return 1;
            if (!aSold && bSold) return -1;
-           return 0;
+           
+           const aFeatured = isHeathrow ? a.lhr_featured : a.ltn_featured;
+           const bFeatured = isHeathrow ? b.lhr_featured : b.ltn_featured;
+           if (aFeatured && !bFeatured) return -1;
+           if (!aFeatured && bFeatured) return 1;
+           
+           const getPrice = (opt: any) => {
+             const base = isHeathrow ? Number(opt.heathrow_price || 0) : Number(opt.luton_price || 0);
+             const t1 = isHeathrow ? Number(opt.lhr_tier1_extra_rate ?? 1.99) : Number(opt.ltn_tier1_extra_rate ?? 1.99);
+             const t2 = isHeathrow ? Number(opt.lhr_tier2_extra_rate ?? 2.99) : Number(opt.ltn_tier2_extra_rate ?? 2.99);
+             let tot = base;
+             if (duration > 1) {
+               const extra = duration - 1;
+               tot += Math.min(extra, 5) * t1;
+               if (extra > 5) tot += (extra - 5) * t2;
+             }
+             return tot;
+           };
+
+           return getPrice(a) - getPrice(b);
         });
 
         setCompanies(filtered);
@@ -309,17 +339,8 @@ function ResultsContent() {
       setLoading(false);
     }
     getLiveRates();
-  }, [serviceType, airport, dropoff, pickup, isHeathrow]);
+  }, [serviceType, airport, dropoff, pickup, isHeathrow, duration]);
 
-  // 🟢 FIXED PRICING BUG: Math.abs and + 1 ensures day 1 and 2 calculate correctly
-  const duration = useMemo(() => {
-    if (!dropoff || !pickup) return 1;
-    const start = new Date(dropoff);
-    const end = new Date(pickup);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    return totalDays <= 0 ? 1 : totalDays;
-  }, [dropoff, pickup]);
 
   const handleBooking = (option: any, finalPrice: number) => {
     const query = new URLSearchParams(searchParams.toString());
@@ -340,7 +361,7 @@ function ResultsContent() {
   return (
     <div className="max-w-[1000px] mx-auto px-4 py-6 md:py-8">
       
-      <div className="bg-[#0B1121] border border-blue-900/40 rounded-[2.5rem] p-5 md:p-7 flex flex-col sm:flex-row items-center gap-6 mb-10 shadow-2xl relative overflow-hidden">
+      <div className="bg-[#0F1523] border border-blue-900/30 rounded-[2.5rem] p-5 md:p-7 flex flex-col sm:flex-row items-center gap-6 mb-10 shadow-2xl relative overflow-hidden">
         <div className="absolute -right-20 -top-20 w-64 h-64 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
         <AeroAvatar />
         <div className="text-center sm:text-left relative z-10 w-full">
@@ -352,37 +373,36 @@ function ResultsContent() {
           </h3>
           
           {aeroTip && (
-             <div className="mt-4 bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 md:p-4 text-xs md:text-sm text-blue-200 flex items-start gap-3 shadow-inner">
+             <div className="mt-4 bg-[#1A2235] border border-blue-500/20 rounded-xl p-3 md:p-4 text-xs md:text-sm text-blue-200 flex items-start gap-3 shadow-inner">
                <p className="font-medium leading-relaxed">{aeroTip}</p>
              </div>
           )}
         </div>
       </div>
 
-      {/* Stepper UI */}
       <div className="relative mb-10 md:mb-16 max-w-2xl mx-auto px-2 mt-2 md:mt-4">
         <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-800 -translate-y-1/2 rounded-full"></div>
         <div className="absolute top-1/2 left-0 w-[15%] h-1 bg-blue-600 -translate-y-1/2 rounded-full shadow-[0_0_12px_rgba(37,99,235,0.6)]"></div>
         <div className="relative z-10 flex justify-between items-center text-white font-bold">
           <div className="flex flex-col items-center gap-2">
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-blue-600 text-white flex items-center justify-center font-black shadow-lg border-4 border-[#0A101D]">1</div>
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-blue-600 text-white flex items-center justify-center font-black shadow-lg border-4 border-[#060A14]">1</div>
             <span className="text-[9px] md:text-[10px] font-black uppercase text-blue-600 tracking-[0.2em]">Select</span>
           </div>
-          <div className="flex flex-col items-center gap-2 opacity-30">
+          <div className="flex flex-col items-center gap-2 opacity-40">
             <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center font-black">2</div>
             <span className="text-[9px] md:text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Details</span>
           </div>
-          <div className="flex flex-col items-center gap-2 opacity-30">
+          <div className="flex flex-col items-center gap-2 opacity-40">
             <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center font-black">3</div>
             <span className="text-[9px] md:text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Payment</span>
           </div>
         </div>
       </div>
 
-      <div className="space-y-6 md:space-y-10">
+      <div className="space-y-6 md:space-y-8">
         {companies.length === 0 ? (
-          <div className="text-center py-16 md:py-24 bg-[#0B1121] rounded-[3rem] border border-dashed border-slate-700">
-            <AlertCircle className="w-12 h-12 md:w-16 md:h-16 text-slate-700 mx-auto mb-4 md:mb-6" />
+          <div className="text-center py-16 md:py-24 bg-[#0F1523] rounded-[3rem] border border-dashed border-slate-700">
+            <AlertCircle className="w-12 h-12 md:w-16 md:h-16 text-slate-600 mx-auto mb-4 md:mb-6" />
             <h3 className="text-xl md:text-2xl font-black text-white">No Active Providers Found</h3>
           </div>
         ) : (
@@ -440,7 +460,6 @@ function ResultsLayout() {
   const [editPickDate, setEditPickDate] = useState("");
   const [editPickTime, setEditPickTime] = useState("");
 
-  // 🟢 FIXED MODAL MEMORY: Always populates with current URL params when opened
   useEffect(() => {
     if (isEditModalOpen) {
       setEditAirport(searchParams.get("airport") || "Luton (LTN)");
@@ -465,6 +484,10 @@ function ResultsLayout() {
     router.push(`/results?${query}`);
   };
 
+  // 🟢 SHARED INPUT STYLES (Fixes Autofill invisible text bugs)
+  const inputStyle = "w-full bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white] placeholder:text-slate-500";
+  const selectStyle = "w-full appearance-none bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none cursor-pointer focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white]";
+
   return (
     <main suppressHydrationWarning className="min-h-screen bg-[#0A101D] font-sans antialiased pb-24 md:pb-32 selection:bg-blue-500/30 overflow-x-hidden relative">
       <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0 flex justify-center overflow-hidden">
@@ -488,53 +511,53 @@ function ResultsLayout() {
       <div className="relative z-10"><ResultsContent /></div>
 
       {isEditModalOpen && (
-        <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex items-end sm:items-center justify-center sm:p-4 animate-in fade-in">
-          <div className="bg-[#0B1121] border border-slate-800 w-full max-w-lg rounded-t-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 md:p-12 shadow-2xl animate-in slide-in-from-bottom-8 relative">
+        <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex items-end sm:items-center justify-center p-4 sm:p-8 animate-in fade-in overflow-hidden">
+          <div className="bg-[#0F1523] border border-slate-800 w-full max-w-lg rounded-t-[2rem] sm:rounded-[2.5rem] p-8 sm:p-10 shadow-2xl animate-in slide-in-from-bottom-8 relative overflow-hidden">
             <div className="flex justify-between items-center mb-8">
               <div>
                 <h2 className="text-2xl font-black text-white tracking-tight">Modify Search</h2>
-                <p className="text-[10px] font-black uppercase text-blue-500 mt-2 tracking-[0.2em]">Aero is ready to re-scan</p>
+                <p className="text-[10px] font-bold text-blue-500 mt-1 tracking-widest uppercase">Aero is ready to re-scan</p>
               </div>
-              <button onClick={() => setIsEditModalOpen(false)} className="p-2.5 bg-slate-800/80 text-slate-400 rounded-full hover:text-white transition-colors border border-white/5">
+              <button onClick={() => setIsEditModalOpen(false)} className="p-3 bg-[#1A2235] text-slate-400 rounded-xl hover:text-white transition-colors border border-slate-700/50">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleUpdateSearch} className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Departure Airport</label>
+            <form onSubmit={handleUpdateSearch} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1">Departure Airport</label>
                 <div className="relative">
-                  <select value={editAirport} onChange={(e)=>setEditAirport(e.target.value)} className="w-full appearance-none bg-[#0f172a] border border-slate-700 rounded-2xl px-5 py-4 font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer">
+                  <select value={editAirport} onChange={(e)=>setEditAirport(e.target.value)} className={selectStyle}>
                     <option value="Luton (LTN)">Luton Airport (LTN)</option>
                     <option value="Heathrow (LHR)">Heathrow Airport (LHR)</option>
                   </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 pointer-events-none" />
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 border-t border-slate-800 pt-6">
-                <div>
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Drop-off Date</label>
-                  <input type="date" value={editDropDate} onChange={(e)=>setEditDropDate(e.target.value)} className="w-full bg-[#0f172a] border border-slate-700 rounded-2xl px-4 py-4 font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50" required />
+              <div className="grid grid-cols-2 gap-4 border-t border-slate-800/80 pt-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1">Drop-off Date</label>
+                  <input type="date" value={editDropDate} onChange={(e)=>setEditDropDate(e.target.value)} className={`${inputStyle} [color-scheme:dark]`} required />
                 </div>
-                <div>
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Time</label>
-                  <input type="time" value={editDropTime} onChange={(e)=>setEditDropTime(e.target.value)} className="w-full bg-[#0f172a] border border-slate-700 rounded-2xl px-4 py-4 font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50" required />
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1">Time</label>
+                  <input type="time" value={editDropTime} onChange={(e)=>setEditDropTime(e.target.value)} className={`${inputStyle} [color-scheme:dark]`} required />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Pick-up Date</label>
-                  <input type="date" min={editDropDate} value={editPickDate} onChange={(e)=>setEditPickDate(e.target.value)} className="w-full bg-[#0f172a] border border-slate-700 rounded-2xl px-4 py-4 font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50" required />
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1">Pick-up Date</label>
+                  <input type="date" min={editDropDate} value={editPickDate} onChange={(e)=>setEditPickDate(e.target.value)} className={`${inputStyle} [color-scheme:dark]`} required />
                 </div>
-                <div>
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Time</label>
-                  <input type="time" value={editPickTime} onChange={(e)=>setEditPickTime(e.target.value)} className="w-full bg-[#0f172a] border border-slate-700 rounded-2xl px-4 py-4 font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50" required />
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1">Time</label>
+                  <input type="time" value={editPickTime} onChange={(e)=>setEditPickTime(e.target.value)} className={`${inputStyle} [color-scheme:dark]`} required />
                 </div>
               </div>
 
-              <button type="submit" className="w-full mt-8 py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-[1.2rem] uppercase tracking-widest transition-all active:scale-95 shadow-[0_15px_30px_-5px_rgba(37,99,235,0.4)]">
+              <button type="submit" className="w-full mt-4 py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl uppercase text-xs tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-500/20">
                 Update Search & Recalculate
               </button>
             </form>
@@ -547,7 +570,7 @@ function ResultsLayout() {
 
 export default function ResultsPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#0A101D] flex flex-col items-center justify-center font-black text-slate-400 uppercase tracking-[0.2em] text-xs">Aero is Initializing...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-[#060A14] flex flex-col items-center justify-center font-black text-slate-400 uppercase tracking-[0.2em] text-xs">Aero is Initializing...</div>}>
       <ResultsLayout />
     </Suspense>
   );

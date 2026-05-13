@@ -150,7 +150,8 @@ export default function ManageBooking() {
       alert("Extension failed: " + err.message);
     } finally {
       setExtensionLoading(false);
-    }  };
+    }  
+  };
 
   const getMinExtensionDate = () => {
     if (!booking) return "";
@@ -164,7 +165,7 @@ export default function ManageBooking() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 py-12 md:py-20 px-6 font-sans">
+    <main className="min-h-screen bg-slate-50 py-12 md:py-20 px-6 font-sans selection:bg-blue-200">
       <div className="max-w-3xl mx-auto mb-12">
         <Link href="/" className="inline-flex items-center gap-2 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-blue-600 transition-colors group">
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Return Home
@@ -189,7 +190,7 @@ export default function ManageBooking() {
                 <input 
                   type="text" 
                   placeholder="APD-XXXXXX" 
-                  className="w-full p-5 bg-slate-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900 border border-transparent focus:bg-white shadow-inner uppercase"
+                  className="w-full p-5 bg-slate-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900 border border-transparent focus:bg-white shadow-[0_0_0_100px_#f8fafc_inset] [-webkit-text-fill-color:#0f172a] uppercase"
                   value={ref}
                   onChange={(e) => setRef(e.target.value.toUpperCase())}
                 />
@@ -206,14 +207,14 @@ export default function ManageBooking() {
                 <input 
                   type="text" 
                   placeholder="Enter name used for booking" 
-                  className="w-full p-5 bg-slate-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900 border border-transparent focus:bg-white shadow-inner"
+                  className="w-full p-5 bg-slate-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900 border border-transparent focus:bg-white shadow-[0_0_0_100px_#f8fafc_inset] [-webkit-text-fill-color:#0f172a]"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                 />
               </div>
 
               {error && (
-                <div className="p-4 bg-red-50 rounded-xl border border-red-100 flex items-center gap-3">
+                <div className="p-4 bg-red-50 rounded-xl border border-red-100 flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
                    <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
                    <p className="text-red-600 text-xs font-bold leading-relaxed">{error}</p>
                 </div>
@@ -222,7 +223,7 @@ export default function ManageBooking() {
               <button 
                 type="submit" 
                 disabled={loading || (!ref.trim() && !fullName.trim())}
-                className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-[0.2em] hover:bg-blue-700 transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-500/30 mt-6 disabled:opacity-50"
+                className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-[0.2em] hover:bg-blue-500 transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-500/30 mt-6 disabled:opacity-50 disabled:bg-slate-300 active:scale-95"
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Access My Booking <ArrowRight className="w-4 h-4" /></>}
               </button>
@@ -301,17 +302,17 @@ export default function ManageBooking() {
                         <div className="flex justify-between text-sm"><span className="text-emerald-700 font-bold">New Return:</span> <span className="font-black">{formatDate(extensionSuccess.newDate)}</span></div>
                         <div className="flex justify-between text-sm border-t border-emerald-100 pt-3"><span className="text-emerald-700 font-bold">Amount Paid:</span> <span className="font-black">£{extensionSuccess.extraPaid.toFixed(2)}</span></div>
                       </div>
-                      <button onClick={() => setExtensionSuccess(null)} className="w-full py-4 bg-emerald-600 text-white font-black rounded-xl text-xs uppercase tracking-widest">Done</button>
+                      <button onClick={() => setExtensionSuccess(null)} className="w-full py-4 bg-emerald-600 text-white font-black rounded-xl text-xs uppercase tracking-widest active:scale-95 transition-all">Done</button>
                     </div>
                   ) : !isExtending ? (
-                    <button onClick={() => setIsExtending(true)} className="w-full py-4 border-2 border-dashed border-blue-200 hover:bg-blue-50 text-blue-700 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 group">
+                    <button onClick={() => setIsExtending(true)} className="w-full py-4 border-2 border-dashed border-blue-200 hover:bg-blue-50 text-blue-700 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 group active:scale-95">
                       <CalendarPlus className="w-5 h-5 group-hover:scale-110 transition-transform" /> Extend your booking
                     </button>
                   ) : (
-                    <div className="bg-slate-900 rounded-[2rem] p-8 text-white shadow-xl animate-in fade-in slide-in-from-top-4 duration-300 border border-slate-800">
+                    <div className="bg-slate-900 rounded-[2rem] p-8 text-white shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300 border border-slate-800">
                       <div className="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
                         <h3 className="text-lg font-black tracking-tight flex items-center gap-2"><CalendarPlus className="w-5 h-5 text-blue-400" /> New Pick-up Date</h3>
-                        <button onClick={() => setIsExtending(false)} className="text-[10px] font-black uppercase tracking-widest text-slate-400">Cancel</button>
+                        <button onClick={() => setIsExtending(false)} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors">Cancel</button>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
                         <input 
@@ -319,17 +320,17 @@ export default function ManageBooking() {
                           min={getMinExtensionDate()} 
                           value={newPickupDate} 
                           onChange={(e) => setNewPickupDate(e.target.value)} 
-                          className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 font-bold text-white [color-scheme:dark] outline-none" 
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 font-bold text-white [color-scheme:dark] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all" 
                         />
                         {newPickupDate && extensionData.extraDays > 0 && (
-                          <div className="bg-slate-800/50 p-4 rounded-xl text-right">
+                          <div className="bg-slate-800/50 p-4 rounded-xl text-right border border-slate-700/50 animate-in fade-in zoom-in-95">
                              <p className="text-[10px] font-black text-slate-400 uppercase">Additional Due</p>
                              <p className="text-3xl font-black text-emerald-400">£{extensionData.extraCost.toFixed(2)}</p>
                           </div>
                         )}
                       </div>
                       {newPickupDate && extensionData.extraDays > 0 && (
-                        <button onClick={handleExtendBooking} disabled={extensionLoading} className="w-full h-14 mt-6 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl flex items-center justify-center gap-2 tracking-widest text-sm uppercase transition-all">
+                        <button onClick={handleExtendBooking} disabled={extensionLoading} className="w-full h-14 mt-6 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl flex items-center justify-center gap-2 tracking-widest text-sm uppercase transition-all active:scale-95 shadow-lg shadow-blue-500/20">
                           {extensionLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CreditCard className="w-5 h-5" /> Pay & Extend</>}
                         </button>
                       )}
@@ -340,10 +341,10 @@ export default function ManageBooking() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:hidden">
-              <button onClick={() => window.print()} className="w-full py-5 bg-white border border-slate-200 text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3">
+              <button onClick={() => window.print()} className="w-full py-5 bg-white border border-slate-200 text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-slate-50 transition-all active:scale-95 shadow-sm">
                 <Printer className="w-4 h-4" /> Print PDF Voucher
               </button>
-              <button onClick={() => { setBooking(null); setRef(""); setFullName(""); }} className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest active:scale-95">
+              <button onClick={() => { setBooking(null); setRef(""); setFullName(""); }} className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest active:scale-95 hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20">
                  Lookup Another
               </button>
             </div>

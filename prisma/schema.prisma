@@ -48,9 +48,11 @@ model companies {
   luton_price          Decimal    @db.Decimal
   heathrow_price       Decimal    @db.Decimal
   
-  // 🟢 NEW: Dynamic Pricing Tiers controlled from the Admin Dashboard
-  tier1_extra_rate     Decimal?   @default(1.99) @db.Decimal // e.g., Days 2 to 6
-  tier2_extra_rate     Decimal?   @default(2.99) @db.Decimal // e.g., Days 7+
+  // 🟢 NEW: Split Dynamic Pricing Tiers per Airport
+  ltn_tier1_extra_rate Decimal?   @default(1.99) @db.Decimal // LTN Days 2 to 6
+  ltn_tier2_extra_rate Decimal?   @default(2.99) @db.Decimal // LTN Days 7+
+  lhr_tier1_extra_rate Decimal?   @default(1.99) @db.Decimal // LHR Days 2 to 6
+  lhr_tier2_extra_rate Decimal?   @default(2.99) @db.Decimal // LHR Days 7+
 
   is_sold_out          Boolean?   @default(false)
   updated_at           DateTime?  @default(now()) @db.Timestamptz(6)

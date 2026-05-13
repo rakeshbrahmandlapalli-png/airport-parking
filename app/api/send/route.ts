@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { sendBookingReceipt } from "@/app/lib/mail"; // 🟢 FIXED PATH
+import { sendBookingReceipt } from "@/app/lib/mail"; 
 import { Resend } from "resend";
-import prismadb from "@/app/lib/prismadb"; // 🟢 FIXED PATH
+import prismadb from "@/app/lib/prismadb"; 
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -39,7 +39,9 @@ export async function POST(req: Request) {
 
       // 1. Fetch the Company to get the correct Parking Instructions
       let company = null;
-      if (booking.company_id) {
+      
+      // 🟢 FIXED: Safely bypass "ALL" so Prisma doesn't crash on Direct Bookings
+      if (booking.company_id && booking.company_id !== "ALL") {
         try {
           company = await prismadb.companies.findUnique({ 
             where: { id: booking.company_id } 
