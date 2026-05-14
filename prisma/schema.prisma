@@ -65,7 +65,10 @@ model companies {
   address              String?
   postcode             String?
   map_url              String?
+  
   phone_number         String?    @default("07700 900 123")
+  phone_number_2       String?    // 🟢 ADDED: Secondary Dispatch Number
+  
   map_location         String?    @default("Details provided at terminal")
   on_arrival_lhr       String?
   on_arrival_ltn       String?
