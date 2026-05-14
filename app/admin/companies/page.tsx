@@ -1,15 +1,15 @@
 "use client";
 
 /**
- * AeroPark Direct - Partner Network v14.0 (Ultimate SaaS 3.0 Edition)
+ * AeroPark Direct - Partner Network v14.1 (Ultimate SaaS 3.0 Edition)
  * ------------------------------------------------------
  * FIXES & UPGRADES:
  * - DUAL PHONE NUMBERS: Added Dispatch Phone 1 & 2 to the General Info tab.
- * - AUTOFILL BUG: Fixed invisible text. Forced Webkit fill colors on all inputs, textareas, and selects.
- * - EXCEL EXPORT: Added missing Drop-off Time, Pick-up Time, and Service Type to financial invoices.
- * - SEARCH RIBBON: Added explicit "Service Type" filter and redesigned into a spacious Flex Grid.
- * - UI/UX: Upgraded to hyper-premium SaaS 3.0 deep dark mode (#060A14 / #131A2B).
- * - FORMATTING: Fully expanded HTML lines to guarantee no truncation or missing lines.
+ * - MAP INTEGRATION: Added Address, Postcode, and Google Map Embed URL fields.
+ * - HTML SUPPORT: Textareas now include a reminder for <br/> and <b> tags.
+ * - AUTOFILL BUG: Fixed invisible text. Forced Webkit fill colors on all inputs.
+ * - EXCEL EXPORT: Added missing Drop-off Time, Pick-up Time, and Service Type.
+ * - SEARCH RIBBON: Added explicit "Service Type" filter and redesigned grid.
  */
 
 import { useState, useEffect, useMemo } from "react";
@@ -22,7 +22,7 @@ import {
   CalendarDays, LogOut, Plane, Network, SlidersHorizontal,
   ArrowUpDown, Award, AlertOctagon, FileText, Download,
   Percent, Image as ImageIcon, ArrowUp, ArrowDown,
-  ChevronDown, AlertCircle, Filter, CheckCircle2, Phone
+  ChevronDown, AlertCircle, Filter, CheckCircle2, Phone, Code2
 } from "lucide-react";
 
 interface Review {
@@ -62,6 +62,7 @@ const defaultCompany = {
   on_return_ltn: "",
   address: "",
   postcode: "",
+  map_url: "", // 🟢 Added for Map Preview
   ltn_reviews: [] as Review[],
   lhr_reviews: [] as Review[],
 };
@@ -219,7 +220,7 @@ export default function AdminCompaniesPage() {
     await supabase.from("companies").update({ is_active: newVal }).eq("id", company.id);
   };
 
-  // ─── 🟢 FIXED: CSV INVOICE (Added Times & Service Type) ────────────────
+  // ─── 🟢 CSV INVOICE (Added Times & Service Type) ────────────────
   const downloadInvoiceCSV = () => {
     if (!editingCompany) return;
     const commRate = Number(editingCompany.commission_rate || 15) / 100;
@@ -820,14 +821,43 @@ export default function AdminCompaniesPage() {
                           </div>
                         </div>
 
+                        {/* 🟢 NEW: MAP & LOCATION DATA */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-slate-800/80 mt-6">
+                          <div className="space-y-2 md:col-span-2">
+                            <label className={labelCls}><MapPin className="w-3.5 h-3.5 inline mr-1 text-emerald-500" /> Physical Address</label>
+                            <input type="text" autoComplete="off"
+                              value={getField(editingCompany, newCompany, "address")}
+                              onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "address", e.target.value)}
+                              className={inputCls}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className={labelCls}>Postcode</label>
+                            <input type="text" autoComplete="off"
+                              value={getField(editingCompany, newCompany, "postcode")}
+                              onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "postcode", e.target.value)}
+                              className={inputCls}
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2 pt-4">
+                          <label className={labelCls}><MapPin className="w-3.5 h-3.5 inline mr-1 text-emerald-500" /> Google Map Embed URL (src only)</label>
+                          <input type="text" autoComplete="off" placeholder="http://googleusercontent.com/maps.google.com/..."
+                            value={getField(editingCompany, newCompany, "map_url")}
+                            onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "map_url", e.target.value)}
+                            className={inputCls}
+                          />
+                        </div>
+
                         <div className="space-y-2 pt-4 border-t border-slate-800">
-                          <label className={labelCls}>Marketing Overview</label>
+                          <label className={labelCls}><Code2 className="w-3.5 h-3.5 inline mr-1 text-blue-500" /> Marketing Overview (HTML Support)</label>
                           <textarea rows={4}
                             value={getField(editingCompany, newCompany, "overview")}
                             onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "overview", e.target.value)}
                             className={textareaCls}
                             placeholder="Highlight key selling points..."
                           />
+                          <p className="text-[10px] text-blue-500 font-bold uppercase tracking-widest mt-2">💡 Pro Tip: Use &lt;br/&gt; for line breaks and &lt;b&gt;Text&lt;/b&gt; for bolding.</p>
                         </div>
                       </div>
                     )}
@@ -897,7 +927,7 @@ export default function AdminCompaniesPage() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               <div className="space-y-2">
-                                <label className={labelCls}>Arrival Instructions</label>
+                                <label className={labelCls}>Arrival Instructions (HTML Support)</label>
                                 <textarea rows={5}
                                   value={getField(editingCompany, newCompany, "on_arrival_ltn")}
                                   onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "on_arrival_ltn", e.target.value)}
@@ -905,7 +935,7 @@ export default function AdminCompaniesPage() {
                                 />
                               </div>
                               <div className="space-y-2">
-                                <label className={labelCls}>Return Instructions</label>
+                                <label className={labelCls}>Return Instructions (HTML Support)</label>
                                 <textarea rows={5}
                                   value={getField(editingCompany, newCompany, "on_return_ltn")}
                                   onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "on_return_ltn", e.target.value)}
@@ -913,6 +943,7 @@ export default function AdminCompaniesPage() {
                                 />
                               </div>
                             </div>
+                            <p className="text-[10px] text-blue-500 font-bold uppercase tracking-widest mt-3">💡 Pro Tip: Use &lt;br/&gt; for line breaks to make instructions easier to read on mobile.</p>
 
                             <ReviewSection airport="ltn" color="blue"
                               reviews={getField(editingCompany, newCompany, "ltn_reviews") || []}
@@ -990,7 +1021,7 @@ export default function AdminCompaniesPage() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               <div className="space-y-2">
-                                <label className={labelCls}>Arrival Instructions</label>
+                                <label className={labelCls}>Arrival Instructions (HTML Support)</label>
                                 <textarea rows={5}
                                   value={getField(editingCompany, newCompany, "on_arrival_lhr")}
                                   onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "on_arrival_lhr", e.target.value)}
@@ -998,7 +1029,7 @@ export default function AdminCompaniesPage() {
                                 />
                               </div>
                               <div className="space-y-2">
-                                <label className={labelCls}>Return Instructions</label>
+                                <label className={labelCls}>Return Instructions (HTML Support)</label>
                                 <textarea rows={5}
                                   value={getField(editingCompany, newCompany, "on_return_lhr")}
                                   onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "on_return_lhr", e.target.value)}
@@ -1006,6 +1037,7 @@ export default function AdminCompaniesPage() {
                                 />
                               </div>
                             </div>
+                            <p className="text-[10px] text-blue-500 font-bold uppercase tracking-widest mt-3">💡 Pro Tip: Use &lt;br/&gt; for line breaks to make instructions easier to read on mobile.</p>
 
                             <ReviewSection airport="lhr" color="purple"
                               reviews={getField(editingCompany, newCompany, "lhr_reviews") || []}
