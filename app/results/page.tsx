@@ -46,7 +46,7 @@ function AeroAvatar({ size = "md", thinking = false }: { size?: "sm" | "md" | "l
 function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: any) {
   const [activeTab, setActiveTab] = useState('overview');
   
-  // 🟢 DYNAMIC PRICING MATH (FIXED: Now uses split tier rates)
+  // 🟢 DYNAMIC PRICING MATH
   const baseRate = isHeathrow ? Number(option.heathrow_price || 0) : Number(option.luton_price || 0);
   const tier1Rate = isHeathrow ? Number(option.lhr_tier1_extra_rate ?? 1.99) : Number(option.ltn_tier1_extra_rate ?? 1.99);
   const tier2Rate = isHeathrow ? Number(option.lhr_tier2_extra_rate ?? 2.99) : Number(option.ltn_tier2_extra_rate ?? 2.99);
@@ -77,7 +77,7 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
 
   const arrivalInstructions = isHeathrow ? option.on_arrival_lhr : option.on_arrival_ltn;
   const returnInstructions = isHeathrow ? option.on_return_lhr : option.on_return_ltn;
-  const mapLocation = option.map_location || (isHeathrow ? "Heathrow Terminal Area" : "Luton Terminal Car Park 1");
+  const mapLocation = option.map_location || (isHeathrow ? "Details provided at terminal" : "Details provided at terminal");
   const currentReviews = isHeathrow ? (option.lhr_reviews || []) : (option.ltn_reviews || []);
 
   const isShortTrip = duration <= 3;
@@ -184,21 +184,55 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
             </div>
 
             <div className="p-4 sm:p-6 min-h-[100px]">
-              {activeTab === 'overview' && <p className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-400'}`}>{option.overview || "Professional secure parking service with 24/7 patrols. Approved compound."}</p>}
-              {activeTab === 'arrival' && <p className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-400'}`}>{arrivalInstructions || "Drive directly to the terminal and call 20 mins before arrival."}</p>}
-              {activeTab === 'return' && <p className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-400'}`}>{returnInstructions || "Call the dispatch team after clearing customs and collecting luggage."}</p>}
+              {/* 🟢 FIXED: HTML Injection for text fields so <br/> and <b> tags work */}
+              {activeTab === 'overview' && (
+                <div 
+                  className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-400'}`}
+                  dangerouslySetInnerHTML={{ __html: option.overview || "Professional secure parking service with 24/7 patrols. Approved compound." }}
+                />
+              )}
+              {activeTab === 'arrival' && (
+                <div 
+                  className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-400'}`}
+                  dangerouslySetInnerHTML={{ __html: arrivalInstructions || "Drive directly to the terminal and call 20 mins before arrival." }}
+                />
+              )}
+              {activeTab === 'return' && (
+                <div 
+                  className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-400'}`}
+                  dangerouslySetInnerHTML={{ __html: returnInstructions || "Call the dispatch team after clearing customs and collecting luggage." }}
+                />
+              )}
               {activeTab === 'map' && (
                 <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
                   <div className="flex-1">
                     <h4 className={`text-[9px] sm:text-[10px] font-black uppercase tracking-widest mb-1 ${isPremium ? 'text-blue-400' : 'text-slate-300'}`}>Arrival Location</h4>
-                    <p className={`text-xs sm:text-sm font-bold ${isPremium ? 'text-white' : 'text-slate-200'}`}>{mapLocation}</p>
-                    <p className={`text-[11px] sm:text-xs mt-1 ${isPremium ? 'text-slate-400' : 'text-slate-500'}`}>Postcode: {isHeathrow ? "TW6 1EW" : "LU2 9LY"}</p>
-                    {!isSoldOut && (
-                      <a href="#" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 sm:gap-2 mt-3 sm:mt-4 text-[9px] sm:text-[10px] font-black uppercase text-blue-400 hover:text-blue-300 transition-colors touch-manipulation"><Navigation className="w-3 h-3"/> Get Directions</a>
+                    <p className={`text-xs sm:text-sm font-bold ${isPremium ? 'text-white' : 'text-slate-200'}`}>{option.address || mapLocation}</p>
+                    <p className={`text-[11px] sm:text-xs mt-1 ${isPremium ? 'text-slate-400' : 'text-slate-500'}`}>Postcode: {option.postcode || (isHeathrow ? "TW6 1EW" : "LU2 9LY")}</p>
+                    {!isSoldOut && option.address && (
+                      <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(option.address + ' ' + (option.postcode || ''))}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 sm:gap-2 mt-3 sm:mt-4 text-[9px] sm:text-[10px] font-black uppercase text-blue-400 hover:text-blue-300 transition-colors touch-manipulation">
+                        <Navigation className="w-3 h-3"/> Get Directions
+                      </a>
                     )}
                   </div>
-                  <div className="flex-1 h-24 sm:h-32 bg-[#0A101D] rounded-xl overflow-hidden relative border border-slate-800 flex items-center justify-center shadow-inner">
-                    <div className="text-slate-500 text-[9px] sm:text-[10px] font-black uppercase flex flex-col items-center gap-2"><MapPin className="w-4 h-4 sm:w-5 sm:h-5"/> Map Preview</div>
+                  <div className="flex-1 h-32 sm:h-40 bg-[#0A101D] rounded-xl overflow-hidden relative border border-slate-800 flex items-center justify-center shadow-inner group cursor-pointer">
+                    {/* 🟢 NEW: Renders map iframe if URL exists, else falls back to icon */}
+                    {option.map_url ? (
+                      <iframe 
+                        src={option.map_url} 
+                        width="100%" 
+                        height="100%" 
+                        style={{ border: 0 }} 
+                        allowFullScreen={false} 
+                        loading="lazy" 
+                        referrerPolicy="no-referrer-when-downgrade"
+                        className="grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500"
+                      />
+                    ) : (
+                      <div className="text-slate-500 text-[9px] sm:text-[10px] font-black uppercase flex flex-col items-center gap-2">
+                        <MapPin className="w-4 h-4 sm:w-5 sm:h-5"/> Map Preview
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -281,7 +315,6 @@ function ResultsContent() {
 
   const aeroTip = searchParams.get("aeroTip") || "";
 
-  // 🟢 FIXED DURATION MATH
   const duration = useMemo(() => {
     if (!dropoff || !pickup) return 1;
     const start = new Date(dropoff);
@@ -304,7 +337,6 @@ function ResultsContent() {
           return isCorrectCategory && isCorrectAirport && c.is_active;
         });
 
-        // 🟢 FIXED: SORTING LOGIC (Featured top -> Then cheapest total price)
         filtered.sort((a, b) => {
            const aSold = isHeathrow ? a.lhr_sold_out : a.ltn_sold_out;
            const bSold = isHeathrow ? b.lhr_sold_out : b.ltn_sold_out;
@@ -484,7 +516,7 @@ function ResultsLayout() {
     router.push(`/results?${query}`);
   };
 
-  // 🟢 SHARED INPUT STYLES (Fixes Autofill invisible text bugs)
+  // 🟢 SHARED INPUT STYLES
   const inputStyle = "w-full bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white] placeholder:text-slate-500";
   const selectStyle = "w-full appearance-none bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none cursor-pointer focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white]";
 
