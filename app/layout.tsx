@@ -1,12 +1,18 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next"; 
-import { GoogleAnalytics } from '@next/third-parties/google'; // 🔥 Added GA4 Import
+import { GoogleAnalytics } from '@next/third-parties/google';
 import Chatbot from "@/components/Chatbot";
 
 export const metadata: Metadata = {
   title: "AeroPark Direct",
   description: "Your direct route to stress free travel at Luton and Heathrow.",
+  // 🟢 Trustpilot Domain Verification
+  verification: {
+    other: {
+      "trustpilot-one-time-domain-verification-id": "d267340e-b316-47f6-bec2-7e50d8b23d9c",
+    },
+  },
 };
 
 export default function RootLayout({
