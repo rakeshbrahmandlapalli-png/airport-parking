@@ -5,7 +5,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const formatEmailDate = (dateStr: string) => {
   if (!dateStr) return "TBC";
   const d = new Date(dateStr);
-  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }); // e.g., "Wed 13 May"
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }); 
 };
 
 /**
@@ -28,9 +28,9 @@ export const sendBookingReceipt = async (booking: any, company: any, isAmendment
 
     // 3. Setup Navigation & Dates
     const mapsQuery = encodeURIComponent(`${booking.airport} ${company?.postcode || ''}`);
-    const mapsLink = `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
+    const mapsLink = `http://googleusercontent.com/maps.google.com/?q=${mapsQuery}`;
     
-    // 🟢 DUAL PHONE NUMBER LOGIC
+    // DUAL PHONE NUMBER LOGIC
     const phone1 = company?.phone_number || '07700 900 123';
     const phone2 = company?.phone_number_2 || '';
     
@@ -43,12 +43,14 @@ export const sendBookingReceipt = async (booking: any, company: any, isAmendment
 
     // 4. Dynamic Text based on whether it's a new booking or an update
     const statusText = isAmendment ? "Updated" : "Confirmed";
-    const statusColor = isAmendment ? "#3b82f6" : "#059669"; // Blue for update, Green for new
+    const statusColor = isAmendment ? "#3b82f6" : "#059669"; 
     const statusBg = isAmendment ? "#eff6ff" : "#ecfdf5";
 
     const { data, error } = await resend.emails.send({
       from: 'AeroPark Direct <info@aeroparkdirect.co.uk>', 
       to: [booking.email?.trim().toLowerCase() || booking.customerEmail?.trim().toLowerCase()],
+      // 🟢 TRUSTPILOT AUTOMATED REVIEW BCC:
+      bcc: ['aeroparkdirect.co.uk+c6f8c1b490@invite.trustpilot.com'],
       subject: `✈️ Booking ${statusText}: ${booking.booking_ref} [${booking.license_plate || booking.licensePlate}]`,
       html: `
       <!DOCTYPE html>
@@ -198,7 +200,7 @@ export const sendAmendmentAlerts = async (booking: any, company: any) => {
     // 1. Alert the Admin (You) to notify the provider
     await resend.emails.send({
       from: 'AeroPark System <info@aeroparkdirect.co.uk>', 
-      to: ['info@aeroparkdirect.co.uk'], // ⚠️ Change this to your actual email if different
+      to: ['info@aeroparkdirect.co.uk'], 
       subject: `🚨 BOOKING AMENDED: ${booking.booking_ref}`,
       html: `
         <div style="font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
@@ -225,7 +227,7 @@ export const sendAmendmentAlerts = async (booking: any, company: any) => {
 };
 
 /**
- * 🟢 NEW: Automated 5-Star Review Request Email
+ * 🟢 Automated 5-Star Review Request Email
  * Call this from the dashboard when a booking is marked as 'Completed'
  */
 export const sendReviewRequest = async (customerEmail: string, customerName: string, bookingRef: string) => {
