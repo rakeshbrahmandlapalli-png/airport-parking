@@ -85,6 +85,9 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
   const isMeetGreet = option.category?.toLowerCase().includes('meet');
   const isParkRide = option.category?.toLowerCase().includes('ride');
 
+  // Generate safe map link
+  const safeMapLink = `https://maps.google.com/maps?q=${encodeURIComponent((option.address || '') + ' ' + (option.postcode || ''))}`;
+
   return (
     <div className={`relative rounded-[2rem] overflow-hidden flex flex-col lg:flex-row transition-all duration-500 group ${cardBg} border ${borderClass} ${isPremium ? 'shadow-[0_20px_40px_-15px_rgba(0,0,0,0.8)] lg:hover:shadow-[0_30px_60px_-15px_rgba(37,99,235,0.2)] lg:hover:border-blue-500/50 transform lg:-translate-x-2 lg:w-[calc(100%+16px)]' : (isSoldOut ? 'opacity-70 grayscale-[50%]' : 'shadow-2xl lg:hover:shadow-blue-900/20 lg:hover:border-slate-600 lg:hover:-translate-y-1')}`}>
       {isPremium && !isSoldOut && (
@@ -146,7 +149,7 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
               <ThumbsUp className="w-3.5 h-3.5" /> {option.category?.replace('-', ' ')}
             </div>
             <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-[#1A2235] text-slate-300 border border-slate-700/50' : 'bg-slate-900/50 text-slate-400 border border-slate-800'}`}>
-              <BadgeIcon className="w-3.5 h-3.5" /> Terminal Verified
+              <BadgeIcon className="w-3.5 h-3.5" /> Direct Terminal Access
             </div>
             <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-emerald-500/5 text-emerald-500/80 border border-emerald-500/10'}`}>
               <Tag className="w-3.5 h-3.5" /> {isMeetGreet ? "£10 Fee Excluded" : "No Entry Fees"}
@@ -163,11 +166,11 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
           <div className={`mt-5 md:mt-6 rounded-2xl border overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300 ${isPremium ? 'bg-[#060A14] border-slate-800' : 'bg-slate-900/40 border-slate-800'}`}>
             <div className={`flex flex-wrap items-center gap-1.5 sm:gap-2 p-2 sm:p-3 border-b overflow-x-auto no-scrollbar ${isPremium ? 'border-slate-800' : 'border-slate-800/50'}`}>
               {[
-                { id: 'overview', label: 'Overview', icon: Info },
-                { id: 'arrival', label: 'Arrival', icon: PlaneTakeoff },
-                { id: 'return', label: 'Return', icon: PlaneLanding },
-                { id: 'map', label: 'Location', icon: MapIcon },
-                { id: 'reviews', label: `Reviews (${currentReviews.length})`, icon: MessageSquare }
+                { id: 'overview', label: 'Overview', Icon: Info },
+                { id: 'arrival', label: 'Arrival', Icon: PlaneTakeoff },
+                { id: 'return', label: 'Return', Icon: PlaneLanding },
+                { id: 'map', label: 'Location', Icon: MapIcon },
+                { id: 'reviews', label: `Reviews (${currentReviews.length})`, Icon: MessageSquare }
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -178,13 +181,12 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
                       : (isPremium ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5')
                   }`}
                 >
-                  <tab.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 hidden xs:block" /> {tab.label}
+                  <tab.Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 hidden xs:block" /> {tab.label}
                 </button>
               ))}
             </div>
 
             <div className="p-4 sm:p-6 min-h-[100px]">
-              {/* 🟢 FIXED: HTML Injection for text fields so <br/> and <b> tags work */}
               {activeTab === 'overview' && (
                 <div 
                   className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-400'}`}
@@ -210,13 +212,12 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
                     <p className={`text-xs sm:text-sm font-bold ${isPremium ? 'text-white' : 'text-slate-200'}`}>{option.address || mapLocation}</p>
                     <p className={`text-[11px] sm:text-xs mt-1 ${isPremium ? 'text-slate-400' : 'text-slate-500'}`}>Postcode: {option.postcode || (isHeathrow ? "TW6 1EW" : "LU2 9LY")}</p>
                     {!isSoldOut && option.address && (
-                      <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(option.address + ' ' + (option.postcode || ''))}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 sm:gap-2 mt-3 sm:mt-4 text-[9px] sm:text-[10px] font-black uppercase text-blue-400 hover:text-blue-300 transition-colors touch-manipulation">
+                      <a href={safeMapLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 sm:gap-2 mt-3 sm:mt-4 text-[9px] sm:text-[10px] font-black uppercase text-blue-400 hover:text-blue-300 transition-colors touch-manipulation">
                         <Navigation className="w-3 h-3"/> Get Directions
                       </a>
                     )}
                   </div>
                   <div className="flex-1 h-32 sm:h-40 bg-[#0A101D] rounded-xl overflow-hidden relative border border-slate-800 flex items-center justify-center shadow-inner group cursor-pointer">
-                    {/* 🟢 NEW: Renders map iframe if URL exists, else falls back to icon */}
                     {option.map_url ? (
                       <iframe 
                         src={option.map_url} 
@@ -516,9 +517,9 @@ function ResultsLayout() {
     router.push(`/results?${query}`);
   };
 
-  // 🟢 SHARED INPUT STYLES
-  const inputStyle = "w-full bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white] placeholder:text-slate-500";
-  const selectStyle = "w-full appearance-none bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none cursor-pointer focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white]";
+  // 🟢 SHARED INPUT STYLES (100% Autofill Bug Proof)
+  const inputStyle = "w-full bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white] placeholder:text-slate-500 autofill:bg-[#1A2235] autofill:text-white autofill:shadow-[0_0_0_1000px_#1A2235_inset]";
+  const selectStyle = "w-full appearance-none bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none cursor-pointer focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white] autofill:bg-[#1A2235] autofill:text-white autofill:shadow-[0_0_0_1000px_#1A2235_inset]";
 
   return (
     <main suppressHydrationWarning className="min-h-screen bg-[#0A101D] font-sans antialiased pb-24 md:pb-32 selection:bg-blue-500/30 overflow-x-hidden relative">
