@@ -18,7 +18,6 @@ export const sendBookingReceipt = async (booking: any, company: any, isAmendment
     const isLuton = booking.airport?.toLowerCase().includes("luton");
     
     // 2. Select dynamic instructions from the Database (With safety fallbacks)
-    // 🟢 FIXED: If the specific box is empty, it uses the general 'on_arrival' box or a default.
     const arrivalInstructions = isLuton 
       ? (company?.on_arrival_ltn || company?.on_arrival || 'Please call the driver 20 minutes before arrival to confirm your exact arrival time.') 
       : (company?.on_arrival_lhr || company?.on_arrival || 'Please call the driver 20 minutes before arrival to confirm your exact arrival time.');
@@ -27,10 +26,10 @@ export const sendBookingReceipt = async (booking: any, company: any, isAmendment
       ? (company?.on_return_ltn || company?.on_return || 'Instructions for vehicle collection will be provided at the terminal or via phone.') 
       : (company?.on_return_lhr || company?.on_return || 'Instructions for vehicle collection will be provided at the terminal or via phone.');
 
-    // 3. Setup Navigation & Dates (Fixed for Mobile Deep Linking)
-    // 🟢 FIXED: Changed the proxy URL to a direct Google Maps Search URL
+    // 3. Setup Navigation & Dates
+    // 🟢 FIXED: Using the official Google Maps Search API (works universally on all devices)
     const mapsQuery = encodeURIComponent(`${company?.name || 'Airport'} ${company?.address || ''} ${company?.postcode || ''}`);
-    const mapsLink = `https://www.google.com/maps?q=${mapsQuery}`;
+    const mapsLink = `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
     
     // DUAL PHONE NUMBER LOGIC
     const phone1 = company?.phone_number || '07700 900 123';
@@ -192,7 +191,6 @@ export const sendBookingReceipt = async (booking: any, company: any, isAmendment
     return { success: false, error };
   }
 };
-
 
 /**
  * Sends an internal alert to you, and an updated voucher to the customer.

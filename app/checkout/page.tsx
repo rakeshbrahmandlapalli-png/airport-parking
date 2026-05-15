@@ -47,7 +47,7 @@ function CheckoutContent() {
   const airport = searchParams.get("airport") || "Luton (LTN)";
   const type = searchParams.get("type") || "Premium Meet & Greet"; 
   const urlFlightNumber = searchParams.get("flightNumber") || "";
-  const companyId = searchParams.get("companyId") || ""; 
+  const companyId = searchParams.get("companyId") || searchParams.get("id") ||""; 
   
   // 🟢 SECURE PRICING STATES
   const [company, setCompany] = useState<any>(null);
