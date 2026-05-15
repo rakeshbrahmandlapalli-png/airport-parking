@@ -124,7 +124,7 @@ export default function ManageBooking() {
 
   const extensionData = calculateExtension();
 
-  // 3. STRIPE REDIRECT (Sends to checkout session instead of updating DB immediately)
+  // 3. STRIPE REDIRECT 
   const handleExtendBooking = async () => {
     if (extensionData.extraCost <= 0) return;
     setExtensionLoading(true);
@@ -143,7 +143,7 @@ export default function ManageBooking() {
 
       const session = await response.json();
       if (session.url) {
-        window.location.href = session.url; // Redirect to Stripe
+        window.location.href = session.url; 
       } else {
         throw new Error(session.error || "Failed to create payment session");
       }
@@ -217,14 +217,15 @@ export default function ManageBooking() {
       <style>{`
         @media print {
           header, footer, button, .print-hidden, .bg-slate-50, nav { display: none !important; }
-          body { background-color: white !important; color: black !important; padding: 0 !important; margin: 0 !important; }
+          body, main { background-color: white !important; color: black !important; padding: 0 !important; margin: 0 !important; }
           .shadow-2xl, .border { box-shadow: none !important; border: none !important; }
           p, div { word-wrap: break-word; }
           .print-block { display: block !important; }
+          @page { margin: 1cm; }
         }
       `}</style>
 
-      <div className="max-w-3xl mx-auto mb-12 print-hidden">
+      <div className="max-w-3xl mx-auto mb-12 print:hidden">
         <Link href="/" className="inline-flex items-center gap-2 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-blue-600 transition-colors group">
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Return Home
         </Link>
@@ -233,7 +234,7 @@ export default function ManageBooking() {
       <div className="max-w-2xl mx-auto relative z-10 w-full">
         {!booking ? (
           /* SEARCH FORM */
-          <div className="bg-white rounded-[2rem] md:rounded-[3rem] p-6 md:p-12 shadow-xl border border-slate-100 text-center relative overflow-hidden print-hidden">
+          <div className="bg-white rounded-[2rem] md:rounded-[3rem] p-6 md:p-12 shadow-xl border border-slate-100 text-center relative overflow-hidden print:hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-[80px] pointer-events-none"></div>
 
             <div className="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center mb-8 mx-auto shadow-lg shadow-blue-200 relative z-10">
@@ -245,12 +246,12 @@ export default function ManageBooking() {
             <form onSubmit={findBooking} className="space-y-5 text-left relative z-10">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 text-blue-600">Reference Number</label>
+                {/* 🟢 FIXED: Autofill protection shadow added back */}
                 <input 
                   type="text" 
                   placeholder="APD-XXXXXX" 
                   autoComplete="off"
-                  data-form-type="other"
-                  className="w-full p-4 md:p-5 bg-slate-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900 border border-transparent focus:bg-white uppercase"
+                  className="w-full p-4 md:p-5 bg-slate-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900 border border-transparent focus:bg-white uppercase shadow-[0_0_0_1000px_#f8fafc_inset] [-webkit-text-fill-color:#0f172a]"
                   value={ref}
                   onChange={(e) => setRef(e.target.value.toUpperCase())}
                 />
@@ -264,12 +265,12 @@ export default function ManageBooking() {
 
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
+                {/* 🟢 FIXED: Autofill protection shadow added back */}
                 <input 
                   type="text" 
                   placeholder="Enter name used for booking" 
                   autoComplete="off"
-                  data-form-type="other"
-                  className="w-full p-4 md:p-5 bg-slate-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900 border border-transparent focus:bg-white"
+                  className="w-full p-4 md:p-5 bg-slate-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900 border border-transparent focus:bg-white shadow-[0_0_0_1000px_#f8fafc_inset] [-webkit-text-fill-color:#0f172a]"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                 />
@@ -297,16 +298,16 @@ export default function ManageBooking() {
             <div className="bg-white rounded-[2rem] md:rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden">
               
               <div className="p-6 md:p-10 bg-slate-900 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600 print-hidden"></div>
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600 print:hidden"></div>
                 <div className="relative z-10 w-full flex justify-between items-center">
                   <div>
-                    <div className="flex items-center gap-2 mb-1 print-hidden">
+                    <div className="flex items-center gap-2 mb-1 print:hidden">
                       <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                       <p className="text-blue-400 font-black text-[10px] uppercase tracking-[0.3em]">Booking Active</p>
                     </div>
-                    <h2 className="text-3xl md:text-5xl font-black tracking-tighter font-mono">{booking.booking_ref}</h2>
+                    <h2 className="text-3xl md:text-5xl font-black tracking-tighter font-mono text-white print:text-black">{booking.booking_ref}</h2>
                   </div>
-                  <div className="print-hidden">
+                  <div className="print:hidden">
                     {checkCanCancel() ? (
                       <Link href={`/cancel?ref=${booking.booking_ref}`} className="px-4 py-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/20 rounded-lg text-xs font-black uppercase tracking-wider transition-all">
                         Cancel Booking
@@ -337,18 +338,18 @@ export default function ManageBooking() {
                     <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest mb-1 flex items-center justify-between">
                       Return Flight Number
                       {!isEditingFlight && (
-                        <button onClick={() => setIsEditingFlight(true)} className="text-blue-600 hover:text-blue-800 flex items-center gap-1 print-hidden">
+                        <button onClick={() => setIsEditingFlight(true)} className="text-blue-600 hover:text-blue-800 flex items-center gap-1 print:hidden">
                           <Edit2 className="w-3 h-3" /> Edit
                         </button>
                       )}
                     </p>
                     {isEditingFlight ? (
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-2 mt-1 print:hidden">
                         <input 
                           type="text" 
                           value={newFlightNum}
                           onChange={(e) => setNewFlightNum(e.target.value)}
-                          className="p-2 text-sm border border-slate-300 rounded-lg font-bold w-32 uppercase"
+                          className="p-2 text-sm border border-slate-300 rounded-lg font-bold w-32 uppercase shadow-[0_0_0_1000px_#ffffff_inset] [-webkit-text-fill-color:#0f172a]"
                           placeholder="e.g. EZY123"
                         />
                         <button onClick={handleUpdateFlight} disabled={flightUpdateLoading} className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
@@ -400,8 +401,8 @@ export default function ManageBooking() {
                   </div>
                 </div>
 
-                {/* DYNAMIC DATABASE INSTRUCTIONS FOR LTN / LHR */}
-                <div className="mt-8 bg-blue-50/50 border border-blue-100 rounded-[2rem] p-6 hidden print-block mb-8">
+                {/* DYNAMIC DATABASE INSTRUCTIONS FOR LTN / LHR (Visible on Print) */}
+                <div className="mt-8 bg-blue-50/50 border border-blue-100 rounded-[2rem] p-6 hidden print:block mb-8">
                   <h3 className="font-black text-blue-900 mb-4 flex items-center gap-2"><Info className="w-5 h-5" /> Arrival & Return Instructions</h3>
                   <div className="space-y-4">
                     {company ? (
@@ -443,7 +444,7 @@ export default function ManageBooking() {
                 </div>
 
                 {/* Extension Logic */}
-                <div className="print-hidden">
+                <div className="print:hidden">
                   {extensionSuccess ? (
                     <div className="bg-emerald-50 rounded-[2rem] p-6 md:p-8 border border-emerald-200">
                       <div className="flex items-center gap-3 mb-6 border-b border-emerald-100 pb-4">
@@ -451,7 +452,10 @@ export default function ManageBooking() {
                         <h3 className="text-xl font-black text-emerald-900">Updated Summary</h3>
                       </div>
                       <div className="space-y-3 mb-6">
-                        <div className="flex justify-between text-sm"><span className="text-emerald-700 font-bold">New Return:</span> <span className="font-black">{formatDate(extensionSuccess.newDate)}</span></div>
+                        <div className="flex justify-between text-sm">
+                           <span className="text-emerald-700 font-bold">New Return:</span> 
+                           <span className="font-black text-right">{formatDate(extensionSuccess.newDate)}<br/><span className="text-[10px] uppercase text-emerald-600 tracking-widest">{booking.pickup_time || "12:00"}</span></span>
+                        </div>
                         <div className="flex justify-between text-sm border-t border-emerald-100 pt-3"><span className="text-emerald-700 font-bold">Amount Paid:</span> <span className="font-black">£{extensionSuccess.extraPaid.toFixed(2)}</span></div>
                       </div>
                       <button onClick={() => setExtensionSuccess(null)} className="w-full py-4 bg-emerald-600 text-white font-black rounded-xl text-xs uppercase tracking-widest">Done</button>
@@ -466,18 +470,21 @@ export default function ManageBooking() {
                         <h3 className="text-lg font-black tracking-tight flex items-center gap-2"><CalendarPlus className="w-5 h-5 text-blue-400" /> New Pick-up Date</h3>
                         <button onClick={() => setIsExtending(false)} className="text-[10px] font-black uppercase text-slate-400 hover:text-white">Cancel</button>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
-                        <input 
-                          type="date" 
-                          name="newPickupDate"
-                          autoComplete="one-time-code"
-                          readOnly
-                          onClick={(e: any) => { try { e.target.showPicker() } catch(err) {} }}
-                          min={getMinExtensionDate()} 
-                          value={newPickupDate} 
-                          onChange={(e) => setNewPickupDate(e.target.value)} 
-                          className="w-full bg-slate-800 border-none rounded-xl p-4 font-bold text-white outline-none cursor-pointer shadow-[0_0_0_1000px_#1e293b_inset]" 
-                        />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end relative">
+                        
+                        {/* 🟢 FIXED: Removed readOnly and added color-scheme:dark so the calendar icon is visible */}
+                        <div className="flex flex-col space-y-2 w-full relative">
+                          <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Select New Date</label>
+                          <input 
+                            type="date" 
+                            name="newPickupDate"
+                            min={getMinExtensionDate()} 
+                            value={newPickupDate} 
+                            onChange={(e) => setNewPickupDate(e.target.value)} 
+                            className="w-full bg-slate-800 border border-slate-700 hover:border-blue-500 rounded-xl p-4 font-bold text-white outline-none cursor-pointer [color-scheme:dark] focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1e293b_inset] [-webkit-text-fill-color:white]" 
+                          />
+                        </div>
+
                         {newPickupDate && extensionData.extraDays > 0 && (
                           <div className="bg-slate-800/50 p-4 rounded-xl text-right border border-slate-700/50">
                              <p className="text-[10px] font-black text-slate-400 uppercase">Additional Due</p>
@@ -496,7 +503,7 @@ export default function ManageBooking() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print-hidden w-full">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:hidden w-full">
               <button onClick={() => window.print()} className="w-full py-5 bg-white border border-slate-200 text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3">
                 <Printer className="w-4 h-4" /> Print PDF Voucher
               </button>
