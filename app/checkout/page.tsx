@@ -43,15 +43,18 @@ function CheckoutContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isEditingSearch, setIsEditingSearch] = useState(false);
   
-  // --- CAPTURE URL DATA ---
+  // 🟢 AGGRESSIVE URL GRABBER: Catches the ID or Name no matter how the Results page formats it
+  const urlId = searchParams.get("companyId") || searchParams.get("id") || searchParams.get("providerId") || ""; 
+  const urlName = searchParams.get("company") || searchParams.get("provider") || searchParams.get("name") || "";
+  
   const airport = searchParams.get("airport") || "Luton (LTN)";
   const type = searchParams.get("type") || "Premium Meet & Greet"; 
   const urlFlightNumber = searchParams.get("flightNumber") || "";
-  const companyId = searchParams.get("companyId") || searchParams.get("id") ||""; 
   
   // 🟢 SECURE PRICING STATES
   const [company, setCompany] = useState<any>(null);
-  const fallbackUrlPrice = Number(searchParams.get("price")) || 0; // Only used while loading
+  const [resolvedId, setResolvedId] = useState(urlId); // We will lock the database ID here
+  const fallbackUrlPrice = Number(searchParams.get("price")) || 0; 
   
   // 🟢 AI DATA CAPTURE
   const aiData = {
@@ -97,15 +100,25 @@ function CheckoutContent() {
   const [isPromoError, setIsPromoError] = useState(false);
   const [aeroClicks, setAeroClicks] = useState(0);
 
-  // 🟢 FETCH SECURE COMPANY DATA ON LOAD
+  // 🟢 AGGRESSIVE DATABASE SEARCH: Finds the company by ID, or falls back to searching by Name
   useEffect(() => {
     async function fetchCompanyData() {
-      if (!companyId) return;
-      const { data } = await supabase.from('companies').select('*').eq('id', companyId).maybeSingle();
-      if (data) setCompany(data);
+      if (urlId) {
+        const { data } = await supabase.from('companies').select('*').eq('id', urlId).maybeSingle();
+        if (data) {
+          setCompany(data);
+          setResolvedId(data.id);
+        }
+      } else if (urlName) {
+        const { data } = await supabase.from('companies').select('*').ilike('name', `%${urlName}%`).maybeSingle();
+        if (data) {
+          setCompany(data);
+          setResolvedId(data.id);
+        }
+      }
     }
     fetchCompanyData();
-  }, [companyId]);
+  }, [urlId, urlName]);
 
   // 🟢 AUTO-APPLY LOYALTY DISCOUNT ON LOAD
   useEffect(() => {
@@ -159,12 +172,12 @@ function CheckoutContent() {
     const start = new Date(dropDate);
     const end = new Date(pickDate);
     const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both drop & pick day
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
     return diffDays <= 0 ? 1 : diffDays;
   };
 
   const getSecureBasePrice = () => {
-    if (!company) return fallbackUrlPrice; // Fallback while fetching from database
+    if (!company) return fallbackUrlPrice; 
     
     const days = calculateDays();
     const isLuton = airport.toLowerCase().includes("luton");
@@ -179,7 +192,7 @@ function CheckoutContent() {
   };
 
   const bookingDays = calculateDays();
-  const baseTotal = getSecureBasePrice(); // 🟢 SECURE DATABASE PRICE
+  const baseTotal = getSecureBasePrice(); 
   const discountAmount = baseTotal * discount.percent;
   const addOnsTotal = (wantsLounge ? LOUNGE_PRICE : 0) + (wantsFastTrack ? FAST_TRACK_PRICE : 0);
   const finalTotal = (baseTotal - discountAmount) + addOnsTotal;
@@ -212,7 +225,6 @@ function CheckoutContent() {
     setIsProcessing(true);
 
     let finalServiceType = "Premium Meet & Greet";
-    // 🟢 FIXED: Now strictly looks for "park & ride" or "park and ride"
     if (type.toLowerCase().includes("park & ride") || type.toLowerCase().includes("park and ride")) {
       finalServiceType = "Park & Ride";
     }
@@ -220,14 +232,17 @@ function CheckoutContent() {
       finalServiceType = "Hotel & Parking";
     }
 
+    // Determine Provider Name to show on Checkout accurately
+    const providerName = company ? company.name : (urlName || type || "AeroPark Direct");
+
     try {
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          price: finalTotal, // 🟢 NOW 100% SECURE FROM MANIPULATION
+          price: finalTotal, 
           airport: airport,
-          provider: type,
+          provider: providerName,
           metadata: {
             full_name: fullName,
             license_plate: registration.toUpperCase(),
@@ -237,7 +252,7 @@ function CheckoutContent() {
             terminal: terminal,
             dropoff_date: dropDate,
             pickup_date: pickDate,
-            company_id: companyId,
+            company_id: resolvedId, // 🟢 NOW IT WILL 100% PASS THE EXACT ID TO STRIPE!
             service_type: finalServiceType,
             fullName,
             email,
@@ -554,7 +569,7 @@ function CheckoutContent() {
                 </div>
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">{airport}</p>
-                  <p className="font-black text-xl leading-tight tracking-tight">{type}</p>
+                  <p className="font-black text-xl leading-tight tracking-tight">{company ? company.name : (urlName || type)}</p>
                 </div>
               </div>
 
@@ -704,13 +719,13 @@ function CheckoutContent() {
           </div>
 
           <div className="mt-6 flex flex-col gap-4">
-              <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-lg flex items-start gap-4">
-                <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">
+              <div className="bg-white rounded-3xl p-6 border border-slate-800 shadow-lg flex items-start gap-4">
+                <div className="w-10 h-10 bg-emerald-500/10 text-emerald-400 rounded-xl flex items-center justify-center flex-shrink-0">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-black text-slate-900 tracking-tight mb-1.5">Aero Booking Guarantee</p>
-                  <p className="text-xs font-bold text-slate-500 leading-relaxed">Free cancellation up to <span className="text-blue-600">24 hours</span> before your drop-off. Encrypted by Stripe.</p>
+                  <p className="text-sm font-black text-white tracking-tight mb-1.5">Aero Booking Guarantee</p>
+                  <p className="text-xs font-bold text-slate-400 leading-relaxed">Free cancellation up to <span className="text-blue-400">24 hours</span> before your drop-off. Encrypted by Stripe.</p>
                 </div>
               </div>
           </div>
