@@ -92,9 +92,9 @@ export default function ManageBooking() {
     const start = new Date(booking.dropoff_date);
     const newEnd = new Date(newPickupDate);
     
-    // Total days for the WHOLE trip now
+    // 🟢 FIXED: Added +1 to match the exact inclusive day calculation on CheckoutPage
     const totalDiffTime = newEnd.getTime() - start.getTime();
-    let totalDays = Math.ceil(totalDiffTime / (1000 * 60 * 60 * 24));
+    let totalDays = Math.ceil(totalDiffTime / (1000 * 60 * 60 * 24)) + 1;
     if (totalDays <= 0) totalDays = 1;
 
     // Determine which airport rates to use
@@ -213,7 +213,6 @@ export default function ManageBooking() {
   return (
     <main className="min-h-screen bg-slate-50 py-12 md:py-20 px-4 md:px-6 font-sans selection:bg-blue-200">
       
-      {/* Print-specific CSS */}
       <style>{`
         @media print {
           header, footer, button, .print-hidden, .bg-slate-50, nav { display: none !important; }
@@ -246,12 +245,12 @@ export default function ManageBooking() {
             <form onSubmit={findBooking} className="space-y-5 text-left relative z-10">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 text-blue-600">Reference Number</label>
-                {/* 🟢 FIXED: Autofill protection shadow added back */}
+                {/* 🟢 FIXED: Removed inset shadow so background stays normal */}
                 <input 
                   type="text" 
                   placeholder="APD-XXXXXX" 
                   autoComplete="off"
-                  className="w-full p-4 md:p-5 bg-slate-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900 border border-transparent focus:bg-white uppercase shadow-[0_0_0_1000px_#f8fafc_inset] [-webkit-text-fill-color:#0f172a]"
+                  className="w-full p-4 md:p-5 bg-slate-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900 border border-transparent focus:bg-white uppercase"
                   value={ref}
                   onChange={(e) => setRef(e.target.value.toUpperCase())}
                 />
@@ -265,12 +264,11 @@ export default function ManageBooking() {
 
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
-                {/* 🟢 FIXED: Autofill protection shadow added back */}
                 <input 
                   type="text" 
                   placeholder="Enter name used for booking" 
                   autoComplete="off"
-                  className="w-full p-4 md:p-5 bg-slate-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900 border border-transparent focus:bg-white shadow-[0_0_0_1000px_#f8fafc_inset] [-webkit-text-fill-color:#0f172a]"
+                  className="w-full p-4 md:p-5 bg-slate-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900 border border-transparent focus:bg-white"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                 />
@@ -349,7 +347,7 @@ export default function ManageBooking() {
                           type="text" 
                           value={newFlightNum}
                           onChange={(e) => setNewFlightNum(e.target.value)}
-                          className="p-2 text-sm border border-slate-300 rounded-lg font-bold w-32 uppercase shadow-[0_0_0_1000px_#ffffff_inset] [-webkit-text-fill-color:#0f172a]"
+                          className="p-2 text-sm border border-slate-300 rounded-lg font-bold w-32 uppercase"
                           placeholder="e.g. EZY123"
                         />
                         <button onClick={handleUpdateFlight} disabled={flightUpdateLoading} className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
@@ -472,7 +470,7 @@ export default function ManageBooking() {
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end relative">
                         
-                        {/* 🟢 FIXED: Removed readOnly and added color-scheme:dark so the calendar icon is visible */}
+                        {/* 🟢 FIXED: Removed inset shadow to unhide native calendar icon */}
                         <div className="flex flex-col space-y-2 w-full relative">
                           <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Select New Date</label>
                           <input 
@@ -481,7 +479,7 @@ export default function ManageBooking() {
                             min={getMinExtensionDate()} 
                             value={newPickupDate} 
                             onChange={(e) => setNewPickupDate(e.target.value)} 
-                            className="w-full bg-slate-800 border border-slate-700 hover:border-blue-500 rounded-xl p-4 font-bold text-white outline-none cursor-pointer [color-scheme:dark] focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1e293b_inset] [-webkit-text-fill-color:white]" 
+                            className="w-full bg-slate-800 border border-slate-700 hover:border-blue-500 rounded-xl p-4 font-bold text-white outline-none cursor-pointer [color-scheme:dark] focus:ring-2 focus:ring-blue-500/50 transition-all" 
                           />
                         </div>
 
