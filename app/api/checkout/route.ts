@@ -17,7 +17,7 @@ export async function POST(req: Request) {
       ? `Date Change Adjustment - ${provider}`
       : `${provider} Parking Services`;
 
-    // 2. SAFE URL REDIRECTS (Fixes the Invalid URL Popup)
+    // 2. SAFE URL REDIRECTS (Prevents the "Invalid URL" error)
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || "https://www.aeroparkdirect.co.uk";
 
     const successPath = isAmendment 
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       
-      // PHONE COLLECTION
+      // Collects phone number to fix the "N/A" in your emails
       phone_number_collection: {
         enabled: true,
       },
@@ -40,14 +40,13 @@ export async function POST(req: Request) {
               name: productName,
               description: productDesc,
             },
-            unit_amount: Math.round(price * 100), // Stripe expects pence
+            unit_amount: Math.round(price * 100), 
           },
           quantity: 1,
         },
       ],
 
-      // 🟢 CRITICAL FIX: Explicitly cast metadata to strings for Stripe
-      // If we just use ...metadata, Stripe drops non-string values like company_id
+      // 🟢 STRIPE METADATA (Strings only)
       metadata: {
         full_name: String(metadata.full_name || metadata.fullName || ""),
         email: String(metadata.email || ""),
@@ -63,7 +62,7 @@ export async function POST(req: Request) {
         pickTime: String(metadata.pickTime || ""),
         flightNumber: String(metadata.flightNumber || metadata.flight_number || ""),
         
-        // 🟢 THIS IS THE KEY: The webhook needs this ID to generate the custom email
+        // 🟢 THIS ID UNLOCKS THE CUSTOM EMAIL INSTRUCTIONS
         company_id: String(metadata.company_id || ""), 
         service_type: String(metadata.service_type || metadata.type || "Premium Meet & Greet"),
         booking_ref: String(metadata.booking_ref || ""),

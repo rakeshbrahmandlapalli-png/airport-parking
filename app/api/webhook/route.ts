@@ -5,7 +5,7 @@ import prismadb from "@/app/lib/prismadb";
 import { sendBookingReceipt, sendAmendmentAlerts } from "@/app/lib/mail"; 
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!; // You'll get this from Stripe Dashboard
+const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!; 
 
 export async function POST(req: Request) {
   const body = await req.text();
@@ -30,14 +30,13 @@ export async function POST(req: Request) {
         where: { booking_ref: metadata.booking_ref },
         data: {
           pickup_date: new Date(metadata.new_pickup),
-          dropoff_date: new Date(metadata.new_dropoff),
-          total_price: { increment: session.amount_total / 100 }, // Add the extra payment to total
+          total_price: { increment: session.amount_total / 100 }, 
         },
-        // 🟢 FIXED: Your Prisma schema calls the relation 'companies', not 'company'
+        // 🟢 Relation name from your schema is 'companies'
         include: { companies: true } 
       });
 
-      // Notify you and the customer
+      // Notify Admin and send updated voucher to customer
       await sendAmendmentAlerts(updatedBooking, updatedBooking.companies);
       
     } else {
@@ -46,34 +45,36 @@ export async function POST(req: Request) {
         data: {
           booking_ref: `APD-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
           full_name: metadata?.full_name || "",
-          // 🟢 FIXED: Grab phone and email directly from your custom metadata first
           email: metadata?.email || session.customer_details?.email || "",
           phone_number: metadata?.phone || session.customer_details?.phone || "", 
           license_plate: metadata?.license_plate || "",
           car_make: metadata?.car_make || "",
           car_color: metadata?.car_color || "",
-          airport: metadata?.airport || "",
-          terminal: metadata?.terminal || "",
-          dropoff_date: new Date(metadata?.dropoff_date || new Date()),
-          pickup_date: new Date(metadata?.pickup_date || new Date()),
-          // 🟢 FIXED: Added the missing fields so the email template can read them!
-          dropoff_time: metadata?.dropTime || "12:00", 
-          pickup_time: metadata?.pickTime || "12:00", 
+          airport: metadata?.airport || "Luton Airport (LTN)",
+          terminal: metadata?.terminal || "Main Terminal",
+          dropoff_date: new Date(metadata?.dropoff_date),
+          pickup_date: new Date(metadata?.pickup_date),
+          dropoff_time: metadata?.dropTime || "", 
+          pickup_time: metadata?.pickTime || "", 
           flight_number: metadata?.flightNumber || "", 
           service_type: metadata?.service_type || "Premium Meet & Greet", 
           total_price: session.amount_total ? session.amount_total / 100 : 0,
           status: "confirmed",
           stripe_session_id: session.id,
-          company_id: metadata?.company_id,
+          // 🟢 Link to the provider from your admin panel
+          company_id: metadata?.company_id || null,
         }
       });
 
-      // Fetch the specific company details (for dynamic instructions/map links)
-      const company = await prismadb.companies.findUnique({ 
-        where: { id: metadata?.company_id } 
-      });
+      // 🟢 DYNAMIC FETCH: Pull the specific instructions/address for this company
+      let company = null;
+      if (metadata?.company_id) {
+        company = await prismadb.companies.findUnique({ 
+          where: { id: metadata.company_id } 
+        });
+      }
       
-      // Pass both to your email template
+      // Pass the booking AND the specific company info to the email template
       await sendBookingReceipt(newBooking, company); 
     }
   }

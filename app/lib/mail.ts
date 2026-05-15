@@ -18,17 +18,19 @@ export const sendBookingReceipt = async (booking: any, company: any, isAmendment
     const isLuton = booking.airport?.toLowerCase().includes("luton");
     
     // 2. Select dynamic instructions from the Database (With safety fallbacks)
+    // 🟢 FIXED: If the specific box is empty, it uses the general 'on_arrival' box or a default.
     const arrivalInstructions = isLuton 
-      ? (company?.on_arrival_ltn || company?.on_arrival) 
-      : (company?.on_arrival_lhr || company?.on_arrival);
+      ? (company?.on_arrival_ltn || company?.on_arrival || 'Please call the driver 20 minutes before arrival to confirm your exact arrival time.') 
+      : (company?.on_arrival_lhr || company?.on_arrival || 'Please call the driver 20 minutes before arrival to confirm your exact arrival time.');
     
     const returnInstructions = isLuton 
-      ? (company?.on_return_ltn || company?.on_return) 
-      : (company?.on_return_lhr || company?.on_return);
+      ? (company?.on_return_ltn || company?.on_return || 'Instructions for vehicle collection will be provided at the terminal or via phone.') 
+      : (company?.on_return_lhr || company?.on_return || 'Instructions for vehicle collection will be provided at the terminal or via phone.');
 
     // 3. Setup Navigation & Dates (Fixed for Mobile Deep Linking)
-    const mapsQuery = encodeURIComponent(`${company?.address || booking.airport} ${company?.postcode || ''}`);
-    const mapsLink = `https://maps.google.com/?q=${mapsQuery}`;
+    // 🟢 FIXED: Changed the proxy URL to a direct Google Maps Search URL
+    const mapsQuery = encodeURIComponent(`${company?.name || 'Airport'} ${company?.address || ''} ${company?.postcode || ''}`);
+    const mapsLink = `https://www.google.com/maps?q=${mapsQuery}`;
     
     // DUAL PHONE NUMBER LOGIC
     const phone1 = company?.phone_number || '07700 900 123';
@@ -122,7 +124,7 @@ export const sendBookingReceipt = async (booking: any, company: any, isAmendment
                           </td>
                           <td class="mobile-stack" width="50%" valign="top" style="padding-left: 10px;">
                             <p style="margin: 0; font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 900;">Service & Flight</p>
-                            <p style="margin: 6px 0 0 0; font-size: 14px; font-weight: 700; color: #334155;">${booking.flight_number || booking.flightNumber || 'TBC'}<br>${booking.service_type || booking.parkingType || 'Meet & Greet'}</p>
+                            <p style="margin: 6px 0 0 0; font-size: 14px; font-weight: 700; color: #334155;">${booking.flight_number || booking.flightNumber || 'TBC'}<br>${booking.service_type || booking.parkingType || 'Premium Meet & Greet'}</p>
                           </td>
                         </tr>
                       </table>
@@ -133,7 +135,7 @@ export const sendBookingReceipt = async (booking: any, company: any, isAmendment
 
                       <div style="background-color: #1e293b; border-left: 4px solid #3b82f6; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
                         <p style="margin: 0 0 8px 0; font-size: 11px; font-weight: 900; color: #3b82f6; text-transform: uppercase; letter-spacing: 1px;">Inbound • ${dropDate} @ ${booking.dropoff_time || 'TBC'}</p>
-                        <p style="margin: 0 0 16px 0; font-size: 14px; color: #f8fafc; line-height: 1.6;">${arrivalInstructions || 'Please call the driver 20 minutes before arrival to confirm your exact arrival time.'}</p>
+                        <p style="margin: 0 0 16px 0; font-size: 14px; color: #f8fafc; line-height: 1.6;">${arrivalInstructions}</p>
                         
                         <div style="border-top: 1px solid #334155; padding-top: 16px;">
                           <p style="margin: 0 0 10px 0; font-size: 11px; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;">Dispatch Numbers</p>
@@ -144,7 +146,7 @@ export const sendBookingReceipt = async (booking: any, company: any, isAmendment
 
                       <div style="background-color: #1e293b; border-left: 4px solid #10b981; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
                         <p style="margin: 0 0 8px 0; font-size: 11px; font-weight: 900; color: #10b981; text-transform: uppercase; letter-spacing: 1px;">Return • ${pickDate} @ ${booking.pickup_time || 'TBC'}</p>
-                        <p style="margin: 0 0 16px 0; font-size: 14px; color: #f8fafc; line-height: 1.6;">${returnInstructions || 'Instructions for vehicle collection will be provided at the terminal or via phone.'}</p>
+                        <p style="margin: 0 0 16px 0; font-size: 14px; color: #f8fafc; line-height: 1.6;">${returnInstructions}</p>
 
                         <div style="border-top: 1px solid #334155; padding-top: 16px;">
                           <p style="margin: 0 0 10px 0; font-size: 11px; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;">Dispatch Numbers</p>
@@ -157,7 +159,7 @@ export const sendBookingReceipt = async (booking: any, company: any, isAmendment
                     </div>
 
                     <div style="margin-top: 30px; text-align: center;">
-                      <a href="https://aeroparkdirect.co.uk/manage" style="font-size: 13px; color: #64748b; text-decoration: underline; font-weight: 700;">Manage Your Trip Online</a>
+                      <a href="https://www.aeroparkdirect.co.uk/manage" style="font-size: 13px; color: #64748b; text-decoration: underline; font-weight: 700;">Manage Your Trip Online</a>
                     </div>
 
                   </td>
