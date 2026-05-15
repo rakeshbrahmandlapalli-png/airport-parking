@@ -15,7 +15,7 @@ export default function ManageBooking() {
   const [ref, setRef] = useState("");
   const [fullName, setFullName] = useState("");
   const [booking, setBooking] = useState<any>(null);
-  const [company, setCompany] = useState<any>(null); // NEW: Holds the provider's details
+  const [company, setCompany] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -65,7 +65,6 @@ export default function ManageBooking() {
         setBooking(data);
         setNewFlightNum(data.flight_number || "");
 
-        // Using company_id to match your Prisma Schema
         if (data.company_id) {
           const { data: companyData } = await supabase
             .from('companies') 
@@ -88,23 +87,15 @@ export default function ManageBooking() {
 
   // 2. PROCESS EXTENSION USING ADVANCED TIER PRICING
   const calculateExtension = () => {
-    // Wait until company data is loaded so we have the tier rates
     if (!booking || !newPickupDate || !company) return { extraDays: 0, extraCost: 0 };
     
     const start = new Date(booking.dropoff_date);
-    const originalEnd = new Date(booking.pickup_date);
     const newEnd = new Date(newPickupDate);
     
-    if (newEnd <= originalEnd) return { extraDays: 0, extraCost: 0 };
-
-    // Find extra days
-    const extraDiffTime = newEnd.getTime() - originalEnd.getTime();
-    const extraDays = Math.ceil(extraDiffTime / (1000 * 60 * 60 * 24));
-
-    // Find NEW total days
-    const newTotalDiffTime = newEnd.getTime() - start.getTime();
-    let newTotalDays = Math.ceil(newTotalDiffTime / (1000 * 60 * 60 * 24));
-    if (newTotalDays <= 0) newTotalDays = 1;
+    // Total days for the WHOLE trip now
+    const totalDiffTime = newEnd.getTime() - start.getTime();
+    let totalDays = Math.ceil(totalDiffTime / (1000 * 60 * 60 * 24));
+    if (totalDays <= 0) totalDays = 1;
 
     // Determine which airport rates to use
     const isLuton = booking.airport?.toLowerCase().includes("luton");
@@ -115,59 +106,49 @@ export default function ManageBooking() {
     // Calculate NEW total price based on your Admin Tier Logic
     let newCalculatedTotal = 0;
     
-    if (newTotalDays === 1) {
+    if (totalDays === 1) {
       newCalculatedTotal = basePrice;
-    } else if (newTotalDays <= 6) {
-      // Base + Tier 1 for days 2 through 6
-      newCalculatedTotal = basePrice + ((newTotalDays - 1) * tier1Rate);
+    } else if (totalDays <= 6) {
+      newCalculatedTotal = basePrice + ((totalDays - 1) * tier1Rate);
     } else {
-      // Base + 5 days of Tier 1 + remaining days of Tier 2
-      newCalculatedTotal = basePrice + (5 * tier1Rate) + ((newTotalDays - 6) * tier2Rate);
+      newCalculatedTotal = basePrice + (5 * tier1Rate) + ((totalDays - 6) * tier2Rate);
     }
 
-    // The cost to the user is the new correct total MINUS what they already paid
+    // EXTRA COST = NEW TOTAL - WHAT THEY ALREADY PAID
     let extraCost = newCalculatedTotal - Number(booking.total_price);
     
-    // Safety check: Never charge less than 0
     if (extraCost < 0) extraCost = 0;
 
-    return { extraDays, extraCost };
+    return { extraDays: totalDays, extraCost };
   };
 
   const extensionData = calculateExtension();
 
+  // 3. STRIPE REDIRECT (Sends to checkout session instead of updating DB immediately)
   const handleExtendBooking = async () => {
-    if (extensionData.extraDays <= 0) return;
+    if (extensionData.extraCost <= 0) return;
     setExtensionLoading(true);
 
     try {
-      const newTotal = Number(booking.total_price) + extensionData.extraCost;
-      const oldPickupDate = booking.pickup_date;
-
-      const { error: updateError } = await supabase
-        .from('bookings')
-        .update({ pickup_date: newPickupDate, total_price: newTotal })
-        .eq('booking_ref', booking.booking_ref);
-
-      if (updateError) throw updateError;
-
-      await fetch('/api/notify-admin', {
+      const response = await fetch('/api/create-extension-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type: 'EXTENSION',
-          ref: booking.booking_ref,
-          oldDate: oldPickupDate,
-          newDate: newPickupDate,
-          addedCost: extensionData.extraCost
+          bookingRef: booking.booking_ref,
+          amount: extensionData.extraCost,
+          newPickupDate: newPickupDate,
+          customerEmail: booking.email || fullName.replace(/\s+/g, '') + "@example.com"
         })
       });
 
-      setExtensionSuccess({ oldDate: oldPickupDate, newDate: newPickupDate, extraPaid: extensionData.extraCost });
-      setBooking({ ...booking, pickup_date: newPickupDate, total_price: newTotal });
-
+      const session = await response.json();
+      if (session.url) {
+        window.location.href = session.url; // Redirect to Stripe
+      } else {
+        throw new Error(session.error || "Failed to create payment session");
+      }
     } catch (err: any) {
-      alert("Extension failed: " + err.message);
+      alert("Payment gateway error: " + err.message);
     } finally {
       setExtensionLoading(false);
     }  
@@ -231,16 +212,28 @@ export default function ManageBooking() {
 
   return (
     <main className="min-h-screen bg-slate-50 py-12 md:py-20 px-4 md:px-6 font-sans selection:bg-blue-200">
-      <div className="max-w-3xl mx-auto mb-12">
+      
+      {/* Print-specific CSS */}
+      <style>{`
+        @media print {
+          header, footer, button, .print-hidden, .bg-slate-50, nav { display: none !important; }
+          body { background-color: white !important; color: black !important; padding: 0 !important; margin: 0 !important; }
+          .shadow-2xl, .border { box-shadow: none !important; border: none !important; }
+          p, div { word-wrap: break-word; }
+          .print-block { display: block !important; }
+        }
+      `}</style>
+
+      <div className="max-w-3xl mx-auto mb-12 print-hidden">
         <Link href="/" className="inline-flex items-center gap-2 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-blue-600 transition-colors group">
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Return Home
         </Link>
       </div>
 
-      <div className="max-w-2xl mx-auto relative z-10">
+      <div className="max-w-2xl mx-auto relative z-10 w-full">
         {!booking ? (
           /* SEARCH FORM */
-          <div className="bg-white rounded-[2rem] md:rounded-[3rem] p-6 md:p-12 shadow-xl border border-slate-100 text-center relative overflow-hidden">
+          <div className="bg-white rounded-[2rem] md:rounded-[3rem] p-6 md:p-12 shadow-xl border border-slate-100 text-center relative overflow-hidden print-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-[80px] pointer-events-none"></div>
 
             <div className="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center mb-8 mx-auto shadow-lg shadow-blue-200 relative z-10">
@@ -301,19 +294,19 @@ export default function ManageBooking() {
         ) : (
           /* BOOKING DETAILS CARD */
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
-            <div className="bg-white rounded-[2rem] md:rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden print:shadow-none print:border-none">
+            <div className="bg-white rounded-[2rem] md:rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden">
               
-              <div className="p-6 md:p-10 bg-slate-900 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:bg-white print:text-slate-900 print:border-b print:border-slate-100 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600 print:hidden"></div>
+              <div className="p-6 md:p-10 bg-slate-900 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600 print-hidden"></div>
                 <div className="relative z-10 w-full flex justify-between items-center">
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 print:hidden" />
-                      <p className="text-blue-400 font-black text-[10px] uppercase tracking-[0.3em] print:text-blue-600">Booking Active</p>
+                    <div className="flex items-center gap-2 mb-1 print-hidden">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <p className="text-blue-400 font-black text-[10px] uppercase tracking-[0.3em]">Booking Active</p>
                     </div>
                     <h2 className="text-3xl md:text-5xl font-black tracking-tighter font-mono">{booking.booking_ref}</h2>
                   </div>
-                  <div className="print:hidden">
+                  <div className="print-hidden">
                     {checkCanCancel() ? (
                       <Link href={`/cancel?ref=${booking.booking_ref}`} className="px-4 py-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/20 rounded-lg text-xs font-black uppercase tracking-wider transition-all">
                         Cancel Booking
@@ -344,7 +337,7 @@ export default function ManageBooking() {
                     <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest mb-1 flex items-center justify-between">
                       Return Flight Number
                       {!isEditingFlight && (
-                        <button onClick={() => setIsEditingFlight(true)} className="text-blue-600 hover:text-blue-800 flex items-center gap-1 print:hidden">
+                        <button onClick={() => setIsEditingFlight(true)} className="text-blue-600 hover:text-blue-800 flex items-center gap-1 print-hidden">
                           <Edit2 className="w-3 h-3" /> Edit
                         </button>
                       )}
@@ -408,7 +401,7 @@ export default function ManageBooking() {
                 </div>
 
                 {/* DYNAMIC DATABASE INSTRUCTIONS FOR LTN / LHR */}
-                <div className="mt-8 bg-blue-50/50 border border-blue-100 rounded-[2rem] p-6 hidden print:block mb-8">
+                <div className="mt-8 bg-blue-50/50 border border-blue-100 rounded-[2rem] p-6 hidden print-block mb-8">
                   <h3 className="font-black text-blue-900 mb-4 flex items-center gap-2"><Info className="w-5 h-5" /> Arrival & Return Instructions</h3>
                   <div className="space-y-4">
                     {company ? (
@@ -422,19 +415,25 @@ export default function ManageBooking() {
                         </div>
                         <div>
                           <p className="text-xs font-black text-blue-800 uppercase tracking-wider mb-1">On Arrival</p>
-                          <p className="text-sm text-slate-700 whitespace-pre-wrap">
-                            {booking.airport?.toLowerCase().includes("luton") 
-                              ? (company.on_arrival_ltn || company.on_arrival) 
-                              : (company.on_arrival_lhr || company.on_arrival) || "Refer to your confirmation email for arrival instructions."}
-                          </p>
+                          <div 
+                            className="text-sm text-slate-700 whitespace-pre-wrap"
+                            dangerouslySetInnerHTML={{ 
+                              __html: booking.airport?.toLowerCase().includes("luton") 
+                                ? (company.on_arrival_ltn || company.on_arrival || "Refer to confirmation email") 
+                                : (company.on_arrival_lhr || company.on_arrival || "Refer to confirmation email")
+                            }}
+                          />
                         </div>
                         <div>
                           <p className="text-xs font-black text-blue-800 uppercase tracking-wider mb-1">On Return</p>
-                          <p className="text-sm text-slate-700 whitespace-pre-wrap">
-                            {booking.airport?.toLowerCase().includes("luton") 
-                              ? (company.on_return_ltn || company.on_return) 
-                              : (company.on_return_lhr || company.on_return) || "Refer to your confirmation email for return instructions."}
-                          </p>
+                          <div 
+                            className="text-sm text-slate-700 whitespace-pre-wrap"
+                            dangerouslySetInnerHTML={{ 
+                              __html: booking.airport?.toLowerCase().includes("luton") 
+                                ? (company.on_return_ltn || company.on_return || "Refer to confirmation email") 
+                                : (company.on_return_lhr || company.on_return || "Refer to confirmation email")
+                            }}
+                          />
                         </div>
                       </>
                     ) : (
@@ -444,7 +443,7 @@ export default function ManageBooking() {
                 </div>
 
                 {/* Extension Logic */}
-                <div className="print:hidden">
+                <div className="print-hidden">
                   {extensionSuccess ? (
                     <div className="bg-emerald-50 rounded-[2rem] p-6 md:p-8 border border-emerald-200">
                       <div className="flex items-center gap-3 mb-6 border-b border-emerald-100 pb-4">
@@ -471,11 +470,13 @@ export default function ManageBooking() {
                         <input 
                           type="date" 
                           name="newPickupDate"
-                          autoComplete="off"
+                          autoComplete="one-time-code"
+                          readOnly
+                          onClick={(e: any) => { try { e.target.showPicker() } catch(err) {} }}
                           min={getMinExtensionDate()} 
                           value={newPickupDate} 
                           onChange={(e) => setNewPickupDate(e.target.value)} 
-                          className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 font-bold text-white [color-scheme:dark] outline-none" 
+                          className="w-full bg-slate-800 border-none rounded-xl p-4 font-bold text-white outline-none cursor-pointer shadow-[0_0_0_1000px_#1e293b_inset]" 
                         />
                         {newPickupDate && extensionData.extraDays > 0 && (
                           <div className="bg-slate-800/50 p-4 rounded-xl text-right border border-slate-700/50">
@@ -484,7 +485,6 @@ export default function ManageBooking() {
                           </div>
                         )}
                       </div>
-                        {/* Note: In reality, you'd wire this to Stripe/PayPal before finalizing the DB update */}
                       {newPickupDate && extensionData.extraDays > 0 && (
                         <button onClick={handleExtendBooking} disabled={extensionLoading} className="w-full h-14 mt-6 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl flex items-center justify-center gap-2 text-sm uppercase">
                           {extensionLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CreditCard className="w-5 h-5" /> Pay & Extend</>}
@@ -496,7 +496,7 @@ export default function ManageBooking() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:hidden w-full">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print-hidden w-full">
               <button onClick={() => window.print()} className="w-full py-5 bg-white border border-slate-200 text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3">
                 <Printer className="w-4 h-4" /> Print PDF Voucher
               </button>
