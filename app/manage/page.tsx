@@ -11,7 +11,6 @@ import {
 import Link from "next/link";
 
 export default function ManageBooking() {
-  // --- SEARCH STATES ---
   const [ref, setRef] = useState("");
   const [fullName, setFullName] = useState("");
   const [booking, setBooking] = useState<any>(null);
@@ -19,7 +18,6 @@ export default function ManageBooking() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // --- EXTENSION STATES ---
   const [isExtending, setIsExtending] = useState(false);
   const [newPickupDate, setNewPickupDate] = useState("");
   const [extensionLoading, setExtensionLoading] = useState(false);
@@ -29,12 +27,10 @@ export default function ManageBooking() {
     extraPaid: number;
   } | null>(null);
 
-  // --- FLIGHT EDIT STATES ---
   const [isEditingFlight, setIsEditingFlight] = useState(false);
   const [newFlightNum, setNewFlightNum] = useState("");
   const [flightUpdateLoading, setFlightUpdateLoading] = useState(false);
 
-  // 1. SEARCH FOR BOOKING & FETCH COMPANY INFO
   const findBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -85,25 +81,21 @@ export default function ManageBooking() {
     }
   };
 
-  // 2. PROCESS EXTENSION USING ADVANCED TIER PRICING
   const calculateExtension = () => {
     if (!booking || !newPickupDate || !company) return { extraDays: 0, extraCost: 0 };
     
     const start = new Date(booking.dropoff_date);
     const newEnd = new Date(newPickupDate);
     
-    // 🟢 FIXED: Added +1 to match the exact inclusive day calculation on CheckoutPage
     const totalDiffTime = newEnd.getTime() - start.getTime();
     let totalDays = Math.ceil(totalDiffTime / (1000 * 60 * 60 * 24)) + 1;
     if (totalDays <= 0) totalDays = 1;
 
-    // Determine which airport rates to use
     const isLuton = booking.airport?.toLowerCase().includes("luton");
     const basePrice = Number(isLuton ? company.luton_price : company.heathrow_price);
     const tier1Rate = Number(isLuton ? company.ltn_tier1_extra_rate : company.lhr_tier1_extra_rate);
     const tier2Rate = Number(isLuton ? company.ltn_tier2_extra_rate : company.lhr_tier2_extra_rate);
 
-    // Calculate NEW total price based on your Admin Tier Logic
     let newCalculatedTotal = 0;
     
     if (totalDays === 1) {
@@ -114,9 +106,7 @@ export default function ManageBooking() {
       newCalculatedTotal = basePrice + (5 * tier1Rate) + ((totalDays - 6) * tier2Rate);
     }
 
-    // EXTRA COST = NEW TOTAL - WHAT THEY ALREADY PAID
     let extraCost = newCalculatedTotal - Number(booking.total_price);
-    
     if (extraCost < 0) extraCost = 0;
 
     return { extraDays: totalDays, extraCost };
@@ -124,7 +114,6 @@ export default function ManageBooking() {
 
   const extensionData = calculateExtension();
 
-  // 3. STRIPE REDIRECT 
   const handleExtendBooking = async () => {
     if (extensionData.extraCost <= 0) return;
     setExtensionLoading(true);
@@ -154,7 +143,6 @@ export default function ManageBooking() {
     }  
   };
 
-  // UPDATE FLIGHT DETAILS & NOTIFY ADMIN
   const handleUpdateFlight = async () => {
     if (!newFlightNum.trim() || newFlightNum === booking.flight_number) {
       setIsEditingFlight(false);
@@ -190,7 +178,6 @@ export default function ManageBooking() {
     }
   };
 
-  // CANCEL LOGIC
   const checkCanCancel = () => {
     if (!booking) return false;
     const dropoff = new Date(`${booking.dropoff_date}T${booking.dropoff_time || '00:00'}`);
@@ -213,18 +200,35 @@ export default function ManageBooking() {
   return (
     <main className="min-h-screen bg-slate-50 py-12 md:py-20 px-4 md:px-6 font-sans selection:bg-blue-200">
       
+      {/* 🟢 FIXED: Bulletproof Print CSS */}
       <style>{`
         @media print {
-          header, footer, button, .print-hidden, .bg-slate-50, nav { display: none !important; }
-          body, main { background-color: white !important; color: black !important; padding: 0 !important; margin: 0 !important; }
-          .shadow-2xl, .border { box-shadow: none !important; border: none !important; }
-          p, div { word-wrap: break-word; }
-          .print-block { display: block !important; }
-          @page { margin: 1cm; }
+          body * {
+            visibility: hidden;
+          }
+          #print-section, #print-section * {
+            visibility: visible;
+          }
+          #print-section {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            background-color: white !important;
+          }
+          #print-section p, #print-section span, #print-section h2, #print-section h3, #print-section div {
+            color: black !important;
+          }
+          .print\\:hidden, .print-hidden {
+            display: none !important;
+          }
+          .print\\:block {
+            display: block !important;
+          }
         }
       `}</style>
 
-      <div className="max-w-3xl mx-auto mb-12 print:hidden">
+      <div className="max-w-3xl mx-auto mb-12 print-hidden">
         <Link href="/" className="inline-flex items-center gap-2 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-blue-600 transition-colors group">
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Return Home
         </Link>
@@ -232,8 +236,7 @@ export default function ManageBooking() {
 
       <div className="max-w-2xl mx-auto relative z-10 w-full">
         {!booking ? (
-          /* SEARCH FORM */
-          <div className="bg-white rounded-[2rem] md:rounded-[3rem] p-6 md:p-12 shadow-xl border border-slate-100 text-center relative overflow-hidden print:hidden">
+          <div className="bg-white rounded-[2rem] md:rounded-[3rem] p-6 md:p-12 shadow-xl border border-slate-100 text-center relative overflow-hidden print-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-[80px] pointer-events-none"></div>
 
             <div className="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center mb-8 mx-auto shadow-lg shadow-blue-200 relative z-10">
@@ -245,12 +248,11 @@ export default function ManageBooking() {
             <form onSubmit={findBooking} className="space-y-5 text-left relative z-10">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 text-blue-600">Reference Number</label>
-                {/* 🟢 FIXED: Removed inset shadow so background stays normal */}
                 <input 
                   type="text" 
                   placeholder="APD-XXXXXX" 
                   autoComplete="off"
-                  className="w-full p-4 md:p-5 bg-slate-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900 border border-transparent focus:bg-white uppercase"
+                  className="w-full p-4 md:p-5 bg-slate-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900 border border-transparent focus:bg-white uppercase shadow-[0_0_0_1000px_#f8fafc_inset] [-webkit-text-fill-color:#0f172a]"
                   value={ref}
                   onChange={(e) => setRef(e.target.value.toUpperCase())}
                 />
@@ -268,7 +270,7 @@ export default function ManageBooking() {
                   type="text" 
                   placeholder="Enter name used for booking" 
                   autoComplete="off"
-                  className="w-full p-4 md:p-5 bg-slate-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900 border border-transparent focus:bg-white"
+                  className="w-full p-4 md:p-5 bg-slate-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900 border border-transparent focus:bg-white shadow-[0_0_0_1000px_#f8fafc_inset] [-webkit-text-fill-color:#0f172a]"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                 />
@@ -291,21 +293,21 @@ export default function ManageBooking() {
             </form>
           </div>
         ) : (
-          /* BOOKING DETAILS CARD */
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
+          /* 🟢 FIXED: Wrapped in #print-section for PDF printing */
+          <div id="print-section" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
             <div className="bg-white rounded-[2rem] md:rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden">
               
               <div className="p-6 md:p-10 bg-slate-900 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600 print:hidden"></div>
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600 print-hidden"></div>
                 <div className="relative z-10 w-full flex justify-between items-center">
                   <div>
-                    <div className="flex items-center gap-2 mb-1 print:hidden">
+                    <div className="flex items-center gap-2 mb-1 print-hidden">
                       <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                       <p className="text-blue-400 font-black text-[10px] uppercase tracking-[0.3em]">Booking Active</p>
                     </div>
                     <h2 className="text-3xl md:text-5xl font-black tracking-tighter font-mono text-white print:text-black">{booking.booking_ref}</h2>
                   </div>
-                  <div className="print:hidden">
+                  <div className="print-hidden">
                     {checkCanCancel() ? (
                       <Link href={`/cancel?ref=${booking.booking_ref}`} className="px-4 py-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/20 rounded-lg text-xs font-black uppercase tracking-wider transition-all">
                         Cancel Booking
@@ -336,18 +338,18 @@ export default function ManageBooking() {
                     <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest mb-1 flex items-center justify-between">
                       Return Flight Number
                       {!isEditingFlight && (
-                        <button onClick={() => setIsEditingFlight(true)} className="text-blue-600 hover:text-blue-800 flex items-center gap-1 print:hidden">
+                        <button onClick={() => setIsEditingFlight(true)} className="text-blue-600 hover:text-blue-800 flex items-center gap-1 print-hidden">
                           <Edit2 className="w-3 h-3" /> Edit
                         </button>
                       )}
                     </p>
                     {isEditingFlight ? (
-                      <div className="flex items-center gap-2 mt-1 print:hidden">
+                      <div className="flex items-center gap-2 mt-1 print-hidden">
                         <input 
                           type="text" 
                           value={newFlightNum}
                           onChange={(e) => setNewFlightNum(e.target.value)}
-                          className="p-2 text-sm border border-slate-300 rounded-lg font-bold w-32 uppercase"
+                          className="p-2 text-sm border border-slate-300 rounded-lg font-bold w-32 uppercase shadow-[0_0_0_1000px_#ffffff_inset] [-webkit-text-fill-color:#0f172a]"
                           placeholder="e.g. EZY123"
                         />
                         <button onClick={handleUpdateFlight} disabled={flightUpdateLoading} className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
@@ -399,7 +401,6 @@ export default function ManageBooking() {
                   </div>
                 </div>
 
-                {/* DYNAMIC DATABASE INSTRUCTIONS FOR LTN / LHR (Visible on Print) */}
                 <div className="mt-8 bg-blue-50/50 border border-blue-100 rounded-[2rem] p-6 hidden print:block mb-8">
                   <h3 className="font-black text-blue-900 mb-4 flex items-center gap-2"><Info className="w-5 h-5" /> Arrival & Return Instructions</h3>
                   <div className="space-y-4">
@@ -441,8 +442,7 @@ export default function ManageBooking() {
                   </div>
                 </div>
 
-                {/* Extension Logic */}
-                <div className="print:hidden">
+                <div className="print-hidden">
                   {extensionSuccess ? (
                     <div className="bg-emerald-50 rounded-[2rem] p-6 md:p-8 border border-emerald-200">
                       <div className="flex items-center gap-3 mb-6 border-b border-emerald-100 pb-4">
@@ -470,16 +470,17 @@ export default function ManageBooking() {
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end relative">
                         
-                        {/* 🟢 FIXED: Removed inset shadow to unhide native calendar icon */}
+                        {/* 🟢 FIXED: new-password autocomplete tag completely breaks Chrome's autofill logic */}
                         <div className="flex flex-col space-y-2 w-full relative">
                           <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Select New Date</label>
                           <input 
                             type="date" 
                             name="newPickupDate"
+                            autoComplete="new-password"
                             min={getMinExtensionDate()} 
                             value={newPickupDate} 
                             onChange={(e) => setNewPickupDate(e.target.value)} 
-                            className="w-full bg-slate-800 border border-slate-700 hover:border-blue-500 rounded-xl p-4 font-bold text-white outline-none cursor-pointer [color-scheme:dark] focus:ring-2 focus:ring-blue-500/50 transition-all" 
+                            className="w-full bg-[#1e293b] border border-slate-700 hover:border-blue-500 rounded-xl p-4 font-bold text-white outline-none cursor-pointer [color-scheme:dark] focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1e293b_inset] [-webkit-text-fill-color:#ffffff]" 
                           />
                         </div>
 
@@ -501,7 +502,7 @@ export default function ManageBooking() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:hidden w-full">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print-hidden w-full">
               <button onClick={() => window.print()} className="w-full py-5 bg-white border border-slate-200 text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3">
                 <Printer className="w-4 h-4" /> Print PDF Voucher
               </button>

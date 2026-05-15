@@ -7,6 +7,9 @@ export async function POST(req: Request) {
   try {
     const { bookingRef, amount, newPickupDate, customerEmail } = await req.json();
 
+    // 🟢 FIXED: Hardcoded fallback URL so Stripe never throws the "Invalid URL" error
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.aeroparkdirect.co.uk";
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [{
@@ -26,9 +29,8 @@ export async function POST(req: Request) {
         booking_ref: bookingRef,
         new_pickup: newPickupDate,
       },
-      // Sends them back to the manage page with a success flag
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/manage?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/manage`,
+      success_url: `${baseUrl}/manage?success=true`,
+      cancel_url: `${baseUrl}/manage`,
       customer_email: customerEmail,
     });
 
