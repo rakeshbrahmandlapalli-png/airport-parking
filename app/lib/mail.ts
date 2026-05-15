@@ -17,18 +17,18 @@ export const sendBookingReceipt = async (booking: any, company: any, isAmendment
     // 1. Determine Airport Context
     const isLuton = booking.airport?.toLowerCase().includes("luton");
     
-    // 2. Select dynamic instructions from the Database
+    // 2. Select dynamic instructions from the Database (With safety fallbacks)
     const arrivalInstructions = isLuton 
-      ? company?.on_arrival_ltn 
-      : company?.on_arrival_lhr;
+      ? (company?.on_arrival_ltn || company?.on_arrival) 
+      : (company?.on_arrival_lhr || company?.on_arrival);
     
     const returnInstructions = isLuton 
-      ? company?.on_return_ltn 
-      : company?.on_return_lhr;
+      ? (company?.on_return_ltn || company?.on_return) 
+      : (company?.on_return_lhr || company?.on_return);
 
-    // 3. Setup Navigation & Dates
-    const mapsQuery = encodeURIComponent(`${booking.airport} ${company?.postcode || ''}`);
-    const mapsLink = `http://googleusercontent.com/maps.google.com/?q=${mapsQuery}`;
+    // 3. Setup Navigation & Dates (Fixed for Mobile Deep Linking)
+    const mapsQuery = encodeURIComponent(`${company?.address || booking.airport} ${company?.postcode || ''}`);
+    const mapsLink = `https://maps.google.com/?q=${mapsQuery}`;
     
     // DUAL PHONE NUMBER LOGIC
     const phone1 = company?.phone_number || '07700 900 123';
