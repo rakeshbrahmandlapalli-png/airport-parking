@@ -40,8 +40,8 @@ export async function POST(req: Request) {
       // 1. Fetch the Company to get the correct Parking Instructions
       let company = null;
       
-      // 🟢 FIXED: Safely bypass "ALL" so Prisma doesn't crash on Direct Bookings
-      if (booking.company_id && booking.company_id !== "ALL") {
+      // 🟢 Try to find the exact company linked to the booking
+      if (booking.company_id && booking.company_id !== "ALL" && booking.company_id !== "null") {
         try {
           company = await prismadb.companies.findUnique({ 
             where: { id: booking.company_id } 
@@ -49,6 +49,15 @@ export async function POST(req: Request) {
         } catch (e) {
           console.error("Could not fetch company instructions, using defaults.");
         }
+      }
+
+      // 🟢 THE FIX: If the booking has no ID (like an old test booking), 
+      // automatically grab "AeroPark Direct" from the database so the email isn't blank!
+      if (!company) {
+         console.log("⚠️ /api/send Warning: Missing company_id. Falling back to AeroPark Direct profile.");
+         company = await prismadb.companies.findFirst({
+            where: { name: { contains: "AeroPark", mode: "insensitive" } }
+         });
       }
 
       // 2. Fire the updated email function
