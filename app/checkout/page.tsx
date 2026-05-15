@@ -49,7 +49,7 @@ function CheckoutContent() {
   const urlFlightNumber = searchParams.get("flightNumber") || "";
   const companyId = searchParams.get("companyId") || ""; 
   
-  // 🟢 NEW: SECURE PRICING STATES
+  // 🟢 SECURE PRICING STATES
   const [company, setCompany] = useState<any>(null);
   const fallbackUrlPrice = Number(searchParams.get("price")) || 0; // Only used while loading
   
@@ -267,7 +267,6 @@ function CheckoutContent() {
   const darkInputCls = "w-full bg-[#131A2B] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm font-bold text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 outline-none transition-all shadow-[0_0_0_1000px_#131A2B_inset] [-webkit-text-fill-color:white]";
 
   return (
-    // ... [The rest of your JSX starting from <div className="max-w-7xl mx-auto... down to the end of the file stays exactly the same!]
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-12 relative z-10">
       
       {/* 🟢 AERO SECURE BANNER */}
@@ -714,5 +713,39 @@ function CheckoutContent() {
 
       </div>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <main suppressHydrationWarning className="min-h-[100dvh] bg-[#F8FAFC] font-sans antialiased pb-24 selection:bg-blue-200 selection:text-blue-900 overflow-x-hidden relative">
+      
+      {/* Background glow logic for desktop */}
+      <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0 flex justify-center overflow-hidden">
+         <div className="w-full max-w-[1000px] h-96 bg-blue-600/5 blur-[120px] rounded-full absolute -top-48"></div>
+      </div>
+
+      <header className="sticky top-0 z-[100] bg-[#0A101D] border-b border-slate-800 shadow-2xl backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 md:h-20 flex items-center justify-between">
+          <Link href="/results" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group touch-manipulation">
+            <ArrowLeft className="w-4 h-4 md:w-5 md:h-5 lg:group-hover:-translate-x-1 transition-transform" />
+            <span className="text-[10px] font-black uppercase tracking-widest hidden md:block">Back to Packages</span>
+          </Link>
+          
+          <Link href="/" className="flex items-center gap-1.5 md:gap-2 text-white font-black tracking-tighter text-lg md:text-xl uppercase absolute left-1/2 -translate-x-1/2 touch-manipulation">
+            <Plane className="w-5 h-5 md:w-6 md:h-6 text-blue-500 rotate-45" /> AEROPARK<span className="text-blue-500">DIRECT</span>
+          </Link>
+
+          <div className="flex items-center gap-2 text-emerald-400">
+             <Lock className="w-4 h-4" />
+             <span className="text-[10px] font-black uppercase tracking-widest hidden xs:block">Secure Checkout</span>
+          </div>
+        </div>
+      </header>
+
+      <Suspense fallback={<div className="p-32 md:p-48 text-center font-black uppercase tracking-[0.3em] text-sm text-slate-400 animate-pulse">Aero is Initializing Checkout...</div>}>
+        <CheckoutContent />
+      </Suspense>
+    </main>
   );
 }
