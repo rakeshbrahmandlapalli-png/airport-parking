@@ -10,7 +10,6 @@ export async function POST(req: Request) {
     const body = await req.json();
     
     // --- CASE 1: GENERAL CONTACT FORM INQUIRY ---
-    // This goes to YOU (info@aeroparkdirect.co.uk)
     if (body.message && body.name) {
       const { name, email, reference, message } = body;
       
@@ -30,34 +29,33 @@ export async function POST(req: Request) {
     }
 
     // --- CASE 2: BOOKING RECEIPT / AMENDMENT ---
-    // This goes to the CUSTOMER
     if (body.booking) {
       const { booking, isAmendment } = body;
       
       const targetEmail = (booking.email || booking.customerEmail)?.trim().toLowerCase();
       console.log(`📤 Sending Receipt to: "${targetEmail}" | Ref: ${booking.booking_ref}`);
 
-      // 1. Fetch the Company to get the correct Parking Instructions
       let company = null;
       
-      // 🟢 Try to find the exact company linked to the booking
-      if (booking.company_id && booking.company_id !== "ALL" && booking.company_id !== "null") {
-        try {
+      // 🟢 BULLETPROOF DATABASE FETCH
+      // If Prisma crashes here, the catch block ensures the email still sends!
+      try {
+        if (booking.company_id && booking.company_id !== "ALL" && booking.company_id !== "null") {
           company = await prismadb.companies.findUnique({ 
             where: { id: booking.company_id } 
           });
-        } catch (e) {
-          console.error("Could not fetch company instructions, using defaults.");
         }
-      }
 
-      // 🟢 THE FIX: If the booking has no ID (like an old test booking), 
-      // automatically grab "AeroPark Direct" from the database so the email isn't blank!
-      if (!company) {
-         console.log("⚠️ /api/send Warning: Missing company_id. Falling back to AeroPark Direct profile.");
-         company = await prismadb.companies.findFirst({
-            where: { name: { contains: "AeroPark", mode: "insensitive" } }
-         });
+        if (!company) {
+           console.log("⚠️ Missing company_id. Falling back to AeroPark Direct profile.");
+           // Removed 'insensitive' search just in case your database version rejects it
+           company = await prismadb.companies.findFirst({
+              where: { name: "AeroPark Direct" }
+           });
+        }
+      } catch (dbError: any) {
+        console.error("⚠️ Prisma DB Error (Skipping custom instructions):", dbError.message);
+        company = null; // Force null so the email sends with standard defaults
       }
 
       // 2. Fire the updated email function
@@ -74,7 +72,6 @@ export async function POST(req: Request) {
       }
     }
 
-    // If neither case matches
     return NextResponse.json({ error: "Invalid payload format" }, { status: 400 });
 
   } catch (error: any) {
