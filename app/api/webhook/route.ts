@@ -10,7 +10,6 @@ const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 export async function POST(req: Request) {
   const body = await req.text();
   const signature = req.headers.get("stripe-signature")!;
-
   let event: Stripe.Event;
 
   try {
@@ -22,59 +21,53 @@ export async function POST(req: Request) {
   const session = event.data.object as Stripe.Checkout.Session;
 
   if (event.type === "checkout.session.completed") {
-    const metadata = session.metadata;
+    const m = session.metadata;
 
-    if (metadata?.is_amendment === "true") {
-      // 🛠️ SCENARIO A: AMENDMENT / EXTENSION
+    if (m?.is_amendment === "true") {
       const updatedBooking = await prismadb.bookings.update({
-        where: { booking_ref: metadata.booking_ref },
+        where: { booking_ref: m.booking_ref },
         data: {
-          pickup_date: new Date(metadata.new_pickup),
+          pickup_date: new Date(m.new_pickup),
           total_price: { increment: session.amount_total / 100 }, 
         },
-        // 🟢 Relation name from your schema is 'companies'
         include: { companies: true } 
       });
-
-      // Notify Admin and send updated voucher to customer
       await sendAmendmentAlerts(updatedBooking, updatedBooking.companies);
       
     } else {
-      // 🆕 SCENARIO B: BRAND NEW BOOKING
+      // 🆕 NEW BOOKING
       const newBooking = await prismadb.bookings.create({
         data: {
           booking_ref: `APD-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-          full_name: metadata?.full_name || "",
-          email: metadata?.email || session.customer_details?.email || "",
-          phone_number: metadata?.phone || session.customer_details?.phone || "", 
-          license_plate: metadata?.license_plate || "",
-          car_make: metadata?.car_make || "",
-          car_color: metadata?.car_color || "",
-          airport: metadata?.airport || "Luton Airport (LTN)",
-          terminal: metadata?.terminal || "Main Terminal",
-          dropoff_date: new Date(metadata?.dropoff_date),
-          pickup_date: new Date(metadata?.pickup_date),
-          dropoff_time: metadata?.dropTime || "", 
-          pickup_time: metadata?.pickTime || "", 
-          flight_number: metadata?.flightNumber || "", 
-          service_type: metadata?.service_type || "Premium Meet & Greet", 
+          full_name: m?.full_name || "",
+          email: m?.email || session.customer_details?.email || "",
+          phone_number: m?.phone || session.customer_details?.phone || "", 
+          license_plate: m?.license_plate || "",
+          car_make: m?.car_make || "",
+          car_color: m?.car_color || "",
+          airport: m?.airport || "Luton Airport (LTN)",
+          terminal: m?.terminal || "Main Terminal",
+          dropoff_date: new Date(m?.dropoff_date),
+          pickup_date: new Date(m?.pickup_date),
+          dropoff_time: m?.dropTime || "", 
+          pickup_time: m?.pickTime || "", 
+          flight_number: m?.flightNumber || "", 
+          service_type: m?.service_type || "Premium Meet & Greet", 
           total_price: session.amount_total ? session.amount_total / 100 : 0,
           status: "confirmed",
           stripe_session_id: session.id,
-          // 🟢 Link to the provider from your admin panel
-          company_id: metadata?.company_id || null,
+          company_id: m?.company_id || null, // 🟢 MATCHES SCHEMA
         }
       });
 
-      // 🟢 DYNAMIC FETCH: Pull the specific instructions/address for this company
+      // 🟢 CRITICAL: Fetch the company separately to ensure instructions load!
       let company = null;
-      if (metadata?.company_id) {
+      if (m?.company_id) {
         company = await prismadb.companies.findUnique({ 
-          where: { id: metadata.company_id } 
+          where: { id: m.company_id } 
         });
       }
       
-      // Pass the booking AND the specific company info to the email template
       await sendBookingReceipt(newBooking, company); 
     }
   }
