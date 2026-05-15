@@ -2,8 +2,14 @@
 
 import { redirect } from "next/navigation";
 import Stripe from "stripe";
-import prismadb from "./lib/prismadb"; 
 import { sendBookingReceipt } from "./lib/mail"; 
+import { createClient } from '@supabase/supabase-js';
+
+// 🟢 BYPASS PRISMA: Use Supabase to prevent the "Table does not exist" crash
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!, 
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export async function createCheckoutSession(formData: FormData) {
   // 1. Initialise Stripe
@@ -18,46 +24,56 @@ export async function createCheckoutSession(formData: FormData) {
   const parkingType = formData.get("parkingType") as string || "standard";
   const totalPrice = parseFloat(formData.get("totalPrice") as string) || 0;
   
-  // Extract the airport and terminal
   const airport = formData.get("airport") as string || "Luton Airport (LTN)";
   const terminal = formData.get("terminal") as string || "Main Terminal";
 
-  // 🔥 Extract Drop-off and Pick-up dates for inventory tracking
   const dropoffDateStr = formData.get("dropoffDate") as string;
   const pickupDateStr = formData.get("pickupDate") as string;
   
-  // Convert strings to proper DateTime objects for the database
+  // 🟢 EXTRACT COMPANY ID FROM FORM
+  const companyId = formData.get("companyId") as string;
+
   const dropoffDate = dropoffDateStr ? new Date(dropoffDateStr) : new Date();
   const pickupDate = pickupDateStr ? new Date(pickupDateStr) : new Date();
 
-  // Generate a temporary Reference ID
   const tempRef = "VIP-" + Math.random().toString(36).substring(2, 8).toUpperCase();
-
   let sessionUrl = "";
 
   // 3. DATABASE, EMAIL & STRIPE LOGIC
   try {
-    // A. Save the booking to Supabase Database (Using the updated schema columns!)
-    await prismadb.bookings.create({
-      data: {
-        full_name: customerName,
-        email: customerEmail,
-        phone_number: customerPhone,
-        flight_number: flightNumber,
-        license_plate: licensePlate,
-        service_type: parkingType,
-        total_price: totalPrice,
-        status: "pending",
-        airport: airport,    
-        terminal: terminal,   
-        dropoff_date: dropoffDate,
-        pickup_date: pickupDate,  
-      },
-    });
+    // 🟢 1. FETCH REAL COMPANY DATA (No more 'null'!)
+    let company = null;
+    if (companyId && companyId !== "null" && companyId !== "") {
+      const { data } = await supabase.from('companies').select('*').eq('id', companyId).maybeSingle();
+      company = data;
+    }
+    
+    // Backup search by name just in case
+    if (!company) {
+      const { data } = await supabase.from('companies').select('*').ilike('name', `%${parkingType}%`).maybeSingle();
+      company = data;
+    }
+
+    // A. Save the booking to Supabase Database
+    await supabase.from('bookings').insert([{
+      booking_ref: tempRef,
+      full_name: customerName,
+      email: customerEmail,
+      phone_number: customerPhone,
+      flight_number: flightNumber,
+      license_plate: licensePlate,
+      service_type: parkingType,
+      total_price: totalPrice,
+      status: "pending",
+      airport: airport,    
+      terminal: terminal,   
+      dropoff_date: dropoffDate.toISOString(),
+      pickup_date: pickupDate.toISOString(),  
+      company_id: company ? company.id : null 
+    }]);
 
     // B. Fire off the email receipt via Resend ✈️
     if (customerEmail) {
-      // Create a temporary booking object matching the new format expected by your mail.ts
       const tempBookingObj = {
         email: customerEmail,
         customerEmail: customerEmail,
@@ -74,7 +90,8 @@ export async function createCheckoutSession(formData: FormData) {
         parkingType: parkingType
       };
 
-      await sendBookingReceipt(tempBookingObj, null, false);
+      // 🟢 THE ULTIMATE FIX: Pass the real company data instead of 'null'
+      await sendBookingReceipt(tempBookingObj, company, false);
     }
 
     // C. Create the Stripe Checkout Session 💳
@@ -85,7 +102,7 @@ export async function createCheckoutSession(formData: FormData) {
           price_data: {
             currency: "gbp",
             product_data: {
-              name: `AeroPark Direct: ${parkingType.toUpperCase()} PARKING`,
+              name: `AeroPark Direct: ${parkingType.toUpperCase()}`,
               description: `Flight: ${flightNumber} | License: ${licensePlate} | Ref: ${tempRef}`,
             },
             unit_amount: Math.round(totalPrice * 100),
@@ -93,9 +110,14 @@ export async function createCheckoutSession(formData: FormData) {
           quantity: 1,
         },
       ],
+      metadata: {
+         company_id: company ? company.id : "",
+         provider_name: company ? company.name : parkingType,
+         booking_ref: tempRef
+      },
       mode: "payment",
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/success?session_id={CHECKOUT_SESSION_ID}&ref=${tempRef}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout?type=${parkingType}`,
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://www.aeroparkdirect.co.uk'}/success?session_id={CHECKOUT_SESSION_ID}&ref=${tempRef}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://www.aeroparkdirect.co.uk'}/checkout?type=${parkingType}`,
       customer_email: customerEmail,
     });
 
@@ -116,35 +138,32 @@ export async function createCheckoutSession(formData: FormData) {
 // 🔥 NEW INVENTORY ENGINE
 // ============================================================================
 export async function checkAvailability(airport: string, dropoffStr: string, pickupStr: string) {
-  // Set your physical parking lot capacity here (e.g., 50 cars per airport)
   const MAX_CAPACITY = 50; 
 
   try {
-    // 🟢 1. THE BOUNCER: Stop blank dates from crashing the database
     if (!dropoffStr || !pickupStr) {
-      console.log("No dates provided, skipping inventory check.");
       return { isAvailable: true, spotsLeft: MAX_CAPACITY }; 
     }
 
     const requestedStart = new Date(dropoffStr);
     const requestedEnd = new Date(pickupStr);
 
-    // 🟢 2. DOUBLE CHECK: Stop Invalid Date objects from crashing Prisma
     if (isNaN(requestedStart.getTime()) || isNaN(requestedEnd.getTime())) {
-       console.log("Invalid dates provided, skipping inventory check.");
        return { isAvailable: true, spotsLeft: MAX_CAPACITY };
     }
 
-    // Ask the database: How many cars are parked at this airport between these two dates?
-    const overlappingCars = await prismadb.bookings.count({
-      where: {
-        airport: airport,
-        status: { not: "cancelled" }, // Don't count cancelled bookings!
-        dropoff_date: { lte: requestedEnd }, // Their dropoff is before or on our pickup
-        pickup_date: { gte: requestedStart }, // Their pickup is after or on our dropoff
-      }
-    });
+    // 🟢 Ask Supabase (bypassing Prisma)
+    const { count, error } = await supabase
+      .from('bookings')
+      .select('*', { count: 'exact', head: true })
+      .eq('airport', airport)
+      .neq('status', 'cancelled')
+      .lte('dropoff_date', requestedEnd.toISOString())
+      .gte('pickup_date', requestedStart.toISOString());
 
+    if (error) throw error;
+
+    const overlappingCars = count || 0;
     const spotsLeft = MAX_CAPACITY - overlappingCars;
 
     return {
@@ -154,7 +173,6 @@ export async function checkAvailability(airport: string, dropoffStr: string, pic
     
   } catch (error) {
     console.error("Inventory check failed:", error);
-    // Fail safe: if the database errors out, block the booking to prevent disaster
     return { isAvailable: false, spotsLeft: 0 }; 
   }
 }

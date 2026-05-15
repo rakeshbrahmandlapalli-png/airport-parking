@@ -64,10 +64,6 @@ export async function POST(req: Request) {
         
         // 🟢 THIS ID UNLOCKS THE CUSTOM EMAIL INSTRUCTIONS
         company_id: String(metadata.company_id || ""), 
-        
-        // 🟢 THE BACKUP LOCK: Passes the exact name of the company to the webhook
-        provider_name: String(provider || metadata.type || ""),
-        
         service_type: String(metadata.service_type || metadata.type || "Premium Meet & Greet"),
         booking_ref: String(metadata.booking_ref || ""),
         is_amendment: isAmendment ? "true" : "false"
