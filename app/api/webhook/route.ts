@@ -23,19 +23,25 @@ export async function POST(req: Request) {
   if (event.type === "checkout.session.completed") {
     const m = session.metadata;
 
+    // 🟢 LOGGING: Check your Vercel logs to see if company_id is arriving!
+    console.log("STRIPE WEBHOOK RECEIVED. Company ID:", m?.company_id);
+
     if (m?.is_amendment === "true") {
+      // 🛠️ SCENARIO A: AMENDMENT / EXTENSION
       const updatedBooking = await prismadb.bookings.update({
         where: { booking_ref: m.booking_ref },
         data: {
           pickup_date: new Date(m.new_pickup),
           total_price: { increment: session.amount_total / 100 }, 
         },
-        include: { companies: true } 
+        include: { companies: true } // Fetches linked instructions automatically
       });
+
       await sendAmendmentAlerts(updatedBooking, updatedBooking.companies);
       
     } else {
-      // 🆕 NEW BOOKING
+      // 🆕 SCENARIO B: BRAND NEW BOOKING
+      // We use 'include' here so we get the company data in one single database hit
       const newBooking = await prismadb.bookings.create({
         data: {
           booking_ref: `APD-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
@@ -49,26 +55,25 @@ export async function POST(req: Request) {
           terminal: m?.terminal || "Main Terminal",
           dropoff_date: new Date(m?.dropoff_date),
           pickup_date: new Date(m?.pickup_date),
-          dropoff_time: m?.dropTime || "", 
-          pickup_time: m?.pickTime || "", 
+          dropoff_time: m?.dropTime || "09:00", 
+          pickup_time: m?.pickTime || "09:00", 
           flight_number: m?.flightNumber || "", 
           service_type: m?.service_type || "Premium Meet & Greet", 
           total_price: session.amount_total ? session.amount_total / 100 : 0,
           status: "confirmed",
           stripe_session_id: session.id,
-          company_id: m?.company_id || null, // 🟢 MATCHES SCHEMA
-        }
+          // We only set company_id if it's a valid string, otherwise null
+          company_id: (m?.company_id && m.company_id !== "null") ? m.company_id : null,
+        },
+        include: { companies: true } 
       });
 
-      // 🟢 CRITICAL: Fetch the company separately to ensure instructions load!
-      let company = null;
-      if (m?.company_id) {
-        company = await prismadb.companies.findUnique({ 
-          where: { id: m.company_id } 
-        });
+      // 🟢 The company data is now sitting inside newBooking.companies
+      if (!newBooking.companies) {
+        console.error("WEBHOOK ERROR: Booking created but NO company details found for ID:", m?.company_id);
       }
       
-      await sendBookingReceipt(newBooking, company); 
+      await sendBookingReceipt(newBooking, newBooking.companies); 
     }
   }
 
