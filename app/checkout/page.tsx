@@ -211,9 +211,14 @@ function CheckoutContent() {
     
     setIsProcessing(true);
 
-    let finalServiceType = "Meet & Greet";
-    if (type.toLowerCase().includes("park")) finalServiceType = "Park & Ride";
-    if (type.toLowerCase().includes("hotel")) finalServiceType = "Hotel & Parking";
+    let finalServiceType = "Premium Meet & Greet";
+    // 🟢 FIXED: Now strictly looks for "park & ride" or "park and ride"
+    if (type.toLowerCase().includes("park & ride") || type.toLowerCase().includes("park and ride")) {
+      finalServiceType = "Park & Ride";
+    }
+    if (type.toLowerCase().includes("hotel")) {
+      finalServiceType = "Hotel & Parking";
+    }
 
     try {
       const response = await fetch('/api/checkout', {
