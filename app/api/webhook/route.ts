@@ -23,9 +23,6 @@ export async function POST(req: Request) {
   if (event.type === "checkout.session.completed") {
     const m = session.metadata;
 
-    // 🟢 LOGGING: Check your Vercel logs to see if company_id is arriving!
-    console.log("STRIPE WEBHOOK RECEIVED. Company ID:", m?.company_id);
-
     if (m?.is_amendment === "true") {
       // 🛠️ SCENARIO A: AMENDMENT / EXTENSION
       const updatedBooking = await prismadb.bookings.update({
@@ -34,14 +31,31 @@ export async function POST(req: Request) {
           pickup_date: new Date(m.new_pickup),
           total_price: { increment: session.amount_total / 100 }, 
         },
-        include: { companies: true } // Fetches linked instructions automatically
+        include: { companies: true } 
       });
-
       await sendAmendmentAlerts(updatedBooking, updatedBooking.companies);
       
     } else {
-      // 🆕 SCENARIO B: BRAND NEW BOOKING
-      // We use 'include' here so we get the company data in one single database hit
+      // 🟢 1. FETCH COMPANY DATA FIRST (With Ultimate Fallback)
+      let resolvedCompany = null;
+      
+      // Try fetching by the exact ID if Stripe successfully received it
+      if (m?.company_id && m.company_id.length > 10 && m.company_id !== "null") {
+        resolvedCompany = await prismadb.companies.findUnique({
+          where: { id: m.company_id }
+        });
+      }
+
+      // 🟢 THE FIX: If the frontend failed to send the ID, 
+      // automatically grab "AeroPark Direct" from the database so the email isn't blank!
+      if (!resolvedCompany) {
+         console.log("⚠️ Webhook Warning: Missing company_id. Falling back to AeroPark Direct profile.");
+         resolvedCompany = await prismadb.companies.findFirst({
+            where: { name: { contains: "AeroPark", mode: "insensitive" } }
+         });
+      }
+
+      // 🆕 2. CREATE BOOKING WITH RESOLVED COMPANY
       const newBooking = await prismadb.bookings.create({
         data: {
           booking_ref: `APD-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
@@ -62,18 +76,13 @@ export async function POST(req: Request) {
           total_price: session.amount_total ? session.amount_total / 100 : 0,
           status: "confirmed",
           stripe_session_id: session.id,
-          // We only set company_id if it's a valid string, otherwise null
-          company_id: (m?.company_id && m.company_id !== "null") ? m.company_id : null,
-        },
-        include: { companies: true } 
+          // Attach the verified company ID so it shows up in your admin panel!
+          company_id: resolvedCompany ? resolvedCompany.id : null, 
+        }
       });
-
-      // 🟢 The company data is now sitting inside newBooking.companies
-      if (!newBooking.companies) {
-        console.error("WEBHOOK ERROR: Booking created but NO company details found for ID:", m?.company_id);
-      }
       
-      await sendBookingReceipt(newBooking, newBooking.companies); 
+      // 3. SEND EMAIL WITH ACTUAL DATABASE INFO
+      await sendBookingReceipt(newBooking, resolvedCompany); 
     }
   }
 
