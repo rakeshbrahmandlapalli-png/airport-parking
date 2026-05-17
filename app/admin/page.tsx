@@ -9,6 +9,7 @@
  * 3. RIBBON: Added 'Service Type' filter. Redesigned to an un-squashable Flex Grid.
  * 4. UI/UX: Hyper-premium SaaS 3.0 aesthetic with frosted glass and deep gradients.
  * 5. FORMATTING: Fully expanded code (no minification) to restore exact line counts.
+ * 6. 🟢 TWILIO: Added silent background API trigger for manual bookings missing flights.
  */
 
 import { useEffect, useState, useMemo } from "react";
@@ -205,6 +206,21 @@ export default function AdminDashboard() {
       const { error } = await supabase.from('bookings').insert([payload]);
       
       if (error) throw error;
+
+      // 🟢 TWILIO AUTOMATION TRIGGER (Fires silently in the background)
+      if (!payload.flight_number || payload.flight_number.trim() === "") {
+        fetch('/api/twilio', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            full_name: payload.full_name,
+            phone_number: payload.phone_number,
+            booking_ref: payload.booking_ref,
+            flight_number: payload.flight_number,
+            car_make: payload.car_make
+          })
+        }).catch(err => console.error("Twilio API failed:", err));
+      }
       
       setShowManualModal(false);
       setNewBooking(defaultNewBooking);
@@ -226,7 +242,6 @@ export default function AdminDashboard() {
     alert(`Success: Marketing automation queued for ${booking.email}.`);
   };
 
-  // 🟢 FIXED: EXCEL EXPORT (Included Date, Time, and Service Type columns)
   const exportToCSV = () => {
     let csv = "Reference,Customer,Email,Phone,Plate,Make,Airport,Terminal,Flight,Inbound Date,Inbound Time,Outbound Date,Outbound Time,Total Paid,Status,Service Type,Partner\n";
     
@@ -282,7 +297,6 @@ export default function AdminDashboard() {
       if (timeFilter === "TODAY_DROP" && !String(b.dropoff_date).startsWith(todayStrISO)) return false;
       if (timeFilter === "TODAY_PICK" && !String(b.pickup_date).startsWith(todayStrISO)) return false;
       
-      // 🟢 NEW: Service Filter Logic
       if (serviceFilter !== "ALL") {
         const sType = b.service_type || "Meet & Greet";
         if (sType.toLowerCase() !== serviceFilter.toLowerCase()) return false;
@@ -317,7 +331,7 @@ export default function AdminDashboard() {
     </div>
   );
 
-  // 🟢 SHARED INPUT STYLES (Fixes Autofill invisible text bugs)
+  // 🟢 SHARED INPUT STYLES
   const inputStyle = "w-full bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white] placeholder:text-slate-500";
   const selectStyle = "w-full appearance-none bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none cursor-pointer focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white]";
   const yellowInputStyle = "w-full bg-[#FACC15] border-2 border-yellow-500 rounded-xl px-5 py-4 text-black text-xl text-center font-black uppercase outline-none focus:ring-4 focus:ring-yellow-500/30 transition-all shadow-[0_0_0_1000px_#FACC15_inset] [-webkit-text-fill-color:black] placeholder:text-yellow-700/50";
@@ -426,10 +440,9 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* 🟢 REDESIGNED CONTROL RIBBON (SPACIOUS FLEX LAYOUT) */}
+        {/* 🟢 REDESIGNED CONTROL RIBBON */}
         <div className="bg-[#131A2B] rounded-[2rem] border border-slate-800 shadow-lg p-4 mb-10 flex flex-col xl:flex-row gap-4">
           
-          {/* Main Search Input */}
           <div className="relative flex-1 min-w-[280px]">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 pointer-events-none" />
             <input 
@@ -442,7 +455,6 @@ export default function AdminDashboard() {
             />
           </div>
           
-          {/* 🟢 5-COLUMN FILTER GRID (Includes Service Type) */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 w-full xl:w-auto shrink-0">
             {[
               { id: 'time', icon: Filter, state: timeFilter, set: setTimeFilter, opts: [{v: "ALL", l: "Dates: All"}, {v: "TODAY_DROP", l: "Inbound Today"}, {v: "TODAY_PICK", l: "Return Today"}] },
