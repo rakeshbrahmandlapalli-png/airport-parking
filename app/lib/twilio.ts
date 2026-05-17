@@ -1,20 +1,5 @@
 import twilio from "twilio";
 
-// 1. Grab the raw environment variables
-const rawSid = process.env.TWILIO_ACCOUNT_SID || "";
-const rawToken = process.env.TWILIO_AUTH_TOKEN || "";
-const twilioNumber = process.env.TWILIO_WHATSAPP_NUMBER || "";
-
-// 2. Aggressively clean them of any accidental quotes or spaces from Vercel
-const accountSid = rawSid.replace(/['"]/g, '').trim();
-const authToken = rawToken.replace(/['"]/g, '').trim();
-
-// 3. Bulletproof check: Only initialize Twilio IF the SID actually starts with "AC"
-// This prevents the Next.js / Vercel build compiler from crashing!
-const client = accountSid.startsWith("AC") && authToken 
-  ? twilio(accountSid, authToken) 
-  : null;
-
 export async function triggerMissingFlightAlert(booking: {
   full_name: string;
   phone_number: string;
@@ -22,16 +7,26 @@ export async function triggerMissingFlightAlert(booking: {
   flight_number?: string;
   car_make?: string;
 }) {
-  // Safety Guard: If there is a flight number, do absolutely nothing
+  // 1. Safety Guard: If there is a flight number, do absolutely nothing
   if (booking.flight_number && booking.flight_number.trim() !== "") {
     return { success: true, message: "Flight number present. Skipping alert." };
   }
 
-  // Safety Guard: If Twilio failed to initialize due to bad keys, fail gracefully
-  if (!client) {
+  // 2. Dynamically grab keys AT RUNTIME (fixes the Vercel build caching bug)
+  const rawSid = process.env.TWILIO_ACCOUNT_SID || "";
+  const rawToken = process.env.TWILIO_AUTH_TOKEN || "";
+  const twilioNumber = process.env.TWILIO_WHATSAPP_NUMBER || "";
+
+  const accountSid = rawSid.replace(/['"]/g, '').trim();
+  const authToken = rawToken.replace(/['"]/g, '').trim();
+
+  // 3. Validate and Initialize
+  if (!accountSid.startsWith("AC") || !authToken) {
     console.error("Twilio disabled: Account SID is missing or invalid in environment variables.");
     return { success: false, error: "Twilio uninitialized" };
   }
+
+  const client = twilio(accountSid, authToken);
 
   try {
     // Clean UK phone format for WhatsApp (+44)
