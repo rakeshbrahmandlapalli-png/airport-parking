@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { GoogleAnalytics } from '@next/third-parties/google';
 import Script from 'next/script';
 import Chatbot from "@/components/Chatbot";
+import PromoBanner from "@/components/PromoBanner"; // 🚀 Imported the rotating promo banner
 
 export const metadata: Metadata = {
   title: "AeroPark Direct",
@@ -44,8 +45,13 @@ export default function RootLayout({
       </head>
       <body className="subpixel-antialiased bg-[#F8FAFC]" suppressHydrationWarning>
         
-        {/* Main Page Content */}
-        {children}
+        {/* 🚀 Dynamic Banner containing LAUNCH10 and AERO15 hooks */}
+        <PromoBanner />
+
+        {/* 🔥 THIS IS THE MAGIC FIX: We wrap your page in a relative container 🔥 */}
+        <main className="relative w-full">
+          {children}
+        </main>
 
         {/* Vercel Speed & Traffic Analytics */}
         <Analytics /> 

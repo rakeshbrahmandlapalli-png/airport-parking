@@ -43,7 +43,7 @@ function CheckoutContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isEditingSearch, setIsEditingSearch] = useState(false);
   
-  // 🟢 AGGRESSIVE URL GRABBER: Catches the ID or Name no matter how the Results page formats it
+  // 🟢 AGGRESSIVE URL GRABBER
   const urlId = searchParams.get("companyId") || searchParams.get("id") || searchParams.get("providerId") || ""; 
   const urlName = searchParams.get("company") || searchParams.get("provider") || searchParams.get("name") || "";
   
@@ -53,7 +53,7 @@ function CheckoutContent() {
   
   // 🟢 SECURE PRICING STATES
   const [company, setCompany] = useState<any>(null);
-  const [resolvedId, setResolvedId] = useState(urlId); // We will lock the database ID here
+  const [resolvedId, setResolvedId] = useState(urlId); 
   const fallbackUrlPrice = Number(searchParams.get("price")) || 0; 
   
   // 🟢 AI DATA CAPTURE
@@ -99,8 +99,9 @@ function CheckoutContent() {
   const [promoMessage, setPromoMessage] = useState("");
   const [isPromoError, setIsPromoError] = useState(false);
   const [aeroClicks, setAeroClicks] = useState(0);
+  const [isVerifyingPromo, setIsVerifyingPromo] = useState(false);
 
-  // 🟢 AGGRESSIVE DATABASE SEARCH: Finds the company by ID, or falls back to searching by Name
+  // 🟢 AGGRESSIVE DATABASE SEARCH
   useEffect(() => {
     async function fetchCompanyData() {
       if (urlId) {
@@ -129,27 +130,64 @@ function CheckoutContent() {
     }
   }, [aiData.isFrequentFlyer, aiData.loyaltyMessage, discount.active]);
 
-  const handleApplyPromo = (e: React.FormEvent) => {
+  // 🚀 UPDATED PROMO CODE VERIFIER
+  const handleApplyPromo = async (e: React.FormEvent) => {
     e.preventDefault();
     const code = promoInput.toUpperCase().trim();
+    
+    setIsVerifyingPromo(true); 
 
     if (code === "LAUNCH10") {
       setDiscount({ active: true, code: "LAUNCH10", percent: 0.10 });
       setPromoMessage("Launch discount applied! 10% off.");
       setIsPromoError(false);
-    } else if (code === "AERO") {
-      setDiscount({ active: true, code: "AERO", percent: 0.15 });
-      setPromoMessage("Aero VIP discount applied! 15% off.");
-      setIsPromoError(false);
+      
+    } else if (code === "AERO15") {
+      
+      if (!email.trim() || !email.includes('@')) {
+        setDiscount({ active: false, code: "", percent: 0 });
+        setPromoMessage("Please enter a valid Email Address above to verify your loyalty status.");
+        setIsPromoError(true);
+        setIsVerifyingPromo(false);
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/verify-promo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.trim() })
+        });
+        
+        const { count } = await response.json();
+
+        if (count >= 2) {
+          setDiscount({ active: true, code: "AERO15", percent: 0.15 });
+          setPromoMessage("Welcome back! 15% loyalty discount verified and applied.");
+          setIsPromoError(false);
+        } else {
+          setDiscount({ active: false, code: "", percent: 0 });
+          setPromoMessage(`AERO15 requires 2 past bookings. We only found ${count} for this email.`);
+          setIsPromoError(true);
+        }
+      } catch (err) {
+        setDiscount({ active: false, code: "", percent: 0 });
+        setPromoMessage("Failed to verify email. Please try again.");
+        setIsPromoError(true);
+      }
+
     } else if (code === "SECRET3" || code === "AERO3") {
       setDiscount({ active: true, code: "AERO3", percent: 0.03 });
       setPromoMessage("Secret Aero Discount Unlocked! 3% off.");
       setIsPromoError(false);
+      
     } else {
       setDiscount({ active: false, code: "", percent: 0 });
       setPromoMessage("Invalid or expired promo code.");
       setIsPromoError(true);
     }
+    
+    setIsVerifyingPromo(false); 
   };
 
   const handleAeroClick = () => {
@@ -166,7 +204,7 @@ function CheckoutContent() {
     }
   };
 
-  // 🟢 ADVANCED TIER PRICING CALCULATION
+  // 🟢 ADVANCED TIER PRICING CALCULATION (8-TIER INTERPOLATION)
   const calculateDays = () => {
     if (!dropDate || !pickDate) return 1;
     const start = new Date(dropDate);
@@ -179,16 +217,55 @@ function CheckoutContent() {
   const getSecureBasePrice = () => {
     if (!company) return fallbackUrlPrice; 
     
-    const days = calculateDays();
+    const duration = calculateDays();
     const isLuton = airport.toLowerCase().includes("luton");
+    let totalPrice = 0;
     
-    const basePrice = Number(isLuton ? company.luton_price : company.heathrow_price);
-    const tier1Rate = Number(isLuton ? company.ltn_tier1_extra_rate : company.lhr_tier1_extra_rate);
-    const tier2Rate = Number(isLuton ? company.ltn_tier2_extra_rate : company.lhr_tier2_extra_rate);
+    if (!isLuton) { // Heathrow Math
+      const p1 = Number(company.heathrow_price || 0);
+      const p2 = Number(company.lhr_day2_price || p1);
+      const p5 = Number(company.lhr_day5_price || p2);
+      const p8 = Number(company.lhr_day8_price || p5);
+      const p11 = Number(company.lhr_day11_price || p8);
+      const p14 = Number(company.lhr_day14_price || p11);
+      const p17 = Number(company.lhr_day17_price || p14);
+      const p22 = Number(company.lhr_day22_price || p17);
+      const p32 = Number(company.lhr_day32_price || p22);
 
-    if (days === 1) return basePrice;
-    if (days <= 6) return basePrice + ((days - 1) * tier1Rate);
-    return basePrice + (5 * tier1Rate) + ((days - 6) * tier2Rate);
+      if (duration <= 1) totalPrice = p1;
+      else if (duration === 2) totalPrice = p2;
+      else if (duration <= 5) totalPrice = p2 + ((p5 - p2) / 3) * (duration - 2);
+      else if (duration <= 8) totalPrice = p5 + ((p8 - p5) / 3) * (duration - 5);
+      else if (duration <= 11) totalPrice = p8 + ((p11 - p8) / 3) * (duration - 8);
+      else if (duration <= 14) totalPrice = p11 + ((p14 - p11) / 3) * (duration - 11);
+      else if (duration <= 17) totalPrice = p14 + ((p17 - p14) / 3) * (duration - 14);
+      else if (duration <= 22) totalPrice = p17 + ((p22 - p17) / 5) * (duration - 17);
+      else if (duration <= 32) totalPrice = p22 + ((p32 - p22) / 10) * (duration - 22);
+      else totalPrice = p32 + ((p32 - p22) / 10) * (duration - 32); 
+    } else { // Luton Math
+      const p1 = Number(company.luton_price || 0);
+      const p2 = Number(company.ltn_day2_price || p1);
+      const p5 = Number(company.ltn_day5_price || p2);
+      const p8 = Number(company.ltn_day8_price || p5);
+      const p11 = Number(company.ltn_day11_price || p8);
+      const p14 = Number(company.ltn_day14_price || p11);
+      const p17 = Number(company.ltn_day17_price || p14);
+      const p22 = Number(company.ltn_day22_price || p17);
+      const p32 = Number(company.ltn_day32_price || p22);
+
+      if (duration <= 1) totalPrice = p1;
+      else if (duration === 2) totalPrice = p2;
+      else if (duration <= 5) totalPrice = p2 + ((p5 - p2) / 3) * (duration - 2);
+      else if (duration <= 8) totalPrice = p5 + ((p8 - p5) / 3) * (duration - 5);
+      else if (duration <= 11) totalPrice = p8 + ((p11 - p8) / 3) * (duration - 8);
+      else if (duration <= 14) totalPrice = p11 + ((p14 - p11) / 3) * (duration - 11);
+      else if (duration <= 17) totalPrice = p14 + ((p17 - p14) / 3) * (duration - 14);
+      else if (duration <= 22) totalPrice = p17 + ((p22 - p17) / 5) * (duration - 17);
+      else if (duration <= 32) totalPrice = p22 + ((p32 - p22) / 10) * (duration - 22);
+      else totalPrice = p32 + ((p32 - p22) / 10) * (duration - 32); 
+    }
+
+    return totalPrice;
   };
 
   const bookingDays = calculateDays();
@@ -232,7 +309,6 @@ function CheckoutContent() {
       finalServiceType = "Hotel & Parking";
     }
 
-    // Determine Provider Name to show on Checkout accurately
     const providerName = company ? company.name : (urlName || type || "AeroPark Direct");
 
     try {
@@ -252,7 +328,7 @@ function CheckoutContent() {
             terminal: terminal,
             dropoff_date: dropDate,
             pickup_date: pickDate,
-            company_id: resolvedId, // 🟢 NOW IT WILL 100% PASS THE EXACT ID TO STRIPE!
+            company_id: resolvedId, 
             service_type: finalServiceType,
             fullName,
             email,
@@ -265,7 +341,8 @@ function CheckoutContent() {
             pickDate,
             dropTime,
             pickTime,
-            type
+            type,
+            promo_used: discount.code || "None",
           }
         }),
       });
@@ -281,7 +358,6 @@ function CheckoutContent() {
     }
   };
 
-  // 🟢 SHARED STYLES FOR AUTOFILL PROTECTION
   const lightInputCls = "w-full bg-white border border-slate-200 hover:border-blue-400 rounded-xl px-5 py-4 text-sm font-bold text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all touch-manipulation shadow-[0_0_0_1000px_#ffffff_inset] [-webkit-text-fill-color:#0f172a]";
   const yellowInputCls = "w-full bg-[#fde047] border-2 border-yellow-400 rounded-xl px-5 py-4 font-black text-slate-900 text-xl md:text-2xl text-center uppercase tracking-[0.2em] focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all placeholder:text-yellow-600/50 shadow-[0_0_0_1000px_#fde047_inset] [-webkit-text-fill-color:#0f172a] touch-manipulation";
   const darkInputCls = "w-full bg-[#131A2B] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm font-bold text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 outline-none transition-all shadow-[0_0_0_1000px_#131A2B_inset] [-webkit-text-fill-color:white]";
@@ -633,15 +709,19 @@ function CheckoutContent() {
                       value={promoInput}
                       onChange={(e) => setPromoInput(e.target.value)}
                       placeholder="Enter code" 
-                      disabled={discount.active}
+                      disabled={discount.active || isVerifyingPromo}
                       className={`${darkInputCls} flex-1 uppercase`}
                     />
                     {!discount.active ? (
-                      <button type="submit" className="bg-slate-800 hover:bg-blue-600 text-white px-5 shrink-0 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors active:scale-95 shadow-sm">
-                        Apply
+                      <button 
+                        type="submit" 
+                        disabled={isVerifyingPromo}
+                        className="bg-slate-800 hover:bg-blue-600 disabled:bg-slate-700 text-white px-5 shrink-0 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors active:scale-95 shadow-sm flex items-center justify-center min-w-[80px]"
+                      >
+                        {isVerifyingPromo ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply"}
                       </button>
                     ) : (
-                      <button type="button" onClick={() => { setDiscount({ active: false, code: "", percent: 0 }); setPromoInput(""); setPromoMessage(""); }} className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-5 shrink-0 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors active:scale-95 shadow-sm">
+                      <button type="button" onClick={() => { setDiscount({ active: false, code: "", percent: 0 }); setPromoInput(""); setPromoMessage(""); }} className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-5 shrink-0 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors active:scale-95 shadow-sm min-w-[80px]">
                         Remove
                       </button>
                     )}
@@ -649,8 +729,8 @@ function CheckoutContent() {
 
                   {promoMessage && (
                     <div className={`mt-4 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 ${isPromoError ? 'text-red-400' : 'text-emerald-400'}`}>
-                      {isPromoError ? <AlertCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
-                      {promoMessage}
+                      {isPromoError ? <AlertCircle className="w-4 h-4 shrink-0" /> : <CheckCircle2 className="w-4 h-4 shrink-0" />}
+                      <span className="leading-tight">{promoMessage}</span>
                     </div>
                   )}
                 </div>

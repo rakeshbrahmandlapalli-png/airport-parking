@@ -1,17 +1,5 @@
 "use client";
 
-/**
- * AeroPark Direct - Partner Network v14.1 (Ultimate SaaS 3.0 Edition)
- * ------------------------------------------------------
- * FIXES & UPGRADES:
- * - DUAL PHONE NUMBERS: Added Dispatch Phone 1 & 2 to the General Info tab.
- * - MAP INTEGRATION: Added Address, Postcode, and Google Map Embed URL fields.
- * - HTML SUPPORT: Textareas now include a reminder for <br/> and <b> tags.
- * - AUTOFILL BUG: Fixed invisible text. Forced Webkit fill colors on all inputs.
- * - EXCEL EXPORT: Added missing Drop-off Time, Pick-up Time, and Service Type.
- * - SEARCH RIBBON: Added explicit "Service Type" filter and redesigned grid.
- */
-
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/app/lib/supabase";
 import { useRouter } from "next/navigation";
@@ -22,7 +10,7 @@ import {
   CalendarDays, LogOut, Plane, Network, SlidersHorizontal,
   ArrowUpDown, Award, AlertOctagon, FileText, Download,
   Percent, Image as ImageIcon, ArrowUp, ArrowDown,
-  ChevronDown, AlertCircle, Filter, CheckCircle2, Phone, Code2
+  ChevronDown, AlertCircle, Filter, Phone, Code2
 } from "lucide-react";
 
 interface Review {
@@ -33,16 +21,21 @@ interface Review {
   date: string;
 }
 
-// ─── TIER RATES: Split per airport ──────────────────────────────────────
+// ─── SPREADSHEET PIVOT RATES ──────────────────────────────────────
 const defaultCompany = {
   name: "",
   category: "meet-greet",
   luton_price: 0,
   heathrow_price: 0,
-  ltn_tier1_extra_rate: 1.99,   // LTN Days 2–6
-  ltn_tier2_extra_rate: 2.99,   // LTN Days 7+
-  lhr_tier1_extra_rate: 1.99,   // LHR Days 2–6
-  lhr_tier2_extra_rate: 2.99,   // LHR Days 7+
+  
+  // 🟢 NEW: LTN Spreadsheet Pivots
+  ltn_day2_price: 0, ltn_day5_price: 0, ltn_day8_price: 0, ltn_day11_price: 0,
+  ltn_day14_price: 0, ltn_day17_price: 0, ltn_day22_price: 0, ltn_day32_price: 0,
+
+  // 🟢 NEW: LHR Spreadsheet Pivots
+  lhr_day2_price: 0, lhr_day5_price: 0, lhr_day8_price: 0, lhr_day11_price: 0,
+  lhr_day14_price: 0, lhr_day17_price: 0, lhr_day22_price: 0, lhr_day32_price: 0,
+
   commission_rate: 15,
   logo_url: "",
   is_active: true,
@@ -53,8 +46,8 @@ const defaultCompany = {
   ltn_featured: false,
   lhr_featured: false,
   overview: "",
-  phone_number: "",   // 🟢 Primary Dispatch Phone
-  phone_number_2: "", // 🟢 Secondary Dispatch Phone
+  phone_number: "",   
+  phone_number_2: "", 
   map_location: "Terminal Forecourt",
   on_arrival_lhr: "",
   on_arrival_ltn: "",
@@ -62,7 +55,7 @@ const defaultCompany = {
   on_return_ltn: "",
   address: "",
   postcode: "",
-  map_url: "", // 🟢 Added for Map Preview
+  map_url: "", 
   ltn_reviews: [] as Review[],
   lhr_reviews: [] as Review[],
 };
@@ -112,14 +105,12 @@ export default function AdminCompaniesPage() {
 
   const [newCompany, setNewCompany] = useState(defaultCompany);
 
-  // ─── ACTIVE FILTER COUNT ────────────────────────────────────────────────
   const activeFilterCount = [
     categoryFilter !== "ALL",
     airportFilter !== "ALL",
     statusFilter !== "ALL",
   ].filter(Boolean).length;
 
-  // ─── AUTH & FETCH ───────────────────────────────────────────────────────
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -157,13 +148,11 @@ export default function AdminCompaniesPage() {
     setFetchingFinancials(false);
   }
 
-  // ─── LOGOUT ─────────────────────────────────────────────────────────────
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/admin/login");
   };
 
-  // ─── CLOSE MODAL ────────────────────────────────────────────────────────
   const closeModal = () => {
     setEditingCompany(null);
     setShowAddModal(false);
@@ -171,7 +160,6 @@ export default function AdminCompaniesPage() {
     setCompanyBookings([]);
   };
 
-  // ─── CRUD ───────────────────────────────────────────────────────────────
   const handleAddCompany = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -220,7 +208,6 @@ export default function AdminCompaniesPage() {
     await supabase.from("companies").update({ is_active: newVal }).eq("id", company.id);
   };
 
-  // ─── 🟢 CSV INVOICE (Added Times & Service Type) ────────────────
   const downloadInvoiceCSV = () => {
     if (!editingCompany) return;
     const commRate = Number(editingCompany.commission_rate || 15) / 100;
@@ -233,7 +220,6 @@ export default function AdminCompaniesPage() {
     csv += `Commission Rate: ${(commRate * 100).toFixed(1)}%\n`;
     csv += `Generated On: ${new Date().toLocaleDateString()}\n\n`;
     
-    // Header includes Dates, Times, and Service Type
     csv += `Booking Ref,Customer,Drop-off Date,Drop-off Time,Pick-up Date,Pick-up Time,Service Type,Gross (£),Aero Fee (£),Partner Payout (£)\n`;
     
     companyBookings.forEach((b) => {
@@ -259,7 +245,6 @@ export default function AdminCompaniesPage() {
     a.click();
   };
 
-  // ─── FILTER ENGINE ───────────────────────────────────────────────────────
   const filteredAndSortedCompanies = useMemo(() => {
     let result = [...companies];
     
@@ -303,7 +288,6 @@ export default function AdminCompaniesPage() {
     }
   };
 
-  // ─── REVIEW HANDLERS ─────────────────────────────────────────────────────
   const addReview = (airport: "ltn" | "lhr") => {
     const key = airport === "ltn" ? "ltn_reviews" : "lhr_reviews";
     const rev: Review = { 
@@ -352,12 +336,10 @@ export default function AdminCompaniesPage() {
     return avg.toFixed(1);
   };
 
-  // ─── FINANCIAL HELPERS ────────────────────────────────────────────────────
   const calcGross = () => companyBookings.reduce((sum, b) => sum + Number(b.total_price || 0), 0);
   const calcAeroCut = () => calcGross() * (Number(editingCompany?.commission_rate || 15) / 100);
   const calcPayout = () => calcGross() - calcAeroCut();
 
-  // ─── STATS ────────────────────────────────────────────────────────────────
   const totalPartners = companies.length;
   const ltnCoverage = companies.filter((c) => c.operates_at_luton && c.is_active).length;
   const lhrCoverage = companies.filter((c) => c.operates_at_heathrow && c.is_active).length;
@@ -374,7 +356,6 @@ export default function AdminCompaniesPage() {
     );
   }
 
-  // ─── SHARED INPUT CLASSES (FIXES AUTOFILL WHITE TEXT BUGS) ─────────────────────────────────────────────────
   const inputCls = "w-full bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white] placeholder:text-slate-500";
   const labelCls = "text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest mb-2";
   const filterSelectCls = "w-full appearance-none bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl py-4 pl-10 pr-9 text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-300 outline-none cursor-pointer transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white]";
@@ -411,8 +392,6 @@ export default function AdminCompaniesPage() {
 
       {/* ── MAIN ────────────────────────────────────────────────────────── */}
       <main className="flex-1 p-4 md:p-8 lg:p-12 w-full overflow-y-auto h-screen relative pb-32 md:pb-12 custom-scrollbar">
-
-        {/* Mobile Header */}
         <div className="md:hidden flex items-center justify-between mb-8 bg-[#131A2B] p-5 rounded-3xl border border-slate-800 shadow-2xl">
           <div className="flex items-center gap-3 font-black text-xl uppercase tracking-tighter text-white">
             <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/30">
@@ -425,7 +404,6 @@ export default function AdminCompaniesPage() {
           </button>
         </div>
 
-        {/* Desktop Header */}
         <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-12">
           <div>
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tight">Partner Network</h1>
@@ -458,7 +436,7 @@ export default function AdminCompaniesPage() {
           ))}
         </div>
 
-        {/* ── REDESIGNED SEARCH RIBBON (FLEX GRID) ─────────────────────────────── */}
+        {/* ── SEARCH RIBBON ─────────────────────────────── */}
         <div className="bg-[#131A2B] rounded-[2rem] border border-slate-800 shadow-lg p-4 mb-10 flex flex-col xl:flex-row gap-4">
           <div className="relative flex-1 min-w-[280px]">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 z-10 pointer-events-none" />
@@ -801,7 +779,6 @@ export default function AdminCompaniesPage() {
                           </div>
                         </div>
 
-                        {/* 🟢 DUAL DISPATCH NUMBERS */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-800/80 mt-6">
                           <div className="space-y-2">
                             <label className={labelCls}><Phone className="w-3.5 h-3.5 inline mr-1 text-amber-500" /> Dispatch Phone 1 (Primary)</label>
@@ -821,7 +798,6 @@ export default function AdminCompaniesPage() {
                           </div>
                         </div>
 
-                        {/* 🟢 NEW: MAP & LOCATION DATA */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-slate-800/80 mt-6">
                           <div className="space-y-2 md:col-span-2">
                             <label className={labelCls}><MapPin className="w-3.5 h-3.5 inline mr-1 text-emerald-500" /> Physical Address</label>
@@ -881,13 +857,13 @@ export default function AdminCompaniesPage() {
 
                         {getField(editingCompany, newCompany, "operates_at_luton") && (
                           <>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-slate-800 pb-8">
                               <div className="space-y-2">
-                                <label className={labelCls}><span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5" />Day 1: Base Rate (£)</label>
+                                <label className={labelCls}><span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5" />Day 1: Starting Price (£)</label>
                                 <input type="number" step="0.01"
                                   value={getField(editingCompany, newCompany, "luton_price")}
                                   onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "luton_price", parseFloat(e.target.value) || 0)}
-                                  className={`${inputCls} !text-2xl`}
+                                  className={`${inputCls} !text-2xl text-blue-400`}
                                 />
                               </div>
                               <div className="flex flex-col gap-3 pt-6">
@@ -906,26 +882,34 @@ export default function AdminCompaniesPage() {
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              <div className="space-y-2">
-                                <label className={labelCls}><span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5" />Days 2–6: Extra Rate (£)</label>
-                                <input type="number" step="0.01"
-                                  value={getField(editingCompany, newCompany, "ltn_tier1_extra_rate")}
-                                  onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "ltn_tier1_extra_rate", parseFloat(e.target.value) || 0)}
-                                  className={`${inputCls} !text-xl`}
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <label className={labelCls}><span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5" />Days 7+: Extra Rate (£)</label>
-                                <input type="number" step="0.01"
-                                  value={getField(editingCompany, newCompany, "ltn_tier2_extra_rate")}
-                                  onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "ltn_tier2_extra_rate", parseFloat(e.target.value) || 0)}
-                                  className={`${inputCls} !text-xl`}
-                                />
+                            {/* 🟢 NEW: 8-TIER SPREADSHEET INPUTS FOR LTN */}
+                            <div className="pt-2">
+                              <p className="text-sm font-black text-white mb-1"><span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2" />Spreadsheet Pivot Points</p>
+                              <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-5">Set exact TOTAL PRICE for these specific durations. Algorithm interpolates the rest.</p>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {[
+                                  { label: "Day 2 Total (£)", key: "ltn_day2_price" },
+                                  { label: "Day 5 Total (£)", key: "ltn_day5_price" },
+                                  { label: "Day 8 Total (£)", key: "ltn_day8_price" },
+                                  { label: "Day 11 Total (£)", key: "ltn_day11_price" },
+                                  { label: "Day 14 Total (£)", key: "ltn_day14_price" },
+                                  { label: "Day 17 Total (£)", key: "ltn_day17_price" },
+                                  { label: "Day 22 Total (£)", key: "ltn_day22_price" },
+                                  { label: "Day 32 Total (£)", key: "ltn_day32_price" }
+                                ].map(pivot => (
+                                  <div key={pivot.key} className="space-y-2">
+                                    <label className={labelCls}>{pivot.label}</label>
+                                    <input type="number" step="0.01"
+                                      value={getField(editingCompany, newCompany, pivot.key)}
+                                      onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, pivot.key, parseFloat(e.target.value) || 0)}
+                                      className={`${inputCls} !py-3 !text-emerald-400`}
+                                    />
+                                  </div>
+                                ))}
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8 border-t border-slate-800 mt-6">
                               <div className="space-y-2">
                                 <label className={labelCls}>Arrival Instructions (HTML Support)</label>
                                 <textarea rows={5}
@@ -975,13 +959,13 @@ export default function AdminCompaniesPage() {
 
                         {getField(editingCompany, newCompany, "operates_at_heathrow") && (
                           <>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-slate-800 pb-8">
                               <div className="space-y-2">
-                                <label className={labelCls}><span className="inline-block w-1.5 h-1.5 rounded-full bg-purple-500 mr-1.5" />Day 1: Base Rate (£)</label>
+                                <label className={labelCls}><span className="inline-block w-1.5 h-1.5 rounded-full bg-purple-500 mr-1.5" />Day 1: Starting Price (£)</label>
                                 <input type="number" step="0.01"
                                   value={getField(editingCompany, newCompany, "heathrow_price")}
                                   onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "heathrow_price", parseFloat(e.target.value) || 0)}
-                                  className={`${inputCls} !text-2xl`}
+                                  className={`${inputCls} !text-2xl text-purple-400`}
                                 />
                               </div>
                               <div className="flex flex-col gap-3 pt-6">
@@ -1000,26 +984,34 @@ export default function AdminCompaniesPage() {
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              <div className="space-y-2">
-                                <label className={labelCls}><span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5" />Days 2–6: Extra Rate (£)</label>
-                                <input type="number" step="0.01"
-                                  value={getField(editingCompany, newCompany, "lhr_tier1_extra_rate")}
-                                  onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "lhr_tier1_extra_rate", parseFloat(e.target.value) || 0)}
-                                  className={`${inputCls} !text-xl`}
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <label className={labelCls}><span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5" />Days 7+: Extra Rate (£)</label>
-                                <input type="number" step="0.01"
-                                  value={getField(editingCompany, newCompany, "lhr_tier2_extra_rate")}
-                                  onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "lhr_tier2_extra_rate", parseFloat(e.target.value) || 0)}
-                                  className={`${inputCls} !text-xl`}
-                                />
+                            {/* 🟢 NEW: 8-TIER SPREADSHEET INPUTS FOR LHR */}
+                            <div className="pt-2">
+                              <p className="text-sm font-black text-white mb-1"><span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2" />Spreadsheet Pivot Points</p>
+                              <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-5">Set exact TOTAL PRICE for these specific durations. Algorithm interpolates the rest.</p>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {[
+                                  { label: "Day 2 Total (£)", key: "lhr_day2_price" },
+                                  { label: "Day 5 Total (£)", key: "lhr_day5_price" },
+                                  { label: "Day 8 Total (£)", key: "lhr_day8_price" },
+                                  { label: "Day 11 Total (£)", key: "lhr_day11_price" },
+                                  { label: "Day 14 Total (£)", key: "lhr_day14_price" },
+                                  { label: "Day 17 Total (£)", key: "lhr_day17_price" },
+                                  { label: "Day 22 Total (£)", key: "lhr_day22_price" },
+                                  { label: "Day 32 Total (£)", key: "lhr_day32_price" }
+                                ].map(pivot => (
+                                  <div key={pivot.key} className="space-y-2">
+                                    <label className={labelCls}>{pivot.label}</label>
+                                    <input type="number" step="0.01"
+                                      value={getField(editingCompany, newCompany, pivot.key)}
+                                      onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, pivot.key, parseFloat(e.target.value) || 0)}
+                                      className={`${inputCls} !py-3 !text-emerald-400`}
+                                    />
+                                  </div>
+                                ))}
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8 border-t border-slate-800 mt-6">
                               <div className="space-y-2">
                                 <label className={labelCls}>Arrival Instructions (HTML Support)</label>
                                 <textarea rows={5}
@@ -1147,7 +1139,7 @@ export default function AdminCompaniesPage() {
   );
 }
 
-// ─── REVIEW SECTION COMPONENT (WITH AUTOFILL FIXES) ────────────────────────────────────────────────
+// ─── REVIEW SECTION COMPONENT ────────────────────────────────────────────────
 function ReviewSection({
   airport, color, reviews, onAdd, onRemove, onUpdate
 }: {

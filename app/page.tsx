@@ -63,12 +63,9 @@ export default function HomePage() {
     return () => clearInterval(timer);
   }, []);
 
-  if (!isLoaded || !now) {
-    return <div className="min-h-[100dvh] bg-slate-950" />; 
-  }
-
-  const todayStr = now.toISOString().split("T")[0];
-  const currentTimeStr = now.toTimeString().slice(0, 5);
+  // 🟢 FIX: Safely handle the server render so Google's bots see your site immediately!
+  const todayStr = now?.toISOString().split("T")[0] || "";
+  const currentTimeStr = now?.toTimeString().slice(0, 5) || "";
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,7 +84,7 @@ export default function HomePage() {
       airport, dropoffDate, dropoffTime, pickupDate, pickupTime
     }).toString();
     
-    // 🟢 CHANGED: Now redirects to select-service instead of results
+    // Now redirects to select-service instead of results
     router.push(`/select-service?${query}`);
   };
 
@@ -139,7 +136,7 @@ export default function HomePage() {
       
       if (data.airport && data.dropoffDate) {
         
-        // 🟢 Pass ALL 24 Magic Flags to the URL
+        // Pass ALL 24 Magic Flags to the URL
         const baseParams: any = {
           airport: data.airport,
           dropoffDate: data.dropoffDate,
@@ -165,7 +162,7 @@ export default function HomePage() {
         if (data.servicePreference) baseParams.type = data.servicePreference;
         if (data.flightNumber) baseParams.flightNumber = data.flightNumber.toUpperCase();
 
-        // 🟢 ZERO-CLICK BOOKING ACTIVATED 
+        // ZERO-CLICK BOOKING ACTIVATED 
         if (data.isReadyToBook && data.servicePreference) {
            setFastTrackStatus("Fast-Track Activated. Finding best operator...");
            const isHeathrow = data.airport.includes("Heathrow");
@@ -207,7 +204,7 @@ export default function HomePage() {
            }
         }
 
-        // 🟡 NORMAL ROUTE: Needs more options, send to Results Page
+        // NORMAL ROUTE: Needs more options, send to Results Page
         setFastTrackStatus("Loading available operators...");
         const query = new URLSearchParams(baseParams).toString();
         router.push(`/results?${query}`);
@@ -224,8 +221,8 @@ export default function HomePage() {
 
   return (
     <main suppressHydrationWarning className="min-h-[100dvh] bg-[#F8FAFC] font-sans antialiased selection:bg-blue-600 selection:text-white overflow-x-hidden">
-      {/* 1. PREMIUM NAVBAR */}
-      <nav className={`fixed top-0 w-full z-[100] bg-white/80 backdrop-blur-xl border-b border-slate-200 transition-all duration-1000 ${isLoaded ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
+      {/* 🟢 1. PREMIUM NAVBAR - STICKY AND PINNED */}
+      <nav className={`sticky top-0 w-full z-[100] -mb-20 md:-mb-24 bg-white/80 backdrop-blur-xl border-b border-slate-200 transition-all duration-1000 ${isLoaded ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 md:h-24 flex items-center justify-between overflow-hidden">
           
           <Link href="/" className="flex items-center z-50 overflow-visible touch-manipulation [-webkit-tap-highlight-color:transparent]">
@@ -309,8 +306,8 @@ export default function HomePage() {
       </div>
         
 
-      {/* 2. IMMERSIVE HERO SECTION */}
-      <section className="relative min-h-[100dvh] w-full flex items-center justify-center overflow-hidden bg-slate-950 pt-28 pb-12 md:py-20">
+      {/* 🟢 2. IMMERSIVE HERO SECTION - PADDING ADJUSTED */}
+      <section className="relative min-h-[100dvh] w-full flex items-center justify-center overflow-hidden bg-slate-950 pt-40 pb-12 md:pt-48 md:py-20">
         <div className="absolute inset-0 z-0 overflow-hidden">
           <div className={`absolute inset-0 bg-cover bg-center transition-all duration-[3000ms] ease-out origin-center ${isLoaded ? 'scale-105 opacity-100' : 'scale-150 opacity-0'}`} style={{ backgroundImage: "url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format&fit=crop')" }}></div>
           <div className={`absolute inset-0 bg-gradient-to-b md:bg-gradient-to-r from-slate-950 via-slate-900/80 md:via-slate-900/60 to-transparent transition-opacity duration-[2500ms] ${isLoaded ? 'opacity-100' : 'opacity-0'}`}></div>
@@ -582,7 +579,7 @@ export default function HomePage() {
       {/* 6. FOOTER */}
       <footer className="bg-[#0B1121] py-8 md:py-14 px-4 md:px-6 border-t border-white/5">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 md:gap-4">
-           
+            
            <Link href="/" className="flex items-center w-full md:w-1/3 justify-center md:justify-start touch-manipulation [-webkit-tap-highlight-color:transparent]">
              <div className="bg-white px-2.5 py-1.5 rounded-lg shadow-sm">
                <Image 

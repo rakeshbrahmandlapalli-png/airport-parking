@@ -38,52 +38,67 @@ model bookings {
   
   company_id        String?    @db.Uuid
   stripe_session_id String?    @unique
+  promo_code        String?    @default("None") // 🟢 Added to sync with Supabase
   companies         companies? @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model companies {
-  id                   String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name                 String
-  category             String
-  luton_price          Decimal    @db.Decimal
-  heathrow_price       Decimal    @db.Decimal
+  id                 String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String
+  category           String
+  luton_price        Decimal    @db.Decimal
+  heathrow_price     Decimal    @db.Decimal
   
-  // 🟢 NEW: Split Dynamic Pricing Tiers per Airport
-  ltn_tier1_extra_rate Decimal?   @default(1.99) @db.Decimal // LTN Days 2 to 6
-  ltn_tier2_extra_rate Decimal?   @default(2.99) @db.Decimal // LTN Days 7+
-  lhr_tier1_extra_rate Decimal?   @default(1.99) @db.Decimal // LHR Days 2 to 6
-  lhr_tier2_extra_rate Decimal?   @default(2.99) @db.Decimal // LHR Days 7+
+  // 🟢 NEW: LTN Spreadsheet Pivots
+  ltn_day2_price     Decimal? @default(0) @db.Decimal
+  ltn_day5_price     Decimal? @default(0) @db.Decimal
+  ltn_day8_price     Decimal? @default(0) @db.Decimal
+  ltn_day11_price    Decimal? @default(0) @db.Decimal
+  ltn_day14_price    Decimal? @default(0) @db.Decimal
+  ltn_day17_price    Decimal? @default(0) @db.Decimal
+  ltn_day22_price    Decimal? @default(0) @db.Decimal
+  ltn_day32_price    Decimal? @default(0) @db.Decimal
 
-  is_sold_out          Boolean?   @default(false)
-  updated_at           DateTime?  @default(now()) @db.Timestamptz(6)
-  is_recommended       Boolean?   @default(false)
-  operates_at_luton    Boolean?   @default(true)
+  // 🟢 NEW: LHR Spreadsheet Pivots
+  lhr_day2_price     Decimal? @default(0) @db.Decimal
+  lhr_day5_price     Decimal? @default(0) @db.Decimal
+  lhr_day8_price     Decimal? @default(0) @db.Decimal
+  lhr_day11_price    Decimal? @default(0) @db.Decimal
+  lhr_day14_price    Decimal? @default(0) @db.Decimal
+  lhr_day17_price    Decimal? @default(0) @db.Decimal
+  lhr_day22_price    Decimal? @default(0) @db.Decimal
+  lhr_day32_price    Decimal? @default(0) @db.Decimal
+
+  is_sold_out        Boolean?   @default(false)
+  updated_at         DateTime?  @default(now()) @db.Timestamptz(6)
+  is_recommended     Boolean?   @default(false)
+  operates_at_luton  Boolean?   @default(true)
   operates_at_heathrow Boolean?   @default(true)
-  overview             String?
-  on_arrival           String?
-  on_return            String?
-  address              String?
-  postcode             String?
-  map_url              String?
+  overview           String?
+  on_arrival         String?
+  on_return          String?
+  address            String?
+  postcode           String?
+  map_url            String?
   
-  phone_number         String?    @default("07700 900 123")
-  phone_number_2       String?    // 🟢 ADDED: Secondary Dispatch Number
+  phone_number       String?    @default("07700 900 123")
+  phone_number_2     String?    // 🟢 ADDED: Secondary Dispatch Number
   
-  map_location         String?    @default("Details provided at terminal")
-  on_arrival_lhr       String?
-  on_arrival_ltn       String?
-  on_return_lhr        String?
-  on_return_ltn        String?
-  is_active            Boolean?   @default(true)
-  is_featured          Boolean?   @default(false)
-  ltn_sold_out         Boolean?   @default(false)
-  lhr_sold_out         Boolean?   @default(false)
-  ltn_featured         Boolean?   @default(false)
-  lhr_featured         Boolean?   @default(false)
-  reviews              Json?      @default("[]")
-  commission_rate      Int?       @default(15)
-  logo_url             String?
-  ltn_reviews          Json?      @default("[]")
-  lhr_reviews          Json?      @default("[]")
-  bookings             bookings[]
+  map_location       String?    @default("Details provided at terminal")
+  on_arrival_lhr     String?
+  on_arrival_ltn     String?
+  on_return_lhr      String?
+  on_return_ltn      String?
+  is_active          Boolean?   @default(true)
+  is_featured        Boolean?   @default(false)
+  ltn_sold_out       Boolean?   @default(false)
+  lhr_sold_out       Boolean?   @default(false)
+  ltn_featured       Boolean?   @default(false)
+  lhr_featured       Boolean?   @default(false)
+  reviews            Json?      @default("[]")
+  commission_rate    Int?       @default(15)
+  logo_url           String?
+  ltn_reviews        Json?      @default("[]")
+  lhr_reviews        Json?      @default("[]")
+  bookings           bookings[]
 }

@@ -81,7 +81,10 @@ export async function POST(req: Request) {
           total_price: session.amount_total ? session.amount_total / 100 : 0,
           status: "confirmed",
           stripe_session_id: session.id,
-          company_id: resolvedCompany ? resolvedCompany.id : null, 
+          company_id: resolvedCompany ? resolvedCompany.id : null,
+          
+          // 🚀 CATCHES THE PROMO CODE AND SAVES IT TO SUPABASE
+          promo_code: m?.promo_used || "None",
         };
 
         const { data: newBooking, error: insertError } = await supabase.from('bookings').insert([bookingData]).select().maybeSingle();

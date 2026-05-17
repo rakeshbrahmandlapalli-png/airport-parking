@@ -46,21 +46,51 @@ function AeroAvatar({ size = "md", thinking = false }: { size?: "sm" | "md" | "l
 function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: any) {
   const [activeTab, setActiveTab] = useState('overview');
   
-  // 🟢 DYNAMIC PRICING MATH
-  const baseRate = isHeathrow ? Number(option.heathrow_price || 0) : Number(option.luton_price || 0);
-  const tier1Rate = isHeathrow ? Number(option.lhr_tier1_extra_rate ?? 1.99) : Number(option.ltn_tier1_extra_rate ?? 1.99);
-  const tier2Rate = isHeathrow ? Number(option.lhr_tier2_extra_rate ?? 2.99) : Number(option.ltn_tier2_extra_rate ?? 2.99);
+  // 🟢 DYNAMIC PRICING MATH (8-TIER INTERPOLATION)
+  let totalPrice = 0;
+  
+  if (isHeathrow) {
+    const p1 = Number(option.heathrow_price || 0);
+    const p2 = Number(option.lhr_day2_price || p1);
+    const p5 = Number(option.lhr_day5_price || p2);
+    const p8 = Number(option.lhr_day8_price || p5);
+    const p11 = Number(option.lhr_day11_price || p8);
+    const p14 = Number(option.lhr_day14_price || p11);
+    const p17 = Number(option.lhr_day17_price || p14);
+    const p22 = Number(option.lhr_day22_price || p17);
+    const p32 = Number(option.lhr_day32_price || p22);
 
-  let totalPrice = baseRate;
-  if (duration > 1) {
-    const extraDays = duration - 1;
-    const tier1Days = Math.min(extraDays, 5); 
-    totalPrice += (tier1Days * tier1Rate);
-    
-    if (extraDays > 5) {
-      const tier2Days = extraDays - 5; 
-      totalPrice += (tier2Days * tier2Rate);
-    }
+    if (duration <= 1) totalPrice = p1;
+    else if (duration === 2) totalPrice = p2;
+    else if (duration <= 5) totalPrice = p2 + ((p5 - p2) / 3) * (duration - 2);
+    else if (duration <= 8) totalPrice = p5 + ((p8 - p5) / 3) * (duration - 5);
+    else if (duration <= 11) totalPrice = p8 + ((p11 - p8) / 3) * (duration - 8);
+    else if (duration <= 14) totalPrice = p11 + ((p14 - p11) / 3) * (duration - 11);
+    else if (duration <= 17) totalPrice = p14 + ((p17 - p14) / 3) * (duration - 14);
+    else if (duration <= 22) totalPrice = p17 + ((p22 - p17) / 5) * (duration - 17);
+    else if (duration <= 32) totalPrice = p22 + ((p32 - p22) / 10) * (duration - 22);
+    else totalPrice = p32 + ((p32 - p22) / 10) * (duration - 32); // Extrapolate past 32 days
+  } else {
+    const p1 = Number(option.luton_price || 0);
+    const p2 = Number(option.ltn_day2_price || p1);
+    const p5 = Number(option.ltn_day5_price || p2);
+    const p8 = Number(option.ltn_day8_price || p5);
+    const p11 = Number(option.ltn_day11_price || p8);
+    const p14 = Number(option.ltn_day14_price || p11);
+    const p17 = Number(option.ltn_day17_price || p14);
+    const p22 = Number(option.ltn_day22_price || p17);
+    const p32 = Number(option.ltn_day32_price || p22);
+
+    if (duration <= 1) totalPrice = p1;
+    else if (duration === 2) totalPrice = p2;
+    else if (duration <= 5) totalPrice = p2 + ((p5 - p2) / 3) * (duration - 2);
+    else if (duration <= 8) totalPrice = p5 + ((p8 - p5) / 3) * (duration - 5);
+    else if (duration <= 11) totalPrice = p8 + ((p11 - p8) / 3) * (duration - 8);
+    else if (duration <= 14) totalPrice = p11 + ((p14 - p11) / 3) * (duration - 11);
+    else if (duration <= 17) totalPrice = p14 + ((p17 - p14) / 3) * (duration - 14);
+    else if (duration <= 22) totalPrice = p17 + ((p22 - p17) / 5) * (duration - 17);
+    else if (duration <= 32) totalPrice = p22 + ((p32 - p22) / 10) * (duration - 22);
+    else totalPrice = p32 + ((p32 - p22) / 10) * (duration - 32); 
   }
 
   const avgDailyRate = totalPrice / duration;
@@ -349,15 +379,51 @@ function ResultsContent() {
            if (aFeatured && !bFeatured) return -1;
            if (!aFeatured && bFeatured) return 1;
            
+           // 🟢 8-TIER SORTING ALGORITHM
            const getPrice = (opt: any) => {
-             const base = isHeathrow ? Number(opt.heathrow_price || 0) : Number(opt.luton_price || 0);
-             const t1 = isHeathrow ? Number(opt.lhr_tier1_extra_rate ?? 1.99) : Number(opt.ltn_tier1_extra_rate ?? 1.99);
-             const t2 = isHeathrow ? Number(opt.lhr_tier2_extra_rate ?? 2.99) : Number(opt.ltn_tier2_extra_rate ?? 2.99);
-             let tot = base;
-             if (duration > 1) {
-               const extra = duration - 1;
-               tot += Math.min(extra, 5) * t1;
-               if (extra > 5) tot += (extra - 5) * t2;
+             let tot = 0;
+             if (isHeathrow) {
+               const p1 = Number(opt.heathrow_price || 0);
+               const p2 = Number(opt.lhr_day2_price || p1);
+               const p5 = Number(opt.lhr_day5_price || p2);
+               const p8 = Number(opt.lhr_day8_price || p5);
+               const p11 = Number(opt.lhr_day11_price || p8);
+               const p14 = Number(opt.lhr_day14_price || p11);
+               const p17 = Number(opt.lhr_day17_price || p14);
+               const p22 = Number(opt.lhr_day22_price || p17);
+               const p32 = Number(opt.lhr_day32_price || p22);
+
+               if (duration <= 1) tot = p1;
+               else if (duration === 2) tot = p2;
+               else if (duration <= 5) tot = p2 + ((p5 - p2) / 3) * (duration - 2);
+               else if (duration <= 8) tot = p5 + ((p8 - p5) / 3) * (duration - 5);
+               else if (duration <= 11) tot = p8 + ((p11 - p8) / 3) * (duration - 8);
+               else if (duration <= 14) tot = p11 + ((p14 - p11) / 3) * (duration - 11);
+               else if (duration <= 17) tot = p14 + ((p17 - p14) / 3) * (duration - 14);
+               else if (duration <= 22) tot = p17 + ((p22 - p17) / 5) * (duration - 17);
+               else if (duration <= 32) tot = p22 + ((p32 - p22) / 10) * (duration - 22);
+               else tot = p32 + ((p32 - p22) / 10) * (duration - 32); 
+             } else {
+               const p1 = Number(opt.luton_price || 0);
+               const p2 = Number(opt.ltn_day2_price || p1);
+               const p5 = Number(opt.ltn_day5_price || p2);
+               const p8 = Number(opt.ltn_day8_price || p5);
+               const p11 = Number(opt.ltn_day11_price || p8);
+               const p14 = Number(opt.ltn_day14_price || p11);
+               const p17 = Number(opt.ltn_day17_price || p14);
+               const p22 = Number(opt.ltn_day22_price || p17);
+               const p32 = Number(opt.ltn_day32_price || p22);
+
+               if (duration <= 1) tot = p1;
+               else if (duration === 2) tot = p2;
+               else if (duration <= 5) tot = p2 + ((p5 - p2) / 3) * (duration - 2);
+               else if (duration <= 8) tot = p5 + ((p8 - p5) / 3) * (duration - 5);
+               else if (duration <= 11) tot = p8 + ((p11 - p8) / 3) * (duration - 8);
+               else if (duration <= 14) tot = p11 + ((p14 - p11) / 3) * (duration - 11);
+               else if (duration <= 17) tot = p14 + ((p17 - p14) / 3) * (duration - 14);
+               else if (duration <= 22) tot = p17 + ((p22 - p17) / 5) * (duration - 17);
+               else if (duration <= 32) tot = p22 + ((p32 - p22) / 10) * (duration - 22);
+               else tot = p32 + ((p32 - p22) / 10) * (duration - 32); 
              }
              return tot;
            };

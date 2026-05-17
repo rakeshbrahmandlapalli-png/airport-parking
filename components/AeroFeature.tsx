@@ -1,6 +1,6 @@
 "use client";
 
-import { CarFront, Building2, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { CarFront, Building2, ShieldCheck, CheckCircle2, Star } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 export default function AeroFeature() {
@@ -45,7 +45,7 @@ export default function AeroFeature() {
             <span className="text-blue-600">Vetting.</span>
           </h2>
           <p className="text-xl text-slate-500 font-medium leading-relaxed max-w-sm">
-            Meet <strong>Aero</strong>, your digital concierge. Aero scans 100+ data points to ensure your provider is secure, vetted, and verified.
+            Meet <strong>Aero</strong>, your digital concierge. Aero scans 100+ data points to ensure your provider is secure, and automatically applies your VIP loyalty discounts.
           </p>
           <div className="pt-6">
              <div className="inline-flex items-center gap-3 px-6 py-3 bg-slate-900 rounded-2xl">
@@ -84,7 +84,7 @@ export default function AeroFeature() {
             <div className="mt-8 w-20 h-2 bg-blue-500/20 blur-md rounded-full animate-pulse"></div>
           </div>
 
-          {/* 2. THE VETTED PROVIDERS (Orbiting) */}
+          {/* 2. THE VETTED PROVIDERS & FEATURES (Orbiting) */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="absolute animate-orbit [animation-duration:12s]">
               <div className="p-4 bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex flex-col items-center gap-1 group">
@@ -103,6 +103,14 @@ export default function AeroFeature() {
             <div className="absolute animate-orbit [animation-duration:18s] [animation-delay:-10s]">
               <div className="p-4 bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex flex-col items-center gap-1">
                 <ShieldCheck className="w-6 h-6 text-emerald-400" />
+                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+              </div>
+            </div>
+
+            {/* 🟢 NEW: The VIP Loyalty Orbit Icon */}
+            <div className="absolute animate-orbit [animation-duration:20s] [animation-delay:-7s]">
+              <div className="p-4 bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex flex-col items-center gap-1">
+                <Star className="w-6 h-6 text-amber-400" />
                 <CheckCircle2 className="w-3 h-3 text-emerald-500" />
               </div>
             </div>

@@ -27,6 +27,9 @@ export async function POST(req: Request) {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       
+      // 🚀 QUALITY OF LIFE UPGRADE: Pre-fill the Stripe checkout with the email they already typed!
+      customer_email: metadata.email ? String(metadata.email) : undefined,
+      
       // Collects phone number to fix the "N/A" in your emails & ensures Twilio has a target
       phone_number_collection: {
         enabled: true,
@@ -69,7 +72,10 @@ export async function POST(req: Request) {
         company_id: String(metadata.company_id || ""), 
         service_type: String(metadata.service_type || metadata.type || "Premium Meet & Greet"),
         booking_ref: String(metadata.booking_ref || ""),
-        is_amendment: isAmendment ? "true" : "false"
+        is_amendment: isAmendment ? "true" : "false",
+        
+        // 🚀 CATCHES THE PROMO CODE FROM THE FRONTEND
+        promo_used: String(metadata.promo_used || "None")
       },
 
       mode: "payment",
