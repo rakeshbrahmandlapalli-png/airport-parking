@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       
-      // Collects phone number to fix the "N/A" in your emails
+      // Collects phone number to fix the "N/A" in your emails & ensures Twilio has a target
       phone_number_collection: {
         enabled: true,
       },
@@ -62,6 +62,9 @@ export async function POST(req: Request) {
         pickTime: String(metadata.pickTime || ""),
         flightNumber: String(metadata.flightNumber || metadata.flight_number || ""),
         
+        // 🟢 CRITICAL ADDITION: Passes provider name so the webhook fallback logic actually works
+        provider_name: String(provider || ""), 
+
         // 🟢 THIS ID UNLOCKS THE CUSTOM EMAIL INSTRUCTIONS
         company_id: String(metadata.company_id || ""), 
         service_type: String(metadata.service_type || metadata.type || "Premium Meet & Greet"),

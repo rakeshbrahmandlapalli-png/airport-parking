@@ -3,14 +3,15 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { sendBookingReceipt, sendAmendmentAlerts } from "@/app/lib/mail"; 
 import { createClient } from '@supabase/supabase-js';
+import { triggerMissingFlightAlert } from "@/app/lib/twilio"; // 🟢 NEW: Twilio Import
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!; 
 
-// Direct Supabase connection to bypass broken Prisma tables
+// 🟢 CRITICAL FIX: Changed from ANON_KEY to SERVICE_ROLE_KEY to bypass your new RLS rules
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!, 
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY! 
 );
 
 export async function POST(req: Request) {
@@ -91,6 +92,18 @@ export async function POST(req: Request) {
 
         // 4. Send Confirmation Email
         await sendBookingReceipt(newBooking || bookingData, resolvedCompany); 
+
+        // 🟢 5. TRIGGER TWILIO AUTOMATION
+        if (newBooking) {
+          // Triggers in the background, keeping the Stripe checkout fast
+          triggerMissingFlightAlert({
+            full_name: newBooking.full_name,
+            phone_number: newBooking.phone_number,
+            booking_ref: newBooking.booking_ref,
+            flight_number: newBooking.flight_number,
+            car_make: newBooking.car_make
+          }).catch(err => console.error("Twilio Trigger Failed:", err));
+        }
       }
     } catch (dbError: any) {
        console.error("❌ FATAL WEBHOOK CRASH:", dbError.message);
