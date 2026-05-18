@@ -11,6 +11,16 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+// 🟢 SAFE DATE PARSER HELPER (Prevents Server-Side Invalid Date Crashes)
+const safeParseDate = (dateStr: string) => {
+  if (!dateStr) return new Date();
+  if (dateStr.includes("/")) {
+    const [day, month, year] = dateStr.split("/");
+    return new Date(`${year}-${month}-${day}`);
+  }
+  return new Date(dateStr);
+};
+
 export async function createCheckoutSession(formData: FormData) {
   // 1. Initialise Stripe
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
@@ -33,8 +43,9 @@ export async function createCheckoutSession(formData: FormData) {
   // 🟢 EXTRACT COMPANY ID FROM FORM
   const companyId = formData.get("companyId") as string;
 
-  const dropoffDate = dropoffDateStr ? new Date(dropoffDateStr) : new Date();
-  const pickupDate = pickupDateStr ? new Date(pickupDateStr) : new Date();
+  // 🚀 USE SAFE DATE PARSER
+  const dropoffDate = dropoffDateStr ? safeParseDate(dropoffDateStr) : new Date();
+  const pickupDate = pickupDateStr ? safeParseDate(pickupDateStr) : new Date();
 
   const tempRef = "VIP-" + Math.random().toString(36).substring(2, 8).toUpperCase();
   let sessionUrl = "";
@@ -145,8 +156,9 @@ export async function checkAvailability(airport: string, dropoffStr: string, pic
       return { isAvailable: true, spotsLeft: MAX_CAPACITY }; 
     }
 
-    const requestedStart = new Date(dropoffStr);
-    const requestedEnd = new Date(pickupStr);
+    // 🚀 USE SAFE DATE PARSER
+    const requestedStart = safeParseDate(dropoffStr);
+    const requestedEnd = safeParseDate(pickupStr);
 
     if (isNaN(requestedStart.getTime()) || isNaN(requestedEnd.getTime())) {
        return { isAvailable: true, spotsLeft: MAX_CAPACITY };

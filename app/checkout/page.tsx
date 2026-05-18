@@ -37,6 +37,24 @@ function AeroAvatar({ size = "md", state = "idle", onClick }: { size?: "sm" | "m
   );
 }
 
+// ----------------------------------------------------------------------
+// 🟢 ROBUST DATA PARSERS (Fixes Date & "0" Bugs)
+// ----------------------------------------------------------------------
+const parsePrice = (val: any, fallback: number) => {
+  if (val === null || val === undefined) return fallback;
+  const num = Number(val);
+  return num > 0 ? num : fallback;
+};
+
+const safeParseDate = (dateStr: string) => {
+  if (!dateStr) return new Date();
+  if (dateStr.includes("/")) {
+    const [day, month, year] = dateStr.split("/");
+    return new Date(`${year}-${month}-${day}`);
+  }
+  return new Date(dateStr);
+};
+
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -204,11 +222,12 @@ function CheckoutContent() {
     }
   };
 
-  // 🟢 ADVANCED TIER PRICING CALCULATION (8-TIER INTERPOLATION)
+  // 🟢 ADVANCED TIER PRICING CALCULATION (8-TIER INTERPOLATION + 10% MARKUP)
   const calculateDays = () => {
     if (!dropDate || !pickDate) return 1;
-    const start = new Date(dropDate);
-    const end = new Date(pickDate);
+    const start = safeParseDate(dropDate);
+    const end = safeParseDate(pickDate);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return 1;
     const diffTime = Math.abs(end.getTime() - start.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
     return diffDays <= 0 ? 1 : diffDays;
@@ -222,15 +241,15 @@ function CheckoutContent() {
     let totalPrice = 0;
     
     if (!isLuton) { // Heathrow Math
-      const p1 = Number(company.heathrow_price || 0);
-      const p2 = Number(company.lhr_day2_price || p1);
-      const p5 = Number(company.lhr_day5_price || p2);
-      const p8 = Number(company.lhr_day8_price || p5);
-      const p11 = Number(company.lhr_day11_price || p8);
-      const p14 = Number(company.lhr_day14_price || p11);
-      const p17 = Number(company.lhr_day17_price || p14);
-      const p22 = Number(company.lhr_day22_price || p17);
-      const p32 = Number(company.lhr_day32_price || p22);
+      const p1 = parsePrice(company.heathrow_price, 0);
+      const p2 = parsePrice(company.lhr_day2_price, p1);
+      const p5 = parsePrice(company.lhr_day5_price, p2);
+      const p8 = parsePrice(company.lhr_day8_price, p5);
+      const p11 = parsePrice(company.lhr_day11_price, p8);
+      const p14 = parsePrice(company.lhr_day14_price, p11);
+      const p17 = parsePrice(company.lhr_day17_price, p14);
+      const p22 = parsePrice(company.lhr_day22_price, p17);
+      const p32 = parsePrice(company.lhr_day32_price, p22);
 
       if (duration <= 1) totalPrice = p1;
       else if (duration === 2) totalPrice = p2;
@@ -243,15 +262,15 @@ function CheckoutContent() {
       else if (duration <= 32) totalPrice = p22 + ((p32 - p22) / 10) * (duration - 22);
       else totalPrice = p32 + ((p32 - p22) / 10) * (duration - 32); 
     } else { // Luton Math
-      const p1 = Number(company.luton_price || 0);
-      const p2 = Number(company.ltn_day2_price || p1);
-      const p5 = Number(company.ltn_day5_price || p2);
-      const p8 = Number(company.ltn_day8_price || p5);
-      const p11 = Number(company.ltn_day11_price || p8);
-      const p14 = Number(company.ltn_day14_price || p11);
-      const p17 = Number(company.ltn_day17_price || p14);
-      const p22 = Number(company.ltn_day22_price || p17);
-      const p32 = Number(company.ltn_day32_price || p22);
+      const p1 = parsePrice(company.luton_price, 0);
+      const p2 = parsePrice(company.ltn_day2_price, p1);
+      const p5 = parsePrice(company.ltn_day5_price, p2);
+      const p8 = parsePrice(company.ltn_day8_price, p5);
+      const p11 = parsePrice(company.ltn_day11_price, p8);
+      const p14 = parsePrice(company.ltn_day14_price, p11);
+      const p17 = parsePrice(company.ltn_day17_price, p14);
+      const p22 = parsePrice(company.ltn_day22_price, p17);
+      const p32 = parsePrice(company.ltn_day32_price, p22);
 
       if (duration <= 1) totalPrice = p1;
       else if (duration === 2) totalPrice = p2;
@@ -265,7 +284,8 @@ function CheckoutContent() {
       else totalPrice = p32 + ((p32 - p22) / 10) * (duration - 32); 
     }
 
-    return totalPrice;
+    // 🚀 Apply the identical 10% structural spike here to guarantee exact cross-page parity
+    return totalPrice * 1.10;
   };
 
   const bookingDays = calculateDays();
@@ -587,27 +607,25 @@ function CheckoutContent() {
                 </button>
               </div>
 
-              {/* 🟢 DYNAMIC AI CONCIERGE TIP */}
-            {aiData.aeroTip && (
-              <div className="mb-8 bg-blue-500/10 border border-blue-500/20 rounded-2xl p-5 relative overflow-hidden group">
-                <div className="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform">
-                  <Sparkles className="w-16 h-16 text-blue-400" />
-                </div>
-                <div className="flex gap-4 items-start relative z-10">
-                  <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-900/40">
-                    <Sparkles className="w-5 h-5 text-white" />
+              {aiData.aeroTip && (
+                <div className="mb-8 bg-blue-500/10 border border-blue-500/20 rounded-2xl p-5 relative overflow-hidden group">
+                  <div className="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform">
+                    <Sparkles className="w-16 h-16 text-blue-400" />
                   </div>
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-1">Aero Intelligence</p>
-                    <p className="text-xs font-bold text-blue-100 leading-relaxed italic">
-                      "{aiData.aeroTip}"
-                    </p>
+                  <div className="flex gap-4 items-start relative z-10">
+                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-900/40">
+                      <Sparkles className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-1">Aero Intelligence</p>
+                      <p className="text-xs font-bold text-blue-100 leading-relaxed italic">
+                        "{aiData.aeroTip}"
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-              {/* 🟢 DYNAMIC AI BADGES IN SUMMARY */}
               <div className="flex flex-wrap gap-2.5 mb-8 border-b border-slate-800 pb-8">
                 <div className="bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-[0_0_15px_rgba(37,99,235,0.15)]">
                   <Sparkles className="w-3.5 h-3.5 fill-current" /> Aero Verified
@@ -649,7 +667,6 @@ function CheckoutContent() {
                 </div>
               </div>
 
-              {/* 🟢 EDITABLE SEARCH PANEL */}
               {isEditingSearch ? (
                 <div className="space-y-4 mb-8 bg-[#131A2B] p-6 rounded-2xl border border-slate-800 animate-in fade-in zoom-in-95">
                   <div>
@@ -696,7 +713,6 @@ function CheckoutContent() {
                 </div>
               )}
 
-              {/* Promo Code Section */}
               {!aiData.isFrequentFlyer && (
                 <div className="bg-[#131A2B] border border-slate-800 rounded-2xl p-5 mb-8">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
@@ -744,7 +760,6 @@ function CheckoutContent() {
                 </div>
               )}
 
-              {/* 🟢 TOTALS INC. ADD-ONS */}
               <div className="space-y-4 mb-10">
                 <div className="flex justify-between text-sm text-slate-400 font-bold">
                   <span>Parking Rate ({bookingDays} {bookingDays === 1 ? "day" : "days"})</span>
@@ -819,8 +834,6 @@ function CheckoutContent() {
 export default function CheckoutPage() {
   return (
     <main suppressHydrationWarning className="min-h-[100dvh] bg-[#F8FAFC] font-sans antialiased pb-24 selection:bg-blue-200 selection:text-blue-900 overflow-x-hidden relative">
-      
-      {/* Background glow logic for desktop */}
       <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0 flex justify-center overflow-hidden">
          <div className="w-full max-w-[1000px] h-96 bg-blue-600/5 blur-[120px] rounded-full absolute -top-48"></div>
       </div>

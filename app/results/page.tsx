@@ -6,7 +6,7 @@ import {
   ChevronDown, Plane, Calendar, Footprints, User,
   Star, Ban, Bus, BedDouble, Info, PlaneTakeoff, 
   PlaneLanding, Map as MapIcon, Navigation, Loader2,
-  AlertCircle, X, Shield, Sparkles, MessageSquare, Bot, Zap, Tag
+  AlertCircle, X, Shield, Sparkles, MessageSquare, Bot, Zap, Tag, CarFront
 } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useState, useMemo, useEffect } from "react";
@@ -41,6 +41,24 @@ function AeroAvatar({ size = "md", thinking = false }: { size?: "sm" | "md" | "l
 }
 
 // ----------------------------------------------------------------------
+// 🟢 ROBUST DATA PARSERS
+// ----------------------------------------------------------------------
+const parsePrice = (val: any, fallback: number) => {
+  if (val === null || val === undefined) return fallback;
+  const num = Number(val);
+  return num > 0 ? num : fallback;
+};
+
+const safeParseDate = (dateStr: string) => {
+  if (!dateStr) return new Date();
+  if (dateStr.includes("/")) {
+    const [day, month, year] = dateStr.split("/");
+    return new Date(`${year}-${month}-${day}`);
+  }
+  return new Date(dateStr);
+};
+
+// ----------------------------------------------------------------------
 // 1. PREMIUM PARKING CARD COMPONENT
 // ----------------------------------------------------------------------
 function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: any) {
@@ -50,15 +68,15 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
   let totalPrice = 0;
   
   if (isHeathrow) {
-    const p1 = Number(option.heathrow_price || 0);
-    const p2 = Number(option.lhr_day2_price || p1);
-    const p5 = Number(option.lhr_day5_price || p2);
-    const p8 = Number(option.lhr_day8_price || p5);
-    const p11 = Number(option.lhr_day11_price || p8);
-    const p14 = Number(option.lhr_day14_price || p11);
-    const p17 = Number(option.lhr_day17_price || p14);
-    const p22 = Number(option.lhr_day22_price || p17);
-    const p32 = Number(option.lhr_day32_price || p22);
+    const p1 = parsePrice(option.heathrow_price, 0);
+    const p2 = parsePrice(option.lhr_day2_price, p1);
+    const p5 = parsePrice(option.lhr_day5_price, p2);
+    const p8 = parsePrice(option.lhr_day8_price, p5);
+    const p11 = parsePrice(option.lhr_day11_price, p8);
+    const p14 = parsePrice(option.lhr_day14_price, p11);
+    const p17 = parsePrice(option.lhr_day17_price, p14);
+    const p22 = parsePrice(option.lhr_day22_price, p17);
+    const p32 = parsePrice(option.lhr_day32_price, p22);
 
     if (duration <= 1) totalPrice = p1;
     else if (duration === 2) totalPrice = p2;
@@ -69,17 +87,17 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
     else if (duration <= 17) totalPrice = p14 + ((p17 - p14) / 3) * (duration - 14);
     else if (duration <= 22) totalPrice = p17 + ((p22 - p17) / 5) * (duration - 17);
     else if (duration <= 32) totalPrice = p22 + ((p32 - p22) / 10) * (duration - 22);
-    else totalPrice = p32 + ((p32 - p22) / 10) * (duration - 32); // Extrapolate past 32 days
+    else totalPrice = p32 + ((p32 - p22) / 10) * (duration - 32); 
   } else {
-    const p1 = Number(option.luton_price || 0);
-    const p2 = Number(option.ltn_day2_price || p1);
-    const p5 = Number(option.ltn_day5_price || p2);
-    const p8 = Number(option.ltn_day8_price || p5);
-    const p11 = Number(option.ltn_day11_price || p8);
-    const p14 = Number(option.ltn_day14_price || p11);
-    const p17 = Number(option.ltn_day17_price || p14);
-    const p22 = Number(option.ltn_day22_price || p17);
-    const p32 = Number(option.ltn_day32_price || p22);
+    const p1 = parsePrice(option.luton_price, 0);
+    const p2 = parsePrice(option.ltn_day2_price, p1);
+    const p5 = parsePrice(option.ltn_day5_price, p2);
+    const p8 = parsePrice(option.ltn_day8_price, p5);
+    const p11 = parsePrice(option.ltn_day11_price, p8);
+    const p14 = parsePrice(option.ltn_day14_price, p11);
+    const p17 = parsePrice(option.ltn_day17_price, p14);
+    const p22 = parsePrice(option.ltn_day22_price, p17);
+    const p32 = parsePrice(option.ltn_day32_price, p22);
 
     if (duration <= 1) totalPrice = p1;
     else if (duration === 2) totalPrice = p2;
@@ -92,6 +110,9 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
     else if (duration <= 32) totalPrice = p22 + ((p32 - p22) / 10) * (duration - 22);
     else totalPrice = p32 + ((p32 - p22) / 10) * (duration - 32); 
   }
+
+  // 🚀 AUTOMATICALLY MARK UP BASE RATE BY 10%
+  totalPrice = totalPrice * 1.10;
 
   const avgDailyRate = totalPrice / duration;
   
@@ -348,8 +369,9 @@ function ResultsContent() {
 
   const duration = useMemo(() => {
     if (!dropoff || !pickup) return 1;
-    const start = new Date(dropoff);
-    const end = new Date(pickup);
+    const start = safeParseDate(dropoff);
+    const end = safeParseDate(pickup);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return 1;
     const diffTime = Math.abs(end.getTime() - start.getTime());
     const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
     return totalDays <= 0 ? 1 : totalDays;
@@ -379,19 +401,19 @@ function ResultsContent() {
            if (aFeatured && !bFeatured) return -1;
            if (!aFeatured && bFeatured) return 1;
            
-           // 🟢 8-TIER SORTING ALGORITHM
+           // 🟢 ROBUST 8-TIER SORTING ALGORITHM WITH 10% MARKUP
            const getPrice = (opt: any) => {
              let tot = 0;
              if (isHeathrow) {
-               const p1 = Number(opt.heathrow_price || 0);
-               const p2 = Number(opt.lhr_day2_price || p1);
-               const p5 = Number(opt.lhr_day5_price || p2);
-               const p8 = Number(opt.lhr_day8_price || p5);
-               const p11 = Number(opt.lhr_day11_price || p8);
-               const p14 = Number(opt.lhr_day14_price || p11);
-               const p17 = Number(opt.lhr_day17_price || p14);
-               const p22 = Number(opt.lhr_day22_price || p17);
-               const p32 = Number(opt.lhr_day32_price || p22);
+               const p1 = parsePrice(opt.heathrow_price, 0);
+               const p2 = parsePrice(opt.lhr_day2_price, p1);
+               const p5 = parsePrice(opt.lhr_day5_price, p2);
+               const p8 = parsePrice(opt.lhr_day8_price, p5);
+               const p11 = parsePrice(opt.lhr_day11_price, p8);
+               const p14 = parsePrice(opt.lhr_day14_price, p11);
+               const p17 = parsePrice(opt.lhr_day17_price, p14);
+               const p22 = parsePrice(opt.lhr_day22_price, p17);
+               const p32 = parsePrice(opt.lhr_day32_price, p22);
 
                if (duration <= 1) tot = p1;
                else if (duration === 2) tot = p2;
@@ -404,15 +426,15 @@ function ResultsContent() {
                else if (duration <= 32) tot = p22 + ((p32 - p22) / 10) * (duration - 22);
                else tot = p32 + ((p32 - p22) / 10) * (duration - 32); 
              } else {
-               const p1 = Number(opt.luton_price || 0);
-               const p2 = Number(opt.ltn_day2_price || p1);
-               const p5 = Number(opt.ltn_day5_price || p2);
-               const p8 = Number(opt.ltn_day8_price || p5);
-               const p11 = Number(opt.ltn_day11_price || p8);
-               const p14 = Number(opt.ltn_day14_price || p11);
-               const p17 = Number(opt.ltn_day17_price || p14);
-               const p22 = Number(opt.ltn_day22_price || p17);
-               const p32 = Number(opt.ltn_day32_price || p22);
+               const p1 = parsePrice(opt.luton_price, 0);
+               const p2 = parsePrice(opt.ltn_day2_price, p1);
+               const p5 = parsePrice(opt.ltn_day5_price, p2);
+               const p8 = parsePrice(opt.ltn_day8_price, p5);
+               const p11 = parsePrice(opt.ltn_day11_price, p8);
+               const p14 = parsePrice(opt.ltn_day14_price, p11);
+               const p17 = parsePrice(opt.ltn_day17_price, p14);
+               const p22 = parsePrice(opt.ltn_day22_price, p17);
+               const p32 = parsePrice(opt.ltn_day32_price, p22);
 
                if (duration <= 1) tot = p1;
                else if (duration === 2) tot = p2;
@@ -425,7 +447,7 @@ function ResultsContent() {
                else if (duration <= 32) tot = p22 + ((p32 - p22) / 10) * (duration - 22);
                else tot = p32 + ((p32 - p22) / 10) * (duration - 32); 
              }
-             return tot;
+             return tot * 1.10; // 🚀 Apply 10% system spike to sorting algorithm
            };
 
            return getPrice(a) - getPrice(b);
@@ -500,9 +522,37 @@ function ResultsContent() {
 
       <div className="space-y-6 md:space-y-8">
         {companies.length === 0 ? (
-          <div className="text-center py-16 md:py-24 bg-[#0F1523] rounded-[3rem] border border-dashed border-slate-700">
-            <AlertCircle className="w-12 h-12 md:w-16 md:h-16 text-slate-600 mx-auto mb-4 md:mb-6" />
-            <h3 className="text-xl md:text-2xl font-black text-white">No Active Providers Found</h3>
+          <div className="text-center py-16 md:py-24 bg-[#0F1523] rounded-[3rem] border border-dashed border-slate-700 px-6 relative overflow-hidden">
+            {!serviceType.toLowerCase().includes("meet") ? (
+              <>
+                <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none"></div>
+                <div className="w-16 h-16 md:w-20 md:h-20 bg-[#1A2235] border border-slate-700 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl">
+                  <Clock className="w-8 h-8 md:w-10 md:h-10 text-blue-400" />
+                </div>
+                <h3 className="text-2xl md:text-3xl font-black text-white tracking-tight mb-3">
+                  {serviceType.toLowerCase().includes("hotel") ? "Hotel & Parking" : "Park & Ride"} is Coming Soon!
+                </h3>
+                <p className="text-slate-400 text-sm md:text-base font-medium max-w-lg mx-auto leading-relaxed mb-8">
+                  We are currently onboarding the highest-rated operators for this service. In the meantime, treat yourself to our <strong className="text-white">Premium Meet & Greet</strong> service! Drive straight to the terminal—often for the same price as a standard bus transfer.
+                </p>
+                <button 
+                  onClick={() => {
+                    const query = new URLSearchParams(searchParams.toString());
+                    query.set("type", "meet-greet"); // 🚀 THIS IS THE FIX RIGHT HERE
+                    router.push(`/results?${query.toString()}`);
+                  }}
+                  className="inline-flex items-center gap-3 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest text-xs rounded-xl transition-all active:scale-95 shadow-[0_10px_20px_-10px_rgba(37,99,235,0.6)]"
+                >
+                  <CarFront className="w-4 h-4" /> View Meet & Greet Prices
+                </button>
+              </>
+            ) : (
+              <>
+                <AlertCircle className="w-12 h-12 md:w-16 md:h-16 text-slate-600 mx-auto mb-4 md:mb-6" />
+                <h3 className="text-xl md:text-2xl font-black text-white">No Active Providers Found</h3>
+                <p className="text-slate-500 mt-2 text-sm max-w-md mx-auto">All our trusted compounds are currently fully booked for these exact dates. Try modifying your search dates or times.</p>
+              </>
+            )}
           </div>
         ) : (
           companies.map((option) => (
