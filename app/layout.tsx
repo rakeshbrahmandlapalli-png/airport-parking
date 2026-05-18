@@ -58,6 +58,17 @@ export default function RootLayout({
         
         {/* Google Analytics 4 - Integrated with G-4QPSFJJD6S */}
         <GoogleAnalytics gaId="G-4QPSFJJD6S" />
+
+        {/* 🟢 MICROSOFT CLARITY HEATMAPS & RECORDINGS */}
+        <Script id="microsoft-clarity" strategy="afterInteractive">
+          {`
+            (function(c,l,a,r,i,t,y){
+                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+            })(window, document, "clarity", "script", "wssgetz48e");
+          `}
+        </Script>
         
         {/* 24/7 AI Support Agent */}
         <Chatbot />
