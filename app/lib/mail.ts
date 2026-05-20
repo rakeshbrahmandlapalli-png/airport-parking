@@ -52,8 +52,8 @@ export const sendBookingReceipt = async (booking: any, passedCompany: any, isAme
     const mapsQuery = encodeURIComponent(`${company?.name || 'Airport'} ${company?.address || company?.physical_address || ''} ${company?.postcode || ''}`);
     const mapsLink = `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
     
-    // 🟢 MAPPING: Pulls the 0739... numbers from your Admin Panel
-    const phone1 = company?.dispatch_phone_1 || company?.dispatch_phone || company?.phone_number || '07700 900 123';
+    // 🟢 MAPPING FIX: Safely extracts both unique dispatch fields from your database schema
+    const phone1 = company?.dispatch_phone_1 || company?.dispatch_phone || company?.phone_number || '07397705005';
     const phone2 = company?.dispatch_phone_2 || '';
     
     const phone1Link = phone1.replace(/\s+/g, '');
@@ -122,14 +122,15 @@ export const sendBookingReceipt = async (booking: any, passedCompany: any, isAme
                       <div style="background-color: #1e293b; border-left: 4px solid #3b82f6; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
                         <p style="margin: 0 0 5px 0; font-size: 11px; font-weight: 900; color: #3b82f6; text-transform: uppercase;">Inbound • ${dropDate} @ ${booking.dropoff_time || 'TBC'}</p>
                         <p style="margin: 0 0 10px 0; font-size: 13px; color: #f8fafc; line-height: 1.5;">${arrivalInstructions}</p>
-                        <a href="tel:${phone1Link}" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 8px 15px; border-radius: 6px; font-weight: 800; font-size: 12px; margin-right: 5px;">📞 ${phone1}</a>
-                        ${phone2 ? `<a href="tel:${phone2Link}" style="display: inline-block; background-color: #334155; color: #ffffff; text-decoration: none; padding: 8px 15px; border-radius: 6px; font-weight: 800; font-size: 12px;">📞 ${phone2}</a>` : ''}
+                        <a href="tel:${phone1Link}" data-track="false" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 8px 15px; border-radius: 6px; font-weight: 800; font-size: 12px; margin-right: 5px;">📞 ${phone1}</a>
+                        ${phone2 ? `<a href="tel:${phone2Link}" data-track="false" style="display: inline-block; background-color: #334155; color: #ffffff; text-decoration: none; padding: 8px 15px; border-radius: 6px; font-weight: 800; font-size: 12px;">📞 ${phone2}</a>` : ''}
                       </div>
 
                       <div style="background-color: #1e293b; border-left: 4px solid #10b981; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
                         <p style="margin: 0 0 5px 0; font-size: 11px; font-weight: 900; color: #10b981; text-transform: uppercase;">Return • ${pickDate} @ ${booking.pickup_time || 'TBC'}</p>
                         <p style="margin: 0 0 10px 0; font-size: 13px; color: #f8fafc; line-height: 1.5;">${returnInstructions}</p>
-                        <a href="tel:${phone1Link}" style="display: inline-block; background-color: #10b981; color: #ffffff; text-decoration: none; padding: 8px 15px; border-radius: 6px; font-weight: 800; font-size: 12px;">📞 ${phone1}</a>
+                        <a href="tel:${phone1Link}" data-track="false" style="display: inline-block; background-color: #10b981; color: #ffffff; text-decoration: none; padding: 8px 15px; border-radius: 6px; font-weight: 800; font-size: 12px; margin-right: 5px;">📞 ${phone1}</a>
+                        ${phone2 ? `<a href="tel:${phone2Link}" data-track="false" style="display: inline-block; background-color: #334155; color: #ffffff; text-decoration: none; padding: 8px 15px; border-radius: 6px; font-weight: 800; font-size: 12px;">📞 ${phone2}</a>` : ''}
                       </div>
 
                       <a href="${mapsLink}" style="background-color: #334155; color: #ffffff; text-decoration: none; padding: 15px 0; border-radius: 12px; font-weight: 900; font-size: 12px; display: block; text-align: center; text-transform: uppercase; letter-spacing: 1px;">📍 View Airport Directions</a>
