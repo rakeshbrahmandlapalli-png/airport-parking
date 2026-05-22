@@ -137,7 +137,7 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
   const isParkRide = option.category?.toLowerCase().includes('ride');
 
   // Generate safe map link
-  const safeMapLink = `https://maps.google.com/maps?q=${encodeURIComponent((option.address || '') + ' ' + (option.postcode || ''))}`;
+  const safeMapLink = `https://maps.google.com/maps?q=$${encodeURIComponent((option.address || '') + ' ' + (option.postcode || ''))}`;
 
   return (
     <div className={`relative rounded-[2rem] overflow-hidden flex flex-col lg:flex-row transition-all duration-500 group ${cardBg} border ${borderClass} ${isPremium ? 'shadow-[0_20px_40px_-15px_rgba(0,0,0,0.8)] lg:hover:shadow-[0_30px_60px_-15px_rgba(37,99,235,0.2)] lg:hover:border-blue-500/50 transform lg:-translate-x-2 lg:w-[calc(100%+16px)]' : (isSoldOut ? 'opacity-70 grayscale-[50%]' : 'shadow-2xl lg:hover:shadow-blue-900/20 lg:hover:border-slate-600 lg:hover:-translate-y-1')}`}>
@@ -191,9 +191,30 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
             )}
           </div>
 
-          <h2 className={`text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight mb-4 ${textPrimary}`}>
-            {option.name}
-          </h2>
+          {/* 🟢 LOGO & TITLE SECTION */}
+<div className="flex items-center gap-4 mb-4">
+  
+  {/* 🚀 DEBUG BOX: Shows the logo, or tells you if the DB value is missing */}
+  <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center p-2 shadow-md shrink-0 overflow-hidden">
+    {option.logo_url ? (
+      <img 
+        src={option.logo_url} 
+        alt={option.name} 
+        className="w-full h-full object-contain"
+        onError={(e) => {
+            console.error("Image failed to load:", option.logo_url);
+            e.currentTarget.src = "/fallback-logo.png"; // Optional: Add a placeholder image here
+        }}
+      />
+    ) : (
+      <span className="text-[8px] text-red-500 text-center font-bold">No DB Link</span>
+    )}
+  </div>
+
+  <h2 className={`text-xl md:text-3xl font-black uppercase tracking-tight ${textPrimary}`}>
+    {option.name}
+  </h2>
+</div>
           
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-[#1A2235] text-slate-300 border border-slate-700/50' : 'bg-slate-900/50 text-slate-400 border border-slate-800'}`}>
