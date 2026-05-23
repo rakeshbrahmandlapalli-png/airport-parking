@@ -237,12 +237,16 @@ export default function HomePage() {
           </Link>
           
           <div className="hidden md:flex items-center gap-8">
-            {["Services", "How it works"].map((item) => (
-              <a key={item} href={`#${item.toLowerCase().replace(/ /g, '-')}`} className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 hover:text-slate-900 transition-colors relative group">
-                {item}
-                <span className="absolute -bottom-2 left-0 w-0 h-[2px] bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
-              </a>
-            ))}
+            {/* 🟢 UPDATED NAV LINKS */}
+<a href="#services" className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 hover:text-slate-900 transition-colors relative group">
+  Services
+  <span className="absolute -bottom-2 left-0 w-0 h-[2px] bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
+</a>
+<Link href="/how-it-works" className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 hover:text-slate-900 transition-colors relative group">
+  How it works
+  <span className="absolute -bottom-2 left-0 w-0 h-[2px] bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
+</Link>
+                
 
             <div className="h-6 w-px bg-slate-200 ml-2"></div>
 
