@@ -40,6 +40,10 @@ export const sendBookingReceipt = async (booking: any, passedCompany: any, isAme
 
     const isLuton = booking.airport?.toLowerCase().includes("luton");
     
+    // 🟢 DYNAMIC TERMINAL LOOKUP
+    const terminalKey = booking.terminal || (isLuton ? "Main Terminal" : "Terminal 2");
+    const terminalInfo = company?.terminal_data?.[terminalKey];
+    
     // Select instructions based on airport
     const arrivalInstructions = isLuton 
       ? (company?.on_arrival_ltn || company?.luton_arrival || company?.on_arrival || 'Please call the driver 20 minutes before arrival.') 
@@ -49,8 +53,12 @@ export const sendBookingReceipt = async (booking: any, passedCompany: any, isAme
       ? (company?.on_return_ltn || company?.luton_return || company?.on_return || 'Call dispatch after collecting your luggage.') 
       : (company?.on_return_lhr || company?.heathrow_return || company?.on_return || 'Call dispatch after collecting your luggage.');
 
-    const mapsQuery = encodeURIComponent(`${company?.name || 'Airport'} ${company?.address || company?.physical_address || ''} ${company?.postcode || ''}`);
-    const mapsLink = `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
+    // 🟢 DYNAMIC ADDRESS & MAP LINK
+    const displayAddress = terminalInfo?.address || company?.address || company?.physical_address || "Terminal Location";
+    const displayPostcode = terminalInfo?.postcode || company?.postcode || "";
+    
+    const mapsQuery = encodeURIComponent(`${company?.name || 'Airport Parking'} ${displayAddress} ${displayPostcode}`);
+    const mapsLink = terminalInfo?.map_url || `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
     
     // 🟢 MAPPING FIX: Safely extracts both unique dispatch fields from your database schema
     const phone1 = company?.dispatch_phone_1 || company?.dispatch_phone || company?.phone_number || '07397705005';
@@ -100,7 +108,7 @@ export const sendBookingReceipt = async (booking: any, passedCompany: any, isAme
                         <tr>
                           <td style="padding-bottom: 20px;">
                             <p style="margin: 0; font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 900;">Airport & Terminal</p>
-                            <p style="margin: 4px 0 0 0; font-size: 18px; font-weight: 900; color: #0f172a;">${booking.airport} • ${booking.terminal || 'Main'}</p>
+                            <p style="margin: 4px 0 0 0; font-size: 18px; font-weight: 900; color: #0f172a;">${booking.airport} • ${terminalKey}</p>
                           </td>
                         </tr>
                         <tr>
@@ -120,14 +128,15 @@ export const sendBookingReceipt = async (booking: any, passedCompany: any, isAme
                       <h3 style="font-size: 14px; font-weight: 900; margin: 0 0 20px 0; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #334155; padding-bottom: 15px;">Aero Concierge System</h3>
                       
                       <div style="background-color: #1e293b; border-left: 4px solid #3b82f6; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
-                        <p style="margin: 0 0 5px 0; font-size: 11px; font-weight: 900; color: #3b82f6; text-transform: uppercase;">Inbound • ${dropDate} @ ${booking.dropoff_time || 'TBC'}</p>
+                        <p style="margin: 0 0 5px 0; font-size: 11px; font-weight: 900; color: #3b82f6; text-transform: uppercase;">Inbound • ${terminalKey} • ${dropDate} @ ${booking.dropoff_time || 'TBC'}</p>
+                        <p style="margin: 0 0 10px 0; font-size: 13px; font-weight: 700; color: #ffffff;">${displayAddress}, ${displayPostcode}</p>
                         <p style="margin: 0 0 10px 0; font-size: 13px; color: #f8fafc; line-height: 1.5;">${arrivalInstructions}</p>
                         <a href="tel:${phone1Link}" data-track="false" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 8px 15px; border-radius: 6px; font-weight: 800; font-size: 12px; margin-right: 5px;">📞 ${phone1}</a>
                         ${phone2 ? `<a href="tel:${phone2Link}" data-track="false" style="display: inline-block; background-color: #334155; color: #ffffff; text-decoration: none; padding: 8px 15px; border-radius: 6px; font-weight: 800; font-size: 12px;">📞 ${phone2}</a>` : ''}
                       </div>
 
                       <div style="background-color: #1e293b; border-left: 4px solid #10b981; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
-                        <p style="margin: 0 0 5px 0; font-size: 11px; font-weight: 900; color: #10b981; text-transform: uppercase;">Return • ${pickDate} @ ${booking.pickup_time || 'TBC'}</p>
+                        <p style="margin: 0 0 5px 0; font-size: 11px; font-weight: 900; color: #10b981; text-transform: uppercase;">Return • ${terminalKey} • ${pickDate} @ ${booking.pickup_time || 'TBC'}</p>
                         <p style="margin: 0 0 10px 0; font-size: 13px; color: #f8fafc; line-height: 1.5;">${returnInstructions}</p>
                         <a href="tel:${phone1Link}" data-track="false" style="display: inline-block; background-color: #10b981; color: #ffffff; text-decoration: none; padding: 8px 15px; border-radius: 6px; font-weight: 800; font-size: 12px; margin-right: 5px;">📞 ${phone1}</a>
                         ${phone2 ? `<a href="tel:${phone2Link}" data-track="false" style="display: inline-block; background-color: #334155; color: #ffffff; text-decoration: none; padding: 8px 15px; border-radius: 6px; font-weight: 800; font-size: 12px;">📞 ${phone2}</a>` : ''}

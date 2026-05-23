@@ -2,7 +2,6 @@
 
 import { redirect } from "next/navigation";
 import Stripe from "stripe";
-import { sendBookingReceipt } from "./lib/mail"; 
 import { createClient } from '@supabase/supabase-js';
 
 // 🟢 BYPASS PRISMA: Use Supabase to prevent the "Table does not exist" crash
@@ -21,6 +20,9 @@ const safeParseDate = (dateStr: string) => {
   return new Date(dateStr);
 };
 
+// ============================================================================
+// ⚠️ LEGACY/BACKUP CHECKOUT ACTION (Frontend currently uses /api/checkout)
+// ============================================================================
 export async function createCheckoutSession(formData: FormData) {
   // 1. Initialise Stripe
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
@@ -50,7 +52,7 @@ export async function createCheckoutSession(formData: FormData) {
   const tempRef = "VIP-" + Math.random().toString(36).substring(2, 8).toUpperCase();
   let sessionUrl = "";
 
-  // 3. DATABASE, EMAIL & STRIPE LOGIC
+  // 3. DATABASE & STRIPE LOGIC
   try {
     // 🟢 1. FETCH REAL COMPANY DATA (No more 'null'!)
     let company = null;
@@ -65,7 +67,7 @@ export async function createCheckoutSession(formData: FormData) {
       company = data;
     }
 
-    // A. Save the booking to Supabase Database
+    // A. Save the booking to Supabase Database (Status MUST be pending)
     await supabase.from('bookings').insert([{
       booking_ref: tempRef,
       full_name: customerName,
@@ -75,7 +77,7 @@ export async function createCheckoutSession(formData: FormData) {
       license_plate: licensePlate,
       service_type: parkingType,
       total_price: totalPrice,
-      status: "pending",
+      status: "pending", // 🟢 This prevents free access. Webhook must update to "paid"
       airport: airport,    
       terminal: terminal,   
       dropoff_date: dropoffDate.toISOString(),
@@ -83,29 +85,10 @@ export async function createCheckoutSession(formData: FormData) {
       company_id: company ? company.id : null 
     }]);
 
-    // B. Fire off the email receipt via Resend ✈️
-    if (customerEmail) {
-      const tempBookingObj = {
-        email: customerEmail,
-        customerEmail: customerEmail,
-        booking_ref: tempRef,
-        license_plate: licensePlate,
-        licensePlate: licensePlate,
-        airport: airport,
-        terminal: terminal,
-        phone_number: customerPhone,
-        customerPhone: customerPhone,
-        flight_number: flightNumber,
-        flightNumber: flightNumber,
-        service_type: parkingType,
-        parkingType: parkingType
-      };
+    // ⛔ SECURITY FIX: Removed sendBookingReceipt() from here.
+    // Receipts must ONLY be sent by the Stripe Webhook after successful payment.
 
-      // 🟢 THE ULTIMATE FIX: Pass the real company data instead of 'null'
-      await sendBookingReceipt(tempBookingObj, company, false);
-    }
-
-    // C. Create the Stripe Checkout Session 💳
+    // B. Create the Stripe Checkout Session 💳
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
@@ -124,7 +107,8 @@ export async function createCheckoutSession(formData: FormData) {
       metadata: {
          company_id: company ? company.id : "",
          provider_name: company ? company.name : parkingType,
-         booking_ref: tempRef
+         booking_ref: tempRef,
+         terminal: terminal // Added for cross-compatibility with webhook
       },
       mode: "payment",
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://www.aeroparkdirect.co.uk'}/success?session_id={CHECKOUT_SESSION_ID}&ref=${tempRef}`,
@@ -146,7 +130,7 @@ export async function createCheckoutSession(formData: FormData) {
 }
 
 // ============================================================================
-// 🔥 NEW INVENTORY ENGINE
+// 🔥 INVENTORY ENGINE (Actively used by Results Page)
 // ============================================================================
 export async function checkAvailability(airport: string, dropoffStr: string, pickupStr: string) {
   const MAX_CAPACITY = 50; 
@@ -164,7 +148,7 @@ export async function checkAvailability(airport: string, dropoffStr: string, pic
        return { isAvailable: true, spotsLeft: MAX_CAPACITY };
     }
 
-    // 🟢 Ask Supabase (bypassing Prisma)
+    // 🟢 Ask Supabase directly
     const { count, error } = await supabase
       .from('bookings')
       .select('*', { count: 'exact', head: true })

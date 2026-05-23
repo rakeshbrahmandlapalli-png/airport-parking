@@ -59,12 +59,12 @@ const safeParseDate = (dateStr: string) => {
 };
 
 // ----------------------------------------------------------------------
-// 1. PREMIUM PARKING CARD COMPONENT
+// 1. PREMIUM PARKING CARD COMPONENT (Mobile Optimized)
 // ----------------------------------------------------------------------
 function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: any) {
   const [activeTab, setActiveTab] = useState('overview');
   
-  // 🟢 DYNAMIC PRICING MATH (8-TIER INTERPOLATION)
+  // 🟢 DYNAMIC PRICING MATH
   let totalPrice = 0;
   
   if (isHeathrow) {
@@ -111,9 +111,8 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
     else totalPrice = p32 + ((p32 - p22) / 10) * (duration - 32); 
   }
 
-  // 🚀 AUTOMATICALLY MARK UP BASE RATE BY 10%
+  // Apply Markup
   totalPrice = totalPrice * 1.10;
-
   const avgDailyRate = totalPrice / duration;
   
   const isSoldOut = isHeathrow ? option.lhr_sold_out : option.ltn_sold_out;
@@ -136,26 +135,26 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
   const isMeetGreet = option.category?.toLowerCase().includes('meet');
   const isParkRide = option.category?.toLowerCase().includes('ride');
 
-  // Generate safe map link
-  const safeMapLink = `https://maps.google.com/maps?q=$${encodeURIComponent((option.address || '') + ' ' + (option.postcode || ''))}`;
+  const safeMapLink = `https://maps.google.com/maps?q=$$${encodeURIComponent((option.address || '') + ' ' + (option.postcode || ''))}`;
 
   return (
-    <div className={`relative rounded-[2rem] overflow-hidden flex flex-col lg:flex-row transition-all duration-500 group ${cardBg} border ${borderClass} ${isPremium ? 'shadow-[0_20px_40px_-15px_rgba(0,0,0,0.8)] lg:hover:shadow-[0_30px_60px_-15px_rgba(37,99,235,0.2)] lg:hover:border-blue-500/50 transform lg:-translate-x-2 lg:w-[calc(100%+16px)]' : (isSoldOut ? 'opacity-70 grayscale-[50%]' : 'shadow-2xl lg:hover:shadow-blue-900/20 lg:hover:border-slate-600 lg:hover:-translate-y-1')}`}>
+    <div className={`relative rounded-[1.5rem] md:rounded-[2rem] overflow-hidden flex flex-col lg:flex-row transition-all duration-500 group ${cardBg} border ${borderClass} ${isPremium ? 'shadow-[0_20px_40px_-15px_rgba(0,0,0,0.8)] lg:hover:shadow-[0_30px_60px_-15px_rgba(37,99,235,0.2)] lg:hover:border-blue-500/50 transform lg:-translate-x-2 lg:w-[calc(100%+16px)]' : (isSoldOut ? 'opacity-70 grayscale-[50%]' : 'shadow-2xl lg:hover:shadow-blue-900/20 lg:hover:border-slate-600 lg:hover:-translate-y-1')}`}>
       {isPremium && !isSoldOut && (
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 via-indigo-500 to-emerald-500 z-20"></div>
       )}
 
-      <div className="flex-1 p-6 md:p-8 lg:p-10 relative z-10 flex flex-col">
+      <div className="flex-1 p-5 sm:p-6 md:p-8 lg:p-10 relative z-10 flex flex-col">
         <div className="mb-6 md:mb-8">
           
+          {/* AI Badges */}
           <div className="flex flex-wrap gap-2 mb-4">
             {aiData.isLastMinute === 'true' && !isSoldOut && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] animate-pulse">
-                <Zap className="w-3 h-3 fill-current" /> High Demand - Final Spots
+                <Zap className="w-3 h-3 fill-current" /> High Demand
               </div>
             )}
             {isPremium && !isSoldOut && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(37,99,235,0.15)]">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-lg text-[9px] font-black uppercase tracking-[0.2em]">
                 <Sparkles className="w-3 h-3 text-blue-400" /> {isShortTrip && isMeetGreet ? "Best Weekend Value" : isLongTrip && isParkRide ? "Best Long-Stay Saver" : "Aero Recommended"}
               </div>
             )}
@@ -164,64 +163,28 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
                 <AlertCircle className="w-3 h-3" /> ULEZ Zone Warning
               </div>
             )}
-            {aiData.isCorporate === 'true' && !isSoldOut && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800 text-slate-300 border border-slate-700 rounded-lg text-[9px] font-black uppercase tracking-[0.2em]">
-                <ShieldCheck className="w-3 h-3" /> VAT Receipt Ready
-              </div>
-            )}
-            {aiData.hasOversizedLuggage === 'true' && isMeetGreet && !isSoldOut && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-lg text-[9px] font-black uppercase tracking-[0.2em]">
-                <Footprints className="w-3 h-3" /> Best for Large Items
-              </div>
-            )}
-            {aiData.hasHeightRisk === 'true' && !isSoldOut && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-lg text-[9px] font-black uppercase tracking-[0.2em]">
-                <AlertCircle className="w-3 h-3" /> Max Height {isHeathrow ? '2.0m' : '2.1m'}
-              </div>
-            )}
-            {aiData.isRedEye === 'true' && isMeetGreet && !isSoldOut && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-lg text-[9px] font-black uppercase tracking-[0.2em]">
-                <Clock className="w-3 h-3 text-indigo-400" /> Swift Red-Eye Entry
-              </div>
-            )}
-            {aiData.hasPet === 'true' && isMeetGreet && !isSoldOut && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-lg text-[9px] font-black uppercase tracking-[0.2em]">
-                <Sparkles className="w-3 h-3" /> Pet Friendly Selection
-              </div>
-            )}
           </div>
 
-          {/* 🟢 LOGO & TITLE SECTION */}
-<div className="flex items-center gap-4 mb-4">
-  
-  {/* 🚀 DEBUG BOX: Shows the logo, or tells you if the DB value is missing */}
-  <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center p-2 shadow-md shrink-0 overflow-hidden">
-    {option.logo_url ? (
-      <img 
-        src={option.logo_url} 
-        alt={option.name} 
-        className="w-full h-full object-contain"
-        onError={(e) => {
-            console.error("Image failed to load:", option.logo_url);
-            e.currentTarget.src = "/fallback-logo.png"; // Optional: Add a placeholder image here
-        }}
-      />
-    ) : (
-      <span className="text-[8px] text-red-500 text-center font-bold">No DB Link</span>
-    )}
-  </div>
-
-  <h2 className={`text-xl md:text-3xl font-black uppercase tracking-tight ${textPrimary}`}>
-    {option.name}
-  </h2>
-</div>
+          {/* 🟢 NEW: LOGO & TITLE SECTION (MOBILE OPTIMIZED) */}
+          <div className="flex items-center gap-3 sm:gap-4 mb-4">
+            {option.logo_url && (
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-xl flex items-center justify-center p-1.5 sm:p-2 shadow-md shrink-0">
+                <img 
+                  src={option.logo_url} 
+                  alt={option.name} 
+                  className="w-full h-full object-contain"
+                  onError={(e) => e.currentTarget.style.display = 'none'}
+                />
+              </div>
+            )}
+            <h2 className={`text-xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight leading-none ${textPrimary}`}>
+              {option.name}
+            </h2>
+          </div>
           
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-4">
             <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-[#1A2235] text-slate-300 border border-slate-700/50' : 'bg-slate-900/50 text-slate-400 border border-slate-800'}`}>
               <ThumbsUp className="w-3.5 h-3.5" /> {option.category?.replace('-', ' ')}
-            </div>
-            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-[#1A2235] text-slate-300 border border-slate-700/50' : 'bg-slate-900/50 text-slate-400 border border-slate-800'}`}>
-              <BadgeIcon className="w-3.5 h-3.5" /> Direct Terminal Access
             </div>
             <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-emerald-500/5 text-emerald-500/80 border border-emerald-500/10'}`}>
               <Tag className="w-3.5 h-3.5" /> {isMeetGreet ? "£10 Fee Excluded" : "No Entry Fees"}
@@ -329,31 +292,30 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
         <div className={`absolute -bottom-10 -left-4 w-8 h-8 rounded-full ${isPremium ? 'bg-[#060A14]' : 'bg-[#0B1120]'}`}></div>
       </div>
 
-      <div className={`w-full lg:w-[320px] xl:w-[340px] p-6 md:p-8 lg:p-10 shrink-0 relative z-10 flex flex-col justify-center border-t border-dashed lg:border-t-0 lg:border-l transition-colors ${stubBg} ${borderClass}`}>
-        <div className="text-left lg:text-right w-full flex flex-col h-full justify-center">
-          <div>
-            <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] mb-1 sm:mb-2 text-slate-500">Total Stay Cost</p>
-            <p className={`text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter mb-2 ${textPrimary} ${isSoldOut ? 'line-through opacity-30' : 'drop-shadow-md'}`}>
-              £{totalPrice.toFixed(2)}
-            </p>
-            <p className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-widest mb-6 lg:mb-8 ${isPremium ? 'text-blue-400' : 'text-slate-400'}`}>
-              {isSoldOut ? 'Sold Out' : `Averaging £${avgDailyRate.toFixed(2)} / Day`}
-            </p>
-          </div>
-          
-          <button 
-            disabled={isSoldOut}
-            onClick={() => handleBooking(option, totalPrice)}
-            className={`group w-full h-12 sm:h-14 font-black rounded-xl flex items-center justify-center gap-2 sm:gap-3 uppercase tracking-[0.15em] text-[10px] sm:text-xs transition-all duration-300 active:scale-95 shadow-lg ${
-              isSoldOut 
-                ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' 
-                : (isPremium ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/30 border border-blue-500' : 'bg-[#1A2235] text-white hover:bg-slate-700 border border-slate-700')
-            }`}
-          >
-            {isSoldOut ? <Ban className="w-3.5 h-3.5 sm:w-4 sm:h-4"/> : <span className="relative z-10">Select Option</span>}
-            {!isSoldOut && <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 relative z-10 transition-transform lg:group-hover:translate-x-1" />}
-          </button>
+      {/* 🟢 NEW: PRICING SECTION (MOBILE OPTIMIZED: SIDE-BY-SIDE) */}
+      <div className={`w-full lg:w-[320px] xl:w-[340px] p-5 sm:p-6 md:p-8 lg:p-10 shrink-0 relative z-10 flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center border-t border-dashed lg:border-t-0 lg:border-l transition-colors ${stubBg} ${borderClass}`}>
+        <div className="text-left lg:text-right flex flex-col justify-center">
+          <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] mb-0.5 sm:mb-2 text-slate-500">Total Stay Cost</p>
+          <p className={`text-3xl sm:text-4xl lg:text-6xl font-black tracking-tighter ${textPrimary} ${isSoldOut ? 'line-through opacity-30' : 'drop-shadow-md'}`}>
+            £{totalPrice.toFixed(2)}
+          </p>
+          <p className={`text-[9px] sm:text-[11px] font-bold uppercase tracking-widest mt-1 lg:mb-8 hidden lg:block ${isPremium ? 'text-blue-400' : 'text-slate-400'}`}>
+            {isSoldOut ? 'Sold Out' : `Averaging £${avgDailyRate.toFixed(2)} / Day`}
+          </p>
         </div>
+        
+        <button 
+          disabled={isSoldOut}
+          onClick={() => handleBooking(option, totalPrice)}
+          className={`group h-12 sm:h-14 px-6 lg:w-full font-black rounded-xl flex items-center justify-center gap-2 sm:gap-3 uppercase tracking-[0.15em] text-[11px] sm:text-xs transition-all duration-300 active:scale-95 shadow-lg shrink-0 ${
+            isSoldOut 
+              ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' 
+              : (isPremium ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/30 border border-blue-500' : 'bg-[#1A2235] text-white hover:bg-slate-700 border border-slate-700')
+          }`}
+        >
+          {isSoldOut ? <Ban className="w-4 h-4"/> : <span className="relative z-10">Select</span>}
+          {!isSoldOut && <ChevronRight className="w-4 h-4 relative z-10 transition-transform lg:group-hover:translate-x-1" />}
+        </button>
       </div>
     </div>
   );
@@ -422,7 +384,6 @@ function ResultsContent() {
            if (aFeatured && !bFeatured) return -1;
            if (!aFeatured && bFeatured) return 1;
            
-           // 🟢 ROBUST 8-TIER SORTING ALGORITHM WITH 10% MARKUP
            const getPrice = (opt: any) => {
              let tot = 0;
              if (isHeathrow) {
@@ -559,7 +520,7 @@ function ResultsContent() {
                 <button 
                   onClick={() => {
                     const query = new URLSearchParams(searchParams.toString());
-                    query.set("type", "meet-greet"); // 🚀 THIS IS THE FIX RIGHT HERE
+                    query.set("type", "meet-greet");
                     router.push(`/results?${query.toString()}`);
                   }}
                   className="inline-flex items-center gap-3 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest text-xs rounded-xl transition-all active:scale-95 shadow-[0_10px_20px_-10px_rgba(37,99,235,0.6)]"

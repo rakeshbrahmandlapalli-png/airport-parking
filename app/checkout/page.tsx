@@ -139,6 +139,13 @@ function CheckoutContent() {
     fetchCompanyData();
   }, [urlId, urlName]);
 
+  // 🟢 AUTO-SELECT TERMINAL FOR LUTON
+  useEffect(() => {
+    if (airport.toLowerCase().includes("luton")) {
+      setTerminal("Main Terminal");
+    }
+  }, [airport]);
+
   // 🟢 AUTO-APPLY LOYALTY DISCOUNT ON LOAD
   useEffect(() => {
     if (aiData.isFrequentFlyer && !discount.active) {
@@ -302,13 +309,21 @@ function CheckoutContent() {
   const handleUpdateSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setIsEditingSearch(false);
+    
     const query = new URLSearchParams(searchParams.toString());
     query.set("dropoffDate", dropDate);
     query.set("dropoffTime", dropTime);
     query.set("pickupDate", pickDate);
     query.set("pickupTime", pickTime);
+    
+    if (type) {
+      query.set("type", type);
+    }
+    
     query.delete("price"); 
-    router.push(`/results?${query.toString()}`);
+    
+    // 🟢 FIX: Update the URL in place so the page doesn't reload/redirect
+    router.replace(`${window.location.pathname}?${query.toString()}`);
   };
 
   // 🟢 STRIPE PAYMENT REDIRECT
@@ -345,7 +360,7 @@ function CheckoutContent() {
             car_make: carMake,
             car_color: carColor,
             airport: airport,
-            terminal: terminal,
+            terminal: terminal, // 🟢 Sends just the string ("Terminal 5") safely
             dropoff_date: dropDate,
             pickup_date: pickDate,
             company_id: resolvedId, 
@@ -433,7 +448,7 @@ function CheckoutContent() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
                 <div className="md:col-span-2">
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Full Name</label>
-                  <input required type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className={lightInputCls} placeholder="James Bond" />
+                  <input required type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className={lightInputCls} placeholder="James" />
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Email Address</label>
@@ -461,16 +476,21 @@ function CheckoutContent() {
                 <div>
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Departure Terminal</label>
                   <div className="relative">
+                    {/* 🟢 DYNAMIC TERMINAL RENDERER */}
                     <select value={terminal} onChange={(e) => setTerminal(e.target.value)} className={`${lightInputCls} appearance-none cursor-pointer pr-10`}>
-                      {airport.includes("Heathrow") ? (
-                        <>
-                          <option>Terminal 2</option>
-                          <option>Terminal 3</option>
-                          <option>Terminal 4</option>
-                          <option>Terminal 5</option>
-                        </>
+                      {airport.toLowerCase().includes("luton") ? (
+                        <option value="Main Terminal">Main Terminal</option>
+                      ) : company?.terminal_data && Object.keys(company.terminal_data).length > 0 ? (
+                        Object.keys(company.terminal_data).map((t) => (
+                          <option key={t} value={t}>{t}</option>
+                        ))
                       ) : (
-                        <option>Main Terminal</option>
+                        <>
+                          <option value="Terminal 2">Terminal 2</option>
+                          <option value="Terminal 3">Terminal 3</option>
+                          <option value="Terminal 4">Terminal 4</option>
+                          <option value="Terminal 5">Terminal 5</option>
+                        </>
                       )}
                     </select>
                     <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />

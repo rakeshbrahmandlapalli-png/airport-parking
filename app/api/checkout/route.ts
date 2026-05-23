@@ -17,20 +17,18 @@ export async function POST(req: Request) {
       ? `Date Change Adjustment - ${provider}`
       : `${provider} Parking Services`;
 
-    // 2. SAFE URL REDIRECTS (Prevents the "Invalid URL" error)
+    // 2. SAFE URL REDIRECTS
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || "https://www.aeroparkdirect.co.uk";
-
     const successPath = isAmendment 
       ? `/manage?ref=${metadata.booking_ref}&updated=true`
       : `/success?session_id={CHECKOUT_SESSION_ID}`;
 
+    // 3. STRIPE SESSION
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       
-      // 🚀 QUALITY OF LIFE UPGRADE: Pre-fill the Stripe checkout with the email they already typed!
       customer_email: metadata.email ? String(metadata.email) : undefined,
       
-      // Collects phone number to fix the "N/A" in your emails & ensures Twilio has a target
       phone_number_collection: {
         enabled: true,
       },
@@ -49,32 +47,26 @@ export async function POST(req: Request) {
         },
       ],
 
-      // 🟢 STRIPE METADATA (Strings only)
       metadata: {
-        full_name: String(metadata.full_name || metadata.fullName || ""),
+        // 🟢 MAPPING: We keep keys clean for the webhook to parse
+        full_name: String(metadata.full_name || ""),
         email: String(metadata.email || ""),
         phone: String(metadata.phone || ""),
-        license_plate: String(metadata.license_plate || metadata.registration || ""),
-        car_make: String(metadata.car_make || metadata.carMake || ""),
-        car_color: String(metadata.car_color || metadata.carColor || ""),
-        airport: String(airport || metadata.airport || ""),
-        terminal: String(metadata.terminal || ""),
-        dropoff_date: String(metadata.dropoff_date || metadata.dropDate || ""),
-        pickup_date: String(metadata.pickup_date || metadata.pickDate || ""),
-        dropTime: String(metadata.dropTime || ""),
-        pickTime: String(metadata.pickTime || ""),
-        flightNumber: String(metadata.flightNumber || metadata.flight_number || ""),
-        
-        // 🟢 CRITICAL ADDITION: Passes provider name so the webhook fallback logic actually works
+        license_plate: String(metadata.registration || metadata.license_plate || ""),
+        car_make: String(metadata.car_make || ""),
+        car_color: String(metadata.car_color || ""),
+        airport: String(airport || ""),
+        terminal: String(metadata.terminal || "Main Terminal"),
+        dropoff_date: String(metadata.dropoff_date || ""),
+        pickup_date: String(metadata.pickup_date || ""),
+        dropoff_time: String(metadata.dropTime || "09:00"),
+        pickup_time: String(metadata.pickTime || "09:00"),
+        flight_number: String(metadata.flightNumber || ""),
         provider_name: String(provider || ""), 
-
-        // 🟢 THIS ID UNLOCKS THE CUSTOM EMAIL INSTRUCTIONS
         company_id: String(metadata.company_id || ""), 
-        service_type: String(metadata.service_type || metadata.type || "Premium Meet & Greet"),
+        service_type: String(metadata.service_type || "Premium Meet & Greet"),
         booking_ref: String(metadata.booking_ref || ""),
         is_amendment: isAmendment ? "true" : "false",
-        
-        // 🚀 CATCHES THE PROMO CODE FROM THE FRONTEND
         promo_used: String(metadata.promo_used || "None")
       },
 

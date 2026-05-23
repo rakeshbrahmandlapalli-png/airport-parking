@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { sendBookingReceipt, sendAmendmentAlerts } from "@/app/lib/mail"; 
 import { createClient } from '@supabase/supabase-js';
-import { triggerMissingFlightAlert } from "@/app/lib/twilio"; // 🟢 NEW: Twilio Import
+import { triggerMissingFlightAlert } from "@/app/lib/twilio"; 
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!; 
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
         // --- NEW BOOKING LOGIC ---
         let resolvedCompany = null;
         
-        // 1. Fetch Company (Works with your 8-character IDs)
+        // 1. Fetch Company (Works with your IDs)
         if (m?.company_id && m.company_id !== "null" && m.company_id !== "") {
           const { data } = await supabase.from('companies').select('*').eq('id', m.company_id).maybeSingle();
           if (data) resolvedCompany = data;
@@ -61,9 +61,9 @@ export async function POST(req: Request) {
           if (data) resolvedCompany = data;
         }
 
-        // 3. Create Booking in Database
+        // 3. Create Booking in Database (Mapping metadata to database columns)
         const bookingData = {
-          booking_ref: `APD-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+          booking_ref: m?.booking_ref || `APD-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
           full_name: m?.full_name || "",
           email: m?.email || session.customer_details?.email || "",
           phone_number: m?.phone || session.customer_details?.phone || "", 
@@ -74,16 +74,15 @@ export async function POST(req: Request) {
           terminal: m?.terminal || "Main Terminal",
           dropoff_date: m?.dropoff_date || new Date().toISOString(),
           pickup_date: m?.pickup_date || new Date().toISOString(),
-          dropoff_time: m?.dropTime || "09:00", 
-          pickup_time: m?.pickTime || "09:00", 
-          flight_number: m?.flightNumber || "", 
+          // 🟢 MAPPED TO NEW METADATA KEYS
+          dropoff_time: m?.dropoff_time || "09:00", 
+          pickup_time: m?.pickup_time || "09:00", 
+          flight_number: m?.flight_number || "", 
           service_type: m?.service_type || "Premium Meet & Greet", 
           total_price: session.amount_total ? session.amount_total / 100 : 0,
           status: "confirmed",
           stripe_session_id: session.id,
           company_id: resolvedCompany ? resolvedCompany.id : null,
-          
-          // 🚀 CATCHES THE PROMO CODE AND SAVES IT TO SUPABASE
           promo_code: m?.promo_used || "None",
         };
 
@@ -94,11 +93,12 @@ export async function POST(req: Request) {
         }
 
         // 4. Send Confirmation Email
-        await sendBookingReceipt(newBooking || bookingData, resolvedCompany); 
-
-        // 🟢 5. TRIGGER TWILIO AUTOMATION
         if (newBooking) {
-          // Triggers in the background, keeping the Stripe checkout fast
+            await sendBookingReceipt(newBooking, resolvedCompany); 
+        }
+
+        // 5. TRIGGER TWILIO AUTOMATION
+        if (newBooking) {
           triggerMissingFlightAlert({
             full_name: newBooking.full_name,
             phone_number: newBooking.phone_number,
@@ -109,7 +109,7 @@ export async function POST(req: Request) {
         }
       }
     } catch (dbError: any) {
-       console.error("❌ FATAL WEBHOOK CRASH:", dbError.message);
+        console.error("❌ FATAL WEBHOOK CRASH:", dbError.message);
     }
   }
 

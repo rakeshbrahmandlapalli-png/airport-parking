@@ -21,20 +21,26 @@ interface Review {
   date: string;
 }
 
-// ─── SPREADSHEET PIVOT RATES ──────────────────────────────────────
+// ─── DEFAULT DATA ──────────────────────────────────────
 const defaultCompany = {
   name: "",
   category: "meet-greet",
   luton_price: 0,
   heathrow_price: 0,
   
-  // 🟢 NEW: LTN Spreadsheet Pivots
   ltn_day2_price: 0, ltn_day5_price: 0, ltn_day8_price: 0, ltn_day11_price: 0,
   ltn_day14_price: 0, ltn_day17_price: 0, ltn_day22_price: 0, ltn_day32_price: 0,
 
-  // 🟢 NEW: LHR Spreadsheet Pivots
   lhr_day2_price: 0, lhr_day5_price: 0, lhr_day8_price: 0, lhr_day11_price: 0,
   lhr_day14_price: 0, lhr_day17_price: 0, lhr_day22_price: 0, lhr_day32_price: 0,
+
+  // 🟢 NEW: Terminal Specific Data for Emails & Maps
+  terminal_data: {
+    T2: { address: "Terminal 2 Short Stay", postcode: "TW6 1EW", map_url: "" },
+    T3: { address: "Terminal 3 Short Stay", postcode: "TW6 1QG", map_url: "" },
+    T4: { address: "Terminal 4 Short Stay", postcode: "TW6 3XA", map_url: "" },
+    T5: { address: "Terminal 5 Short Stay", postcode: "TW6 2GA", map_url: "" },
+  },
 
   commission_rate: 15,
   logo_url: "",
@@ -98,7 +104,9 @@ export default function AdminCompaniesPage() {
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingCompany, setEditingCompany] = useState<any>(null);
-  const [modalTab, setModalTab] = useState<"general" | "ltn" | "lhr" | "financials">("general");
+  
+  // 🟢 NEW: Added "terminals" to modalTab state
+  const [modalTab, setModalTab] = useState<"general" | "ltn" | "lhr" | "terminals" | "financials">("general");
 
   const [companyBookings, setCompanyBookings] = useState<any[]>([]);
   const [fetchingFinancials, setFetchingFinancials] = useState(false);
@@ -206,6 +214,16 @@ export default function AdminCompaniesPage() {
     const newVal = !company.is_active;
     setCompanies(companies.map((c) => (c.id === company.id ? { ...c, is_active: newVal } : c)));
     await supabase.from("companies").update({ is_active: newVal }).eq("id", company.id);
+  };
+
+  // 🟢 NEW: Function to handle Terminal Data nested updates
+  const updateTerminalField = (term: string, field: string, value: string) => {
+    const currentData = getField(editingCompany, newCompany, "terminal_data") || defaultCompany.terminal_data;
+    const newData = {
+      ...currentData,
+      [term]: { ...(currentData[term as keyof typeof currentData] || {}), [field]: value }
+    };
+    setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "terminal_data", newData);
   };
 
   const downloadInvoiceCSV = () => {
@@ -697,6 +715,7 @@ export default function AdminCompaniesPage() {
                   { key: "general", label: "General Info", Icon: Settings2 },
                   { key: "ltn", label: "Luton Ops", Icon: Car },
                   { key: "lhr", label: "Heathrow Ops", Icon: PlaneTakeoff },
+                  { key: "terminals", label: "LHR Terminals", Icon: MapPin }, // 🟢 NEW TAB
                   ...(editingCompany ? [{ key: "financials", label: "Invoices & Ledgers", Icon: FileText }] : []),
                 ].map(({ key, label, Icon }) => (
                   <button
@@ -838,6 +857,42 @@ export default function AdminCompaniesPage() {
                       </div>
                     )}
 
+                    {/* 🟢 NEW TAB: TERMINALS */}
+                    {modalTab === "terminals" && (
+                      <div className="space-y-6 text-white">
+                        <div className="bg-[#131A2B] p-6 rounded-2xl border border-slate-800 mb-6">
+                          <h3 className="text-lg font-black text-white mb-2">Heathrow Terminal Maps & Addresses</h3>
+                          <p className="text-xs text-slate-400">These details are dynamically injected into customer confirmation emails based on the terminal they select during checkout.</p>
+                        </div>
+
+                        {["T2", "T3", "T4", "T5"].map((term) => {
+                          const tData = getField(editingCompany, newCompany, "terminal_data")?.[term] || defaultCompany.terminal_data[term as keyof typeof defaultCompany.terminal_data];
+                          
+                          return (
+                            <div key={term} className="bg-[#131A2B] p-6 rounded-2xl border border-slate-800">
+                              <h4 className="text-blue-400 font-black mb-4 flex items-center gap-2">
+                                <MapPin className="w-4 h-4" /> {term} Details
+                              </h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                  <label className={labelCls}>Meeting Address</label>
+                                  <input type="text" className={inputCls} value={tData?.address || ""} onChange={(e) => updateTerminalField(term, "address", e.target.value)} placeholder="e.g. Terminal 2 Short Stay Car Park" />
+                                </div>
+                                <div className="space-y-2">
+                                  <label className={labelCls}>Postcode</label>
+                                  <input type="text" className={inputCls} value={tData?.postcode || ""} onChange={(e) => updateTerminalField(term, "postcode", e.target.value)} placeholder="e.g. TW6 1EW" />
+                                </div>
+                                <div className="space-y-2 md:col-span-2">
+                                  <label className={labelCls}>Google Maps Link (For Emails)</label>
+                                  <input type="text" className={inputCls} value={tData?.map_url || ""} onChange={(e) => updateTerminalField(term, "map_url", e.target.value)} placeholder="https://maps.google.com/..." />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
                     {/* TAB: LTN */}
                     {modalTab === "ltn" && (
                       <div className="space-y-8 text-white">
@@ -882,7 +937,7 @@ export default function AdminCompaniesPage() {
                               </div>
                             </div>
 
-                            {/* 🟢 NEW: 8-TIER SPREADSHEET INPUTS FOR LTN */}
+                            {/* 8-TIER SPREADSHEET INPUTS FOR LTN */}
                             <div className="pt-2">
                               <p className="text-sm font-black text-white mb-1"><span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2" />Spreadsheet Pivot Points</p>
                               <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-5">Set exact TOTAL PRICE for these specific durations. Algorithm interpolates the rest.</p>
@@ -984,7 +1039,7 @@ export default function AdminCompaniesPage() {
                               </div>
                             </div>
 
-                            {/* 🟢 NEW: 8-TIER SPREADSHEET INPUTS FOR LHR */}
+                            {/* 8-TIER SPREADSHEET INPUTS FOR LHR */}
                             <div className="pt-2">
                               <p className="text-sm font-black text-white mb-1"><span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2" />Spreadsheet Pivot Points</p>
                               <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-5">Set exact TOTAL PRICE for these specific durations. Algorithm interpolates the rest.</p>
