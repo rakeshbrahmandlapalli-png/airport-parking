@@ -64,6 +64,7 @@ const defaultCompany = {
   map_url: "", 
   ltn_reviews: [] as Review[],
   lhr_reviews: [] as Review[],
+  badges: [],
 };
 
 // ─── SORT ICON HELPER ────────────────────────────────────────────────────────
@@ -198,6 +199,20 @@ export default function AdminCompaniesPage() {
       setIsSaving(false);
     }
   };
+
+  const handleAddBadge = (label: string, category: string) => {
+  if (!label) return;
+  const current = getField(editingCompany, newCompany, "badges") || [];
+  setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "badges", 
+    [...current, { label: label.toUpperCase(), category }]
+  );
+};
+
+const handleRemoveBadge = (index: number) => {
+  const current = getField(editingCompany, newCompany, "badges") || [];
+  const updated = current.filter((_: any, i: number) => i !== index);
+  setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "badges", updated);
+};
 
   const handleDelete = async (id: string) => {
     if (!confirm("⚠️ CRITICAL: Permanently delete this partner profile?")) return;
@@ -756,7 +771,41 @@ export default function AdminCompaniesPage() {
                               onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "name", e.target.value)}
                               className={inputCls}
                             />
+                            
                           </div>
+                          {/* 🟢 DYNAMIC BADGE MANAGER */}
+<div className="bg-[#1A2235] p-6 rounded-2xl border border-slate-700/50 mb-8">
+  <h3 className="text-sm font-black text-white mb-4">Manage Badges</h3>
+  <div className="flex gap-2 mb-6">
+    <input id="new-badge-label" className={inputCls} placeholder="e.g. £10 FEE EXCLUDED" />
+    <select id="new-badge-cat" className="bg-[#0F1523] border border-slate-700 text-white rounded-xl px-4 text-xs font-bold outline-none">
+      <option value="General">General</option>
+      <option value="meet-greet">Meet & Greet</option>
+      <option value="park-ride">Park & Ride</option>
+      <option value="hotel">Hotel</option>
+    </select>
+    <button 
+      type="button"
+      onClick={() => {
+        const label = (document.getElementById('new-badge-label') as HTMLInputElement).value;
+        const category = (document.getElementById('new-badge-cat') as HTMLSelectElement).value;
+        handleAddBadge(label, category);
+        (document.getElementById('new-badge-label') as HTMLInputElement).value = '';
+      }}
+      className="bg-blue-600 px-6 rounded-xl text-white font-black hover:bg-blue-500 transition-colors"
+    >
+      +
+    </button>
+  </div>
+  <div className="flex flex-wrap gap-2">
+    {(getField(editingCompany, newCompany, "badges") || []).map((b: any, i: number) => (
+      <div key={i} className="flex items-center gap-2 bg-blue-600 px-3 py-1.5 rounded-lg text-[10px] font-bold text-white uppercase shadow-sm">
+        {b.label} <span className="opacity-50 text-[8px]">({b.category})</span>
+        <button type="button" onClick={() => handleRemoveBadge(i)} className="hover:text-red-300">×</button>
+      </div>
+    ))}
+  </div>
+</div>
                           <div className="space-y-2">
                             <label className={labelCls}>Service Category</label>
                             <div className="relative">

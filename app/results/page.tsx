@@ -6,7 +6,7 @@ import {
   ChevronDown, Plane, Calendar, Footprints, User,
   Star, Ban, Bus, BedDouble, Info, PlaneTakeoff, 
   PlaneLanding, Map as MapIcon, Navigation, Loader2,
-  AlertCircle, X, Shield, Sparkles, MessageSquare, Bot, Zap, Tag, CarFront
+  AlertCircle, X, Shield, Sparkles, MessageSquare, Bot, Zap, Tag, CarFront,BatteryCharging, Briefcase, Percent, CheckCircle2
 } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useState, useMemo, useEffect } from "react";
@@ -63,7 +63,27 @@ const safeParseDate = (dateStr: string) => {
 // ----------------------------------------------------------------------
 function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: any) {
   const [activeTab, setActiveTab] = useState('overview');
-  
+  const getBadgeIcon = (label: string) => {
+  const l = label.toUpperCase();
+  if (l.includes("WALK")) return Footprints;
+  if (l.includes("BUS")) return Bus;
+  if (l.includes("VALET")) return CarFront;
+  if (l.includes("HOUR")) return Clock;
+  if (l.includes("TERMINAL")) return Navigation;
+  if (l.includes("FEE")) return Tag;
+  if (l.includes("AERO")) return Sparkles;
+  if (l.includes("FAST")) return Zap;
+  if (l.includes("PET")) return Footprints;
+  if (l.includes("SECURITY") || l.includes("SECURE")) return ShieldCheck;
+  if (l.includes("MEET")) return User;
+  if (l.includes("HOTEL")) return BedDouble;
+  if (l.includes("CHARG")) return BatteryCharging;
+  if (l.includes("LUGGAGE")) return Briefcase;
+  if (l.includes("FREE") || l.includes("INCLUDED")) return CheckCircle2;
+  if (l.includes("DISCOUNT") || l.includes("OFFER")) return Percent;
+  if (l.includes("VIP")) return Star;
+  return Info; // Default icon
+};
   // 🟢 DYNAMIC PRICING MATH
   let totalPrice = 0;
   
@@ -186,9 +206,21 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
             <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-[#1A2235] text-slate-300 border border-slate-700/50' : 'bg-slate-900/50 text-slate-400 border border-slate-800'}`}>
               <ThumbsUp className="w-3.5 h-3.5" /> {option.category?.replace('-', ' ')}
             </div>
-            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-emerald-500/5 text-emerald-500/80 border border-emerald-500/10'}`}>
-              <Tag className="w-3.5 h-3.5" /> {isMeetGreet ? "£10 Fee Excluded" : "No Entry Fees"}
-            </div>
+            {/* 🟢 DYNAMIC BADGE RENDERER */}
+{(option.badges || [])
+  .filter((b: any) => b.category === 'General' || b.category === option.category)
+  .map((badge: any, index: number) => {
+    const BadgeIcon = getBadgeIcon(badge.label); // Uses the function you just added!
+    return (
+      <div 
+        key={index} 
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-emerald-500/5 text-emerald-500/80 border border-emerald-500/10'}`}
+      >
+        <BadgeIcon className="w-3.5 h-3.5" /> {badge.label}
+      </div>
+    );
+  })
+}
           </div>
         </div>
 
