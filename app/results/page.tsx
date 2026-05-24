@@ -1,17 +1,16 @@
 "use client";
-
+import { checkAvailability } from "../actions";
 import { useSearchParams, useRouter } from "next/navigation";
 import { 
   MapPin, Clock, ShieldCheck, ChevronRight, ThumbsUp, ArrowLeft,
   ChevronDown, Plane, Calendar, Footprints, User,
   Star, Ban, Bus, BedDouble, Info, PlaneTakeoff, 
   PlaneLanding, Map as MapIcon, Navigation, Loader2,
-  AlertCircle, X, Shield, Sparkles, MessageSquare, Bot, Zap, Tag, CarFront,BatteryCharging, Briefcase, Percent, CheckCircle2
+  AlertCircle, X, Shield, Sparkles, MessageSquare, Bot, Zap, Tag, CarFront, BatteryCharging, Briefcase, Percent, CheckCircle2
 } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useState, useMemo, useEffect } from "react";
 import { supabase } from "../lib/supabase";
-import { checkAvailability } from "../actions";
 
 // ----------------------------------------------------------------------
 // 🟢 CUSTOM AERO AVATAR 
@@ -41,7 +40,7 @@ function AeroAvatar({ size = "md", thinking = false }: { size?: "sm" | "md" | "l
 }
 
 // ----------------------------------------------------------------------
-// 🟢 ROBUST DATA PARSERS
+// 🟢 ROBUST DATA PARSERS & PRICING ENGINE
 // ----------------------------------------------------------------------
 const parsePrice = (val: any, fallback: number) => {
   if (val === null || val === undefined) return fallback;
@@ -58,82 +57,172 @@ const safeParseDate = (dateStr: string) => {
   return new Date(dateStr);
 };
 
-// ----------------------------------------------------------------------
-// 1. PREMIUM PARKING CARD COMPONENT (Mobile Optimized)
-// ----------------------------------------------------------------------
-function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: any) {
-  const [activeTab, setActiveTab] = useState('overview');
-  const getBadgeIcon = (label: string) => {
-  const l = label.toUpperCase();
-  if (l.includes("WALK")) return Footprints;
-  if (l.includes("BUS")) return Bus;
-  if (l.includes("VALET")) return CarFront;
-  if (l.includes("HOUR")) return Clock;
-  if (l.includes("TERMINAL")) return Navigation;
-  if (l.includes("FEE")) return Tag;
-  if (l.includes("AERO")) return Sparkles;
-  if (l.includes("FAST")) return Zap;
-  if (l.includes("PET")) return Footprints;
-  if (l.includes("SECURITY") || l.includes("SECURE")) return ShieldCheck;
-  if (l.includes("MEET")) return User;
-  if (l.includes("HOTEL")) return BedDouble;
-  if (l.includes("CHARG")) return BatteryCharging;
-  if (l.includes("LUGGAGE")) return Briefcase;
-  if (l.includes("FREE") || l.includes("INCLUDED")) return CheckCircle2;
-  if (l.includes("DISCOUNT") || l.includes("OFFER")) return Percent;
-  if (l.includes("VIP")) return Star;
-  return Info; // Default icon
+const formatDate = (dateString: string | null) => {
+  if (!dateString) return "--";
+  return new Date(dateString).toLocaleDateString("en-GB", { weekday: 'short', day: 'numeric', month: 'short' });
 };
-  // 🟢 DYNAMIC PRICING MATH
-  let totalPrice = 0;
+
+// Centralized Pricing Logic (Hybrid)
+
+// Centralized Pricing Logic (Hybrid)
+const getCalculatedPrice = (option: any, duration: number, isHeathrow: boolean, pricingEngine: any[], dropDateObj: Date) => {
+  const providerName = option.name.trim(); // Trim whitespace
+  const dynamicProviders = ["APD", "Airport Parking Bay", "24/7 Meet & Greet"];
   
-  if (isHeathrow) {
-    const p1 = parsePrice(option.heathrow_price, 0);
-    const p2 = parsePrice(option.lhr_day2_price, p1);
-    const p5 = parsePrice(option.lhr_day5_price, p2);
-    const p8 = parsePrice(option.lhr_day8_price, p5);
-    const p11 = parsePrice(option.lhr_day11_price, p8);
-    const p14 = parsePrice(option.lhr_day14_price, p11);
-    const p17 = parsePrice(option.lhr_day17_price, p14);
-    const p22 = parsePrice(option.lhr_day22_price, p17);
-    const p32 = parsePrice(option.lhr_day32_price, p22);
+  // 1. Check if provider is in list (Case insensitive)
+  const isDynamic = dynamicProviders.some(p => p.toLowerCase() === providerName.toLowerCase());
+  
+  if (isDynamic && pricingEngine.length > 0) {
+    const activeSet = pricingEngine.find(set => {
+      const start = safeParseDate(set.StartDate);
+      const end = safeParseDate(set.EndDate);
+      return dropDateObj >= start && dropDateObj <= end;
+    });
 
-    if (duration <= 1) totalPrice = p1;
-    else if (duration === 2) totalPrice = p2;
-    else if (duration <= 5) totalPrice = p2 + ((p5 - p2) / 3) * (duration - 2);
-    else if (duration <= 8) totalPrice = p5 + ((p8 - p5) / 3) * (duration - 5);
-    else if (duration <= 11) totalPrice = p8 + ((p11 - p8) / 3) * (duration - 8);
-    else if (duration <= 14) totalPrice = p11 + ((p14 - p11) / 3) * (duration - 11);
-    else if (duration <= 17) totalPrice = p14 + ((p17 - p14) / 3) * (duration - 14);
-    else if (duration <= 22) totalPrice = p17 + ((p22 - p17) / 5) * (duration - 17);
-    else if (duration <= 32) totalPrice = p22 + ((p32 - p22) / 10) * (duration - 22);
-    else totalPrice = p32 + ((p32 - p22) / 10) * (duration - 32); 
-  } else {
-    const p1 = parsePrice(option.luton_price, 0);
-    const p2 = parsePrice(option.ltn_day2_price, p1);
-    const p5 = parsePrice(option.ltn_day5_price, p2);
-    const p8 = parsePrice(option.ltn_day8_price, p5);
-    const p11 = parsePrice(option.ltn_day11_price, p8);
-    const p14 = parsePrice(option.ltn_day14_price, p11);
-    const p17 = parsePrice(option.ltn_day17_price, p14);
-    const p22 = parsePrice(option.ltn_day22_price, p17);
-    const p32 = parsePrice(option.ltn_day32_price, p22);
-
-    if (duration <= 1) totalPrice = p1;
-    else if (duration === 2) totalPrice = p2;
-    else if (duration <= 5) totalPrice = p2 + ((p5 - p2) / 3) * (duration - 2);
-    else if (duration <= 8) totalPrice = p5 + ((p8 - p5) / 3) * (duration - 5);
-    else if (duration <= 11) totalPrice = p8 + ((p11 - p8) / 3) * (duration - 8);
-    else if (duration <= 14) totalPrice = p11 + ((p14 - p11) / 3) * (duration - 11);
-    else if (duration <= 17) totalPrice = p14 + ((p17 - p14) / 3) * (duration - 14);
-    else if (duration <= 22) totalPrice = p17 + ((p22 - p17) / 5) * (duration - 17);
-    else if (duration <= 32) totalPrice = p22 + ((p32 - p22) / 10) * (duration - 22);
-    else totalPrice = p32 + ((p32 - p22) / 10) * (duration - 32); 
+    if (activeSet) {
+      // 🟢 FIX: Use Backticks (``) so variables interpolate correctly
+      const rateKey = duration <= 31 ? `Day${duration}` : "Day31";
+      
+      const dailyPrice = Number(activeSet[rateKey] || activeSet.StartingPrice || activeSet.Day1);
+      
+      let surcharge = 0;
+      if (providerName.toLowerCase().includes("24/7")) surcharge = 5;
+      if (providerName.toUpperCase() === "APD") surcharge = 8;
+      
+      const total = (dailyPrice + surcharge) * 1.10;
+      console.log(`Dynamic Match: ${providerName}, Duration: ${duration}, RateKey: ${rateKey}, Price: ${total}`);
+      return total;
+    } else {
+      console.log(`No matching Date Set found for ${providerName} on ${dropDateObj.toDateString()}`);
+    }
   }
 
-  // Apply Markup
-  totalPrice = totalPrice * 1.10;
-  const avgDailyRate = totalPrice / duration;
+ 
+
+
+  // --- LEGACY MATH FALLBACK ---
+  let tot = 0;
+  const p1 = parsePrice(isHeathrow ? option.heathrow_price : option.luton_price, 0);
+  const p2 = parsePrice(isHeathrow ? option.lhr_day2_price : option.ltn_day2_price, p1);
+  const p5 = parsePrice(isHeathrow ? option.lhr_day5_price : option.ltn_day5_price, p2);
+  const p8 = parsePrice(isHeathrow ? option.lhr_day8_price : option.ltn_day8_price, p5);
+  const p11 = parsePrice(isHeathrow ? option.lhr_day11_price : option.ltn_day11_price, p8);
+  const p14 = parsePrice(isHeathrow ? option.lhr_day14_price : option.ltn_day14_price, p11);
+  const p17 = parsePrice(isHeathrow ? option.lhr_day17_price : option.ltn_day17_price, p14);
+  const p22 = parsePrice(isHeathrow ? option.lhr_day22_price : option.ltn_day22_price, p17);
+  const p32 = parsePrice(isHeathrow ? option.lhr_day32_price : option.ltn_day32_price, p22);
+
+  if (duration <= 1) tot = p1;
+  else if (duration === 2) tot = p2;
+  else if (duration <= 5) tot = p2 + ((p5 - p2) / 3) * (duration - 2);
+  else if (duration <= 8) tot = p5 + ((p8 - p5) / 3) * (duration - 5);
+  else if (duration <= 11) tot = p8 + ((p11 - p8) / 3) * (duration - 8);
+  else if (duration <= 14) tot = p11 + ((p14 - p11) / 3) * (duration - 11);
+  else if (duration <= 17) tot = p14 + ((p17 - p14) / 3) * (duration - 14);
+  else if (duration <= 22) tot = p17 + ((p22 - p17) / 5) * (duration - 17);
+  else if (duration <= 32) tot = p22 + ((p32 - p22) / 10) * (duration - 22);
+  else tot = p32 + ((p32 - p22) / 10) * (duration - 32); 
+
+  return tot * 1.10;
+};
+// ----------------------------------------------------------------------
+// 🟢 MODULAR COMPONENT: MODIFY SEARCH MODAL
+// ----------------------------------------------------------------------
+function ModifySearchModal({ 
+  isEditModalOpen, setIsEditModalOpen, handleUpdateSearch,
+  editAirport, setEditAirport, editDropDate, setEditDropDate, editDropTime, setEditDropTime,
+  editPickDate, setEditPickDate, editPickTime, setEditPickTime
+}: any) {
+  if (!isEditModalOpen) return null;
+
+  const inputStyle = "w-full bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white] placeholder:text-slate-500 autofill:bg-[#1A2235] autofill:text-white autofill:shadow-[0_0_0_1000px_#1A2235_inset]";
+  const selectStyle = "w-full appearance-none bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none cursor-pointer focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white] autofill:bg-[#1A2235] autofill:text-white autofill:shadow-[0_0_0_1000px_#1A2235_inset]";
+
+  return (
+    <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex items-end sm:items-center justify-center p-4 sm:p-8 animate-in fade-in overflow-hidden">
+      <div className="bg-[#0F1523] border border-slate-800 w-full max-w-lg rounded-t-[2rem] sm:rounded-[2.5rem] p-8 sm:p-10 shadow-2xl animate-in slide-in-from-bottom-8 relative overflow-hidden">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h2 className="text-2xl font-black text-white tracking-tight">Modify Search</h2>
+            <p className="text-[10px] font-bold text-blue-500 mt-1 tracking-widest uppercase">Aero is ready to re-scan</p>
+          </div>
+          <button onClick={() => setIsEditModalOpen(false)} className="p-3 bg-[#1A2235] text-slate-400 rounded-xl hover:text-white transition-colors border border-slate-700/50">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleUpdateSearch} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1">Departure Airport</label>
+            <div className="relative">
+              <select value={editAirport} onChange={(e)=>setEditAirport(e.target.value)} className={selectStyle}>
+                <option value="Luton (LTN)">Luton Airport (LTN)</option>
+                <option value="Heathrow (LHR)">Heathrow Airport (LHR)</option>
+              </select>
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 border-t border-slate-800/80 pt-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1">Drop-off Date</label>
+              <input type="date" value={editDropDate} onChange={(e)=>setEditDropDate(e.target.value)} className={`${inputStyle} [color-scheme:dark]`} required />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1">Time</label>
+              <input type="time" value={editDropTime} onChange={(e)=>setEditDropTime(e.target.value)} className={`${inputStyle} [color-scheme:dark]`} required />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1">Pick-up Date</label>
+              <input type="date" min={editDropDate} value={editPickDate} onChange={(e)=>setEditPickDate(e.target.value)} className={`${inputStyle} [color-scheme:dark]`} required />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1">Time</label>
+              <input type="time" value={editPickTime} onChange={(e)=>setEditPickTime(e.target.value)} className={`${inputStyle} [color-scheme:dark]`} required />
+            </div>
+          </div>
+
+          <button type="submit" className="w-full mt-4 py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl uppercase text-xs tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-500/20">
+            Update Search & Recalculate
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------
+// 1. PREMIUM PARKING CARD COMPONENT
+// ----------------------------------------------------------------------
+function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData, calculatedPrice }: any) {
+  const [activeTab, setActiveTab] = useState('overview');
+  
+  const getBadgeIcon = (label: string) => {
+    const l = label.toUpperCase();
+    if (l.includes("WALK")) return Footprints;
+    if (l.includes("BUS")) return Bus;
+    if (l.includes("VALET")) return CarFront;
+    if (l.includes("HOUR")) return Clock;
+    if (l.includes("TERMINAL")) return Navigation;
+    if (l.includes("FEE")) return Tag;
+    if (l.includes("AERO")) return Sparkles;
+    if (l.includes("FAST")) return Zap;
+    if (l.includes("PET")) return Footprints;
+    if (l.includes("SECURITY") || l.includes("SECURE")) return ShieldCheck;
+    if (l.includes("MEET")) return User;
+    if (l.includes("HOTEL")) return BedDouble;
+    if (l.includes("CHARG")) return BatteryCharging;
+    if (l.includes("LUGGAGE")) return Briefcase;
+    if (l.includes("FREE") || l.includes("INCLUDED")) return CheckCircle2;
+    if (l.includes("DISCOUNT") || l.includes("OFFER")) return Percent;
+    if (l.includes("VIP")) return Star;
+    return Info; 
+  };
+
+  const avgDailyRate = calculatedPrice / duration;
   
   const isSoldOut = isHeathrow ? option.lhr_sold_out : option.ltn_sold_out;
   const isPremium = (isHeathrow ? option.lhr_featured : option.ltn_featured) || option.name.toLowerCase().includes("24/7");
@@ -143,11 +232,9 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
   const borderClass = isPremium ? 'border-slate-700/50' : (isSoldOut ? 'border-slate-800/50' : 'border-slate-800');
   const textPrimary = isPremium ? 'text-white' : (isSoldOut ? 'text-slate-500' : 'text-slate-100');
   
-  const BadgeIcon = option.category?.toLowerCase().includes('bus') || option.category?.toLowerCase().includes('ride') ? Bus : option.category?.toLowerCase().includes('hotel') ? BedDouble : Footprints;
-
   const arrivalInstructions = isHeathrow ? option.on_arrival_lhr : option.on_arrival_ltn;
   const returnInstructions = isHeathrow ? option.on_return_lhr : option.on_return_ltn;
-  const mapLocation = option.map_location || (isHeathrow ? "Details provided at terminal" : "Details provided at terminal");
+  const mapLocation = option.map_location || "Details provided at terminal";
   const currentReviews = isHeathrow ? (option.lhr_reviews || []) : (option.ltn_reviews || []);
 
   const isShortTrip = duration <= 3;
@@ -155,7 +242,7 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
   const isMeetGreet = option.category?.toLowerCase().includes('meet');
   const isParkRide = option.category?.toLowerCase().includes('ride');
 
-  const safeMapLink = `https://maps.google.com/maps?q=$$${encodeURIComponent((option.address || '') + ' ' + (option.postcode || ''))}`;
+  const safeMapLink = `https://maps.google.com/maps?q=$$$${encodeURIComponent((option.address || '') + ' ' + (option.postcode || ''))}`;
 
   return (
     <div className={`relative rounded-[1.5rem] md:rounded-[2rem] overflow-hidden flex flex-col lg:flex-row transition-all duration-500 group ${cardBg} border ${borderClass} ${isPremium ? 'shadow-[0_20px_40px_-15px_rgba(0,0,0,0.8)] lg:hover:shadow-[0_30px_60px_-15px_rgba(37,99,235,0.2)] lg:hover:border-blue-500/50 transform lg:-translate-x-2 lg:w-[calc(100%+16px)]' : (isSoldOut ? 'opacity-70 grayscale-[50%]' : 'shadow-2xl lg:hover:shadow-blue-900/20 lg:hover:border-slate-600 lg:hover:-translate-y-1')}`}>
@@ -165,8 +252,6 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
 
       <div className="flex-1 p-5 sm:p-6 md:p-8 lg:p-10 relative z-10 flex flex-col">
         <div className="mb-6 md:mb-8">
-          
-          {/* AI Badges */}
           <div className="flex flex-wrap gap-2 mb-4">
             {aiData.isLastMinute === 'true' && !isSoldOut && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] animate-pulse">
@@ -185,16 +270,10 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
             )}
           </div>
 
-          {/* 🟢 NEW: LOGO & TITLE SECTION (MOBILE OPTIMIZED) */}
           <div className="flex items-center gap-3 sm:gap-4 mb-4">
             {option.logo_url && (
               <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-xl flex items-center justify-center p-1.5 sm:p-2 shadow-md shrink-0">
-                <img 
-                  src={option.logo_url} 
-                  alt={option.name} 
-                  className="w-full h-full object-contain"
-                  onError={(e) => e.currentTarget.style.display = 'none'}
-                />
+                <img src={option.logo_url} alt={option.name} className="w-full h-full object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
               </div>
             )}
             <h2 className={`text-xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight leading-none ${textPrimary}`}>
@@ -206,21 +285,17 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
             <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-[#1A2235] text-slate-300 border border-slate-700/50' : 'bg-slate-900/50 text-slate-400 border border-slate-800'}`}>
               <ThumbsUp className="w-3.5 h-3.5" /> {option.category?.replace('-', ' ')}
             </div>
-            {/* 🟢 DYNAMIC BADGE RENDERER */}
-{(option.badges || [])
-  .filter((b: any) => b.category === 'General' || b.category === option.category)
-  .map((badge: any, index: number) => {
-    const BadgeIcon = getBadgeIcon(badge.label); // Uses the function you just added!
-    return (
-      <div 
-        key={index} 
-        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-emerald-500/5 text-emerald-500/80 border border-emerald-500/10'}`}
-      >
-        <BadgeIcon className="w-3.5 h-3.5" /> {badge.label}
-      </div>
-    );
-  })
-}
+            {(option.badges || [])
+              .filter((b: any) => b.category === 'General' || b.category === option.category)
+              .map((badge: any, index: number) => {
+                const BadgeIcon = getBadgeIcon(badge.label); 
+                return (
+                  <div key={index} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${isPremium ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-emerald-500/5 text-emerald-500/80 border border-emerald-500/10'}`}>
+                    <BadgeIcon className="w-3.5 h-3.5" /> {badge.label}
+                  </div>
+                );
+              })
+            }
           </div>
         </div>
 
@@ -255,22 +330,13 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
 
             <div className="p-4 sm:p-6 min-h-[100px]">
               {activeTab === 'overview' && (
-                <div 
-                  className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-400'}`}
-                  dangerouslySetInnerHTML={{ __html: option.overview || "Professional secure parking service with 24/7 patrols. Approved compound." }}
-                />
+                <div className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-400'}`} dangerouslySetInnerHTML={{ __html: option.overview || "Professional secure parking service with 24/7 patrols. Approved compound." }} />
               )}
               {activeTab === 'arrival' && (
-                <div 
-                  className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-400'}`}
-                  dangerouslySetInnerHTML={{ __html: arrivalInstructions || "Drive directly to the terminal and call 20 mins before arrival." }}
-                />
+                <div className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-400'}`} dangerouslySetInnerHTML={{ __html: arrivalInstructions || "Drive directly to the terminal and call 20 mins before arrival." }} />
               )}
               {activeTab === 'return' && (
-                <div 
-                  className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-400'}`}
-                  dangerouslySetInnerHTML={{ __html: returnInstructions || "Call the dispatch team after clearing customs and collecting luggage." }}
-                />
+                <div className={`text-xs sm:text-sm leading-relaxed ${isPremium ? 'text-slate-300' : 'text-slate-400'}`} dangerouslySetInnerHTML={{ __html: returnInstructions || "Call the dispatch team after clearing customs and collecting luggage." }} />
               )}
               {activeTab === 'map' && (
                 <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
@@ -286,20 +352,9 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
                   </div>
                   <div className="flex-1 h-32 sm:h-40 bg-[#0A101D] rounded-xl overflow-hidden relative border border-slate-800 flex items-center justify-center shadow-inner group cursor-pointer">
                     {option.map_url ? (
-                      <iframe 
-                        src={option.map_url} 
-                        width="100%" 
-                        height="100%" 
-                        style={{ border: 0 }} 
-                        allowFullScreen={false} 
-                        loading="lazy" 
-                        referrerPolicy="no-referrer-when-downgrade"
-                        className="grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500"
-                      />
+                      <iframe src={option.map_url} width="100%" height="100%" style={{ border: 0 }} allowFullScreen={false} loading="lazy" referrerPolicy="no-referrer-when-downgrade" className="grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500" />
                     ) : (
-                      <div className="text-slate-500 text-[9px] sm:text-[10px] font-black uppercase flex flex-col items-center gap-2">
-                        <MapPin className="w-4 h-4 sm:w-5 sm:h-5"/> Map Preview
-                      </div>
+                      <div className="text-slate-500 text-[9px] sm:text-[10px] font-black uppercase flex flex-col items-center gap-2"><MapPin className="w-4 h-4 sm:w-5 sm:h-5"/> Map Preview</div>
                     )}
                   </div>
                 </div>
@@ -324,12 +379,11 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
         <div className={`absolute -bottom-10 -left-4 w-8 h-8 rounded-full ${isPremium ? 'bg-[#060A14]' : 'bg-[#0B1120]'}`}></div>
       </div>
 
-      {/* 🟢 NEW: PRICING SECTION (MOBILE OPTIMIZED: SIDE-BY-SIDE) */}
       <div className={`w-full lg:w-[320px] xl:w-[340px] p-5 sm:p-6 md:p-8 lg:p-10 shrink-0 relative z-10 flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center border-t border-dashed lg:border-t-0 lg:border-l transition-colors ${stubBg} ${borderClass}`}>
         <div className="text-left lg:text-right flex flex-col justify-center">
           <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] mb-0.5 sm:mb-2 text-slate-500">Total Stay Cost</p>
           <p className={`text-3xl sm:text-4xl lg:text-6xl font-black tracking-tighter ${textPrimary} ${isSoldOut ? 'line-through opacity-30' : 'drop-shadow-md'}`}>
-            £{totalPrice.toFixed(2)}
+            £{calculatedPrice.toFixed(2)}
           </p>
           <p className={`text-[9px] sm:text-[11px] font-bold uppercase tracking-widest mt-1 lg:mb-8 hidden lg:block ${isPremium ? 'text-blue-400' : 'text-slate-400'}`}>
             {isSoldOut ? 'Sold Out' : `Averaging £${avgDailyRate.toFixed(2)} / Day`}
@@ -338,7 +392,7 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData }: an
         
         <button 
           disabled={isSoldOut}
-          onClick={() => handleBooking(option, totalPrice)}
+          onClick={() => handleBooking(option, calculatedPrice)}
           className={`group h-12 sm:h-14 px-6 lg:w-full font-black rounded-xl flex items-center justify-center gap-2 sm:gap-3 uppercase tracking-[0.15em] text-[11px] sm:text-xs transition-all duration-300 active:scale-95 shadow-lg shrink-0 ${
             isSoldOut 
               ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' 
@@ -361,6 +415,7 @@ function ResultsContent() {
   const router = useRouter();
   
   const [companies, setCompanies] = useState<any[]>([]);
+  const [pricingEngine, setPricingEngine] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   const airport = searchParams.get("airport") || "Luton (LTN)";
@@ -392,91 +447,68 @@ function ResultsContent() {
     return totalDays <= 0 ? 1 : totalDays;
   }, [dropoff, pickup]);
 
+  // Fetch both the Database and Google Sheets API simultaneously
   useEffect(() => {
-    async function getLiveRates() {
+    async function loadData() {
       setLoading(true);
-      const { data } = await supabase.from('companies').select('*');
-      
-      if (data) {
-        const filtered = data.filter(c => {
-          const formattedCategory = c.category?.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-').trim();
-          const isCorrectCategory = formattedCategory === serviceType.toLowerCase();
-          const isCorrectAirport = isHeathrow ? c.operates_at_heathrow === true : c.operates_at_luton === true;
-          return isCorrectCategory && isCorrectAirport && c.is_active;
-        });
+      try {
+        const [compRes, priceRes] = await Promise.all([
+          supabase.from('companies').select('*'),
+          fetch('https://script.google.com/macros/s/AKfycbwd4zT_JLMbufzexsJ4GKtkyvVh5EvxUQ0XA_i5cg6f19QXFutErdrU3i57TIF-D8Ku/exec', { 
+            redirect: "follow", 
+            headers: { "Content-Type": "text/plain;charset=utf-8" } 
+          }).then(res => res.json()).catch(() => []) // Graceful fallback
+        ]);
 
-        filtered.sort((a, b) => {
-           const aSold = isHeathrow ? a.lhr_sold_out : a.ltn_sold_out;
-           const bSold = isHeathrow ? b.lhr_sold_out : b.ltn_sold_out;
-           if (aSold && !bSold) return 1;
-           if (!aSold && bSold) return -1;
-           
-           const aFeatured = isHeathrow ? a.lhr_featured : a.ltn_featured;
-           const bFeatured = isHeathrow ? b.lhr_featured : b.ltn_featured;
-           if (aFeatured && !bFeatured) return -1;
-           if (!aFeatured && bFeatured) return 1;
-           
-           const getPrice = (opt: any) => {
-             let tot = 0;
-             if (isHeathrow) {
-               const p1 = parsePrice(opt.heathrow_price, 0);
-               const p2 = parsePrice(opt.lhr_day2_price, p1);
-               const p5 = parsePrice(opt.lhr_day5_price, p2);
-               const p8 = parsePrice(opt.lhr_day8_price, p5);
-               const p11 = parsePrice(opt.lhr_day11_price, p8);
-               const p14 = parsePrice(opt.lhr_day14_price, p11);
-               const p17 = parsePrice(opt.lhr_day17_price, p14);
-               const p22 = parsePrice(opt.lhr_day22_price, p17);
-               const p32 = parsePrice(opt.lhr_day32_price, p22);
+        if (priceRes) setPricingEngine(priceRes);
+        if (compRes.data) setCompanies(compRes.data);
 
-               if (duration <= 1) tot = p1;
-               else if (duration === 2) tot = p2;
-               else if (duration <= 5) tot = p2 + ((p5 - p2) / 3) * (duration - 2);
-               else if (duration <= 8) tot = p5 + ((p8 - p5) / 3) * (duration - 5);
-               else if (duration <= 11) tot = p8 + ((p11 - p8) / 3) * (duration - 8);
-               else if (duration <= 14) tot = p11 + ((p14 - p11) / 3) * (duration - 11);
-               else if (duration <= 17) tot = p14 + ((p17 - p14) / 3) * (duration - 14);
-               else if (duration <= 22) tot = p17 + ((p22 - p17) / 5) * (duration - 17);
-               else if (duration <= 32) tot = p22 + ((p32 - p22) / 10) * (duration - 22);
-               else tot = p32 + ((p32 - p22) / 10) * (duration - 32); 
-             } else {
-               const p1 = parsePrice(opt.luton_price, 0);
-               const p2 = parsePrice(opt.ltn_day2_price, p1);
-               const p5 = parsePrice(opt.ltn_day5_price, p2);
-               const p8 = parsePrice(opt.ltn_day8_price, p5);
-               const p11 = parsePrice(opt.ltn_day11_price, p8);
-               const p14 = parsePrice(opt.ltn_day14_price, p11);
-               const p17 = parsePrice(opt.ltn_day17_price, p14);
-               const p22 = parsePrice(opt.ltn_day22_price, p17);
-               const p32 = parsePrice(opt.ltn_day32_price, p22);
-
-               if (duration <= 1) tot = p1;
-               else if (duration === 2) tot = p2;
-               else if (duration <= 5) tot = p2 + ((p5 - p2) / 3) * (duration - 2);
-               else if (duration <= 8) tot = p5 + ((p8 - p5) / 3) * (duration - 5);
-               else if (duration <= 11) tot = p8 + ((p11 - p8) / 3) * (duration - 8);
-               else if (duration <= 14) tot = p11 + ((p14 - p11) / 3) * (duration - 11);
-               else if (duration <= 17) tot = p14 + ((p17 - p14) / 3) * (duration - 14);
-               else if (duration <= 22) tot = p17 + ((p22 - p17) / 5) * (duration - 17);
-               else if (duration <= 32) tot = p22 + ((p32 - p22) / 10) * (duration - 22);
-               else tot = p32 + ((p32 - p22) / 10) * (duration - 32); 
-             }
-             return tot * 1.10; // 🚀 Apply 10% system spike to sorting algorithm
-           };
-
-           return getPrice(a) - getPrice(b);
-        });
-
-        setCompanies(filtered);
+      } catch(e) {
+        console.error("Fetch error:", e);
       }
       
       await checkAvailability(airport, dropoff, pickup);
       setLoading(false);
     }
-    getLiveRates();
-  }, [serviceType, airport, dropoff, pickup, isHeathrow, duration]);
+    loadData();
+  }, [airport, dropoff, pickup]);
 
+  // Calculate and sort processed companies dynamically
+  const processedCompanies = useMemo(() => {
+  // 1. Filter based on your existing criteria
+  const filtered = companies.filter(c => {
+    const formattedCategory = c.category?.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-').trim();
+    const isCorrectCategory = formattedCategory === serviceType.toLowerCase();
+    const isCorrectAirport = isHeathrow ? c.operates_at_heathrow === true : c.operates_at_luton === true;
+    return isCorrectCategory && isCorrectAirport && c.is_active;
+  });
 
+  // 2. Define the date object for pricing
+  const dropDateObj = safeParseDate(dropoff);
+
+  // 3. Map to add the 'finalPrice' field using your pricing engine
+  const withPrices = filtered.map(c => {
+    const finalPrice = getCalculatedPrice(c, duration, isHeathrow, pricingEngine, dropDateObj);
+    return { ...c, finalPrice };
+  });
+
+  // 4. Sort by the new finalPrice
+  withPrices.sort((a, b) => {
+    const aSold = isHeathrow ? a.lhr_sold_out : a.ltn_sold_out;
+    const bSold = isHeathrow ? b.lhr_sold_out : b.ltn_sold_out;
+    if (aSold && !bSold) return 1;
+    if (!aSold && bSold) return -1;
+    
+    const aFeatured = isHeathrow ? a.lhr_featured : a.ltn_featured;
+    const bFeatured = isHeathrow ? b.lhr_featured : b.ltn_featured;
+    if (aFeatured && !bFeatured) return -1;
+    if (!aFeatured && bFeatured) return 1;
+    
+    return a.finalPrice - b.finalPrice;
+  });
+
+  return withPrices;
+}, [companies, pricingEngine, serviceType, isHeathrow, duration, dropoff]);
   const handleBooking = (option: any, finalPrice: number) => {
     const query = new URLSearchParams(searchParams.toString());
     query.set('type', option.name);
@@ -504,7 +536,7 @@ function ResultsContent() {
             <Zap className="w-3 h-3 fill-current"/> Aero Concierge Active
           </p>
           <h3 className="text-white text-base md:text-xl font-bold leading-tight">
-            I have securely verified <strong className="text-blue-400">{companies.length} approved compounds</strong> for your travel dates at {isHeathrow ? 'Heathrow' : 'Luton'}.
+            I have securely verified <strong className="text-blue-400">{processedCompanies.length} approved compounds</strong> for your travel dates at {isHeathrow ? 'Heathrow' : 'Luton'}.
           </h3>
           
           {aeroTip && (
@@ -535,7 +567,7 @@ function ResultsContent() {
       </div>
 
       <div className="space-y-6 md:space-y-8">
-        {companies.length === 0 ? (
+        {processedCompanies.length === 0 ? (
           <div className="text-center py-16 md:py-24 bg-[#0F1523] rounded-[3rem] border border-dashed border-slate-700 px-6 relative overflow-hidden">
             {!serviceType.toLowerCase().includes("meet") ? (
               <>
@@ -569,7 +601,7 @@ function ResultsContent() {
             )}
           </div>
         ) : (
-          companies.map((option) => (
+          processedCompanies.map((option) => (
             <ParkingCard 
               key={option.id} 
               option={option} 
@@ -577,6 +609,7 @@ function ResultsContent() {
               isHeathrow={isHeathrow}
               handleBooking={handleBooking}
               aiData={aiData}
+              calculatedPrice={option.finalPrice} 
             />
           ))
         )}
@@ -647,10 +680,6 @@ function ResultsLayout() {
     router.push(`/results?${query}`);
   };
 
-  // 🟢 SHARED INPUT STYLES (100% Autofill Bug Proof)
-  const inputStyle = "w-full bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white] placeholder:text-slate-500 autofill:bg-[#1A2235] autofill:text-white autofill:shadow-[0_0_0_1000px_#1A2235_inset]";
-  const selectStyle = "w-full appearance-none bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none cursor-pointer focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white] autofill:bg-[#1A2235] autofill:text-white autofill:shadow-[0_0_0_1000px_#1A2235_inset]";
-
   return (
     <main suppressHydrationWarning className="min-h-screen bg-[#0A101D] font-sans antialiased pb-24 md:pb-32 selection:bg-blue-500/30 overflow-x-hidden relative">
       <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0 flex justify-center overflow-hidden">
@@ -658,9 +687,9 @@ function ResultsLayout() {
       </div>
 
       <header className="sticky top-0 z-[100] bg-[#0A101D]/80 backdrop-blur-xl border-b border-white/5 h-16 md:h-20 flex items-center px-4 md:px-8 justify-between shadow-2xl">
-        <Link href="/select-service" className="text-slate-400 hover:text-white transition-colors flex items-center gap-2 group touch-manipulation">
+        <Link href="/" className="text-slate-400 hover:text-white transition-colors flex items-center gap-2 group touch-manipulation">
           <ArrowLeft className="w-4 h-4 md:w-5 md:h-5 lg:group-hover:-translate-x-1 transition-transform" /> 
-          <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] hidden md:block">Edit Search</span>
+          <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] hidden md:block">Home</span>
         </Link>
         <Link href="/" className="flex items-center gap-1.5 md:gap-2 text-white font-black tracking-tighter text-xl md:text-2xl uppercase absolute left-1/2 -translate-x-1/2 group touch-manipulation">
           <Plane className="w-5 h-5 md:w-7 md:h-7 text-blue-500 rotate-45" />AEROPARK<span className="text-blue-500">DIRECT</span>
@@ -673,60 +702,15 @@ function ResultsLayout() {
 
       <div className="relative z-10"><ResultsContent /></div>
 
-      {isEditModalOpen && (
-        <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex items-end sm:items-center justify-center p-4 sm:p-8 animate-in fade-in overflow-hidden">
-          <div className="bg-[#0F1523] border border-slate-800 w-full max-w-lg rounded-t-[2rem] sm:rounded-[2.5rem] p-8 sm:p-10 shadow-2xl animate-in slide-in-from-bottom-8 relative overflow-hidden">
-            <div className="flex justify-between items-center mb-8">
-              <div>
-                <h2 className="text-2xl font-black text-white tracking-tight">Modify Search</h2>
-                <p className="text-[10px] font-bold text-blue-500 mt-1 tracking-widest uppercase">Aero is ready to re-scan</p>
-              </div>
-              <button onClick={() => setIsEditModalOpen(false)} className="p-3 bg-[#1A2235] text-slate-400 rounded-xl hover:text-white transition-colors border border-slate-700/50">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleUpdateSearch} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1">Departure Airport</label>
-                <div className="relative">
-                  <select value={editAirport} onChange={(e)=>setEditAirport(e.target.value)} className={selectStyle}>
-                    <option value="Luton (LTN)">Luton Airport (LTN)</option>
-                    <option value="Heathrow (LHR)">Heathrow Airport (LHR)</option>
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 border-t border-slate-800/80 pt-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1">Drop-off Date</label>
-                  <input type="date" value={editDropDate} onChange={(e)=>setEditDropDate(e.target.value)} className={`${inputStyle} [color-scheme:dark]`} required />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1">Time</label>
-                  <input type="time" value={editDropTime} onChange={(e)=>setEditDropTime(e.target.value)} className={`${inputStyle} [color-scheme:dark]`} required />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1">Pick-up Date</label>
-                  <input type="date" min={editDropDate} value={editPickDate} onChange={(e)=>setEditPickDate(e.target.value)} className={`${inputStyle} [color-scheme:dark]`} required />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1">Time</label>
-                  <input type="time" value={editPickTime} onChange={(e)=>setEditPickTime(e.target.value)} className={`${inputStyle} [color-scheme:dark]`} required />
-                </div>
-              </div>
-
-              <button type="submit" className="w-full mt-4 py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl uppercase text-xs tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-500/20">
-                Update Search & Recalculate
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+      <ModifySearchModal 
+        isEditModalOpen={isEditModalOpen} setIsEditModalOpen={setIsEditModalOpen}
+        editAirport={editAirport} setEditAirport={setEditAirport}
+        editDropDate={editDropDate} setEditDropDate={setEditDropDate}
+        editDropTime={editDropTime} setEditDropTime={setEditDropTime}
+        editPickDate={editPickDate} setEditPickDate={setEditPickDate}
+        editPickTime={editPickTime} setEditPickTime={setEditPickTime}
+        handleUpdateSearch={handleUpdateSearch}
+      />
     </main>
   );
 }

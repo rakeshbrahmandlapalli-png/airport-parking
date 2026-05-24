@@ -13,6 +13,13 @@ import {
 } from "lucide-react";
 
 // ----------------------------------------------------------------------
+// 🟢 REUSABLE STYLES
+// ----------------------------------------------------------------------
+const lightInputCls = "w-full bg-white border border-slate-200 hover:border-blue-400 rounded-xl px-5 py-4 text-sm font-bold text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all touch-manipulation shadow-[0_0_0_1000px_#ffffff_inset] [-webkit-text-fill-color:#0f172a]";
+const yellowInputCls = "w-full bg-[#fde047] border-2 border-yellow-400 rounded-xl px-5 py-4 font-black text-slate-900 text-xl md:text-2xl text-center uppercase tracking-[0.2em] focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all placeholder:text-yellow-600/50 shadow-[0_0_0_1000px_#fde047_inset] [-webkit-text-fill-color:#0f172a] touch-manipulation";
+const darkInputCls = "w-full bg-[#131A2B] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm font-bold text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 outline-none transition-all shadow-[0_0_0_1000px_#131A2B_inset] [-webkit-text-fill-color:white]";
+
+// ----------------------------------------------------------------------
 // 🟢 CUSTOM AERO AVATAR 
 // ----------------------------------------------------------------------
 function AeroAvatar({ size = "md", state = "idle", onClick }: { size?: "sm" | "md" | "lg" | "xl", state?: "idle" | "scanning" | "success", onClick?: () => void }) {
@@ -38,7 +45,7 @@ function AeroAvatar({ size = "md", state = "idle", onClick }: { size?: "sm" | "m
 }
 
 // ----------------------------------------------------------------------
-// 🟢 ROBUST DATA PARSERS (Fixes Date & "0" Bugs)
+// 🟢 ROBUST DATA PARSERS 
 // ----------------------------------------------------------------------
 const parsePrice = (val: any, fallback: number) => {
   if (val === null || val === undefined) return fallback;
@@ -55,12 +62,106 @@ const safeParseDate = (dateStr: string) => {
   return new Date(dateStr);
 };
 
+const formatDate = (dateString: string | null) => {
+  if (!dateString) return "--";
+  return new Date(dateString).toLocaleDateString("en-GB", { weekday: 'short', day: 'numeric', month: 'short' });
+};
+
+// ----------------------------------------------------------------------
+// 🟢 SEPARATE COMPONENT: MODIFY SEARCH
+// ----------------------------------------------------------------------
+interface ModifySearchProps {
+  isEditingSearch: boolean;
+  dropDate: string;
+  setDropDate: (val: string) => void;
+  dropTime: string;
+  setDropTime: (val: string) => void;
+  pickDate: string;
+  setPickDate: (val: string) => void;
+  pickTime: string;
+  setPickTime: (val: string) => void;
+  handleUpdateSearch: (e: React.FormEvent) => void;
+}
+
+function ModifySearch({
+  isEditingSearch, dropDate, setDropDate, dropTime, setDropTime,
+  pickDate, setPickDate, pickTime, setPickTime, handleUpdateSearch
+}: ModifySearchProps) {
+  
+  if (isEditingSearch) {
+    return (
+      <div className="space-y-4 mb-8 bg-[#131A2B] p-6 rounded-2xl border border-slate-800 animate-in fade-in zoom-in-95">
+        <div>
+          <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block ml-1 tracking-widest">Drop-off</label>
+          <div className="grid grid-cols-2 gap-3">
+            <input type="date" value={dropDate} onChange={(e)=>setDropDate(e.target.value)} className={`${darkInputCls} [color-scheme:dark]`} />
+            <input type="time" value={dropTime} onChange={(e)=>setDropTime(e.target.value)} className={`${darkInputCls} [color-scheme:dark]`} />
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block ml-1 tracking-widest">Return</label>
+          <div className="grid grid-cols-2 gap-3">
+            <input type="date" value={pickDate} onChange={(e)=>setPickDate(e.target.value)} className={`${darkInputCls} [color-scheme:dark]`} />
+            <input type="time" value={pickTime} onChange={(e)=>setPickTime(e.target.value)} className={`${darkInputCls} [color-scheme:dark]`} />
+          </div>
+        </div>
+        <button 
+          onClick={handleUpdateSearch} 
+          className="w-full mt-2 py-3 bg-blue-600 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-500 transition-colors shadow-md shadow-blue-500/20"
+        >
+          Save & Recalculate
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5 mb-8 pb-8 border-b border-slate-800">
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-3 text-slate-400">
+          <Calendar className="w-4 h-4 text-blue-500" /> <span className="text-[10px] font-black uppercase tracking-widest">Drop-off</span>
+        </div>
+        <div className="text-right">
+          <span className="block text-sm font-bold text-white">{formatDate(dropDate)}</span>
+          <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{dropTime || "Time TBD"}</span>
+        </div>
+      </div>
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-3 text-slate-400">
+          <Calendar className="w-4 h-4 text-blue-500" /> <span className="text-[10px] font-black uppercase tracking-widest">Pick-up</span>
+        </div>
+        <div className="text-right">
+          <span className="block text-sm font-bold text-white">{formatDate(pickDate)}</span>
+          <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{pickTime || "Time TBD"}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------
+// 🟢 MAIN CHECKOUT CONTENT
+// ----------------------------------------------------------------------
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isEditingSearch, setIsEditingSearch] = useState(false);
   
+  // 🟢 LIVE PRICING ENGINE STATE (Google Sheets)
+  const [pricingEngine, setPricingEngine] = useState<any[]>([]);
+  
+  // 🟢 FETCH LIVE DATA ON LOAD
+  useEffect(() => {
+    fetch('https://script.google.com/macros/s/AKfycbwd4zT_JLMbufzexsJ4GKtkyvVh5EvxUQ0XA_i5cg6f19QXFutErdrU3i57TIF-D8Ku/exec', {
+      redirect: "follow",
+      headers: { "Content-Type": "text/plain;charset=utf-8" }
+    })
+      .then(res => res.json())
+      .then(data => setPricingEngine(data))
+      .catch(err => console.error("Pricing Engine Error:", err));
+  }, []);
+
   // 🟢 AGGRESSIVE URL GRABBER
   const urlId = searchParams.get("companyId") || searchParams.get("id") || searchParams.get("providerId") || ""; 
   const urlName = searchParams.get("company") || searchParams.get("provider") || searchParams.get("name") || "";
@@ -155,60 +256,51 @@ function CheckoutContent() {
     }
   }, [aiData.isFrequentFlyer, aiData.loyaltyMessage, discount.active]);
 
-  // 🚀 UPDATED PROMO CODE VERIFIER
+  // 🚀 PROMO CODE VERIFIER (SUPABASE + EXPIRY CHECK)
   const handleApplyPromo = async (e: React.FormEvent) => {
     e.preventDefault();
     const code = promoInput.toUpperCase().trim();
     
+    if (!code) {
+      setPromoMessage("Please enter a code.");
+      setIsPromoError(true);
+      return;
+    }
+
     setIsVerifyingPromo(true); 
 
-    if (code === "LAUNCH10") {
-      setDiscount({ active: true, code: "LAUNCH10", percent: 0.10 });
-      setPromoMessage("Launch discount applied! 10% off.");
-      setIsPromoError(false);
-      
-    } else if (code === "AERO15") {
-      
-      if (!email.trim() || !email.includes('@')) {
+    try {
+      const { data: promo, error } = await supabase
+        .from('promotions')
+        .select('*')
+        .eq('code', code)
+        .single();
+
+      if (error || !promo) {
         setDiscount({ active: false, code: "", percent: 0 });
-        setPromoMessage("Please enter a valid Email Address above to verify your loyalty status.");
+        setPromoMessage("Invalid promo code.");
         setIsPromoError(true);
-        setIsVerifyingPromo(false);
-        return;
-      }
-
-      try {
-        const response = await fetch('/api/verify-promo', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email.trim() })
-        });
-        
-        const { count } = await response.json();
-
-        if (count >= 2) {
-          setDiscount({ active: true, code: "AERO15", percent: 0.15 });
-          setPromoMessage("Welcome back! 15% loyalty discount verified and applied.");
-          setIsPromoError(false);
-        } else {
-          setDiscount({ active: false, code: "", percent: 0 });
-          setPromoMessage(`AERO15 requires 2 past bookings. We only found ${count} for this email.`);
-          setIsPromoError(true);
+      } else {
+        if (promo.is_active === false) {
+           setDiscount({ active: false, code: "", percent: 0 });
+           setPromoMessage("This promo code is inactive.");
+           setIsPromoError(true);
+        } 
+        else if (promo.expiry_date && new Date(promo.expiry_date) < new Date()) {
+           setDiscount({ active: false, code: "", percent: 0 });
+           setPromoMessage("This promo code has expired.");
+           setIsPromoError(true);
         }
-      } catch (err) {
-        setDiscount({ active: false, code: "", percent: 0 });
-        setPromoMessage("Failed to verify email. Please try again.");
-        setIsPromoError(true);
+        else {
+           const percentDecimal = Number(promo.discount_percent) / 100;
+           setDiscount({ active: true, code: promo.code, percent: percentDecimal });
+           setPromoMessage(`${promo.discount_percent}% discount applied!`);
+           setIsPromoError(false);
+        }
       }
-
-    } else if (code === "SECRET3" || code === "AERO3") {
-      setDiscount({ active: true, code: "AERO3", percent: 0.03 });
-      setPromoMessage("Secret Aero Discount Unlocked! 3% off.");
-      setIsPromoError(false);
-      
-    } else {
+    } catch (err) {
       setDiscount({ active: false, code: "", percent: 0 });
-      setPromoMessage("Invalid or expired promo code.");
+      setPromoMessage("Network error. Please try again.");
       setIsPromoError(true);
     }
     
@@ -229,7 +321,6 @@ function CheckoutContent() {
     }
   };
 
-  // 🟢 ADVANCED TIER PRICING CALCULATION (8-TIER INTERPOLATION + 10% MARKUP)
   const calculateDays = () => {
     if (!dropDate || !pickDate) return 1;
     const start = safeParseDate(dropDate);
@@ -240,59 +331,99 @@ function CheckoutContent() {
     return diffDays <= 0 ? 1 : diffDays;
   };
 
+  // 🟢 HYBRID PRICING CALCULATION (Dynamic Sheets + Legacy DB)
   const getSecureBasePrice = () => {
-    if (!company) return fallbackUrlPrice; 
-    
+    const providerName = company ? company.name : (urlName || type || "AeroPark Direct");
     const duration = calculateDays();
-    const isLuton = airport.toLowerCase().includes("luton");
-    let totalPrice = 0;
     
-    if (!isLuton) { // Heathrow Math
-      const p1 = parsePrice(company.heathrow_price, 0);
-      const p2 = parsePrice(company.lhr_day2_price, p1);
-      const p5 = parsePrice(company.lhr_day5_price, p2);
-      const p8 = parsePrice(company.lhr_day8_price, p5);
-      const p11 = parsePrice(company.lhr_day11_price, p8);
-      const p14 = parsePrice(company.lhr_day14_price, p11);
-      const p17 = parsePrice(company.lhr_day17_price, p14);
-      const p22 = parsePrice(company.lhr_day22_price, p17);
-      const p32 = parsePrice(company.lhr_day32_price, p22);
+    // 1. Identify if this provider uses the Google Sheet API
+    const dynamicProviders = ["APD", "Airport Parking Bay", "24/7 meet and greet"];
+    const isDynamic = dynamicProviders.includes(providerName);
 
-      if (duration <= 1) totalPrice = p1;
-      else if (duration === 2) totalPrice = p2;
-      else if (duration <= 5) totalPrice = p2 + ((p5 - p2) / 3) * (duration - 2);
-      else if (duration <= 8) totalPrice = p5 + ((p8 - p5) / 3) * (duration - 5);
-      else if (duration <= 11) totalPrice = p8 + ((p11 - p8) / 3) * (duration - 8);
-      else if (duration <= 14) totalPrice = p11 + ((p14 - p11) / 3) * (duration - 11);
-      else if (duration <= 17) totalPrice = p14 + ((p17 - p14) / 3) * (duration - 14);
-      else if (duration <= 22) totalPrice = p17 + ((p22 - p17) / 5) * (duration - 17);
-      else if (duration <= 32) totalPrice = p22 + ((p32 - p22) / 10) * (duration - 22);
-      else totalPrice = p32 + ((p32 - p22) / 10) * (duration - 32); 
-    } else { // Luton Math
-      const p1 = parsePrice(company.luton_price, 0);
-      const p2 = parsePrice(company.ltn_day2_price, p1);
-      const p5 = parsePrice(company.ltn_day5_price, p2);
-      const p8 = parsePrice(company.ltn_day8_price, p5);
-      const p11 = parsePrice(company.ltn_day11_price, p8);
-      const p14 = parsePrice(company.ltn_day14_price, p11);
-      const p17 = parsePrice(company.ltn_day17_price, p14);
-      const p22 = parsePrice(company.ltn_day22_price, p17);
-      const p32 = parsePrice(company.ltn_day32_price, p22);
+    if (isDynamic) {
+      // --- 🟢 DYNAMIC GOOGLE SHEET PRICING ---
+      if (pricingEngine.length === 0) return fallbackUrlPrice;
 
-      if (duration <= 1) totalPrice = p1;
-      else if (duration === 2) totalPrice = p2;
-      else if (duration <= 5) totalPrice = p2 + ((p5 - p2) / 3) * (duration - 2);
-      else if (duration <= 8) totalPrice = p5 + ((p8 - p5) / 3) * (duration - 5);
-      else if (duration <= 11) totalPrice = p8 + ((p11 - p8) / 3) * (duration - 8);
-      else if (duration <= 14) totalPrice = p11 + ((p14 - p11) / 3) * (duration - 11);
-      else if (duration <= 17) totalPrice = p14 + ((p17 - p14) / 3) * (duration - 14);
-      else if (duration <= 22) totalPrice = p17 + ((p22 - p17) / 5) * (duration - 17);
-      else if (duration <= 32) totalPrice = p22 + ((p32 - p22) / 10) * (duration - 22);
-      else totalPrice = p32 + ((p32 - p22) / 10) * (duration - 32); 
+      const dropDateObj = safeParseDate(dropDate);
+      
+      // Look for the date set active for the dropoff date
+      const activeSet = pricingEngine.find(set => {
+        const setStart = new Date(set.StartDate);
+        const setEnd = new Date(set.EndDate);
+        return dropDateObj >= setStart && dropDateObj <= setEnd;
+      });
+
+      if (!activeSet) return fallbackUrlPrice; 
+
+      let dailyPrice;
+      if (duration === 1) {
+        dailyPrice = Number(activeSet.StartingPrice || activeSet.Day1);
+      } else {
+        const rateKey = duration <= 31 ? `Day${duration}` : "Day31";
+        dailyPrice = Number(activeSet[rateKey] || activeSet.StartingPrice || activeSet.Day1);
+      }
+
+      // Add provider-specific surcharges
+      let surcharge = 0;
+      if (providerName === "24/7 meet and greet") surcharge = 5;
+      if (providerName === "APD") surcharge = 8;
+
+      // Apply the 10% global markup
+      return (dailyPrice + surcharge) * 1.10;
+
+    } else {
+      // --- 🟢 LEGACY DATABASE PRICING ---
+      if (!company) return fallbackUrlPrice; 
+      
+      const isLuton = airport.toLowerCase().includes("luton");
+      let totalPrice = 0;
+      
+      if (!isLuton) {
+        const p1 = parsePrice(company.heathrow_price, 0);
+        const p2 = parsePrice(company.lhr_day2_price, p1);
+        const p5 = parsePrice(company.lhr_day5_price, p2);
+        const p8 = parsePrice(company.lhr_day8_price, p5);
+        const p11 = parsePrice(company.lhr_day11_price, p8);
+        const p14 = parsePrice(company.lhr_day14_price, p11);
+        const p17 = parsePrice(company.lhr_day17_price, p14);
+        const p22 = parsePrice(company.lhr_day22_price, p17);
+        const p32 = parsePrice(company.lhr_day32_price, p22);
+
+        if (duration <= 1) totalPrice = p1;
+        else if (duration === 2) totalPrice = p2;
+        else if (duration <= 5) totalPrice = p2 + ((p5 - p2) / 3) * (duration - 2);
+        else if (duration <= 8) totalPrice = p5 + ((p8 - p5) / 3) * (duration - 5);
+        else if (duration <= 11) totalPrice = p8 + ((p11 - p8) / 3) * (duration - 8);
+        else if (duration <= 14) totalPrice = p11 + ((p14 - p11) / 3) * (duration - 11);
+        else if (duration <= 17) totalPrice = p14 + ((p17 - p14) / 3) * (duration - 14);
+        else if (duration <= 22) totalPrice = p17 + ((p22 - p17) / 5) * (duration - 17);
+        else if (duration <= 32) totalPrice = p22 + ((p32 - p22) / 10) * (duration - 22);
+        else totalPrice = p32 + ((p32 - p22) / 10) * (duration - 32); 
+      } else {
+        const p1 = parsePrice(company.luton_price, 0);
+        const p2 = parsePrice(company.ltn_day2_price, p1);
+        const p5 = parsePrice(company.ltn_day5_price, p2);
+        const p8 = parsePrice(company.ltn_day8_price, p5);
+        const p11 = parsePrice(company.ltn_day11_price, p8);
+        const p14 = parsePrice(company.ltn_day14_price, p11);
+        const p17 = parsePrice(company.ltn_day17_price, p14);
+        const p22 = parsePrice(company.ltn_day22_price, p17);
+        const p32 = parsePrice(company.ltn_day32_price, p22);
+
+        if (duration <= 1) totalPrice = p1;
+        else if (duration === 2) totalPrice = p2;
+        else if (duration <= 5) totalPrice = p2 + ((p5 - p2) / 3) * (duration - 2);
+        else if (duration <= 8) totalPrice = p5 + ((p8 - p5) / 3) * (duration - 5);
+        else if (duration <= 11) totalPrice = p8 + ((p11 - p8) / 3) * (duration - 8);
+        else if (duration <= 14) totalPrice = p11 + ((p14 - p11) / 3) * (duration - 11);
+        else if (duration <= 17) totalPrice = p14 + ((p17 - p14) / 3) * (duration - 14);
+        else if (duration <= 22) totalPrice = p17 + ((p22 - p17) / 5) * (duration - 17);
+        else if (duration <= 32) totalPrice = p22 + ((p32 - p22) / 10) * (duration - 22);
+        else totalPrice = p32 + ((p32 - p22) / 10) * (duration - 32); 
+      }
+
+      return totalPrice * 1.10;
     }
-
-    // 🚀 Apply the identical 10% structural spike here to guarantee exact cross-page parity
-    return totalPrice * 1.10;
   };
 
   const bookingDays = calculateDays();
@@ -300,11 +431,6 @@ function CheckoutContent() {
   const discountAmount = baseTotal * discount.percent;
   const addOnsTotal = (wantsLounge ? LOUNGE_PRICE : 0) + (wantsFastTrack ? FAST_TRACK_PRICE : 0);
   const finalTotal = (baseTotal - discountAmount) + addOnsTotal;
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "--";
-    return new Date(dateString).toLocaleDateString("en-GB", { weekday: 'short', day: 'numeric', month: 'short' });
-  };
 
   const handleUpdateSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -322,7 +448,7 @@ function CheckoutContent() {
     
     query.delete("price"); 
     
-    // 🟢 FIX: Update the URL in place so the page doesn't reload/redirect
+    // Update the URL in place so the page doesn't reload/redirect
     router.replace(`${window.location.pathname}?${query.toString()}`);
   };
 
@@ -360,7 +486,7 @@ function CheckoutContent() {
             car_make: carMake,
             car_color: carColor,
             airport: airport,
-            terminal: terminal, // 🟢 Sends just the string ("Terminal 5") safely
+            terminal: terminal, 
             dropoff_date: dropDate,
             pickup_date: pickDate,
             company_id: resolvedId, 
@@ -392,10 +518,6 @@ function CheckoutContent() {
       setIsProcessing(false);
     }
   };
-
-  const lightInputCls = "w-full bg-white border border-slate-200 hover:border-blue-400 rounded-xl px-5 py-4 text-sm font-bold text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all touch-manipulation shadow-[0_0_0_1000px_#ffffff_inset] [-webkit-text-fill-color:#0f172a]";
-  const yellowInputCls = "w-full bg-[#fde047] border-2 border-yellow-400 rounded-xl px-5 py-4 font-black text-slate-900 text-xl md:text-2xl text-center uppercase tracking-[0.2em] focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all placeholder:text-yellow-600/50 shadow-[0_0_0_1000px_#fde047_inset] [-webkit-text-fill-color:#0f172a] touch-manipulation";
-  const darkInputCls = "w-full bg-[#131A2B] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm font-bold text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 outline-none transition-all shadow-[0_0_0_1000px_#131A2B_inset] [-webkit-text-fill-color:white]";
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-12 relative z-10">
@@ -687,51 +809,15 @@ function CheckoutContent() {
                 </div>
               </div>
 
-              {isEditingSearch ? (
-                <div className="space-y-4 mb-8 bg-[#131A2B] p-6 rounded-2xl border border-slate-800 animate-in fade-in zoom-in-95">
-                  <div>
-                    <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block ml-1 tracking-widest">Drop-off</label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <input type="date" value={dropDate} onChange={(e)=>setDropDate(e.target.value)} className={`${darkInputCls} [color-scheme:dark]`} />
-                      <input type="time" value={dropTime} onChange={(e)=>setDropTime(e.target.value)} className={`${darkInputCls} [color-scheme:dark]`} />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block ml-1 tracking-widest">Return</label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <input type="date" value={pickDate} onChange={(e)=>setPickDate(e.target.value)} className={`${darkInputCls} [color-scheme:dark]`} />
-                      <input type="time" value={pickTime} onChange={(e)=>setPickTime(e.target.value)} className={`${darkInputCls} [color-scheme:dark]`} />
-                    </div>
-                  </div>
-                  <button 
-                    onClick={handleUpdateSearch} 
-                    className="w-full mt-2 py-3 bg-blue-600 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-500 transition-colors shadow-md shadow-blue-500/20"
-                  >
-                    Save & Recalculate
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-5 mb-8 pb-8 border-b border-slate-800">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-3 text-slate-400">
-                      <Calendar className="w-4 h-4 text-blue-500" /> <span className="text-[10px] font-black uppercase tracking-widest">Drop-off</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="block text-sm font-bold text-white">{formatDate(dropDate)}</span>
-                      <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{dropTime || "Time TBD"}</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-3 text-slate-400">
-                      <Calendar className="w-4 h-4 text-blue-500" /> <span className="text-[10px] font-black uppercase tracking-widest">Pick-up</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="block text-sm font-bold text-white">{formatDate(pickDate)}</span>
-                      <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{pickTime || "Time TBD"}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* 🟢 MODULARIZED SEARCH DATES */}
+              <ModifySearch 
+                isEditingSearch={isEditingSearch}
+                dropDate={dropDate} setDropDate={setDropDate}
+                dropTime={dropTime} setDropTime={setDropTime}
+                pickDate={pickDate} setPickDate={setPickDate}
+                pickTime={pickTime} setPickTime={setPickTime}
+                handleUpdateSearch={handleUpdateSearch}
+              />
 
               {!aiData.isFrequentFlyer && (
                 <div className="bg-[#131A2B] border border-slate-800 rounded-2xl p-5 mb-8">

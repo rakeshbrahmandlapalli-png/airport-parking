@@ -21,11 +21,15 @@ import {
   Sparkles,
   Loader2,
   ArrowRight,
-  Zap
+  Plane,
+  CheckCircle2,
+  Zap,
+  HelpCircle
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import MapModal from "@/components/MapModal";
+import PriceMatchModal from "@/components/PriceMatchModal";
 
 export default function HomePage() {
   const router = useRouter();
@@ -33,6 +37,7 @@ export default function HomePage() {
   const [now, setNow] = useState<Date | null>(null); 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
+  const [isPriceMatchOpen, setIsPriceMatchOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false); 
 
   // --- SEARCH STATES ---
@@ -49,6 +54,9 @@ export default function HomePage() {
   const [isThinking, setIsThinking] = useState(false);
   const [fastTrackStatus, setFastTrackStatus] = useState(""); 
 
+  // --- FAQ STATE ---
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
   useEffect(() => {
     const today = new Date();
     setNow(today);
@@ -63,7 +71,6 @@ export default function HomePage() {
     return () => clearInterval(timer);
   }, []);
 
-  // 🟢 FIX: Safely handle the server render so Google's bots see your site immediately!
   const todayStr = now?.toISOString().split("T")[0] || "";
   const currentTimeStr = now?.toTimeString().slice(0, 5) || "";
 
@@ -84,11 +91,9 @@ export default function HomePage() {
       airport, dropoffDate, dropoffTime, pickupDate, pickupTime
     }).toString();
     
-    // Now redirects to select-service instead of results
     router.push(`/select-service?${query}`);
   };
 
-  // 🎙️ SPEECH RECOGNITION LOGIC
   const startListening = (e: React.MouseEvent) => {
     e.preventDefault(); 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -120,7 +125,6 @@ export default function HomePage() {
     }
   };
 
-  // 🚀 AERO FAST-TRACK LOGIC
   const handleMagicSubmit = async () => {
     if (!magicText.trim()) return;
     setIsThinking(true);
@@ -136,7 +140,6 @@ export default function HomePage() {
       
       if (data.airport && data.dropoffDate) {
         
-        // Pass ALL 24 Magic Flags to the URL
         const baseParams: any = {
           airport: data.airport,
           dropoffDate: data.dropoffDate,
@@ -162,7 +165,6 @@ export default function HomePage() {
         if (data.servicePreference) baseParams.type = data.servicePreference;
         if (data.flightNumber) baseParams.flightNumber = data.flightNumber.toUpperCase();
 
-        // ZERO-CLICK BOOKING ACTIVATED 
         if (data.isReadyToBook && data.servicePreference) {
            setFastTrackStatus("Fast-Track Activated. Finding best operator...");
            const isHeathrow = data.airport.includes("Heathrow");
@@ -204,7 +206,6 @@ export default function HomePage() {
            }
         }
 
-        // NORMAL ROUTE: Needs more options, send to Results Page
         setFastTrackStatus("Loading available operators...");
         const query = new URLSearchParams(baseParams).toString();
         router.push(`/results?${query}`);
@@ -219,10 +220,34 @@ export default function HomePage() {
     }
   };
 
+  const faqs = [
+    {
+      q: "What is an Airport Parking Agent?",
+      a: "As booking agents, we curate and contract only top-rated, fully insured airport parking providers. We handle your logistics, customer support, and gate verification so you bypass unvetted operators entirely."
+    },
+    {
+      q: "How does the Aero Magic Search work?",
+      a: "Our signature Aero Magic engine uses neural parsing. Instead of selecting filters manually, you can simply type or speak your flight details and preferences. The AI dynamically calculates your drop-off logistics instantly."
+    },
+    {
+      q: "What happens if my return flight is delayed?",
+      a: "Aero Bot actively tracks live aviation networks. If your flight arrives early or late, your handover logistics are updated automatically on our dispatcher panel so your vehicle awaits you custom-timed."
+    },
+    {
+      q: "How safe is my vehicle during my trip?",
+      a: "We perform strict audits on every parking partner compound. All vehicles are housed securely in sites protected by round-the-clock CCTV configurations, perimeter security fencing, and dynamic guard controls."
+    },
+    {
+      q: "How do I claim a Best Price Match?",
+      a: "If you discover an identical operator profile with cheaper rates within 24 hours of selection, click 'Claim Price Match' above. Our platform notifies our desk instantly to verify and credit the margin difference directly back to you."
+    }
+  ];
+
   return (
     <main suppressHydrationWarning className="min-h-[100dvh] bg-[#F8FAFC] font-sans antialiased selection:bg-blue-600 selection:text-white overflow-x-hidden">
+      
       {/* 🟢 1. PREMIUM NAVBAR - STICKY AND PINNED */}
-      <nav className={`sticky top-0 w-full z-[100] -mb-20 md:-mb-24 bg-white/80 backdrop-blur-xl border-b border-slate-200 transition-all duration-1000 ${isLoaded ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
+      <nav className={`sticky top-0 w-full z-[100] bg-white/80 backdrop-blur-xl border-b border-slate-200 transition-all duration-1000 ${isLoaded ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 md:h-24 flex items-center justify-between overflow-hidden">
           
           <Link href="/" className="flex items-center z-50 overflow-visible touch-manipulation [-webkit-tap-highlight-color:transparent]">
@@ -237,17 +262,15 @@ export default function HomePage() {
           </Link>
           
           <div className="hidden md:flex items-center gap-8">
-            {/* 🟢 UPDATED NAV LINKS */}
-<a href="#services" className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 hover:text-slate-900 transition-colors relative group">
-  Services
-  <span className="absolute -bottom-2 left-0 w-0 h-[2px] bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
-</a>
-<Link href="/how-it-works" className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 hover:text-slate-900 transition-colors relative group">
-  How it works
-  <span className="absolute -bottom-2 left-0 w-0 h-[2px] bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
-</Link>
+            <a href="#services" className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 hover:text-slate-900 transition-colors relative group">
+              Services
+              <span className="absolute -bottom-2 left-0 w-0 h-[2px] bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
+            </a>
+            <Link href="/how-it-works" className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 hover:text-slate-900 transition-colors relative group">
+              How it works
+              <span className="absolute -bottom-2 left-0 w-0 h-[2px] bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
+            </Link>
                 
-
             <div className="h-6 w-px bg-slate-200 ml-2"></div>
 
             <Link href="/manage" className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.15em] text-white bg-slate-900 px-6 py-3 rounded-full hover:bg-blue-600 transition-all active:scale-95 ml-2 touch-manipulation">
@@ -260,13 +283,10 @@ export default function HomePage() {
           </button>
         </div>
       </nav>
+      
 
       {/* MOBILE MENU */}
-      <div 
-        className={`md:hidden fixed inset-0 z-[9999] bg-white transition-all duration-500 ease-in-out flex flex-col ${
-          isMenuOpen ? 'opacity-100 translate-x-0 visible' : 'opacity-0 translate-x-full invisible pointer-events-none'
-        }`}
-      >
+      <div className={`md:hidden fixed inset-0 z-[9999] bg-white transition-all duration-500 ease-in-out flex flex-col ${isMenuOpen ? 'opacity-100 translate-x-0 visible' : 'opacity-0 translate-x-full invisible pointer-events-none'}`}>
         <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100 shrink-0 overflow-hidden">
           <Link href="/" onClick={() => setIsMenuOpen(false)} className="flex items-center overflow-visible touch-manipulation [-webkit-tap-highlight-color:transparent]">
             <Image 
@@ -289,9 +309,9 @@ export default function HomePage() {
             Services <ChevronRight className="w-6 h-6 text-blue-500" />
           </a>
           
-          <a href="#how-it-works" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-2xl font-black text-slate-900 border-b border-slate-50 touch-manipulation [-webkit-tap-highlight-color:transparent]">
+          <Link href="/how-it-works" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-2xl font-black text-slate-900 border-b border-slate-50 touch-manipulation [-webkit-tap-highlight-color:transparent]">
             How it works <ChevronRight className="w-6 h-6 text-blue-500" />
-          </a>
+          </Link>
 
           <Link href="/manage" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-2xl font-black text-slate-900 touch-manipulation [-webkit-tap-highlight-color:transparent]">
             Manage Trip <ChevronRight className="w-6 h-6 text-blue-500" />
@@ -308,10 +328,9 @@ export default function HomePage() {
           </Link>
         </div>
       </div>
-        
 
-      {/* 🟢 2. IMMERSIVE HERO SECTION - PADDING ADJUSTED */}
-      <section className="relative min-h-[100dvh] w-full flex items-center justify-center overflow-hidden bg-slate-950 pt-40 pb-12 md:pt-48 md:py-20">
+      {/* 🟢 2. IMMERSIVE HERO SECTION */}
+      <section className="relative min-h-[100dvh] w-full flex items-center justify-center overflow-hidden bg-slate-950 pt-24 pb-12 md:py-20">
         <div className="absolute inset-0 z-0 overflow-hidden">
           <div className={`absolute inset-0 bg-cover bg-center transition-all duration-[3000ms] ease-out origin-center ${isLoaded ? 'scale-105 opacity-100' : 'scale-150 opacity-0'}`} style={{ backgroundImage: "url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format&fit=crop')" }}></div>
           <div className={`absolute inset-0 bg-gradient-to-b md:bg-gradient-to-r from-slate-950 via-slate-900/80 md:via-slate-900/60 to-transparent transition-opacity duration-[2500ms] ${isLoaded ? 'opacity-100' : 'opacity-0'}`}></div>
@@ -338,8 +357,7 @@ export default function HomePage() {
               </p>
               
               <p className="text-sm sm:text-base md:text-lg text-gray-300 leading-relaxed font-light hidden sm:block">
-                Whether planning in advance or booking last minute, find the 
-                right parking option tailored to your journey—quick, clear, and reliable.
+                Whether planning in advance or booking last minute, find the right parking option tailored to your journey—quick, clear, and reliable.
               </p>
 
               <div className="flex items-center justify-center lg:justify-start gap-4 pt-4 md:pt-6 border-t border-white/10 w-3/4 lg:w-full">
@@ -358,14 +376,12 @@ export default function HomePage() {
               <div className="relative z-10 w-full">
                 
                 {/* 🌟 1. SLEEK AERO MAGIC SEARCH */}
-                
                 <div className="mb-6 md:mb-8">
                   <label className="flex items-center justify-center gap-2 text-[10px] md:text-xs font-black uppercase tracking-widest text-blue-300 mb-4">
                     <Sparkles className="w-3.5 h-3.5 animate-pulse" /> Aero Magic Search
                   </label>
                   
                   <div className="relative flex items-center bg-[#0B1121]/60 backdrop-blur-md border border-white/20 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/20 rounded-2xl p-1.5 transition-all shadow-inner group">
-                    
                     <input 
                       type="text"
                       value={magicText}
@@ -397,7 +413,6 @@ export default function HomePage() {
                       </button>
                     </div>
                   </div>
-                  {/* Dynamic Fast-Track Feedback Message */}
                   <p className="text-center text-[8px] md:text-[9px] text-blue-300/70 uppercase tracking-widest mt-2 h-4">
                     {isThinking ? fastTrackStatus : "✨ Powered by Aero Intelligence"}
                   </p>
@@ -412,7 +427,6 @@ export default function HomePage() {
 
                 {/* 2. MANUAL FORM */}
                 <form action="/results" method="GET" onSubmit={handleSearch} className="relative z-10 flex flex-col gap-4 md:gap-5 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                  
                   <div className="bg-white/5 border border-white/10 rounded-2xl p-3 md:p-4 group/input transition-colors hover:bg-white/10">
                     <div className="flex items-center justify-between mb-2">
                       <label className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-300">Select Departure Airport</label>
@@ -457,6 +471,18 @@ export default function HomePage() {
                   </button>
                 </form>
 
+                {/* 🟢 THE LIVE PULSE ACTIVITY */}
+                <div className="mt-5 p-3.5 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </div>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400">Aero Live Update</span>
+                  </div>
+                  <p className="text-[9px] text-slate-300 font-bold">12 travelers booked in the last hour</p>
+                </div>
+
               </div>
             </div>
             
@@ -470,6 +496,86 @@ export default function HomePage() {
 
       {/* 🟢 3. THE SMART VETTING SECTION */}
       <AeroFeature />
+
+      {/* 🟢 AIRPORT SEO HUB */}
+      <section className="py-16 md:py-24 bg-[#0A101D] px-4 md:px-6">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl md:text-5xl font-black text-white mb-12 tracking-tight text-center">
+            Popular <span className="text-blue-500">Destinations</span>
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+            {[
+              { 
+                name: "Luton Airport Parking", 
+                code: "LTN", 
+                desc: "Fast, reliable Meet & Greet services. Drive straight to the terminal forecourt.",
+                query: "Luton (LTN)"
+              },
+              { 
+                name: "Heathrow Airport Parking", 
+                code: "LHR", 
+                desc: "Premium chauffeur-style parking across all terminals. Your car, in safe hands.",
+                query: "Heathrow (LHR)"
+              }
+            ].map((airport, i) => (
+              <Link 
+                key={i} 
+                href={`/select-service?airport=${encodeURIComponent(airport.query)}&dropoffDate=${todayStr}&pickupDate=${todayStr}`}
+                className="group bg-[#0F1523] border border-slate-800 hover:border-blue-500/50 p-8 rounded-[2rem] transition-all duration-300 hover:shadow-[0_20px_50px_-10px_rgba(37,99,235,0.2)] block"
+              >
+                <div className="flex justify-between items-start mb-6">
+                  <div className="w-16 h-16 bg-blue-600/10 rounded-2xl flex items-center justify-center text-blue-500">
+                    <Plane className="w-8 h-8" />
+                  </div>
+                  <span className="text-3xl font-black text-slate-700 group-hover:text-blue-500 transition-colors">
+                    {airport.code}
+                  </span>
+                </div>
+                <h3 className="text-2xl font-black text-white mb-3">{airport.name}</h3>
+                <p className="text-slate-400 font-medium mb-6">{airport.desc}</p>
+                <div className="flex items-center text-blue-500 font-black uppercase text-xs tracking-widest group-hover:gap-4 transition-all">
+                  Book Parking <ArrowRight className="w-4 h-4 ml-2" />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 🟢 PRICE MATCH & AI SPOTLIGHT */}
+      <section className="py-16 md:py-24 px-4 bg-[#0A101D] border-t border-white/5">
+        <div className="max-w-7xl mx-auto">
+          
+          {/* Price Match Container connected to Modal */}
+          <div className="bg-blue-600 rounded-[2rem] p-8 md:p-12 text-white flex flex-col md:flex-row items-center justify-between gap-6 mb-16">
+            <div>
+              <h3 className="text-2xl font-black mb-2 uppercase tracking-tight">Best Price Guarantee</h3>
+              <p className="text-blue-100 text-sm font-medium">Found a cheaper price for the same service? Let us know, and we'll match it.</p>
+            </div>
+            <button 
+              onClick={() => setIsPriceMatchOpen(true)}
+              className="bg-white text-blue-600 font-black px-8 py-4 rounded-xl text-xs uppercase tracking-widest hover:scale-105 transition-transform"
+            >
+              Claim Price Match
+            </button>
+          </div>
+
+          {/* Aero Intelligence Spotlight */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+            {[
+              { title: "Flight Monitoring", desc: "Aero Bot tracks your flight. If you land late, your parking schedule updates automatically." },
+              { title: "Terminal-Specific", desc: "We map you to the exact row, saving you time walking through crowded car parks." },
+              { title: "Secure Handover", desc: "Every driver is DBS checked and photos are taken upon entry to ensure complete peace of mind." }
+            ].map((feature, i) => (
+              <div key={i} className="p-6 bg-[#0F1523] border border-slate-800 rounded-2xl hover:border-blue-500/30 transition-all">
+                <h4 className="text-white font-black mb-2">{feature.title}</h4>
+                <p className="text-slate-500 text-sm font-medium leading-relaxed">{feature.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* 4. THE BENTO BOX */}
       <section id="services" className="py-16 md:py-24 px-4 md:px-6 bg-white">
@@ -485,7 +591,6 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-4 md:mb-6">
-            
             <div className="lg:col-span-2 bg-slate-50 rounded-[2rem] md:rounded-[3rem] p-6 sm:p-8 md:p-14 border border-slate-100 relative overflow-hidden flex flex-col justify-center min-h-[400px] md:min-h-[500px]">
               <div className="absolute top-0 right-0 w-64 md:w-96 h-64 md:h-96 bg-blue-100/40 rounded-full blur-[80px] md:blur-[100px] -mr-10 md:-mr-20 -mt-10 md:-mt-20 pointer-events-none"></div>
               
@@ -531,14 +636,13 @@ export default function HomePage() {
                   </p>
                 </div>
               </div>
-
             </div>
           </div>
         </div>
       </section>
 
       {/* 4.5 HOW IT WORKS SECTION */}
-      <section className="py-16 md:py-24 bg-white border-t border-slate-50">
+      <section className="py-16 md:py-24 bg-white border-t border-slate-100">
         <div className="max-w-7xl mx-auto px-4 md:px-6 text-center">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-10 md:mb-20">
             Seamless Departure in <span className="text-blue-600">3 Steps.</span>
@@ -580,6 +684,51 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* 🟢 5. HOMEPAGE ENTERPRISE FAQ SECTION */}
+      <section className="py-20 md:py-28 bg-slate-50 border-t border-slate-200/60 px-4 md:px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex flex-col items-center text-center mb-12 md:mb-16">
+            <div className="w-12 h-12 bg-blue-600/10 rounded-2xl flex items-center justify-center text-blue-600 mb-4">
+              <HelpCircle className="w-6 h-6" />
+            </div>
+            <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">
+              Got Questions? <span className="text-blue-600">We Have Answers.</span>
+            </h2>
+            <p className="text-sm md:text-base text-slate-500 font-medium max-w-md mt-3">
+              Everything you need to know about our automated agency booking services.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {faqs.map((faq, index) => {
+              const isOpen = openFaq === index;
+              return (
+                <div 
+                  key={index} 
+                  className="bg-white border border-slate-200 rounded-2xl overflow-hidden transition-all duration-300"
+                >
+                  <button
+                    onClick={() => setOpenFaq(isOpen ? null : index)}
+                    className="w-full text-left px-6 py-5 md:py-6 flex items-center justify-between gap-4 font-black text-slate-950 text-sm md:text-base select-none"
+                  >
+                    <span>{faq.q}</span>
+                    <ChevronDown className={`w-5 h-5 text-blue-600 transition-transform duration-300 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  <div 
+                    className={`transition-all duration-300 ease-in-out overflow-hidden ${isOpen ? 'max-h-48 border-t border-slate-100 opacity-100' : 'max-h-0 opacity-0'}`}
+                  >
+                    <p className="px-6 py-5 text-slate-600 text-xs md:text-sm font-medium leading-relaxed bg-slate-50/50">
+                      {faq.a}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* 6. FOOTER */}
       <footer className="bg-[#0B1121] py-8 md:py-14 px-4 md:px-6 border-t border-white/5">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 md:gap-4">
@@ -599,7 +748,7 @@ export default function HomePage() {
            <div className="flex flex-wrap justify-center gap-4 md:gap-10 text-slate-300/80 text-[9px] md:text-[11px] font-bold uppercase tracking-[0.15em] md:tracking-[0.2em] w-full md:w-1/3">
              <Link href="/privacy" className="hover:text-white transition-colors touch-manipulation [-webkit-tap-highlight-color:transparent]">Privacy Policy</Link>
              <Link href="/terms" className="hover:text-white transition-colors touch-manipulation [-webkit-tap-highlight-color:transparent]">Terms</Link>
-             <Link href="/contact" className="hover:text-white transition-colors touch-manipulation [-webkit-tap-highlight-color:transparent]">Support</Link>
+             <Link href="mailto:info@aeroparkdirect.co.uk" className="hover:text-white transition-colors touch-manipulation [-webkit-tap-highlight-color:transparent]">Support</Link>
            </div>
            
            <div className="text-slate-500/70 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.15em] md:tracking-widest w-full md:w-1/3 text-center md:text-right">
@@ -610,6 +759,7 @@ export default function HomePage() {
       </footer>
 
       <MapModal isOpen={isMapOpen} onClose={() => setIsMapOpen(false)} />
+      <PriceMatchModal isOpen={isPriceMatchOpen} onClose={() => setIsPriceMatchOpen(false)} />
     </main>
   );
 }

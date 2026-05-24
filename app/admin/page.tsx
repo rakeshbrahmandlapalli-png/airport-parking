@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * AeroPark Direct - Command Center v12.0 (Ultimate Master Build)
+ * AeroPark Direct - Command Center v12.1 (Ultimate Master Build)
  * ------------------------------------------------------
  * UPGRADES & FIXES:
  * 1. AUTOFILL BUG: Fixed invisible text. Forced Webkit fill colors on all inputs.
@@ -9,7 +9,9 @@
  * 3. RIBBON: Added 'Service Type' filter. Redesigned to an un-squashable Flex Grid.
  * 4. UI/UX: Hyper-premium SaaS 3.0 aesthetic with frosted glass and deep gradients.
  * 5. FORMATTING: Fully expanded code (no minification) to restore exact line counts.
- * 6. 🟢 TWILIO: Added silent background API trigger for manual bookings missing flights.
+ * 6. TWILIO: Added silent background API trigger for manual bookings missing flights.
+ * 7. 🟢 MODAL FIX: Safely bound all inputs to prevent 'null' read crashes during unmounts.
+ * 8. 🟢 DB FIX: Handled empty date/time strings to prevent Supabase 500 rejection errors.
  */
 
 import { useEffect, useState, useMemo } from "react";
@@ -41,7 +43,7 @@ export default function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [timeFilter, setTimeFilter] = useState("ALL"); 
   const [companyFilter, setCompanyFilter] = useState("ALL"); 
-  const [serviceFilter, setServiceFilter] = useState("ALL"); // 🟢 NEW: Service Filter
+  const [serviceFilter, setServiceFilter] = useState("ALL");
   
   const router = useRouter();
 
@@ -166,22 +168,22 @@ export default function AdminDashboard() {
     setIsSaving(true);
     try {
       const { error } = await supabase.from('bookings').update({
-        full_name: editingBooking.full_name,
-        email: editingBooking.email,
-        phone_number: editingBooking.phone_number,
-        license_plate: editingBooking.license_plate,
-        car_make: editingBooking.car_make,
-        car_color: editingBooking.car_color,
-        flight_number: editingBooking.flight_number,
-        dropoff_date: editingBooking.dropoff_date,
-        dropoff_time: editingBooking.dropoff_time,
-        pickup_date: editingBooking.pickup_date,
-        pickup_time: editingBooking.pickup_time,
-        total_price: Number(editingBooking.total_price),
-        status: editingBooking.status,
-        airport: editingBooking.airport,
-        terminal: editingBooking.terminal,
-        service_type: editingBooking.service_type || "Meet & Greet"
+        full_name: editingBooking?.full_name || null,
+        email: editingBooking?.email || null,
+        phone_number: editingBooking?.phone_number || null,
+        license_plate: editingBooking?.license_plate || null,
+        car_make: editingBooking?.car_make || null,
+        car_color: editingBooking?.car_color || null,
+        flight_number: editingBooking?.flight_number || null,
+        dropoff_date: editingBooking?.dropoff_date || null, // Safety fallback for empty dates
+        dropoff_time: editingBooking?.dropoff_time || null,
+        pickup_date: editingBooking?.pickup_date || null,
+        pickup_time: editingBooking?.pickup_time || null,
+        total_price: Number(editingBooking?.total_price || 0),
+        status: editingBooking?.status || 'pending',
+        airport: editingBooking?.airport || null,
+        terminal: editingBooking?.terminal || null,
+        service_type: editingBooking?.service_type || "Meet & Greet"
       }).eq('id', editingBooking.id);
       
       if (error) throw error;
@@ -189,7 +191,7 @@ export default function AdminDashboard() {
       setEditingBooking(null);
       await fetchDashboardData();
     } catch (error: any) { 
-      alert(error.message); 
+      alert(`Update Error: ${error.message}`); 
     } finally { 
       setIsSaving(false); 
     }
@@ -203,11 +205,17 @@ export default function AdminDashboard() {
       const payload = { ...newBooking, booking_ref };
       if (payload.company_id === "ALL") payload.company_id = null; 
       
+      // Safety fallback for empty dates
+      if (!payload.dropoff_date) payload.dropoff_date = null;
+      if (!payload.dropoff_time) payload.dropoff_time = null;
+      if (!payload.pickup_date) payload.pickup_date = null;
+      if (!payload.pickup_time) payload.pickup_time = null;
+      
       const { error } = await supabase.from('bookings').insert([payload]);
       
       if (error) throw error;
 
-      // 🟢 TWILIO AUTOMATION TRIGGER (Fires silently in the background)
+      // TWILIO AUTOMATION TRIGGER
       if (!payload.flight_number || payload.flight_number.trim() === "") {
         fetch('/api/twilio', {
           method: 'POST',
@@ -354,6 +362,9 @@ export default function AdminDashboard() {
           </Link>
           <Link href="/admin/companies" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all">
             <Building2 className="w-5 h-5 text-slate-500" /> Partner Network
+          </Link>
+          <Link href="/admin/promos" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all">
+            <Tags className="w-5 h-5 text-slate-500" /> Promo Manager
           </Link>
           <Link href="/admin/schedule" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all">
             <CalendarDays className="w-5 h-5 text-slate-500" /> Operational Plan
@@ -610,15 +621,15 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Full Name</label>
-                    <input required type="text" value={newBooking.full_name} onChange={(e) => setNewBooking({...newBooking, full_name: e.target.value})} className={inputStyle} />
+                    <input required type="text" value={newBooking.full_name || ''} onChange={(e) => setNewBooking({...newBooking, full_name: e.target.value})} className={inputStyle} />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Email Address</label>
-                    <input type="email" value={newBooking.email} onChange={(e) => setNewBooking({...newBooking, email: e.target.value})} className={inputStyle} />
+                    <input type="email" value={newBooking.email || ''} onChange={(e) => setNewBooking({...newBooking, email: e.target.value})} className={inputStyle} />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Mobile Number</label>
-                    <input type="text" value={newBooking.phone_number} onChange={(e) => setNewBooking({...newBooking, phone_number: e.target.value})} className={inputStyle} />
+                    <input type="text" value={newBooking.phone_number || ''} onChange={(e) => setNewBooking({...newBooking, phone_number: e.target.value})} className={inputStyle} />
                   </div>
                 </div>
               </section>
@@ -632,15 +643,15 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-amber-500 block ml-1 tracking-widest">Registration Plate</label>
-                    <input required type="text" value={newBooking.license_plate} onChange={(e) => setNewBooking({...newBooking, license_plate: e.target.value.toUpperCase()})} className={yellowInputStyle} />
+                    <input required type="text" value={newBooking.license_plate || ''} onChange={(e) => setNewBooking({...newBooking, license_plate: e.target.value.toUpperCase()})} className={yellowInputStyle} />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Make / Model / Color</label>
-                    <input type="text" value={newBooking.car_make} onChange={(e) => setNewBooking({...newBooking, car_make: e.target.value})} className={inputStyle} />
+                    <input type="text" value={newBooking.car_make || ''} onChange={(e) => setNewBooking({...newBooking, car_make: e.target.value})} className={inputStyle} />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Inbound Flight</label>
-                    <input type="text" value={newBooking.flight_number} onChange={(e) => setNewBooking({...newBooking, flight_number: e.target.value.toUpperCase()})} className={inputStyle} />
+                    <input type="text" value={newBooking.flight_number || ''} onChange={(e) => setNewBooking({...newBooking, flight_number: e.target.value.toUpperCase()})} className={inputStyle} />
                   </div>
                 </div>
               </section>
@@ -654,19 +665,19 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6 tabular-nums">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Arrival Date</label>
-                    <input required type="date" value={newBooking.dropoff_date} onChange={(e) => setNewBooking({...newBooking, dropoff_date: e.target.value})} className={`${inputStyle} [color-scheme:dark]`} />
+                    <input required type="date" value={newBooking.dropoff_date || ''} onChange={(e) => setNewBooking({...newBooking, dropoff_date: e.target.value})} className={`${inputStyle} [color-scheme:dark]`} />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Time</label>
-                    <input type="time" value={newBooking.dropoff_time} onChange={(e) => setNewBooking({...newBooking, dropoff_time: e.target.value})} className={`${inputStyle} [color-scheme:dark]`} />
+                    <input type="time" value={newBooking.dropoff_time || ''} onChange={(e) => setNewBooking({...newBooking, dropoff_time: e.target.value})} className={`${inputStyle} [color-scheme:dark]`} />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Return Date</label>
-                    <input required type="date" value={newBooking.pickup_date} onChange={(e) => setNewBooking({...newBooking, pickup_date: e.target.value})} className={`${inputStyle} [color-scheme:dark]`} />
+                    <input required type="date" value={newBooking.pickup_date || ''} onChange={(e) => setNewBooking({...newBooking, pickup_date: e.target.value})} className={`${inputStyle} [color-scheme:dark]`} />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Time</label>
-                    <input type="time" value={newBooking.pickup_time} onChange={(e) => setNewBooking({...newBooking, pickup_time: e.target.value})} className={`${inputStyle} [color-scheme:dark]`} />
+                    <input type="time" value={newBooking.pickup_time || ''} onChange={(e) => setNewBooking({...newBooking, pickup_time: e.target.value})} className={`${inputStyle} [color-scheme:dark]`} />
                   </div>
                 </div>
               </section>
@@ -681,7 +692,7 @@ export default function AdminDashboard() {
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Partner Node</label>
                     <div className="relative">
-                      <select value={newBooking.company_id} onChange={(e) => setNewBooking({...newBooking, company_id: e.target.value})} className={selectStyle}>
+                      <select value={newBooking.company_id || ''} onChange={(e) => setNewBooking({...newBooking, company_id: e.target.value})} className={selectStyle}>
                         <option value="ALL">Aero Direct (Internal)</option>
                         {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                       </select>
@@ -691,7 +702,7 @@ export default function AdminDashboard() {
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Service Level</label>
                     <div className="relative">
-                      <select value={newBooking.service_type} onChange={(e) => setNewBooking({...newBooking, service_type: e.target.value})} className={selectStyle}>
+                      <select value={newBooking.service_type || ''} onChange={(e) => setNewBooking({...newBooking, service_type: e.target.value})} className={selectStyle}>
                         <option value="Meet & Greet">Meet & Greet</option>
                         <option value="Park & Ride">Park & Ride</option>
                         <option value="Hotel & Parking">Hotel & Parking</option>
@@ -703,7 +714,7 @@ export default function AdminDashboard() {
                     <label className="text-[10px] font-black uppercase text-emerald-400 block ml-1 tracking-widest">Transaction (£)</label>
                     <div className="relative">
                        <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-600" />
-                       <input type="number" step="0.01" value={newBooking.total_price} onChange={(e) => setNewBooking({...newBooking, total_price: parseFloat(e.target.value) || 0})} className={`${inputStyle} pl-12 text-emerald-400 text-xl`} />
+                       <input type="number" step="0.01" value={newBooking.total_price || 0} onChange={(e) => setNewBooking({...newBooking, total_price: parseFloat(e.target.value) || 0})} className={`${inputStyle} pl-12 text-emerald-400 text-xl`} />
                     </div>
                   </div>
                 </div>
@@ -728,23 +739,43 @@ export default function AdminDashboard() {
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-red-500"></div>
               <div>
                 <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Modify Case</h2>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-1.5"><Settings2 className="w-3.5 h-3.5" /> Override Access: {editingBooking.booking_ref}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-1.5"><Settings2 className="w-3.5 h-3.5" /> Override Access: {editingBooking?.booking_ref || 'Unknown'}</p>
               </div>
               <button onClick={() => setEditingBooking(null)} className="p-3 bg-[#1A2235] rounded-xl text-slate-400 hover:text-white transition-colors border border-slate-700/50"><X className="w-5 h-5"/></button>
             </div>
             
             <form onSubmit={handleUpdateBooking} className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar text-white">
                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Client Label</label><input required type="text" value={editingBooking.full_name} onChange={(e) => setEditingBooking({...editingBooking, full_name: e.target.value})} className={inputStyle} /></div>
-                  <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Secure Email</label><input type="email" value={editingBooking.email} onChange={(e) => setEditingBooking({...editingBooking, email: e.target.value})} className={inputStyle} /></div>
-                  <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">License ID</label><input required type="text" value={editingBooking.license_plate} onChange={(e) => setEditingBooking({...editingBooking, license_plate: e.target.value.toUpperCase()})} className={yellowInputStyle} /></div>
+                  <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Client Label</label><input required type="text" value={editingBooking?.full_name || ''} onChange={(e) => setEditingBooking({...editingBooking, full_name: e.target.value})} className={inputStyle} /></div>
+                  <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Secure Email</label><input type="email" value={editingBooking?.email || ''} onChange={(e) => setEditingBooking({...editingBooking, email: e.target.value})} className={inputStyle} /></div>
+                  <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">License ID</label><input required type="text" value={editingBooking?.license_plate || ''} onChange={(e) => setEditingBooking({...editingBooking, license_plate: e.target.value.toUpperCase()})} className={yellowInputStyle} /></div>
                </div>
               
+               {/* 🟢 ADDED: LOGISTICS SCHEDULE (DATES & TIMES) */}
+               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-6 border-t border-slate-800">
+                 <div className="space-y-2">
+                   <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Inbound Date</label>
+                   <input type="date" value={editingBooking?.dropoff_date || ''} onChange={(e) => setEditingBooking({...editingBooking, dropoff_date: e.target.value})} className={`${inputStyle} [color-scheme:dark]`} />
+                 </div>
+                 <div className="space-y-2">
+                   <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Inbound Time</label>
+                   <input type="time" value={editingBooking?.dropoff_time || ''} onChange={(e) => setEditingBooking({...editingBooking, dropoff_time: e.target.value})} className={`${inputStyle} [color-scheme:dark]`} />
+                 </div>
+                 <div className="space-y-2">
+                   <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Return Date</label>
+                   <input type="date" value={editingBooking?.pickup_date || ''} onChange={(e) => setEditingBooking({...editingBooking, pickup_date: e.target.value})} className={`${inputStyle} [color-scheme:dark]`} />
+                 </div>
+                 <div className="space-y-2">
+                   <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Return Time</label>
+                   <input type="time" value={editingBooking?.pickup_time || ''} onChange={(e) => setEditingBooking({...editingBooking, pickup_time: e.target.value})} className={`${inputStyle} [color-scheme:dark]`} />
+                 </div>
+               </div>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-800">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Service Level</label>
                   <div className="relative">
-                    <select value={editingBooking.service_type || "Meet & Greet"} onChange={(e) => setEditingBooking({...editingBooking, service_type: e.target.value})} className={selectStyle}>
+                    <select value={editingBooking?.service_type || "Meet & Greet"} onChange={(e) => setEditingBooking({...editingBooking, service_type: e.target.value})} className={selectStyle}>
                       <option value="Meet & Greet">Meet & Greet</option>
                       <option value="Park & Ride">Park & Ride</option>
                       <option value="Hotel & Parking">Hotel & Parking</option>
@@ -752,11 +783,12 @@ export default function AdminDashboard() {
                     <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                   </div>
                 </div>
+                
 
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Status Lifecycle</label>
                   <div className="relative">
-                    <select value={editingBooking.status} onChange={(e) => setEditingBooking({...editingBooking, status: e.target.value})} className={selectStyle}>
+                    <select value={editingBooking?.status || ''} onChange={(e) => setEditingBooking({...editingBooking, status: e.target.value})} className={selectStyle}>
                       <option value="pending">Awaiting Checkout</option>
                       <option value="confirmed">Confirmed: Paid</option>
                       <option value="parked">Parked: Active</option>
@@ -771,7 +803,7 @@ export default function AdminDashboard() {
                   <label className="text-[10px] font-black uppercase text-emerald-400 block ml-1 tracking-widest">Financial Override (£)</label>
                   <div className="relative group">
                     <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-600" />
-                    <input type="number" step="0.01" value={editingBooking.total_price} onChange={(e) => setEditingBooking({...editingBooking, total_price: parseFloat(e.target.value) || 0})} className={`${inputStyle} pl-12 text-emerald-400 text-xl`} />
+                    <input type="number" step="0.01" value={editingBooking?.total_price || 0} onChange={(e) => setEditingBooking({...editingBooking, total_price: parseFloat(e.target.value) || 0})} className={`${inputStyle} pl-12 text-emerald-400 text-xl`} />
                   </div>
                 </div>
               </div>
@@ -785,7 +817,7 @@ export default function AdminDashboard() {
                 ].map(field => (
                   <div key={field.k} className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 flex items-center gap-1.5"><field.icon className="w-3 h-3"/> {field.l}</label>
-                    <input type="text" value={editingBooking[field.k]} onChange={(e) => setEditingBooking({...editingBooking, [field.k]: e.target.value})} className={inputStyle} />
+                    <input type="text" value={editingBooking?.[field.k] || ''} onChange={(e) => setEditingBooking({...editingBooking, [field.k]: e.target.value})} className={inputStyle} />
                   </div>
                 ))}
               </div>

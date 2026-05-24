@@ -10,7 +10,7 @@ import {
   CalendarDays, LogOut, Plane, Network, SlidersHorizontal,
   ArrowUpDown, Award, AlertOctagon, FileText, Download,
   Percent, Image as ImageIcon, ArrowUp, ArrowDown,
-  ChevronDown, AlertCircle, Filter, Phone, Code2
+  ChevronDown, AlertCircle, Filter, Phone, Code2,Tags
 } from "lucide-react";
 
 interface Review {
@@ -34,7 +34,6 @@ const defaultCompany = {
   lhr_day2_price: 0, lhr_day5_price: 0, lhr_day8_price: 0, lhr_day11_price: 0,
   lhr_day14_price: 0, lhr_day17_price: 0, lhr_day22_price: 0, lhr_day32_price: 0,
 
-  // 🟢 NEW: Terminal Specific Data for Emails & Maps
   terminal_data: {
     T2: { address: "Terminal 2 Short Stay", postcode: "TW6 1EW", map_url: "" },
     T3: { address: "Terminal 3 Short Stay", postcode: "TW6 1QG", map_url: "" },
@@ -52,8 +51,8 @@ const defaultCompany = {
   ltn_featured: false,
   lhr_featured: false,
   overview: "",
-  phone_number: "",   
-  phone_number_2: "", 
+  phone_number: "",    
+  phone_number_2: "",  
   map_location: "Terminal Forecourt",
   on_arrival_lhr: "",
   on_arrival_ltn: "",
@@ -105,8 +104,9 @@ export default function AdminCompaniesPage() {
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingCompany, setEditingCompany] = useState<any>(null);
-  
-  // 🟢 NEW: Added "terminals" to modalTab state
+
+  const [pricingEngine, setPricingEngine] = useState<any[]>([]);
+
   const [modalTab, setModalTab] = useState<"general" | "ltn" | "lhr" | "terminals" | "financials">("general");
 
   const [companyBookings, setCompanyBookings] = useState<any[]>([]);
@@ -119,6 +119,16 @@ export default function AdminCompaniesPage() {
     airportFilter !== "ALL",
     statusFilter !== "ALL",
   ].filter(Boolean).length;
+
+  useEffect(() => {
+    fetch('https://script.google.com/macros/s/AKfycbwd4zT_JLMbufzexsJ4GKtkyvVh5EvxUQ0XA_i5cg6f19QXFutErdrU3i57TIF-D8Ku/exec', {
+      redirect: "follow",
+      headers: { "Content-Type": "text/plain;charset=utf-8" }
+    })
+      .then(res => res.json())
+      .then(data => setPricingEngine(data))
+      .catch(err => console.error("Pricing Engine Error:", err));
+  }, []);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -201,18 +211,18 @@ export default function AdminCompaniesPage() {
   };
 
   const handleAddBadge = (label: string, category: string) => {
-  if (!label) return;
-  const current = getField(editingCompany, newCompany, "badges") || [];
-  setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "badges", 
-    [...current, { label: label.toUpperCase(), category }]
-  );
-};
+    if (!label) return;
+    const current = getField(editingCompany, newCompany, "badges") || [];
+    setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "badges", 
+      [...current, { label: label.toUpperCase(), category }]
+    );
+  };
 
-const handleRemoveBadge = (index: number) => {
-  const current = getField(editingCompany, newCompany, "badges") || [];
-  const updated = current.filter((_: any, i: number) => i !== index);
-  setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "badges", updated);
-};
+  const handleRemoveBadge = (index: number) => {
+    const current = getField(editingCompany, newCompany, "badges") || [];
+    const updated = current.filter((_: any, i: number) => i !== index);
+    setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "badges", updated);
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm("⚠️ CRITICAL: Permanently delete this partner profile?")) return;
@@ -231,7 +241,6 @@ const handleRemoveBadge = (index: number) => {
     await supabase.from("companies").update({ is_active: newVal }).eq("id", company.id);
   };
 
-  // 🟢 NEW: Function to handle Terminal Data nested updates
   const updateTerminalField = (term: string, field: string, value: string) => {
     const currentData = getField(editingCompany, newCompany, "terminal_data") || defaultCompany.terminal_data;
     const newData = {
@@ -411,6 +420,9 @@ const handleRemoveBadge = (index: number) => {
           </Link>
           <Link href="/admin/companies" className="flex items-center gap-4 px-5 py-4 bg-blue-600 text-white rounded-xl shadow-[0_10px_20px_-5px_rgba(37,99,235,0.4)] transition-all hover:bg-blue-500">
             <Building2 className="w-5 h-5" /> Partner Network
+          </Link>
+          <Link href="/admin/promos" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all">
+            <Tags className="w-5 h-5 text-slate-500" /> Promo Manager
           </Link>
           <Link href="/admin/schedule" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all">
             <CalendarDays className="w-5 h-5 text-slate-500" /> Logistics Plan
@@ -730,7 +742,7 @@ const handleRemoveBadge = (index: number) => {
                   { key: "general", label: "General Info", Icon: Settings2 },
                   { key: "ltn", label: "Luton Ops", Icon: Car },
                   { key: "lhr", label: "Heathrow Ops", Icon: PlaneTakeoff },
-                  { key: "terminals", label: "LHR Terminals", Icon: MapPin }, // 🟢 NEW TAB
+                  { key: "terminals", label: "LHR Terminals", Icon: MapPin },
                   ...(editingCompany ? [{ key: "financials", label: "Invoices & Ledgers", Icon: FileText }] : []),
                 ].map(({ key, label, Icon }) => (
                   <button
@@ -767,50 +779,74 @@ const handleRemoveBadge = (index: number) => {
                           <div className="space-y-2">
                             <label className={labelCls}>Brand Name</label>
                             <input required type="text" autoComplete="off"
-                              value={getField(editingCompany, newCompany, "name")}
+                              value={getField(editingCompany, newCompany, "name") || ""}
                               onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "name", e.target.value)}
                               className={inputCls}
                             />
                             
                           </div>
-                          {/* 🟢 DYNAMIC BADGE MANAGER */}
-<div className="bg-[#1A2235] p-6 rounded-2xl border border-slate-700/50 mb-8">
-  <h3 className="text-sm font-black text-white mb-4">Manage Badges</h3>
-  <div className="flex gap-2 mb-6">
-    <input id="new-badge-label" className={inputCls} placeholder="e.g. £10 FEE EXCLUDED" />
-    <select id="new-badge-cat" className="bg-[#0F1523] border border-slate-700 text-white rounded-xl px-4 text-xs font-bold outline-none">
-      <option value="General">General</option>
-      <option value="meet-greet">Meet & Greet</option>
-      <option value="park-ride">Park & Ride</option>
-      <option value="hotel">Hotel</option>
-    </select>
-    <button 
-      type="button"
-      onClick={() => {
-        const label = (document.getElementById('new-badge-label') as HTMLInputElement).value;
-        const category = (document.getElementById('new-badge-cat') as HTMLSelectElement).value;
-        handleAddBadge(label, category);
-        (document.getElementById('new-badge-label') as HTMLInputElement).value = '';
-      }}
-      className="bg-blue-600 px-6 rounded-xl text-white font-black hover:bg-blue-500 transition-colors"
-    >
-      +
-    </button>
-  </div>
-  <div className="flex flex-wrap gap-2">
-    {(getField(editingCompany, newCompany, "badges") || []).map((b: any, i: number) => (
-      <div key={i} className="flex items-center gap-2 bg-blue-600 px-3 py-1.5 rounded-lg text-[10px] font-bold text-white uppercase shadow-sm">
-        {b.label} <span className="opacity-50 text-[8px]">({b.category})</span>
-        <button type="button" onClick={() => handleRemoveBadge(i)} className="hover:text-red-300">×</button>
-      </div>
-    ))}
-  </div>
-</div>
+                          
+                          <div className="bg-[#1A2235] p-6 rounded-2xl border border-slate-700/50 mb-8">
+                            <h3 className="text-sm font-black text-white mb-4">Manage Badges</h3>
+                            <div className="flex gap-2 mb-6">
+                              <input id="new-badge-label" className={inputCls} placeholder="e.g. £10 FEE EXCLUDED" />
+                              <select id="new-badge-cat" className="bg-[#0F1523] border border-slate-700 text-white rounded-xl px-4 text-xs font-bold outline-none">
+                                <option value="General">General</option>
+                                <option value="meet-greet">Meet & Greet</option>
+                                <option value="park-ride">Park & Ride</option>
+                                <option value="hotel">Hotel</option>
+                              </select>
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  const label = (document.getElementById('new-badge-label') as HTMLInputElement).value;
+                                  const category = (document.getElementById('new-badge-cat') as HTMLSelectElement).value;
+                                  handleAddBadge(label, category);
+                                  (document.getElementById('new-badge-label') as HTMLInputElement).value = '';
+                                }}
+                                className="bg-blue-600 px-6 rounded-xl text-white font-black hover:bg-blue-500 transition-colors"
+                              >
+                                +
+                              </button>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {(getField(editingCompany, newCompany, "badges") || []).map((b: any, i: number) => (
+                                <div key={i} className="flex items-center gap-2 bg-blue-600 px-3 py-1.5 rounded-lg text-[10px] font-bold text-white uppercase shadow-sm">
+                                  {b.label} <span className="opacity-50 text-[8px]">({b.category})</span>
+                                  <button type="button" onClick={() => handleRemoveBadge(i)} className="hover:text-red-300">×</button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {editingCompany && ["APD", "Airport Parking Bay", "24/7 meet and greet", "24/7 Meet & Greet"].includes(editingCompany.name) && (
+                            <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-6 mt-8 md:col-span-2">
+                              <h4 className="text-blue-400 font-black text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <SlidersHorizontal className="w-4 h-4" /> Live Pricing Engine (Date Sets)
+                              </h4>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {pricingEngine.map((p, idx) => (
+                                  <div key={idx} className="bg-[#0F1523] p-4 rounded-xl border border-slate-700 shadow-sm">
+                                    <p className="text-blue-500 font-black text-sm mb-1">{p.PriceSet}</p>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                                      {p.StartDate} to {p.EndDate}
+                                    </p>
+                                    <p className="text-xl font-black text-white mt-2">£{p.StartingPrice || "0.00"}</p>
+                                    <p className="text-[9px] text-slate-400 uppercase mt-1 tracking-widest">Starting Rate</p>
+                                  </div>
+                                ))}
+                                {pricingEngine.length === 0 && (
+                                  <p className="text-xs text-slate-500 italic col-span-3">Loading live pricing data...</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                          
                           <div className="space-y-2">
                             <label className={labelCls}>Service Category</label>
                             <div className="relative">
                               <select
-                                value={getField(editingCompany, newCompany, "category")}
+                                value={getField(editingCompany, newCompany, "category") || ""}
                                 onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "category", e.target.value)}
                                 className={filterSelectCls}
                               >
@@ -821,10 +857,11 @@ const handleRemoveBadge = (index: number) => {
                               <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                             </div>
                           </div>
+                          
                           <div className="space-y-2">
                             <label className={labelCls}><ImageIcon className="w-3 h-3 inline mr-1 text-blue-500" /> Logo URL</label>
                             <input type="text" autoComplete="off" placeholder="https://..."
-                              value={getField(editingCompany, newCompany, "logo_url")}
+                              value={getField(editingCompany, newCompany, "logo_url") || ""}
                               onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "logo_url", e.target.value)}
                               className={inputCls}
                             />
@@ -833,7 +870,7 @@ const handleRemoveBadge = (index: number) => {
                             <label className={labelCls}><Percent className="w-3 h-3 inline mr-1 text-emerald-500" /> Commission Cut (%)</label>
                             <div className="relative">
                                <input required type="number" step="0.1" min="0" max="100"
-                                 value={getField(editingCompany, newCompany, "commission_rate")}
+                                 value={getField(editingCompany, newCompany, "commission_rate") || 0}
                                  onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "commission_rate", parseFloat(e.target.value) || 0)}
                                  className={`${inputCls} text-emerald-400 !text-xl`}
                                />
@@ -841,7 +878,7 @@ const handleRemoveBadge = (index: number) => {
                             <div className="mt-2 mx-1 h-1 bg-slate-800 rounded-full overflow-hidden">
                               <div
                                 className="h-full bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full transition-all"
-                                style={{ width: `${Math.min(getField(editingCompany, newCompany, "commission_rate"), 100)}%` }}
+                                style={{ width: `${Math.min(getField(editingCompany, newCompany, "commission_rate") || 0, 100)}%` }}
                               />
                             </div>
                           </div>
@@ -851,7 +888,7 @@ const handleRemoveBadge = (index: number) => {
                           <div className="space-y-2">
                             <label className={labelCls}><Phone className="w-3.5 h-3.5 inline mr-1 text-amber-500" /> Dispatch Phone 1 (Primary)</label>
                             <input type="text" autoComplete="off" placeholder="07700..."
-                              value={getField(editingCompany, newCompany, "phone_number")}
+                              value={getField(editingCompany, newCompany, "phone_number") || ""}
                               onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "phone_number", e.target.value)}
                               className={inputCls}
                             />
@@ -859,7 +896,7 @@ const handleRemoveBadge = (index: number) => {
                           <div className="space-y-2">
                             <label className={labelCls}><Phone className="w-3.5 h-3.5 inline mr-1 text-amber-500" /> Dispatch Phone 2 (Optional)</label>
                             <input type="text" autoComplete="off" placeholder="07700..."
-                              value={getField(editingCompany, newCompany, "phone_number_2")}
+                              value={getField(editingCompany, newCompany, "phone_number_2") || ""}
                               onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "phone_number_2", e.target.value)}
                               className={inputCls}
                             />
@@ -870,7 +907,7 @@ const handleRemoveBadge = (index: number) => {
                           <div className="space-y-2 md:col-span-2">
                             <label className={labelCls}><MapPin className="w-3.5 h-3.5 inline mr-1 text-emerald-500" /> Physical Address</label>
                             <input type="text" autoComplete="off"
-                              value={getField(editingCompany, newCompany, "address")}
+                              value={getField(editingCompany, newCompany, "address") || ""}
                               onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "address", e.target.value)}
                               className={inputCls}
                             />
@@ -878,7 +915,7 @@ const handleRemoveBadge = (index: number) => {
                           <div className="space-y-2">
                             <label className={labelCls}>Postcode</label>
                             <input type="text" autoComplete="off"
-                              value={getField(editingCompany, newCompany, "postcode")}
+                              value={getField(editingCompany, newCompany, "postcode") || ""}
                               onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "postcode", e.target.value)}
                               className={inputCls}
                             />
@@ -887,7 +924,7 @@ const handleRemoveBadge = (index: number) => {
                         <div className="space-y-2 pt-4">
                           <label className={labelCls}><MapPin className="w-3.5 h-3.5 inline mr-1 text-emerald-500" /> Google Map Embed URL (src only)</label>
                           <input type="text" autoComplete="off" placeholder="http://googleusercontent.com/maps.google.com/..."
-                            value={getField(editingCompany, newCompany, "map_url")}
+                            value={getField(editingCompany, newCompany, "map_url") || ""}
                             onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "map_url", e.target.value)}
                             className={inputCls}
                           />
@@ -896,17 +933,17 @@ const handleRemoveBadge = (index: number) => {
                         <div className="space-y-2 pt-4 border-t border-slate-800">
                           <label className={labelCls}><Code2 className="w-3.5 h-3.5 inline mr-1 text-blue-500" /> Marketing Overview (HTML Support)</label>
                           <textarea rows={4}
-                            value={getField(editingCompany, newCompany, "overview")}
+                            value={getField(editingCompany, newCompany, "overview") || ""}
                             onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "overview", e.target.value)}
                             className={textareaCls}
                             placeholder="Highlight key selling points..."
                           />
-                          <p className="text-[10px] text-blue-500 font-bold uppercase tracking-widest mt-2">💡 Pro Tip: Use &lt;br/&gt; for line breaks and &lt;b&gt;Text&lt;/b&gt; for bolding.</p>
+                          <p className="text-[10px] text-blue-500 font-bold uppercase tracking-widest mt-2">💡 Pro Tip: Use <br/> for line breaks and <b>Text</b> for bolding.</p>
                         </div>
                       </div>
                     )}
 
-                    {/* 🟢 NEW TAB: TERMINALS */}
+                    {/* TAB: TERMINALS */}
                     {modalTab === "terminals" && (
                       <div className="space-y-6 text-white">
                         <div className="bg-[#131A2B] p-6 rounded-2xl border border-slate-800 mb-6">
@@ -952,7 +989,7 @@ const handleRemoveBadge = (index: number) => {
                               <p className="text-slate-500 text-xs mt-1">Enable to show in LTN search results.</p>
                             </div>
                             <input type="checkbox"
-                              checked={getField(editingCompany, newCompany, "operates_at_luton")}
+                              checked={!!getField(editingCompany, newCompany, "operates_at_luton")}
                               onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "operates_at_luton", e.target.checked)}
                               className="accent-blue-500 w-6 h-6 cursor-pointer"
                             />
@@ -965,7 +1002,7 @@ const handleRemoveBadge = (index: number) => {
                               <div className="space-y-2">
                                 <label className={labelCls}><span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5" />Day 1: Starting Price (£)</label>
                                 <input type="number" step="0.01"
-                                  value={getField(editingCompany, newCompany, "luton_price")}
+                                  value={getField(editingCompany, newCompany, "luton_price") || 0}
                                   onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "luton_price", parseFloat(e.target.value) || 0)}
                                   className={`${inputCls} !text-2xl text-blue-400`}
                                 />
@@ -1004,7 +1041,7 @@ const handleRemoveBadge = (index: number) => {
                                   <div key={pivot.key} className="space-y-2">
                                     <label className={labelCls}>{pivot.label}</label>
                                     <input type="number" step="0.01"
-                                      value={getField(editingCompany, newCompany, pivot.key)}
+                                      value={getField(editingCompany, newCompany, pivot.key) || 0}
                                       onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, pivot.key, parseFloat(e.target.value) || 0)}
                                       className={`${inputCls} !py-3 !text-emerald-400`}
                                     />
@@ -1017,7 +1054,7 @@ const handleRemoveBadge = (index: number) => {
                               <div className="space-y-2">
                                 <label className={labelCls}>Arrival Instructions (HTML Support)</label>
                                 <textarea rows={5}
-                                  value={getField(editingCompany, newCompany, "on_arrival_ltn")}
+                                  value={getField(editingCompany, newCompany, "on_arrival_ltn") || ""}
                                   onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "on_arrival_ltn", e.target.value)}
                                   className={textareaCls}
                                 />
@@ -1025,13 +1062,13 @@ const handleRemoveBadge = (index: number) => {
                               <div className="space-y-2">
                                 <label className={labelCls}>Return Instructions (HTML Support)</label>
                                 <textarea rows={5}
-                                  value={getField(editingCompany, newCompany, "on_return_ltn")}
+                                  value={getField(editingCompany, newCompany, "on_return_ltn") || ""}
                                   onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "on_return_ltn", e.target.value)}
                                   className={textareaCls}
                                 />
                               </div>
                             </div>
-                            <p className="text-[10px] text-blue-500 font-bold uppercase tracking-widest mt-3">💡 Pro Tip: Use &lt;br/&gt; for line breaks to make instructions easier to read on mobile.</p>
+                            <p className="text-[10px] text-blue-500 font-bold uppercase tracking-widest mt-3">💡 Pro Tip: Use <br/> for line breaks to make instructions easier to read on mobile.</p>
 
                             <ReviewSection airport="ltn" color="blue"
                               reviews={getField(editingCompany, newCompany, "ltn_reviews") || []}
@@ -1054,7 +1091,7 @@ const handleRemoveBadge = (index: number) => {
                               <p className="text-slate-500 text-xs mt-1">Enable to show in LHR search results.</p>
                             </div>
                             <input type="checkbox"
-                              checked={getField(editingCompany, newCompany, "operates_at_heathrow")}
+                              checked={!!getField(editingCompany, newCompany, "operates_at_heathrow")}
                               onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "operates_at_heathrow", e.target.checked)}
                               className="accent-purple-500 w-6 h-6 cursor-pointer"
                             />
@@ -1067,7 +1104,7 @@ const handleRemoveBadge = (index: number) => {
                               <div className="space-y-2">
                                 <label className={labelCls}><span className="inline-block w-1.5 h-1.5 rounded-full bg-purple-500 mr-1.5" />Day 1: Starting Price (£)</label>
                                 <input type="number" step="0.01"
-                                  value={getField(editingCompany, newCompany, "heathrow_price")}
+                                  value={getField(editingCompany, newCompany, "heathrow_price") || 0}
                                   onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "heathrow_price", parseFloat(e.target.value) || 0)}
                                   className={`${inputCls} !text-2xl text-purple-400`}
                                 />
@@ -1106,7 +1143,7 @@ const handleRemoveBadge = (index: number) => {
                                   <div key={pivot.key} className="space-y-2">
                                     <label className={labelCls}>{pivot.label}</label>
                                     <input type="number" step="0.01"
-                                      value={getField(editingCompany, newCompany, pivot.key)}
+                                      value={getField(editingCompany, newCompany, pivot.key) || 0}
                                       onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, pivot.key, parseFloat(e.target.value) || 0)}
                                       className={`${inputCls} !py-3 !text-emerald-400`}
                                     />
@@ -1119,7 +1156,7 @@ const handleRemoveBadge = (index: number) => {
                               <div className="space-y-2">
                                 <label className={labelCls}>Arrival Instructions (HTML Support)</label>
                                 <textarea rows={5}
-                                  value={getField(editingCompany, newCompany, "on_arrival_lhr")}
+                                  value={getField(editingCompany, newCompany, "on_arrival_lhr") || ""}
                                   onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "on_arrival_lhr", e.target.value)}
                                   className={textareaCls}
                                 />
@@ -1127,13 +1164,13 @@ const handleRemoveBadge = (index: number) => {
                               <div className="space-y-2">
                                 <label className={labelCls}>Return Instructions (HTML Support)</label>
                                 <textarea rows={5}
-                                  value={getField(editingCompany, newCompany, "on_return_lhr")}
+                                  value={getField(editingCompany, newCompany, "on_return_lhr") || ""}
                                   onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "on_return_lhr", e.target.value)}
                                   className={textareaCls}
                                 />
                               </div>
                             </div>
-                            <p className="text-[10px] text-blue-500 font-bold uppercase tracking-widest mt-3">💡 Pro Tip: Use &lt;br/&gt; for line breaks to make instructions easier to read on mobile.</p>
+                            <p className="text-[10px] text-blue-500 font-bold uppercase tracking-widest mt-3">💡 Pro Tip: Use <br/> for line breaks to make instructions easier to read on mobile.</p>
 
                             <ReviewSection airport="lhr" color="purple"
                               reviews={getField(editingCompany, newCompany, "lhr_reviews") || []}
@@ -1276,7 +1313,7 @@ function ReviewSection({
               <div className="flex-1 space-y-2">
                 <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block ml-1">Reviewer Name</label>
                 <input
-                  value={rev.author}
+                  value={rev.author || ""}
                   onChange={(e) => onUpdate(idx, "author", e.target.value)}
                   className={inputStyle}
                   placeholder="Author Name"
@@ -1286,8 +1323,8 @@ function ReviewSection({
                 <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block ml-1">Rating</label>
                 <div className="relative">
                   <select
-                    value={rev.rating}
-                    onChange={(e) => onUpdate(idx, "rating", parseInt(e.target.value))}
+                    value={rev.rating || 5}
+                    onChange={(e) => onUpdate(idx, "rating", parseInt(e.target.value) || 5)}
                     className={`w-full appearance-none bg-[#1A2235] border border-slate-700/50 hover:border-${color}-500/50 rounded-xl px-5 py-4 text-sm text-amber-400 font-bold outline-none cursor-pointer focus:ring-2 ${ring} transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white]`}
                   >
                     {[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} Stars</option>)}
@@ -1299,7 +1336,7 @@ function ReviewSection({
             <div className="space-y-2">
               <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block ml-1">Review Body</label>
               <textarea
-                value={rev.comment}
+                value={rev.comment || ""}
                 onChange={(e) => onUpdate(idx, "comment", e.target.value)}
                 className={`${inputStyle} leading-relaxed resize-none`}
                 rows={3}
