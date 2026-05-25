@@ -65,11 +65,13 @@ const formatDate = (dateString: string | null) => {
 // Centralized Pricing Logic (Hybrid)
 const getCalculatedPrice = (option: any, duration: number, isHeathrow: boolean, pricingEngine: any[], dropDateObj: Date) => {
   const providerName = option.name.trim(); // Trim whitespace
-  const dynamicProviders = ["APD", "Airport Parking Bay", "24/7 Meet & Greet"];
+  const dynamicProviders = ["APD", "Airport Parking Bay", "24/7 meet and greet", "24/7 Meet & Greet"];
   
   // 1. Check if provider is in list (Case insensitive)
   const isDynamic = dynamicProviders.some(p => p.toLowerCase() === providerName.toLowerCase());
   
+  let rawPrice = 0;
+
   if (isDynamic && pricingEngine.length > 0) {
     const activeSet = pricingEngine.find(set => {
       const start = safeParseDate(set.StartDate);
@@ -83,41 +85,47 @@ const getCalculatedPrice = (option: any, duration: number, isHeathrow: boolean, 
       
       let surcharge = 0;
       if (providerName.toLowerCase().includes("24/7")) surcharge = 5;
-      if (providerName.toUpperCase() === "APD") surcharge = 8;
+      if (providerName.toLowerCase() === "apd") surcharge = 8;
       
-      const total = (dailyPrice + surcharge) * 1.10;
-      console.log(`Dynamic Match: ${providerName}, Duration: ${duration}, RateKey: ${rateKey}, Price: ${total}`);
-      return total;
-    } else {
-      console.log(`No matching Date Set found for ${providerName} on ${dropDateObj.toDateString()}`);
-    }
+      rawPrice = dailyPrice + surcharge;
+    } 
+  } 
+
+  if (rawPrice === 0) {
+    // --- LEGACY MATH FALLBACK ---
+    let tot = 0;
+    const p1 = parsePrice(isHeathrow ? option.heathrow_price : option.luton_price, 0);
+    const p2 = parsePrice(isHeathrow ? option.lhr_day2_price : option.ltn_day2_price, p1);
+    const p5 = parsePrice(isHeathrow ? option.lhr_day5_price : option.ltn_day5_price, p2);
+    const p8 = parsePrice(isHeathrow ? option.lhr_day8_price : option.ltn_day8_price, p5);
+    const p11 = parsePrice(isHeathrow ? option.lhr_day11_price : option.ltn_day11_price, p8);
+    const p14 = parsePrice(isHeathrow ? option.lhr_day14_price : option.ltn_day14_price, p11);
+    const p17 = parsePrice(isHeathrow ? option.lhr_day17_price : option.ltn_day17_price, p14);
+    const p22 = parsePrice(isHeathrow ? option.lhr_day22_price : option.ltn_day22_price, p17);
+    const p32 = parsePrice(isHeathrow ? option.lhr_day32_price : option.ltn_day32_price, p22);
+
+    if (duration <= 1) tot = p1;
+    else if (duration === 2) tot = p2;
+    else if (duration <= 5) tot = p2 + ((p5 - p2) / 3) * (duration - 2);
+    else if (duration <= 8) tot = p5 + ((p8 - p5) / 3) * (duration - 5);
+    else if (duration <= 11) tot = p8 + ((p11 - p8) / 3) * (duration - 8);
+    else if (duration <= 14) tot = p11 + ((p14 - p11) / 3) * (duration - 11);
+    else if (duration <= 17) tot = p14 + ((p17 - p14) / 3) * (duration - 14);
+    else if (duration <= 22) tot = p17 + ((p22 - p17) / 5) * (duration - 17);
+    else if (duration <= 32) tot = p22 + ((p32 - p22) / 10) * (duration - 22);
+    else tot = p32 + ((p32 - p22) / 10) * (duration - 32); 
+    
+    rawPrice = tot;
   }
 
-  // --- LEGACY MATH FALLBACK ---
-  let tot = 0;
-  const p1 = parsePrice(isHeathrow ? option.heathrow_price : option.luton_price, 0);
-  const p2 = parsePrice(isHeathrow ? option.lhr_day2_price : option.ltn_day2_price, p1);
-  const p5 = parsePrice(isHeathrow ? option.lhr_day5_price : option.ltn_day5_price, p2);
-  const p8 = parsePrice(isHeathrow ? option.lhr_day8_price : option.ltn_day8_price, p5);
-  const p11 = parsePrice(isHeathrow ? option.lhr_day11_price : option.ltn_day11_price, p8);
-  const p14 = parsePrice(isHeathrow ? option.lhr_day14_price : option.ltn_day14_price, p11);
-  const p17 = parsePrice(isHeathrow ? option.lhr_day17_price : option.ltn_day17_price, p14);
-  const p22 = parsePrice(isHeathrow ? option.lhr_day22_price : option.ltn_day22_price, p17);
-  const p32 = parsePrice(isHeathrow ? option.lhr_day32_price : option.ltn_day32_price, p22);
+  // 🟢 APPLY MODIFIER FROM DATABASE
+  const modifier = option.price_modifier || 1.0; 
+  const finalPrice = (rawPrice * modifier) * 1.10; 
+  const originalPrice = rawPrice * 1.10; 
 
-  if (duration <= 1) tot = p1;
-  else if (duration === 2) tot = p2;
-  else if (duration <= 5) tot = p2 + ((p5 - p2) / 3) * (duration - 2);
-  else if (duration <= 8) tot = p5 + ((p8 - p5) / 3) * (duration - 5);
-  else if (duration <= 11) tot = p8 + ((p11 - p8) / 3) * (duration - 8);
-  else if (duration <= 14) tot = p11 + ((p14 - p11) / 3) * (duration - 11);
-  else if (duration <= 17) tot = p14 + ((p17 - p14) / 3) * (duration - 14);
-  else if (duration <= 22) tot = p17 + ((p22 - p17) / 5) * (duration - 17);
-  else if (duration <= 32) tot = p22 + ((p32 - p22) / 10) * (duration - 22);
-  else tot = p32 + ((p32 - p22) / 10) * (duration - 32); 
-
-  return tot * 1.10;
+  return { original: originalPrice, final: finalPrice, modifier };
 };
+
 // ----------------------------------------------------------------------
 // 🟢 MODULAR COMPONENT: MODIFY SEARCH MODAL
 // ----------------------------------------------------------------------
@@ -190,8 +198,9 @@ function ModifySearchModal({
 // ----------------------------------------------------------------------
 // 1. PREMIUM PARKING CARD COMPONENT
 // ----------------------------------------------------------------------
-function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData, calculatedPrice }: any) {
+function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData, calculatedPriceObj }: any) {
   const [activeTab, setActiveTab] = useState('overview');
+  const { original, final, modifier } = calculatedPriceObj;
   
   const getBadgeIcon = (label: string) => {
     const l = label.toUpperCase();
@@ -215,7 +224,8 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData, calc
     return Info; 
   };
 
-  const avgDailyRate = calculatedPrice / duration;
+  const avgDailyRate = final / duration;
+  const isDiscounted = modifier < 1.0;
   
   const isSoldOut = isHeathrow ? option.lhr_sold_out : option.ltn_sold_out;
   const isPremium = (isHeathrow ? option.lhr_featured : option.ltn_featured) || option.name.toLowerCase().includes("24/7");
@@ -246,16 +256,26 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData, calc
       <div className="flex-1 p-5 sm:p-6 md:p-8 lg:p-10 relative z-10 flex flex-col">
         <div className="mb-6 md:mb-8">
           <div className="flex flex-wrap gap-2 mb-4">
+            
+            {/* 🟢 NEW: DISCOUNT BADGE */}
+            {isDiscounted && !isSoldOut && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] animate-pulse shadow-sm">
+                <Tag className="w-3 h-3 fill-current" /> {Math.round((1 - modifier) * 100)}% Launch Special
+              </div>
+            )}
+
             {aiData.isLastMinute === 'true' && !isSoldOut && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] animate-pulse">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-lg text-[9px] font-black uppercase tracking-[0.2em]">
                 <Zap className="w-3 h-3 fill-current" /> High Demand
               </div>
             )}
+            
             {isPremium && !isSoldOut && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-lg text-[9px] font-black uppercase tracking-[0.2em]">
                 <Sparkles className="w-3 h-3 text-blue-400" /> {isShortTrip && isMeetGreet ? "Best Weekend Value" : isLongTrip && isParkRide ? "Best Long-Stay Saver" : "Aero Recommended"}
               </div>
             )}
+            
             {aiData.ulezRisk === 'true' && isHeathrow && !isSoldOut && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-[9px] font-black uppercase tracking-[0.2em]">
                 <AlertCircle className="w-3 h-3" /> ULEZ Zone Warning
@@ -390,23 +410,6 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData, calc
                        </div>
                      )) : <p className={`text-xs ${isPremium ? 'text-slate-500' : 'text-slate-600'}`}>Aero verified: No recent customer reviews found.</p>}
                   </div>
-
-                  {/* 🟢 TRUSTPILOT CALL-TO-ACTION ADDED HERE */}
-                  <div className={`mt-auto pt-5 border-t ${isPremium ? 'border-slate-800' : 'border-slate-800/50'} flex flex-col items-center text-center`}>
-                    <h4 className="text-white font-black text-xs mb-1">Have you parked with us?</h4>
-                    <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest mb-4">
-                      Let others know about your experience.
-                    </p>
-                    <a 
-                      href="https://uk.trustpilot.com/review/aeroparkdirect.co.uk" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="px-6 py-3 bg-[#1A2235] border border-slate-700 hover:bg-emerald-600 hover:border-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 shadow-sm"
-                    >
-                      <Star className="w-3.5 h-3.5 fill-current text-emerald-400 group-hover:text-white" /> Write a Review on Trustpilot
-                    </a>
-                  </div>
-
                 </div>
               )}
             </div>
@@ -422,9 +425,17 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData, calc
       <div className={`w-full lg:w-[320px] xl:w-[340px] p-5 sm:p-6 md:p-8 lg:p-10 shrink-0 relative z-10 flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center border-t border-dashed lg:border-t-0 lg:border-l transition-colors ${stubBg} ${borderClass}`}>
         <div className="text-left lg:text-right flex flex-col justify-center">
           <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] mb-0.5 sm:mb-2 text-slate-500">Total Stay Cost</p>
-          <p className={`text-3xl sm:text-4xl lg:text-6xl font-black tracking-tighter ${textPrimary} ${isSoldOut ? 'line-through opacity-30' : 'drop-shadow-md'}`}>
-            £{calculatedPrice.toFixed(2)}
-          </p>
+          
+          {/* 🟢 NEW: STRIKETHROUGH LOGIC */}
+          <div className="flex flex-col items-start lg:items-end">
+             {isDiscounted && !isSoldOut && (
+                <p className="text-sm sm:text-base font-black text-slate-500 line-through mb-1">£{original.toFixed(2)}</p>
+             )}
+             <p className={`text-3xl sm:text-4xl lg:text-6xl font-black tracking-tighter ${isDiscounted ? 'text-emerald-400' : textPrimary} ${isSoldOut ? 'line-through opacity-30' : 'drop-shadow-md'}`}>
+               £{final.toFixed(2)}
+             </p>
+          </div>
+
           <p className={`text-[9px] sm:text-[11px] font-bold uppercase tracking-widest mt-1 lg:mb-8 hidden lg:block ${isPremium ? 'text-blue-400' : 'text-slate-400'}`}>
             {isSoldOut ? 'Sold Out' : `Averaging £${avgDailyRate.toFixed(2)} / Day`}
           </p>
@@ -432,7 +443,7 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData, calc
         
         <button 
           disabled={isSoldOut}
-          onClick={() => handleBooking(option, calculatedPrice)}
+          onClick={() => handleBooking(option, final)}
           className={`group h-12 sm:h-14 px-6 lg:w-full font-black rounded-xl flex items-center justify-center gap-2 sm:gap-3 uppercase tracking-[0.15em] text-[11px] sm:text-xs transition-all duration-300 active:scale-95 shadow-lg shrink-0 ${
             isSoldOut 
               ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' 
@@ -526,13 +537,13 @@ function ResultsContent() {
   // 2. Define the date object for pricing
   const dropDateObj = safeParseDate(dropoff);
 
-  // 3. Map to add the 'finalPrice' field using your pricing engine
+  // 3. Map to add the 'calculatedPriceObj' field 
   const withPrices = filtered.map(c => {
-    const finalPrice = getCalculatedPrice(c, duration, isHeathrow, pricingEngine, dropDateObj);
-    return { ...c, finalPrice };
+    const priceData = getCalculatedPrice(c, duration, isHeathrow, pricingEngine, dropDateObj);
+    return { ...c, calculatedPriceObj: priceData };
   });
 
-  // 4. Sort by the new finalPrice
+  // 4. Sort by the new final price
   withPrices.sort((a, b) => {
     const aSold = isHeathrow ? a.lhr_sold_out : a.ltn_sold_out;
     const bSold = isHeathrow ? b.lhr_sold_out : b.ltn_sold_out;
@@ -544,7 +555,7 @@ function ResultsContent() {
     if (aFeatured && !bFeatured) return -1;
     if (!aFeatured && bFeatured) return 1;
     
-    return a.finalPrice - b.finalPrice;
+    return a.calculatedPriceObj.final - b.calculatedPriceObj.final;
   });
 
   return withPrices;
@@ -650,7 +661,7 @@ function ResultsContent() {
               isHeathrow={isHeathrow}
               handleBooking={handleBooking}
               aiData={aiData}
-              calculatedPrice={option.finalPrice} 
+              calculatedPriceObj={option.calculatedPriceObj} 
             />
           ))
         )}

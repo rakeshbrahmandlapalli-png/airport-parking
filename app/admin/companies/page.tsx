@@ -10,7 +10,7 @@ import {
   CalendarDays, LogOut, Plane, Network, SlidersHorizontal,
   ArrowUpDown, Award, AlertOctagon, FileText, Download,
   Percent, Image as ImageIcon, ArrowUp, ArrowDown,
-  ChevronDown, AlertCircle, Filter, Phone, Code2, Tags
+  ChevronDown, AlertCircle, Filter, Phone, Code2, Tags, Zap
 } from "lucide-react";
 
 interface Review {
@@ -29,6 +29,7 @@ const defaultCompany = {
   category: "meet-greet",
   luton_price: 0,
   heathrow_price: 0,
+  price_modifier: 1.0, // 🟢 NEW: Default base price modifier
   
   ltn_day2_price: 0, ltn_day5_price: 0, ltn_day8_price: 0, ltn_day11_price: 0,
   ltn_day14_price: 0, ltn_day17_price: 0, ltn_day22_price: 0, ltn_day32_price: 0,
@@ -212,6 +213,27 @@ export default function AdminCompaniesPage() {
     }
   };
 
+  // ─── 🟢 MASTER OVERRIDE FUNCTION ─────────────────────────────────────
+  const masterUpdate = async (val: number) => {
+    const isIncrease = val > 1;
+    const isReset = val === 1;
+    const text = isReset ? "RESET all prices to BASE" : `apply a ${isIncrease ? '+' : ''}${Math.round((val-1)*100)}% modifier to ALL operators`;
+    
+    if (!confirm(`⚠️ Are you sure you want to ${text}?`)) return;
+    
+    setIsSaving(true);
+    try {
+      const { error } = await supabase.from("companies").update({ price_modifier: val }).neq("id", "0");
+      if (error) throw error;
+      await fetchCompanies();
+      alert(`Successfully updated all operators to ${val}x modifier.`);
+    } catch (error: any) {
+      alert("Error updating master pricing: " + error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleAddBadge = (label: string, category: string) => {
     if (!label) return;
     const current = getField(editingCompany, newCompany, "badges") || [];
@@ -339,7 +361,7 @@ export default function AdminCompaniesPage() {
       author: "Customer Name", 
       rating: 5, 
       comment: "Write review here...", 
-      date: new Date().toISOString().split('T')[0], // Defaults to YYYY-MM-DD
+      date: new Date().toISOString().split('T')[0], 
       verified: true,
       source: "Trustpilot"
     };
@@ -469,7 +491,7 @@ export default function AdminCompaniesPage() {
         </header>
 
         {/* Metrics HUD */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
           {[
             { label: "Total Network", value: totalPartners, color: "blue", Icon: Network },
             { label: "LTN Active", value: ltnCoverage, color: "emerald", Icon: Car },
@@ -483,6 +505,29 @@ export default function AdminCompaniesPage() {
               <div className={`w-24 h-24 bg-${color}-500/5 rounded-full absolute -right-6 -bottom-6 blur-2xl`}></div>
             </div>
           ))}
+        </div>
+
+        {/* 🟢 NEW: MASTER PRICING ENGINE */}
+        <div className="bg-gradient-to-r from-blue-900/20 to-indigo-900/20 rounded-[2rem] border border-blue-500/20 shadow-lg p-6 md:p-8 mb-10 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] pointer-events-none"></div>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+            <div>
+              <h2 className="text-xl font-black text-white flex items-center gap-2"><Zap className="w-5 h-5 text-blue-400" /> Master Pricing Engine</h2>
+              <p className="text-xs text-slate-400 mt-1 font-bold">Apply a global price modifier across ALL active operators instantly.</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {[0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3].map(v => (
+                <button 
+                  key={v} 
+                  type="button"
+                  onClick={() => masterUpdate(v)} 
+                  className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all active:scale-95 border ${v === 1 ? 'bg-slate-800 text-white border-slate-700 hover:bg-slate-700' : v < 1 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20'}`}
+                >
+                  {v === 1 ? 'RESET TO BASE' : `${v > 1 ? '+' : ''}${Math.round((v-1)*100)}%`}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* ── SEARCH RIBBON ─────────────────────────────── */}
@@ -573,9 +618,7 @@ export default function AdminCompaniesPage() {
                     Partner Profile <SortIcon field="name" sortBy={sortBy} sortOrder={sortOrder} />
                   </th>
                   <th className="px-8 py-6 text-center">Status</th>
-                  <th className="px-8 py-6 cursor-pointer hover:text-white transition-colors" onClick={() => toggleSort("commission_rate")}>
-                    Commission <SortIcon field="commission_rate" sortBy={sortBy} sortOrder={sortOrder} />
-                  </th>
+                  <th className="px-8 py-6 text-center">Modifier</th>
                   <th className="px-8 py-6 text-right cursor-pointer hover:text-white transition-colors" onClick={() => toggleSort("luton_price")}>
                     LTN Base Rate <SortIcon field="luton_price" sortBy={sortBy} sortOrder={sortOrder} />
                   </th>
@@ -647,9 +690,14 @@ export default function AdminCompaniesPage() {
                         </button>
                       </td>
 
-                      <td className="px-8 py-7">
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-500/20 bg-blue-500/10 text-blue-400 text-xs font-black shadow-sm">
-                          <Percent className="w-3.5 h-3.5" /> {c.commission_rate || 15}%
+                      <td className="px-8 py-7 text-center">
+                        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black shadow-sm border ${
+                          (c.price_modifier || 1) === 1 
+                            ? 'border-slate-700 bg-slate-800 text-slate-400' 
+                            : (c.price_modifier < 1 ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400' : 'border-rose-500/20 bg-rose-500/10 text-rose-400')
+                        }`}>
+                          <Zap className="w-3.5 h-3.5" /> 
+                          {(c.price_modifier || 1) === 1 ? 'BASE' : `${c.price_modifier > 1 ? '+' : ''}${Math.round(((c.price_modifier || 1) - 1) * 100)}%`}
                         </div>
                       </td>
 
@@ -779,6 +827,29 @@ export default function AdminCompaniesPage() {
                     {/* TAB: GENERAL */}
                     {modalTab === "general" && (
                       <div className="space-y-8 text-white">
+                        
+                        {/* 🟢 NEW: INDIVIDUAL PRICE MODIFIER */}
+                        <div className="bg-[#1A2235] p-6 rounded-2xl border border-slate-700/50">
+                          <h3 className="text-sm font-black text-white mb-2 flex items-center gap-2"><Zap className="w-4 h-4 text-amber-400"/> Custom Price Modifier</h3>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-4">Adjust pricing for this specific operator.</p>
+                          <div className="flex flex-wrap gap-2">
+                            {[0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3].map(v => (
+                              <button
+                                key={v}
+                                type="button"
+                                onClick={() => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "price_modifier", v)}
+                                className={`px-4 py-2 rounded-xl text-xs font-black transition-all border ${
+                                  (getField(editingCompany, newCompany, "price_modifier") || 1.0) === v 
+                                    ? 'bg-blue-600 text-white border-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.4)]' 
+                                    : 'bg-[#0F1523] text-slate-400 border-slate-700/50 hover:border-slate-500 hover:text-white'
+                                }`}
+                              >
+                                {v === 1 ? 'BASE (0%)' : `${v > 1 ? '+' : ''}${Math.round((v-1)*100)}%`}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-2">
                             <label className={labelCls}>Brand Name</label>
@@ -787,7 +858,6 @@ export default function AdminCompaniesPage() {
                               onChange={(e) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "name", e.target.value)}
                               className={inputCls}
                             />
-                            
                           </div>
                           
                           <div className="bg-[#1A2235] p-6 rounded-2xl border border-slate-700/50 mb-8">

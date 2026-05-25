@@ -336,24 +336,23 @@ function CheckoutContent() {
     const providerName = company ? company.name : (urlName || type || "AeroPark Direct");
     const duration = calculateDays();
     
-    // 1. Identify if this provider uses the Google Sheet API (Case Insensitive for robustness)
     const dynamicProviders = ["apd", "airport parking bay", "24/7 meet and greet", "24/7 meet & greet"];
     const isDynamic = dynamicProviders.includes(providerName.toLowerCase().trim());
 
+    let rawPrice = 0;
+
     if (isDynamic) {
-      // --- 🟢 DYNAMIC GOOGLE SHEET PRICING ---
-      if (pricingEngine.length === 0) return fallbackUrlPrice;
+      if (pricingEngine.length === 0) return { original: fallbackUrlPrice, final: fallbackUrlPrice, modifier: 1.0 };
 
       const dropDateObj = safeParseDate(dropDate);
       
-      // Look for the date set active for the dropoff date
       const activeSet = pricingEngine.find(set => {
         const setStart = new Date(set.StartDate);
         const setEnd = new Date(set.EndDate);
         return dropDateObj >= setStart && dropDateObj <= setEnd;
       });
 
-      if (!activeSet) return fallbackUrlPrice; 
+      if (!activeSet) return { original: fallbackUrlPrice, final: fallbackUrlPrice, modifier: 1.0 };
 
       let dailyPrice;
       if (duration === 1) {
@@ -363,20 +362,16 @@ function CheckoutContent() {
         dailyPrice = Number(activeSet[rateKey] || activeSet.StartingPrice || activeSet.Day1);
       }
 
-      // Add provider-specific surcharges
       let surcharge = 0;
       if (providerName.toLowerCase().includes("24/7")) surcharge = 5;
       if (providerName.toLowerCase() === "apd") surcharge = 8;
 
-      // Apply the 10% global markup
-      return (dailyPrice + surcharge) * 1.10;
+      rawPrice = dailyPrice + surcharge;
 
     } else {
-      // --- 🟢 LEGACY DATABASE PRICING ---
-      if (!company) return fallbackUrlPrice; 
+      if (!company) return { original: fallbackUrlPrice, final: fallbackUrlPrice, modifier: 1.0 }; 
       
       const isLuton = airport.toLowerCase().includes("luton");
-      let totalPrice = 0;
       
       if (!isLuton) {
         const p1 = parsePrice(company.heathrow_price, 0);
@@ -389,16 +384,16 @@ function CheckoutContent() {
         const p22 = parsePrice(company.lhr_day22_price, p17);
         const p32 = parsePrice(company.lhr_day32_price, p22);
 
-        if (duration <= 1) totalPrice = p1;
-        else if (duration === 2) totalPrice = p2;
-        else if (duration <= 5) totalPrice = p2 + ((p5 - p2) / 3) * (duration - 2);
-        else if (duration <= 8) totalPrice = p5 + ((p8 - p5) / 3) * (duration - 5);
-        else if (duration <= 11) totalPrice = p8 + ((p11 - p8) / 3) * (duration - 8);
-        else if (duration <= 14) totalPrice = p11 + ((p14 - p11) / 3) * (duration - 11);
-        else if (duration <= 17) totalPrice = p14 + ((p17 - p14) / 3) * (duration - 14);
-        else if (duration <= 22) totalPrice = p17 + ((p22 - p17) / 5) * (duration - 17);
-        else if (duration <= 32) totalPrice = p22 + ((p32 - p22) / 10) * (duration - 22);
-        else totalPrice = p32 + ((p32 - p22) / 10) * (duration - 32); 
+        if (duration <= 1) rawPrice = p1;
+        else if (duration === 2) rawPrice = p2;
+        else if (duration <= 5) rawPrice = p2 + ((p5 - p2) / 3) * (duration - 2);
+        else if (duration <= 8) rawPrice = p5 + ((p8 - p5) / 3) * (duration - 5);
+        else if (duration <= 11) rawPrice = p8 + ((p11 - p8) / 3) * (duration - 8);
+        else if (duration <= 14) rawPrice = p11 + ((p14 - p11) / 3) * (duration - 11);
+        else if (duration <= 17) rawPrice = p14 + ((p17 - p14) / 3) * (duration - 14);
+        else if (duration <= 22) rawPrice = p17 + ((p22 - p17) / 5) * (duration - 17);
+        else if (duration <= 32) rawPrice = p22 + ((p32 - p22) / 10) * (duration - 22);
+        else rawPrice = p32 + ((p32 - p22) / 10) * (duration - 32); 
       } else {
         const p1 = parsePrice(company.luton_price, 0);
         const p2 = parsePrice(company.ltn_day2_price, p1);
@@ -410,27 +405,33 @@ function CheckoutContent() {
         const p22 = parsePrice(company.ltn_day22_price, p17);
         const p32 = parsePrice(company.ltn_day32_price, p22);
 
-        if (duration <= 1) totalPrice = p1;
-        else if (duration === 2) totalPrice = p2;
-        else if (duration <= 5) totalPrice = p2 + ((p5 - p2) / 3) * (duration - 2);
-        else if (duration <= 8) totalPrice = p5 + ((p8 - p5) / 3) * (duration - 5);
-        else if (duration <= 11) totalPrice = p8 + ((p11 - p8) / 3) * (duration - 8);
-        else if (duration <= 14) totalPrice = p11 + ((p14 - p11) / 3) * (duration - 11);
-        else if (duration <= 17) totalPrice = p14 + ((p17 - p14) / 3) * (duration - 14);
-        else if (duration <= 22) totalPrice = p17 + ((p22 - p17) / 5) * (duration - 17);
-        else if (duration <= 32) totalPrice = p22 + ((p32 - p22) / 10) * (duration - 22);
-        else totalPrice = p32 + ((p32 - p22) / 10) * (duration - 32); 
+        if (duration <= 1) rawPrice = p1;
+        else if (duration === 2) rawPrice = p2;
+        else if (duration <= 5) rawPrice = p2 + ((p5 - p2) / 3) * (duration - 2);
+        else if (duration <= 8) rawPrice = p5 + ((p8 - p5) / 3) * (duration - 5);
+        else if (duration <= 11) rawPrice = p8 + ((p11 - p8) / 3) * (duration - 8);
+        else if (duration <= 14) rawPrice = p11 + ((p14 - p11) / 3) * (duration - 11);
+        else if (duration <= 17) rawPrice = p14 + ((p17 - p14) / 3) * (duration - 14);
+        else if (duration <= 22) rawPrice = p17 + ((p22 - p17) / 5) * (duration - 17);
+        else if (duration <= 32) rawPrice = p22 + ((p32 - p22) / 10) * (duration - 22);
+        else rawPrice = p32 + ((p32 - p22) / 10) * (duration - 32); 
       }
-
-      return totalPrice * 1.10;
     }
+
+    const modifier = company?.price_modifier || 1.0;
+    const finalPrice = (rawPrice * modifier) * 1.10;
+    const originalPrice = rawPrice * 1.10;
+
+    return { original: originalPrice, final: finalPrice, modifier };
   };
 
   const bookingDays = calculateDays();
-  const baseTotal = getSecureBasePrice(); 
-  const discountAmount = baseTotal * discount.percent;
+  const priceData = getSecureBasePrice(); 
+  const discountAmount = priceData.final * discount.percent;
   const addOnsTotal = (wantsLounge ? LOUNGE_PRICE : 0) + (wantsFastTrack ? FAST_TRACK_PRICE : 0);
-  const finalTotal = (baseTotal - discountAmount) + addOnsTotal;
+  const finalTotal = (priceData.final - discountAmount) + addOnsTotal;
+
+  const isDiscounted = priceData.modifier < 1.0;
 
   const handleUpdateSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -869,12 +870,19 @@ function CheckoutContent() {
               <div className="space-y-4 mb-10">
                 <div className="flex justify-between text-sm text-slate-400 font-bold">
                   <span>Parking Rate ({bookingDays} {bookingDays === 1 ? "day" : "days"})</span>
-                  <span className={`font-black ${discount.active ? 'text-slate-500 line-through' : 'text-white'}`}>£{baseTotal.toFixed(2)}</span>
+                  
+                  {/* 🟢 STRIKETHROUGH FOR ORIGINAL PRICE IN SIDEBAR */}
+                  <div className="text-right">
+                    {isDiscounted && (
+                      <span className="text-xs text-slate-500 line-through block mb-0.5">£{priceData.original.toFixed(2)}</span>
+                    )}
+                    <span className={`font-black ${discount.active ? 'text-slate-500 line-through' : (isDiscounted ? 'text-emerald-400' : 'text-white')}`}>£{priceData.final.toFixed(2)}</span>
+                  </div>
                 </div>
                 
                 {discount.active && (
                   <div className="flex justify-between text-sm text-emerald-400 font-bold">
-                    <span>Discount ({discount.code})</span>
+                    <span>Promo ({discount.code})</span>
                     <span className="font-black">- £{discountAmount.toFixed(2)}</span>
                   </div>
                 )}
