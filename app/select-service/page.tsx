@@ -13,7 +13,8 @@ import {
   MapPin,
   ArrowLeft,
   Plane,
-  X
+  X,
+  Lock
 } from "lucide-react";
 
 function ServiceSelectionContent() {
@@ -73,7 +74,9 @@ function ServiceSelectionContent() {
     router.push(`/select-service?${query}`);
   };
 
-  const handleSelect = (serviceType: string) => {
+  const handleSelect = (serviceType: string, disabled?: boolean) => {
+    if (disabled) return; // Prevent clicking on "Coming Soon" options
+
     const query = new URLSearchParams({
       airport,
       dropoffDate,
@@ -96,7 +99,8 @@ function ServiceSelectionContent() {
       description: "Compare top-rated providers. Drive straight to the terminal, hand your keys to a vetted professional, and head straight to check-in.",
       icon: <Car className="w-8 h-8 text-blue-600" />,
       features: ["Compare trusted operators", "Drop off at terminal", "Perfect for families"],
-      time: "5 mins walk to terminal"
+      time: "5 mins walk to terminal",
+      disabled: false
     },
     {
       id: "park-ride",
@@ -106,17 +110,19 @@ function ServiceSelectionContent() {
       description: "Find the best deals on secure off-site parking. Park your vehicle and take a quick, comfortable shuttle bus to the terminal door.",
       icon: <Bus className="w-8 h-8 text-emerald-600" />,
       features: ["Vetted parking facilities", "Regular shuttle services", "Budget-friendly deals"],
-      time: "5-10 min shuttle"
+      time: "5-10 min shuttle",
+      disabled: false
     },
     {
       id: "hotel",
       title: "Hotel & Parking",
-      tag: "Early Flight?",
-      tagColor: "bg-purple-100 text-purple-700 border-purple-200",
-      description: "Browse packages combining a restful night's sleep at a premium airport hotel with secure parking for the duration of your trip.",
-      icon: <Hotel className="w-8 h-8 text-purple-600" />,
+      tag: "Coming Soon", // Changed
+      tagColor: "bg-slate-100 text-slate-500 border-slate-200", // Changed
+      description: "We are currently onboarding top-rated hotel partners. Soon you will be able to book a restful night's sleep with secure parking.", // Changed
+      icon: <Hotel className="w-8 h-8 text-slate-400" />, // Changed
       features: ["Top hotel brands", "Up to 15 days parking", "Wake up at the airport"],
-      time: "Overnight stay"
+      time: "Available Shortly", // Changed
+      disabled: true // 🟢 NEW FLAG
     }
   ];
 
@@ -163,8 +169,12 @@ function ServiceSelectionContent() {
           {services.map((service) => (
             <div 
               key={service.id}
-              onClick={() => handleSelect(service.id)}
-              className="touch-manipulation bg-white rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-500 active:scale-[0.98] lg:hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col items-center text-center md:items-start md:text-left group relative overflow-hidden [-webkit-tap-highlight-color:transparent]"
+              onClick={() => handleSelect(service.id, service.disabled)}
+              className={`touch-manipulation bg-white rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 border shadow-sm transition-all duration-300 flex flex-col items-center text-center md:items-start md:text-left group relative overflow-hidden [-webkit-tap-highlight-color:transparent] ${
+                service.disabled 
+                  ? 'border-slate-100 opacity-70 grayscale-[30%] cursor-not-allowed' 
+                  : 'border-slate-200 hover:shadow-xl hover:border-blue-500 active:scale-[0.98] lg:hover:-translate-y-1 cursor-pointer'
+              }`}
             >
               {/* Highlight Tag */}
               <div className={`absolute top-5 right-5 md:top-6 md:right-6 px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest ${service.tagColor}`}>
@@ -172,7 +182,7 @@ function ServiceSelectionContent() {
               </div>
 
               {/* Icon */}
-              <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-slate-50 flex items-center justify-center mb-6 md:mb-8 lg:group-hover:scale-110 transition-transform duration-300 shrink-0">
+              <div className={`w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-slate-50 flex items-center justify-center mb-6 md:mb-8 shrink-0 ${service.disabled ? '' : 'lg:group-hover:scale-110 transition-transform duration-300'}`}>
                 {service.icon}
               </div>
 
@@ -185,10 +195,10 @@ function ServiceSelectionContent() {
               </p>
 
               {/* Features List */}
-              <ul className="space-y-3 mb-6 md:mb-8 w-full">
+              <ul className={`space-y-3 mb-6 md:mb-8 w-full ${service.disabled ? 'opacity-60' : ''}`}>
                 {service.features.map((feature, idx) => (
                   <li key={idx} className="flex items-start md:items-center justify-start gap-3 text-xs font-bold text-slate-700 text-left">
-                    <ShieldCheck className="w-4 h-4 text-blue-500 opacity-70 shrink-0 mt-0.5 md:mt-0" /> 
+                    <ShieldCheck className={`w-4 h-4 shrink-0 mt-0.5 md:mt-0 ${service.disabled ? 'text-slate-400' : 'text-blue-500 opacity-70'}`} /> 
                     <span>{feature}</span>
                   </li>
                 ))}
@@ -199,8 +209,12 @@ function ServiceSelectionContent() {
                 <div className="flex items-center gap-1.5 md:gap-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">
                   <Clock className="w-3.5 h-3.5 shrink-0" /> {service.time}
                 </div>
-                <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-slate-50 flex items-center justify-center lg:group-hover:bg-blue-600 lg:group-hover:text-white transition-colors shrink-0">
-                  <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
+                <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                  service.disabled 
+                    ? 'bg-slate-100 text-slate-400' 
+                    : 'bg-slate-50 lg:group-hover:bg-blue-600 lg:group-hover:text-white'
+                }`}>
+                  {service.disabled ? <Lock className="w-3.5 h-3.5 md:w-4 md:h-4" /> : <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />}
                 </div>
               </div>
             </div>

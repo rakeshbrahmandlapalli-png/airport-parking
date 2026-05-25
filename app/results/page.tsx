@@ -1,6 +1,6 @@
 "use client";
 import LaunchTimer from "@/components/LaunchTimer";
-import { checkAvailability,getLaunchSlotsClaimed } from "../actions";
+import { checkAvailability, getLaunchSlotsClaimed } from "../actions";
 import { useSearchParams, useRouter } from "next/navigation";
 import { 
   MapPin, Clock, ShieldCheck, ChevronRight, ThumbsUp, ArrowLeft,
@@ -12,6 +12,49 @@ import {
 import Link from "next/link";
 import { Suspense, useState, useMemo, useEffect } from "react";
 import { supabase } from "../lib/supabase";
+
+// ----------------------------------------------------------------------
+// 🟢 NEW: SOCIAL PROOF TICKER (CONVERSION BOOSTER)
+// ----------------------------------------------------------------------
+function LiveActivity() {
+  const [text, setText] = useState("John from London just booked Meet & Greet");
+  const [visible, setVisible] = useState(false);
+  
+  useEffect(() => {
+    const messages = [
+      "Sarah from Luton just booked Meet & Greet",
+      "Mike from Watford secured a 30% discount",
+      "Emma from Milton Keynes just booked 24/7 parking",
+      "David from St Albans joined as a Founding Member",
+      "James from London just booked Park & Ride"
+    ];
+    let i = 0;
+    
+    setTimeout(() => setVisible(true), 2000);
+
+    const interval = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        i = (i + 1) % messages.length;
+        setText(messages[i]);
+        setVisible(true);
+      }, 500); 
+    }, 12000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className={`fixed bottom-6 left-6 z-[998] hidden lg:flex transition-all duration-500 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+      <div className="bg-white/90 backdrop-blur-md border border-slate-200 px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2.5 text-[9px] font-black uppercase text-slate-700 tracking-widest">
+        <div className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        </div>
+        {text}
+      </div>
+    </div>
+  );
+}
 
 // ----------------------------------------------------------------------
 // 🟢 CUSTOM AERO AVATAR 
@@ -442,18 +485,28 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData, calc
           </p>
         </div>
         
-        <button 
-          disabled={isSoldOut}
-          onClick={() => handleBooking(option, final)}
-          className={`group h-12 sm:h-14 px-6 lg:w-full font-black rounded-xl flex items-center justify-center gap-2 sm:gap-3 uppercase tracking-[0.15em] text-[11px] sm:text-xs transition-all duration-300 active:scale-95 shadow-lg shrink-0 ${
-            isSoldOut 
-              ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' 
-              : (isPremium ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/30 border border-blue-500' : 'bg-[#1A2235] text-white hover:bg-slate-700 border border-slate-700')
-          }`}
-        >
-          {isSoldOut ? <Ban className="w-4 h-4"/> : <span className="relative z-10">Select</span>}
-          {!isSoldOut && <ChevronRight className="w-4 h-4 relative z-10 transition-transform lg:group-hover:translate-x-1" />}
-        </button>
+        <div className="flex flex-col gap-2 lg:w-full">
+          <button 
+            disabled={isSoldOut}
+            onClick={() => handleBooking(option, final)}
+            className={`group h-12 sm:h-14 px-6 lg:w-full font-black rounded-xl flex items-center justify-center gap-2 sm:gap-3 uppercase tracking-[0.15em] text-[11px] sm:text-xs transition-all duration-300 active:scale-95 shadow-lg shrink-0 ${
+              isSoldOut 
+                ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' 
+                : (isPremium ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/30 border border-blue-500' : 'bg-[#1A2235] text-white hover:bg-slate-700 border border-slate-700')
+            }`}
+          >
+            {isSoldOut ? <Ban className="w-4 h-4"/> : <span className="relative z-10">Select</span>}
+            {!isSoldOut && <ChevronRight className="w-4 h-4 relative z-10 transition-transform lg:group-hover:translate-x-1" />}
+          </button>
+          
+          {/* 🟢 STRIPE TRUST BADGE */}
+          {!isSoldOut && (
+            <div className="flex items-center justify-center gap-1.5 mt-1 lg:mt-2 opacity-60">
+              <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-[8.5px] font-bold uppercase tracking-widest text-slate-400">Payments Secured by Stripe</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -505,19 +558,18 @@ function ResultsContent() {
   async function loadData() {
     setLoading(true);
     try {
-      // 🟢 Add 'slots' to your Promise.all
       const [compRes, priceRes, slots] = await Promise.all([
         supabase.from('companies').select('*'),
         fetch('https://script.google.com/macros/s/AKfycbwd4zT_JLMbufzexsJ4GKtkyvVh5EvxUQ0XA_i5cg6f19QXFutErdrU3i57TIF-D8Ku/exec', { 
           redirect: "follow", 
           headers: { "Content-Type": "text/plain;charset=utf-8" } 
         }).then(res => res.json()).catch(() => []),
-        getLaunchSlotsClaimed() // 🟢 This pulls the number from Supabase
+        getLaunchSlotsClaimed()
       ]);
 
       if (priceRes) setPricingEngine(priceRes);
       if (compRes.data) setCompanies(compRes.data);
-      setSlotsClaimed(slots); // 🟢 Save it to your state
+      setSlotsClaimed(slots); 
 
     } catch(e) {
       console.error("Fetch error:", e);
@@ -763,6 +815,9 @@ function ResultsLayout() {
           <AirportTitle />
         </button>
       </header>
+
+      {/* 🟢 NEW: LIVE ACTIVITY SOCIAL PROOF */}
+      <LiveActivity />
 
       <div className="relative z-10"><ResultsContent /></div>
 

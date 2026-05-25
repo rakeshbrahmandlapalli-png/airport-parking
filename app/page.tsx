@@ -44,14 +44,6 @@ export default function HomePage() {
   const [isPriceMatchOpen, setIsPriceMatchOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false); 
 
-  useEffect(() => {
-    async function fetchSlots() {
-      const count = await getLaunchSlotsClaimed();
-      setSlots(count);
-    }
-    fetchSlots();
-  }, []);
-
   // --- SEARCH STATES ---
   const [activeTab, setActiveTab] = useState<'manual' | 'magic'>('manual');
   const [airport, setAirport] = useState("Luton (LTN)");
@@ -69,14 +61,27 @@ export default function HomePage() {
   // --- FAQ STATE ---
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
+  // 🟢 OPTIMIZED: Combined useEffects for better performance
   useEffect(() => {
+    // 1. Fetch DB Slots
+    async function fetchSlots() {
+      try {
+        const count = await getLaunchSlotsClaimed();
+        setSlots(count);
+      } catch (e) {
+        console.error("Failed to fetch slots");
+      }
+    }
+    fetchSlots();
+
+    // 2. Initialize Dates
     const today = new Date();
     setNow(today);
-    
     setDropoffDate(today.toISOString().split("T")[0]);
     setDropoffTime(today.toTimeString().slice(0, 5));
     setPickupDate(today.toISOString().split("T")[0]);
     
+    // 3. Trigger Animations
     setIsLoaded(true);
 
     const timer = setInterval(() => setNow(new Date()), 60000);
@@ -501,7 +506,6 @@ export default function HomePage() {
                     </div>
                     <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400">Aero Live Update</span>
                   </div>
-                  {/* 🟢 UPDATED HARDCODED 12 TO DYNAMIC SLOTS */}
                   <p className="text-[9px] text-slate-300 font-bold">{slots} travelers booked in the last hour</p>
                 </div>
 

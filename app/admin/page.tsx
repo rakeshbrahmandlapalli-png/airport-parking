@@ -12,9 +12,10 @@
  * 6. TWILIO: Added silent background API trigger for manual bookings missing flights.
  * 7. 🟢 MODAL FIX: Safely bound all inputs to prevent 'null' read crashes during unmounts.
  * 8. 🟢 DB FIX: Handled empty date/time strings to prevent Supabase 500 rejection errors.
+ * 9. 🟢 NEXT.JS ROUTER FIX: Wrapped in Suspense and guarded router redirects to prevent Vercel "dispatched before initialization" build errors.
  */
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, Suspense } from "react";
 import { supabase } from "@/app/lib/supabase"; 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -30,7 +31,7 @@ import {
   Activity, Info, ArrowRightLeft, Tags, Zap
 } from "lucide-react";
 
-export default function AdminDashboard() {
+function DashboardContent() {
   // --- 1. CORE APPLICATION STATE ---
   const [bookings, setBookings] = useState<any[]>([]);
   const [companies, setCompanies] = useState<any[]>([]);
@@ -78,7 +79,7 @@ export default function AdminDashboard() {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        router.push("/admin/login");
+        router.replace("/admin/login"); // 🟢 Changed to replace for better routing history
       } else {
         fetchDashboardData();
       }
@@ -372,7 +373,7 @@ export default function AdminDashboard() {
         </nav>
         
         <div className="p-6">
-          <button onClick={() => supabase.auth.signOut().then(() => router.push("/admin/login"))} className="flex items-center gap-4 text-sm font-bold hover:text-red-400 transition-colors w-full text-left px-5 py-4 group bg-slate-900/50 rounded-xl border border-slate-800/80 shadow-sm">
+          <button onClick={() => supabase.auth.signOut().then(() => router.replace("/admin/login"))} className="flex items-center gap-4 text-sm font-bold hover:text-red-400 transition-colors w-full text-left px-5 py-4 group bg-slate-900/50 rounded-xl border border-slate-800/80 shadow-sm">
             <LogOut className="w-5 h-5 text-slate-500 group-hover:text-red-500 transition-colors" /> Secure Logout
           </button>
         </div>
@@ -389,7 +390,7 @@ export default function AdminDashboard() {
             </div> 
             OPS<span className="text-blue-500">CENTER</span>
           </div>
-          <button onClick={() => router.push("/admin/login")} className="p-3 bg-slate-800 rounded-xl text-slate-300 hover:text-red-400 transition-colors">
+          <button onClick={() => router.replace("/admin/login")} className="p-3 bg-slate-800 rounded-xl text-slate-300 hover:text-red-400 transition-colors">
             <LogOut className="w-5 h-5" />
           </button>
         </div>
@@ -593,7 +594,7 @@ export default function AdminDashboard() {
             <Link href="/admin/companies" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><Building2 className="w-6 h-6" /><span className="text-[9px] font-bold uppercase tracking-tighter">Ops</span></Link>
             <div className="relative -top-8"><button onClick={() => setShowManualModal(true)} className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30 border-4 border-[#0B1120] active:scale-95 transition-transform"><Plus className="w-8 h-8 text-white" /></button></div>
             <Link href="/admin/schedule" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><CalendarDays className="w-6 h-6" /><span className="text-[9px] font-bold uppercase tracking-tighter">Plan</span></Link>
-            <button onClick={() => router.push("/admin/login")} className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-red-400 transition-colors"><LogOut className="w-6 h-6" /><span className="text-[9px] font-bold uppercase tracking-tighter">Exit</span></button>
+            <button onClick={() => router.replace("/admin/login")} className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-red-400 transition-colors"><LogOut className="w-6 h-6" /><span className="text-[9px] font-bold uppercase tracking-tighter">Exit</span></button>
           </nav>
         </div>
       </main>
@@ -833,5 +834,22 @@ export default function AdminDashboard() {
         </div>
       )}
     </div>
+  );
+}
+
+// 🟢 NEXT.JS 14+ SUSPENSE WRAPPER (REQUIRED TO PREVENT VERCEL BUILD ERRORS)
+export default function AdminDashboard() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0B1120] flex flex-col items-center justify-center text-white">
+        <div className="relative">
+          <div className="absolute inset-0 border-t-2 border-blue-500 rounded-full animate-spin"></div>
+          <Plane className="w-10 h-10 text-blue-500 m-4 animate-pulse rotate-45" />
+        </div>
+        <p className="font-black text-slate-400 tracking-widest uppercase text-xs mt-6">Initializing Command Hub...</p>
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   );
 }

@@ -12,11 +12,14 @@ export default function LaunchTimer({ hours = 72, slotsClaimed, totalSlots = 15 
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
   useEffect(() => {
-    let endTime = localStorage.getItem("launch_timer_end");
+    // 🟢 Changed key to 'v3' to force a fresh 72-hour reset for all users
+    const STORAGE_KEY = "launch_timer_end_v3";
+    let endTime = localStorage.getItem(STORAGE_KEY);
+    
     if (!endTime) {
       const now = new Date().getTime();
       endTime = (now + hours * 60 * 60 * 1000).toString();
-      localStorage.setItem("launch_timer_end", endTime);
+      localStorage.setItem(STORAGE_KEY, endTime);
     }
 
     const interval = setInterval(() => {
@@ -28,8 +31,10 @@ export default function LaunchTimer({ hours = 72, slotsClaimed, totalSlots = 15 
     return () => clearInterval(interval);
   }, [hours]);
 
-  if (timeLeft === null) return null; // Wait for hydration
+  if (timeLeft === null) return null; 
 
+  // 🟢 Added Days calculation for the 72-hour range
+  const daysLeft = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
   const hoursLeft = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
   const minsLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
   const secsLeft = Math.floor((timeLeft % (1000 * 60)) / 1000);
@@ -40,10 +45,7 @@ export default function LaunchTimer({ hours = 72, slotsClaimed, totalSlots = 15 
 
   return (
     <div className="relative bg-[#0F1523]/90 backdrop-blur-sm border border-blue-500/20 rounded-3xl p-6 md:p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] mb-10 overflow-hidden group">
-      {/* Animated Top Border */}
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 via-indigo-400 to-blue-600 opacity-80"></div>
-      
-      {/* Background Ambience */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(37,99,235,0.1),transparent_70%)] pointer-events-none"></div>
 
       <div className="flex flex-col items-center relative z-10" aria-live="polite">
@@ -52,15 +54,16 @@ export default function LaunchTimer({ hours = 72, slotsClaimed, totalSlots = 15 
           Founding Member Launch
         </div>
 
-        {/* Digital Clock Display */}
-        <div className="flex items-center gap-3 md:gap-5 mb-8">
+        {/* Digital Clock Display - Now with Days */}
+        <div className="flex items-center gap-2 md:gap-4 mb-8">
           {[
-            { v: hoursLeft, l: "Hours" },
+            { v: daysLeft, l: "Days" },
+            { v: hoursLeft, l: "Hrs" },
             { v: minsLeft, l: "Mins" },
             { v: secsLeft, l: "Secs" }
           ].map((item, i) => (
             <div key={i} className="flex flex-col items-center">
-              <div className="bg-[#1A2235] text-white font-black text-4xl sm:text-5xl px-5 py-4 rounded-2xl border border-white/10 tabular-nums shadow-[0_4px_12px_rgba(0,0,0,0.3)] backdrop-blur-md">
+              <div className="bg-[#1A2235] text-white font-black text-2xl sm:text-4xl px-4 py-3 md:px-5 md:py-4 rounded-2xl border border-white/10 tabular-nums shadow-[0_4px_12px_rgba(0,0,0,0.3)] backdrop-blur-md">
                 {item.v.toString().padStart(2, '0')}
               </div>
               <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mt-3">{item.l}</span>
@@ -68,7 +71,6 @@ export default function LaunchTimer({ hours = 72, slotsClaimed, totalSlots = 15 
           ))}
         </div>
 
-        {/* Lifetime Perk */}
         <div className="flex items-center justify-center gap-3 text-emerald-400 bg-emerald-500/5 px-6 py-3 rounded-xl border border-emerald-500/10 mb-8 w-full max-w-sm text-center">
            <CheckCircle2 className="w-5 h-5 shrink-0" />
            <p className="text-[10px] md:text-[11px] font-black uppercase tracking-widest leading-relaxed">
@@ -76,7 +78,6 @@ export default function LaunchTimer({ hours = 72, slotsClaimed, totalSlots = 15 
            </p>
         </div>
 
-        {/* Scarcity Bar */}
         <div className="w-full max-w-sm bg-[#131A2B] p-4 rounded-2xl border border-white/5 shadow-inner">
           <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-3 items-center">
             <span className={isCritical ? "text-amber-400 flex items-center gap-1.5 animate-pulse" : "text-slate-400"}>
