@@ -1,5 +1,6 @@
 "use client";
-import { checkAvailability } from "../actions";
+import LaunchTimer from "@/components/LaunchTimer";
+import { checkAvailability,getLaunchSlotsClaimed } from "../actions";
 import { useSearchParams, useRouter } from "next/navigation";
 import { 
   MapPin, Clock, ShieldCheck, ChevronRight, ThumbsUp, ArrowLeft,
@@ -112,7 +113,7 @@ const getCalculatedPrice = (option: any, duration: number, isHeathrow: boolean, 
     else if (duration <= 14) tot = p11 + ((p14 - p11) / 3) * (duration - 11);
     else if (duration <= 17) tot = p14 + ((p17 - p14) / 3) * (duration - 14);
     else if (duration <= 22) tot = p17 + ((p22 - p17) / 5) * (duration - 17);
-    else if (duration <= 32) tot = p22 + ((p32 - p22) / 10) * (duration - 22);
+    else if (duration <= 32) tot = p22 + ((p32 - p22) / 10) * (duration - 32);
     else tot = p32 + ((p32 - p22) / 10) * (duration - 32); 
     
     rawPrice = tot;
@@ -468,6 +469,7 @@ function ResultsContent() {
   const [companies, setCompanies] = useState<any[]>([]);
   const [pricingEngine, setPricingEngine] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [slotsClaimed, setSlotsClaimed] = useState(12);
   
   const airport = searchParams.get("airport") || "Luton (LTN)";
   const dropoff = searchParams.get("dropoffDate") || "";
@@ -500,30 +502,34 @@ function ResultsContent() {
 
   // Fetch both the Database and Google Sheets API simultaneously
   useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      try {
-        const [compRes, priceRes] = await Promise.all([
-          supabase.from('companies').select('*'),
-          fetch('https://script.google.com/macros/s/AKfycbwd4zT_JLMbufzexsJ4GKtkyvVh5EvxUQ0XA_i5cg6f19QXFutErdrU3i57TIF-D8Ku/exec', { 
-            redirect: "follow", 
-            headers: { "Content-Type": "text/plain;charset=utf-8" } 
-          }).then(res => res.json()).catch(() => []) // Graceful fallback
-        ]);
+  async function loadData() {
+    setLoading(true);
+    try {
+      // 🟢 Add 'slots' to your Promise.all
+      const [compRes, priceRes, slots] = await Promise.all([
+        supabase.from('companies').select('*'),
+        fetch('https://script.google.com/macros/s/AKfycbwd4zT_JLMbufzexsJ4GKtkyvVh5EvxUQ0XA_i5cg6f19QXFutErdrU3i57TIF-D8Ku/exec', { 
+          redirect: "follow", 
+          headers: { "Content-Type": "text/plain;charset=utf-8" } 
+        }).then(res => res.json()).catch(() => []),
+        getLaunchSlotsClaimed() // 🟢 This pulls the number from Supabase
+      ]);
 
-        if (priceRes) setPricingEngine(priceRes);
-        if (compRes.data) setCompanies(compRes.data);
+      if (priceRes) setPricingEngine(priceRes);
+      if (compRes.data) setCompanies(compRes.data);
+      setSlotsClaimed(slots); // 🟢 Save it to your state
 
-      } catch(e) {
-        console.error("Fetch error:", e);
-      }
-      
-      await checkAvailability(airport, dropoff, pickup);
-      setLoading(false);
+    } catch(e) {
+      console.error("Fetch error:", e);
     }
-    loadData();
-  }, [airport, dropoff, pickup]);
+    
+    await checkAvailability(airport, dropoff, pickup);
+    setLoading(false);
+  }
+  loadData();
+}, [airport, dropoff, pickup]);
 
+  
   // Calculate and sort processed companies dynamically
   const processedCompanies = useMemo(() => {
   // 1. Filter based on your existing criteria
@@ -617,8 +623,13 @@ function ResultsContent() {
           </div>
         </div>
       </div>
+{/* 🟢 LAUNCH TIMER INTEGRATION */}
+<div className="max-w-lg mx-auto">
+ <LaunchTimer hours={72} slotsClaimed={slotsClaimed} totalSlots={15} />
+</div>
 
       <div className="space-y-6 md:space-y-8">
+        
         {processedCompanies.length === 0 ? (
           <div className="text-center py-16 md:py-24 bg-[#0F1523] rounded-[3rem] border border-dashed border-slate-700 px-6 relative overflow-hidden">
             {!serviceType.toLowerCase().includes("meet") ? (
@@ -653,6 +664,7 @@ function ResultsContent() {
             )}
           </div>
         ) : (
+          
           processedCompanies.map((option) => (
             <ParkingCard 
               key={option.id} 

@@ -215,24 +215,31 @@ export default function AdminCompaniesPage() {
 
   // ─── 🟢 MASTER OVERRIDE FUNCTION ─────────────────────────────────────
   const masterUpdate = async (val: number) => {
-    const isIncrease = val > 1;
-    const isReset = val === 1;
-    const text = isReset ? "RESET all prices to BASE" : `apply a ${isIncrease ? '+' : ''}${Math.round((val-1)*100)}% modifier to ALL operators`;
+  const isIncrease = val > 1;
+  const isReset = val === 1;
+  const text = isReset ? "RESET all prices to BASE" : `apply a ${isIncrease ? '+' : ''}${Math.round((val-1)*100)}% modifier to ALL operators`;
+  
+  if (!confirm(`⚠️ Are you sure you want to ${text}?`)) return;
+  
+  setIsSaving(true);
+  try {
+    // 🟢 FIX: Removed the .neq("id", "0") constraint. 
+    // If you need a filter to satisfy Supabase, use a valid blank UUID instead.
+    const { error } = await supabase
+      .from("companies")
+      .update({ price_modifier: val })
+      .neq("id", "00000000-0000-0000-0000-000000000000"); 
+
+    if (error) throw error;
     
-    if (!confirm(`⚠️ Are you sure you want to ${text}?`)) return;
-    
-    setIsSaving(true);
-    try {
-      const { error } = await supabase.from("companies").update({ price_modifier: val }).neq("id", "0");
-      if (error) throw error;
-      await fetchCompanies();
-      alert(`Successfully updated all operators to ${val}x modifier.`);
-    } catch (error: any) {
-      alert("Error updating master pricing: " + error.message);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+    await fetchCompanies();
+    alert(`Successfully updated all operators to ${val}x modifier.`);
+  } catch (error: any) {
+    alert("Error updating master pricing: " + error.message);
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   const handleAddBadge = (label: string, category: string) => {
     if (!label) return;

@@ -21,6 +21,29 @@ const safeParseDate = (dateStr: string) => {
 };
 
 // ============================================================================
+// 🚀 NEW: AUTOMATED LAUNCH TIMER SYNC
+// ============================================================================
+// ============================================================================
+// 🚀 NEW: AUTOMATED LAUNCH TIMER SYNC
+// ============================================================================
+export async function getLaunchSlotsClaimed() {
+  try {
+    // 🟢 Fix: Use maybeSingle() to avoid errors if row is missing
+    const { data, error } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'slots_claimed')
+      .maybeSingle(); 
+
+    if (error || !data) return 12; // Fallback to 12 if table empty or error
+    return parseInt(data.value || '12');
+  } catch (error) {
+    console.error("Error fetching slots:", error);
+    return 12;
+  }
+}
+
+// ============================================================================
 // ⚠️ LEGACY/BACKUP CHECKOUT ACTION (Frontend currently uses /api/checkout)
 // ============================================================================
 export async function createCheckoutSession(formData: FormData) {
@@ -33,6 +56,12 @@ export async function createCheckoutSession(formData: FormData) {
   const customerPhone = formData.get("customerPhone") as string;
   const flightNumber = formData.get("flightNumber") as string;
   const licensePlate = formData.get("licensePlate") as string;
+  
+  // 🟢 NEW FIELDS ADDED TO MATCH FRONTEND
+  const carMake = formData.get("carMake") as string || "";
+  const carColor = formData.get("carColor") as string || "";
+  const promoUsed = formData.get("promoUsed") as string || "";
+  
   const parkingType = formData.get("parkingType") as string || "standard";
   const totalPrice = parseFloat(formData.get("totalPrice") as string) || 0;
   
@@ -75,6 +104,9 @@ export async function createCheckoutSession(formData: FormData) {
       phone_number: customerPhone,
       flight_number: flightNumber,
       license_plate: licensePlate,
+      car_make: carMake,       // 🟢 SAVED TO DB
+      car_color: carColor,     // 🟢 SAVED TO DB
+      promo_used: promoUsed,   // 🟢 SAVED TO DB
       service_type: parkingType,
       total_price: totalPrice,
       status: "pending", // 🟢 This prevents free access. Webhook must update to "paid"
@@ -108,7 +140,8 @@ export async function createCheckoutSession(formData: FormData) {
          company_id: company ? company.id : "",
          provider_name: company ? company.name : parkingType,
          booking_ref: tempRef,
-         terminal: terminal // Added for cross-compatibility with webhook
+         terminal: terminal, // Added for cross-compatibility with webhook
+         promo_used: promoUsed // 🟢 ADDED TO STRIPE
       },
       mode: "payment",
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://www.aeroparkdirect.co.uk'}/success?session_id={CHECKOUT_SESSION_ID}&ref=${tempRef}`,

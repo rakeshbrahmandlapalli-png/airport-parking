@@ -2,7 +2,9 @@
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import AeroFeature from "@/components/AeroFeature";
+import LaunchNotification from "@/components/LaunchNotification"; 
 import { supabase } from "./lib/supabase"; 
+import { getLaunchSlotsClaimed } from "./actions";
 import { 
   User, 
   Calendar, 
@@ -24,7 +26,8 @@ import {
   Plane,
   CheckCircle2,
   Zap,
-  HelpCircle
+  HelpCircle,
+  Timer
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -33,12 +36,21 @@ import PriceMatchModal from "@/components/PriceMatchModal";
 
 export default function HomePage() {
   const router = useRouter();
-  
+
+  const [slots, setSlots] = useState(12);
   const [now, setNow] = useState<Date | null>(null); 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [isPriceMatchOpen, setIsPriceMatchOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false); 
+
+  useEffect(() => {
+    async function fetchSlots() {
+      const count = await getLaunchSlotsClaimed();
+      setSlots(count);
+    }
+    fetchSlots();
+  }, []);
 
   // --- SEARCH STATES ---
   const [activeTab, setActiveTab] = useState<'manual' | 'magic'>('manual');
@@ -246,6 +258,9 @@ export default function HomePage() {
   return (
     <main suppressHydrationWarning className="min-h-[100dvh] bg-[#F8FAFC] font-sans antialiased selection:bg-blue-600 selection:text-white overflow-x-hidden">
       
+      {/* 🟢 LAUNCH NOTIFICATION (TOAST) - NOW LINKED TO DYNAMIC SLOTS */}
+      <LaunchNotification slotsClaimed={slots} />
+
       {/* 🟢 1. PREMIUM NAVBAR - STICKY AND PINNED */}
       <nav className={`sticky top-0 w-full z-[100] bg-white/80 backdrop-blur-xl border-b border-slate-200 transition-all duration-1000 ${isLoaded ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 md:h-24 flex items-center justify-between overflow-hidden">
@@ -341,14 +356,20 @@ export default function HomePage() {
           
           {/* Hero Text */}
           <div className={`lg:col-span-7 flex flex-col items-center text-center lg:items-start lg:text-left justify-center transition-all duration-1000 delay-300 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-md w-fit mb-6 md:mb-8">
-              <span className="flex h-2 w-2 rounded-full bg-blue-400 animate-pulse"></span>
-              <span className="text-white text-[9px] md:text-[10px] font-black uppercase tracking-widest">AEROPARK DIRECT</span>
+            
+            {/* 🟢 REDESIGNED HERO PROMO BANNER */}
+            <div className="inline-flex items-center p-1 pr-4 md:pr-5 rounded-full bg-gradient-to-r from-blue-600/40 to-indigo-600/40 border border-blue-500/50 backdrop-blur-md mb-6 md:mb-8 shadow-[0_0_20px_rgba(37,99,235,0.3)] animate-pulse">
+              <div className="w-6 h-6 md:w-8 md:h-8 bg-blue-500 rounded-full flex items-center justify-center mr-3 shadow-inner">
+                <Timer className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" />
+              </div>
+              <span className="text-white text-[9px] md:text-[11px] font-black uppercase tracking-widest text-shadow-sm">
+                Founding Member Offer: <span className="text-emerald-400">30% Off</span> + <span className="text-emerald-400 underline underline-offset-2">Lifetime Perk</span>
+              </span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-4 md:mb-8 leading-[1.1] tracking-tight">
               Redefine your <br className="hidden sm:block" />
-              <span className="text-blue-500">Departure.</span>
+              <span className="text-blue-500 drop-shadow-[0_0_15px_rgba(37,99,235,0.5)]">Departure.</span>
             </h1>
 
             <div className="space-y-4 md:space-y-6 max-w-xl flex flex-col items-center lg:items-start">
@@ -480,7 +501,8 @@ export default function HomePage() {
                     </div>
                     <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400">Aero Live Update</span>
                   </div>
-                  <p className="text-[9px] text-slate-300 font-bold">12 travelers booked in the last hour</p>
+                  {/* 🟢 UPDATED HARDCODED 12 TO DYNAMIC SLOTS */}
+                  <p className="text-[9px] text-slate-300 font-bold">{slots} travelers booked in the last hour</p>
                 </div>
 
               </div>
