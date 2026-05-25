@@ -6,10 +6,10 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
 import { 
-  ShieldCheck, ArrowRight, ArrowLeft, Loader2, CarFront, User,
-  MapPin, PlaneTakeoff, Plane, Lock, CreditCard, Calendar, Shield,
+  ShieldCheck, ArrowLeft, Loader2, CarFront, User,
+  PlaneTakeoff, Plane, Lock, CreditCard, Calendar,
   Sparkles, Tag, AlertCircle, CheckCircle2, Coffee, Zap, Star,
-  Settings2, Clock, Footprints, ChevronDown, Navigation
+  Settings2, Footprints, ChevronDown, Navigation
 } from "lucide-react";
 
 // ----------------------------------------------------------------------
@@ -336,9 +336,9 @@ function CheckoutContent() {
     const providerName = company ? company.name : (urlName || type || "AeroPark Direct");
     const duration = calculateDays();
     
-    // 1. Identify if this provider uses the Google Sheet API
-    const dynamicProviders = ["APD", "Airport Parking Bay", "24/7 meet and greet"];
-    const isDynamic = dynamicProviders.includes(providerName);
+    // 1. Identify if this provider uses the Google Sheet API (Case Insensitive for robustness)
+    const dynamicProviders = ["apd", "airport parking bay", "24/7 meet and greet", "24/7 meet & greet"];
+    const isDynamic = dynamicProviders.includes(providerName.toLowerCase().trim());
 
     if (isDynamic) {
       // --- 🟢 DYNAMIC GOOGLE SHEET PRICING ---
@@ -365,8 +365,8 @@ function CheckoutContent() {
 
       // Add provider-specific surcharges
       let surcharge = 0;
-      if (providerName === "24/7 meet and greet") surcharge = 5;
-      if (providerName === "APD") surcharge = 8;
+      if (providerName.toLowerCase().includes("24/7")) surcharge = 5;
+      if (providerName.toLowerCase() === "apd") surcharge = 8;
 
       // Apply the 10% global markup
       return (dailyPrice + surcharge) * 1.10;
@@ -920,7 +920,7 @@ function CheckoutContent() {
           </div>
 
           <div className="mt-6 flex flex-col gap-4">
-              <div className="bg-white rounded-3xl p-6 border border-slate-800 shadow-lg flex items-start gap-4">
+              <div className="bg-[#131A2B] rounded-3xl p-6 border border-slate-800 shadow-lg flex items-start gap-4">
                 <div className="w-10 h-10 bg-emerald-500/10 text-emerald-400 rounded-xl flex items-center justify-center flex-shrink-0">
                   <ShieldCheck className="w-5 h-5" />
                 </div>

@@ -63,8 +63,6 @@ const formatDate = (dateString: string | null) => {
 };
 
 // Centralized Pricing Logic (Hybrid)
-
-// Centralized Pricing Logic (Hybrid)
 const getCalculatedPrice = (option: any, duration: number, isHeathrow: boolean, pricingEngine: any[], dropDateObj: Date) => {
   const providerName = option.name.trim(); // Trim whitespace
   const dynamicProviders = ["APD", "Airport Parking Bay", "24/7 Meet & Greet"];
@@ -80,9 +78,7 @@ const getCalculatedPrice = (option: any, duration: number, isHeathrow: boolean, 
     });
 
     if (activeSet) {
-      // 🟢 FIX: Use Backticks (``) so variables interpolate correctly
       const rateKey = duration <= 31 ? `Day${duration}` : "Day31";
-      
       const dailyPrice = Number(activeSet[rateKey] || activeSet.StartingPrice || activeSet.Day1);
       
       let surcharge = 0;
@@ -96,9 +92,6 @@ const getCalculatedPrice = (option: any, duration: number, isHeathrow: boolean, 
       console.log(`No matching Date Set found for ${providerName} on ${dropDateObj.toDateString()}`);
     }
   }
-
- 
-
 
   // --- LEGACY MATH FALLBACK ---
   let tot = 0;
@@ -242,7 +235,7 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData, calc
   const isMeetGreet = option.category?.toLowerCase().includes('meet');
   const isParkRide = option.category?.toLowerCase().includes('ride');
 
-  const safeMapLink = `https://maps.google.com/maps?q=$$$${encodeURIComponent((option.address || '') + ' ' + (option.postcode || ''))}`;
+  const safeMapLink = `http://googleusercontent.com/maps.google.com/maps?q=${encodeURIComponent((option.address || '') + ' ' + (option.postcode || ''))}`;
 
   return (
     <div className={`relative rounded-[1.5rem] md:rounded-[2rem] overflow-hidden flex flex-col lg:flex-row transition-all duration-500 group ${cardBg} border ${borderClass} ${isPremium ? 'shadow-[0_20px_40px_-15px_rgba(0,0,0,0.8)] lg:hover:shadow-[0_30px_60px_-15px_rgba(37,99,235,0.2)] lg:hover:border-blue-500/50 transform lg:-translate-x-2 lg:w-[calc(100%+16px)]' : (isSoldOut ? 'opacity-70 grayscale-[50%]' : 'shadow-2xl lg:hover:shadow-blue-900/20 lg:hover:border-slate-600 lg:hover:-translate-y-1')}`}>
@@ -360,13 +353,60 @@ function ParkingCard({ option, duration, isHeathrow, handleBooking, aiData, calc
                 </div>
               )}
               {activeTab === 'reviews' && (
-                <div className="space-y-4 max-h-60 overflow-y-auto custom-scrollbar pr-2">
-                   {currentReviews.length > 0 ? currentReviews.map((r: any) => (
-                     <div key={r.id} className={`border-b ${isPremium ? 'border-slate-800' : 'border-slate-800/50'} pb-4 last:border-0`}>
-                       <div className={`flex items-center gap-2 font-bold text-xs ${isPremium ? 'text-blue-400' : 'text-slate-300'}`}>{r.author} • <div className="flex text-amber-400 tracking-tighter"><Star className="w-2.5 h-2.5 fill-current"/> {r.rating}/5</div></div>
-                       <p className={`mt-1 text-xs leading-relaxed italic ${isPremium ? 'text-slate-400' : 'text-slate-500'}`}>"{r.comment}"</p>
-                     </div>
-                   )) : <p className={`text-xs ${isPremium ? 'text-slate-500' : 'text-slate-600'}`}>Aero verified: No recent customer reviews found.</p>}
+                <div className="flex flex-col h-full">
+                  <div className="space-y-4 max-h-60 overflow-y-auto custom-scrollbar pr-2 mb-6">
+                     {currentReviews.length > 0 ? currentReviews.map((r: any) => (
+                       <div key={r.id} className={`border-b ${isPremium ? 'border-slate-800' : 'border-slate-800/50'} pb-4 last:border-0`}>
+                         
+                         <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+                           <div className={`flex items-center gap-2 font-bold text-xs ${isPremium ? 'text-blue-400' : 'text-slate-300'}`}>
+                             {r.author} 
+                             <span className="text-slate-600">•</span> 
+                             <div className="flex text-amber-400 tracking-tighter">
+                               <Star className="w-2.5 h-2.5 fill-current"/> {r.rating}/5
+                             </div>
+                           </div>
+                           {r.date && (
+                             <span className="text-[10px] font-bold tracking-wider text-slate-500">
+                               {new Date(r.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                             </span>
+                           )}
+                         </div>
+
+                         <div className="flex items-center gap-2 mb-2">
+                           {r.verified && (
+                             <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-emerald-500">
+                               <CheckCircle2 className="w-3 h-3" /> Verified Booking
+                             </span>
+                           )}
+                           {r.source && (
+                             <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-slate-400 bg-slate-800/50 px-1.5 py-0.5 rounded border border-slate-700/50">
+                               {r.source}
+                             </span>
+                           )}
+                         </div>
+
+                         <p className={`text-xs leading-relaxed italic ${isPremium ? 'text-slate-300' : 'text-slate-400'}`}>"{r.comment}"</p>
+                       </div>
+                     )) : <p className={`text-xs ${isPremium ? 'text-slate-500' : 'text-slate-600'}`}>Aero verified: No recent customer reviews found.</p>}
+                  </div>
+
+                  {/* 🟢 TRUSTPILOT CALL-TO-ACTION ADDED HERE */}
+                  <div className={`mt-auto pt-5 border-t ${isPremium ? 'border-slate-800' : 'border-slate-800/50'} flex flex-col items-center text-center`}>
+                    <h4 className="text-white font-black text-xs mb-1">Have you parked with us?</h4>
+                    <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest mb-4">
+                      Let others know about your experience.
+                    </p>
+                    <a 
+                      href="https://uk.trustpilot.com/review/aeroparkdirect.co.uk" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="px-6 py-3 bg-[#1A2235] border border-slate-700 hover:bg-emerald-600 hover:border-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 shadow-sm"
+                    >
+                      <Star className="w-3.5 h-3.5 fill-current text-emerald-400 group-hover:text-white" /> Write a Review on Trustpilot
+                    </a>
+                  </div>
+
                 </div>
               )}
             </div>
@@ -509,6 +549,7 @@ function ResultsContent() {
 
   return withPrices;
 }, [companies, pricingEngine, serviceType, isHeathrow, duration, dropoff]);
+
   const handleBooking = (option: any, finalPrice: number) => {
     const query = new URLSearchParams(searchParams.toString());
     query.set('type', option.name);

@@ -10,7 +10,7 @@ import {
   CalendarDays, LogOut, Plane, Network, SlidersHorizontal,
   ArrowUpDown, Award, AlertOctagon, FileText, Download,
   Percent, Image as ImageIcon, ArrowUp, ArrowDown,
-  ChevronDown, AlertCircle, Filter, Phone, Code2,Tags
+  ChevronDown, AlertCircle, Filter, Phone, Code2, Tags
 } from "lucide-react";
 
 interface Review {
@@ -19,6 +19,8 @@ interface Review {
   rating: number;
   comment: string;
   date: string;
+  verified: boolean;
+  source: string;
 }
 
 // ─── DEFAULT DATA ──────────────────────────────────────
@@ -337,7 +339,9 @@ export default function AdminCompaniesPage() {
       author: "Customer Name", 
       rating: 5, 
       comment: "Write review here...", 
-      date: new Date().toLocaleDateString() 
+      date: new Date().toISOString().split('T')[0], // Defaults to YYYY-MM-DD
+      verified: true,
+      source: "Trustpilot"
     };
     if (editingCompany) {
       setEditingCompany({ ...editingCompany, [key]: [...(editingCompany[key] || []), rev] });
@@ -1293,56 +1297,65 @@ function ReviewSection({
 }) {
   const accent = color === "blue" ? "bg-blue-600 hover:bg-blue-500" : "bg-purple-600 hover:bg-purple-500";
   const ring = color === "blue" ? "focus:ring-blue-500/50" : "focus:ring-purple-500/50";
-  const inputStyle = `w-full bg-[#1A2235] border border-slate-700/50 hover:border-${color}-500/50 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none focus:ring-2 ${ring} transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white] placeholder:text-slate-500`;
-
+  
   return (
-    <div className="pt-8 border-t border-slate-800">
+    <div className="pt-8 border-t border-slate-800 mt-6">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-white font-black text-xl">Customer Reviews ({airport.toUpperCase()})</h3>
-        <button type="button" onClick={onAdd} className={`px-5 py-3 ${accent} text-white rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-colors`}>
+        <h3 className="text-white font-black text-xl uppercase tracking-widest">
+          {airport.toUpperCase()} Reviews <span className="text-slate-600 ml-2">({reviews.length})</span>
+        </h3>
+        <button type="button" onClick={onAdd} className={`px-5 py-3 ${accent} text-white rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all shadow-lg`}>
           + Add Review
         </button>
       </div>
-      <div className="grid grid-cols-1 gap-6">
+      
+      <div className="space-y-6">
         {reviews.map((rev, idx) => (
-          <div key={rev.id} className="bg-[#131A2B] p-6 rounded-3xl border border-slate-800/80 relative shadow-sm">
-            <button type="button" onClick={() => onRemove(idx)} className="absolute top-6 right-6 p-2 bg-slate-800/50 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">
+          <div key={rev.id} className="bg-[#0F1523] p-6 rounded-2xl border border-slate-700/50 relative shadow-sm">
+            <button type="button" onClick={() => onRemove(idx)} className="absolute top-6 right-6 p-2 text-slate-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">
               <Trash2 className="w-4 h-4" />
             </button>
-            <div className="flex flex-col sm:flex-row gap-4 mb-4 pr-12">
-              <div className="flex-1 space-y-2">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block ml-1">Reviewer Name</label>
-                <input
-                  value={rev.author || ""}
-                  onChange={(e) => onUpdate(idx, "author", e.target.value)}
-                  className={inputStyle}
-                  placeholder="Author Name"
-                />
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 pr-10">
+              <div className="space-y-1">
+                <label className="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">Author</label>
+                <input value={rev.author || ""} onChange={(e) => onUpdate(idx, "author", e.target.value)} className={`w-full bg-[#1A2235] rounded-xl px-4 py-3 text-sm font-bold text-white border border-slate-700/50 outline-none focus:ring-2 ${ring} transition-all`} />
               </div>
-              <div className="w-full sm:w-1/3 space-y-2">
-                <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block ml-1">Rating</label>
+              <div className="space-y-1">
+                <label className="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">Rating</label>
                 <div className="relative">
-                  <select
-                    value={rev.rating || 5}
-                    onChange={(e) => onUpdate(idx, "rating", parseInt(e.target.value) || 5)}
-                    className={`w-full appearance-none bg-[#1A2235] border border-slate-700/50 hover:border-${color}-500/50 rounded-xl px-5 py-4 text-sm text-amber-400 font-bold outline-none cursor-pointer focus:ring-2 ${ring} transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white]`}
-                  >
-                    {[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} Stars</option>)}
+                  <select value={rev.rating || 5} onChange={(e) => onUpdate(idx, "rating", parseInt(e.target.value) || 5)} className={`w-full appearance-none bg-[#1A2235] rounded-xl px-4 py-3 text-sm font-bold text-amber-400 border border-slate-700/50 outline-none focus:ring-2 ${ring} transition-all cursor-pointer`}>
+                    {[5,4,3,2,1].map(n => <option key={n} value={n}>{n} Stars</option>)}
                   </select>
-                  <ChevronDown className={`absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none`} />
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                 </div>
               </div>
+              <div className="space-y-1">
+                <label className="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">Source</label>
+                <div className="relative">
+                  <select value={rev.source || "Trustpilot"} onChange={(e) => onUpdate(idx, "source", e.target.value)} className={`w-full appearance-none bg-[#1A2235] rounded-xl px-4 py-3 text-sm font-bold text-white border border-slate-700/50 outline-none focus:ring-2 ${ring} transition-all cursor-pointer`}>
+                    <option value="Trustpilot">Trustpilot</option>
+                    <option value="Google">Google</option>
+                    <option value="Internal">Internal</option>
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">Date</label>
+                <input type="date" value={rev.date || ""} onChange={(e) => onUpdate(idx, "date", e.target.value)} className={`w-full bg-[#1A2235] rounded-xl px-4 py-3 text-sm font-bold text-white border border-slate-700/50 outline-none focus:ring-2 ${ring} transition-all cursor-pointer`} />
+              </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block ml-1">Review Body</label>
-              <textarea
-                value={rev.comment || ""}
-                onChange={(e) => onUpdate(idx, "comment", e.target.value)}
-                className={`${inputStyle} leading-relaxed resize-none`}
-                rows={3}
-                placeholder="Customer comment..."
-              />
+
+            <div className="space-y-1 mb-4">
+              <label className="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">Comment</label>
+              <textarea value={rev.comment || ""} onChange={(e) => onUpdate(idx, "comment", e.target.value)} className={`w-full bg-[#1A2235] rounded-xl px-4 py-3 text-sm font-bold text-white border border-slate-700/50 outline-none focus:ring-2 ${ring} transition-all resize-none leading-relaxed`} rows={3} />
             </div>
+
+            <label className="flex items-center gap-2 cursor-pointer w-fit group">
+              <input type="checkbox" checked={!!rev.verified} onChange={(e) => onUpdate(idx, "verified", e.target.checked)} className="w-4 h-4 rounded border-slate-700 bg-[#1A2235] accent-emerald-500 cursor-pointer" />
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest group-hover:text-emerald-400 transition-colors">Mark as Verified Booking</span>
+            </label>
           </div>
         ))}
       </div>
