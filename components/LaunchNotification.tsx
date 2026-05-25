@@ -2,12 +2,15 @@
 import { useState, useEffect } from "react";
 import { Zap, X } from "lucide-react";
 
-// 🟢 We tell the component it is going to receive "slotsClaimed" as a number
-export default function LaunchNotification({ slotsClaimed }: { slotsClaimed: number }) {
+// This interface is the missing link that fixes your 'IntrinsicAttributes' error
+interface LaunchNotificationProps {
+  slotsClaimed: number;
+}
+
+export default function LaunchNotification({ slotsClaimed }: LaunchNotificationProps) {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // Reveal after a short delay
     const timer = setTimeout(() => setIsVisible(true), 2500);
     return () => clearTimeout(timer);
   }, []);
@@ -25,8 +28,8 @@ export default function LaunchNotification({ slotsClaimed }: { slotsClaimed: num
         
         <div className="flex-1 pr-4">
           <h4 className="text-white font-black text-[10px] md:text-xs uppercase tracking-widest leading-tight">Founding Member Offer</h4>
-          {/* 🟢 DYNAMIC SLOT MATH: 15 minus the database value (6) = 9 */}
           <p className="text-[10px] text-slate-400 font-bold mt-1.5 leading-relaxed">
+            {/* The math: 15 total slots minus what's claimed in database */}
             Only <span className="text-amber-400">{15 - slotsClaimed} slots left</span> to claim a lifetime 5% discount!
           </p>
         </div>
