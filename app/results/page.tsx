@@ -817,7 +817,7 @@ function ResultsLayout() {
       </header>
 
       {/* 🟢 NEW: LIVE ACTIVITY SOCIAL PROOF */}
-      <LiveActivity />
+      {/* <LiveActivity /> */}
 
       <div className="relative z-10"><ResultsContent /></div>
 
