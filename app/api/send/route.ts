@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
-import { sendBookingReceipt } from "@/app/lib/mail"; 
+import { sendBookingReceipt, sendProviderNotification } from "@/app/lib/mail"; 
 import { Resend } from "resend";
-import prismadb from "@/app/lib/prismadb"; 
+import { createClient } from '@supabase/supabase-js'; // 🟢 ADDED SUPABASE
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+// 🟢 INITIALIZE SUPABASE CLIENT
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!, 
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function POST(req: Request) {
   try {
@@ -37,31 +43,50 @@ export async function POST(req: Request) {
 
       let company = null;
       
-      // 🟢 BULLETPROOF DATABASE FETCH
-      // If Prisma crashes here, the catch block ensures the email still sends!
+      // 🟢 BULLETPROOF SUPABASE FETCH
+      // If Supabase crashes here, the catch block ensures the email still sends!
       try {
         if (booking.company_id && booking.company_id !== "ALL" && booking.company_id !== "null") {
-          company = await prismadb.companies.findUnique({ 
-            where: { id: booking.company_id } 
-          });
+          const { data } = await supabase
+            .from('companies')
+            .select('*')
+            .eq('id', booking.company_id)
+            .maybeSingle();
+          company = data;
         }
 
         if (!company) {
            console.log("⚠️ Missing company_id. Falling back to AeroPark Direct profile.");
-           // Removed 'insensitive' search just in case your database version rejects it
-           company = await prismadb.companies.findFirst({
-              where: { name: "AeroPark Direct" }
-           });
+           const { data } = await supabase
+             .from('companies')
+             .select('*')
+             .eq('name', 'AeroPark Direct')
+             .maybeSingle();
+           company = data;
         }
       } catch (dbError: any) {
-        console.error("⚠️ Prisma DB Error (Skipping custom instructions):", dbError.message);
+        console.error("⚠️ Supabase DB Error (Skipping custom instructions):", dbError.message);
         company = null; // Force null so the email sends with standard defaults
       }
 
-      // 2. Fire the updated email function
+      // 2. Fire the updated email function for the Customer
       const result = await sendBookingReceipt(booking, company, isAmendment || false);
       
       if (result.success) {
+        
+        // 🟢 PROVIDER NOTIFICATION CHECK
+        // Only send this if it's a new booking (not an amendment)
+        if (!isAmendment && company) {
+          const allowedPartners = ['APD', '24/7 Meet & Greet', 'Airport Parking Bay'];
+          
+          if (allowedPartners.includes(company.name)) {
+            await sendProviderNotification(booking, company);
+            console.log(`✅ Provider Notification routed to ${company.name}`);
+          } else {
+            console.log(`ℹ️ No provider notification sent. ${company.name} is not in the allowed partners list.`);
+          }
+        }
+
         return NextResponse.json({ success: true, data: result.data });
       } else {
         const resendError = result.error as any;

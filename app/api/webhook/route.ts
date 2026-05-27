@@ -1,14 +1,13 @@
 // @ts-nocheck
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { sendBookingReceipt, sendAmendmentAlerts } from "@/app/lib/mail"; 
+import { sendBookingReceipt, sendAmendmentAlerts, sendProviderNotification } from "@/app/lib/mail"; // 🟢 ADDED sendProviderNotification
 import { createClient } from '@supabase/supabase-js';
 import { triggerMissingFlightAlert } from "@/app/lib/twilio"; 
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!; 
 
-// 🟢 CRITICAL FIX: Changed from ANON_KEY to SERVICE_ROLE_KEY to bypass your new RLS rules
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!, 
   process.env.SUPABASE_SERVICE_ROLE_KEY! 
@@ -49,7 +48,7 @@ export async function POST(req: Request) {
         // --- NEW BOOKING LOGIC ---
         let resolvedCompany = null;
         
-        // 1. Fetch Company (Works with your IDs)
+        // 1. Fetch Company
         if (m?.company_id && m.company_id !== "null" && m.company_id !== "") {
           const { data } = await supabase.from('companies').select('*').eq('id', m.company_id).maybeSingle();
           if (data) resolvedCompany = data;
@@ -61,7 +60,7 @@ export async function POST(req: Request) {
           if (data) resolvedCompany = data;
         }
 
-        // 3. Create Booking in Database (Mapping metadata to database columns)
+        // 3. Create Booking in Database
         const bookingData = {
           booking_ref: m?.booking_ref || `APD-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
           full_name: m?.full_name || "",
@@ -74,7 +73,6 @@ export async function POST(req: Request) {
           terminal: m?.terminal || "Main Terminal",
           dropoff_date: m?.dropoff_date || new Date().toISOString(),
           pickup_date: m?.pickup_date || new Date().toISOString(),
-          // 🟢 MAPPED TO NEW METADATA KEYS
           dropoff_time: m?.dropoff_time || "09:00", 
           pickup_time: m?.pickup_time || "09:00", 
           flight_number: m?.flight_number || "", 
@@ -92,9 +90,20 @@ export async function POST(req: Request) {
           console.error("❌ SUPABASE INSERT ERROR:", insertError);
         }
 
-        // 4. Send Confirmation Email
+        // 4. Send Emails
         if (newBooking) {
+            // Send the customer receipt
             await sendBookingReceipt(newBooking, resolvedCompany); 
+
+            // 🟢 NEW: Trigger Provider Notification Check
+            const allowedPartners = ['APD', '24/7 Meet & Greet', 'Airport Parking Bay'];
+            
+            if (resolvedCompany && allowedPartners.includes(resolvedCompany.name)) {
+              await sendProviderNotification(newBooking, resolvedCompany);
+              console.log(`✅ Provider Notification routed to ${resolvedCompany.name}`);
+            } else {
+              console.log(`ℹ️ No provider notification sent. ${resolvedCompany?.name || 'Unknown'} is not in the allowed partners list.`);
+            }
         }
 
         // 5. TRIGGER TWILIO AUTOMATION

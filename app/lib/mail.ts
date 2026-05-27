@@ -62,7 +62,7 @@ export const sendBookingReceipt = async (booking: any, passedCompany: any, isAme
     
     // 🟢 MAPPING FIX: Safely extracts both unique dispatch fields from your database schema
     const phone1 = company?.dispatch_phone_1 || company?.dispatch_phone || company?.phone_number || '07397705005';
-    const phone2 = company?.dispatch_phone_2 || '';
+    const phone2 = company?.dispatch_phone_2 || company?.phone_number_2 || '';
     
     const phone1Link = phone1.replace(/\s+/g, '');
     const phone2Link = phone2.replace(/\s+/g, '');
@@ -234,6 +234,68 @@ export const sendReviewRequest = async (customerEmail: string, customerName: str
     return { success: true };
   } catch (error) {
     console.error("Review Email Error:", error);
+    return { success: false, error };
+  }
+};
+
+/**
+ * 🟢 NEW: Sends automated booking details strictly to specific parking providers
+ * Automatically calculates the Stripe-deducted net payout.
+ */
+export const sendProviderNotification = async (booking: any, company: any) => {
+  try {
+    // 1. Validate Company Exists
+    if (!company || !company.name) {
+      console.warn("Cannot send provider notification: Missing company details.");
+      return { success: false, error: "Missing company" };
+    }
+
+    // 2. Format Dates
+    const dropDate = formatEmailDate(booking.dropoff_date);
+    const pickDate = formatEmailDate(booking.pickup_date);
+
+    // 3. Calculate Net Pay (Total - 1.5% Stripe Fee - £0.20)
+    const grossPrice = parseFloat(booking.total_price || 0);
+    const netAmount = (grossPrice - (grossPrice * 0.015 + 0.20)).toFixed(2);
+
+    // 4. Send Email
+    const { data, error } = await resend.emails.send({
+      from: 'AeroPark Bookings <info@aeroparkdirect.co.uk>',
+      to: 'provider-email@example.com', // 🟢 CHANGE THIS LATER TO THE PROVIDER'S INBOX
+      subject: `NEW BOOKING: ${booking.booking_ref} | ${booking.full_name}`,
+      html: `
+        <div style="font-family: sans-serif; color: #333; max-width: 600px; padding: 20px;">
+          <h2 style="border-bottom: 2px solid #2563eb; padding-bottom: 10px;">New Parking Reservation</h2>
+          
+          <table border="0" cellpadding="8" cellspacing="0" width="100%" style="border-collapse: collapse;">
+            <tr style="background-color: #f8fafc;"><td width="35%"><strong>Booking Ref:</strong></td><td>${booking.booking_ref}</td></tr>
+            <tr><td><strong>Status:</strong></td><td><span style="background-color: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; text-transform: uppercase;">${booking.status || 'Confirmed'}</span></td></tr>
+            <tr style="background-color: #f8fafc;"><td><strong>Customer Name:</strong></td><td>${booking.full_name}</td></tr>
+            <tr><td><strong>Phone Number:</strong></td><td>${booking.phone_number}</td></tr>
+            <tr style="background-color: #f8fafc;"><td><strong>Car Details:</strong></td><td>${booking.car_make} (${booking.car_color})</td></tr>
+            <tr><td><strong>Registration:</strong></td><td><strong>${booking.license_plate}</strong></td></tr>
+            <tr style="background-color: #f8fafc;"><td><strong>Drop-off:</strong></td><td>${dropDate} at ${booking.dropoff_time}</td></tr>
+            <tr><td><strong>Pick-up:</strong></td><td>${pickDate} at ${booking.pickup_time}</td></tr>
+            <tr style="background-color: #f8fafc;"><td><strong>Return Flight:</strong></td><td>${booking.flight_number || 'N/A'}</td></tr>
+            <tr><td><strong>Service Type:</strong></td><td>${booking.service_type || company.name}</td></tr>
+            
+            <tr style="background-color: #eff6ff; border-top: 2px solid #2563eb;">
+              <td><strong>Amount Payable (Net):</strong></td>
+              <td><strong style="color: #1e40af; font-size: 18px;">£${netAmount}</strong></td>
+            </tr>
+          </table>
+          
+          <p style="margin-top: 30px; font-size: 12px; color: #64748b; text-align: center;">
+            This email was generated automatically by AeroPark Direct. Please do not reply directly to this message.
+          </p>
+        </div>
+      `,
+    });
+
+    if (error) return { success: false, error };
+    return { success: true, data };
+  } catch (error) {
+    console.error("Provider Email Error:", error);
     return { success: false, error };
   }
 };
