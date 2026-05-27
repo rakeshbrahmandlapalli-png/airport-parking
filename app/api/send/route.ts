@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { sendBookingReceipt, sendProviderNotification } from "@/app/lib/mail"; 
 import { Resend } from "resend";
-import { createClient } from '@supabase/supabase-js'; // 🟢 ADDED SUPABASE
+import { createClient } from '@supabase/supabase-js'; 
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -34,7 +34,33 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true });
     }
 
-    // --- CASE 2: BOOKING RECEIPT / AMENDMENT ---
+    // --- CASE 3: MANUAL PROVIDER TRIGGER ---
+    if (body.manual_provider_notify && body.booking) {
+      console.log(`🚀 Manually triggering provider email for: ${body.booking.booking_ref}`);
+      const { data: company } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('id', body.booking.company_id)
+        .maybeSingle();
+        
+      await sendProviderNotification(body.booking, company);
+      return NextResponse.json({ success: true, message: "Manual provider notification sent" });
+    }
+
+    // --- CASE 4: MANUAL CUSTOMER TRIGGER ---
+    if (body.manual_customer_notify && body.booking) {
+      console.log(`🚀 Manually triggering customer receipt for: ${body.booking.booking_ref}`);
+      const { data: company } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('id', body.booking.company_id)
+        .maybeSingle();
+        
+      await sendBookingReceipt(body.booking, company, false);
+      return NextResponse.json({ success: true, message: "Manual customer receipt sent" });
+    }
+
+    // --- CASE 2: AUTOMATED BOOKING RECEIPT / AMENDMENT ---
     if (body.booking) {
       const { booking, isAmendment } = body;
       
@@ -44,7 +70,6 @@ export async function POST(req: Request) {
       let company = null;
       
       // 🟢 BULLETPROOF SUPABASE FETCH
-      // If Supabase crashes here, the catch block ensures the email still sends!
       try {
         if (booking.company_id && booking.company_id !== "ALL" && booking.company_id !== "null") {
           const { data } = await supabase
@@ -66,7 +91,7 @@ export async function POST(req: Request) {
         }
       } catch (dbError: any) {
         console.error("⚠️ Supabase DB Error (Skipping custom instructions):", dbError.message);
-        company = null; // Force null so the email sends with standard defaults
+        company = null; 
       }
 
       // 2. Fire the updated email function for the Customer
@@ -75,7 +100,6 @@ export async function POST(req: Request) {
       if (result.success) {
         
         // 🟢 PROVIDER NOTIFICATION CHECK
-        // Only send this if it's a new booking (not an amendment)
         if (!isAmendment && company) {
           const allowedPartners = ['APD', '24/7 Meet & Greet', 'Airport Parking Bay'];
           

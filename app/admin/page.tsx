@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * AeroPark Direct - Command Center v12.1 (Ultimate Master Build)
+ * AeroPark Direct - Command Center v12.2 (Ultimate Master Build)
  * ------------------------------------------------------
  * UPGRADES & FIXES:
  * 1. AUTOFILL BUG: Fixed invisible text. Forced Webkit fill colors on all inputs.
@@ -10,9 +10,10 @@
  * 4. UI/UX: Hyper-premium SaaS 3.0 aesthetic with frosted glass and deep gradients.
  * 5. FORMATTING: Fully expanded code (no minification) to restore exact line counts.
  * 6. TWILIO: Added silent background API trigger for manual bookings missing flights.
- * 7. 🟢 MODAL FIX: Safely bound all inputs to prevent 'null' read crashes during unmounts.
- * 8. 🟢 DB FIX: Handled empty date/time strings to prevent Supabase 500 rejection errors.
- * 9. 🟢 NEXT.JS ROUTER FIX: Wrapped in Suspense and guarded router redirects to prevent Vercel "dispatched before initialization" build errors.
+ * 7. MODAL FIX: Safely bound all inputs to prevent 'null' read crashes during unmounts.
+ * 8. DB FIX: Handled empty date/time strings to prevent Supabase 500 rejection errors.
+ * 9. NEXT.JS ROUTER FIX: Wrapped in Suspense and guarded router redirects.
+ * 10. 🟢 MANUAL EMAILS: Added direct API triggers to dispatch Provider and Customer emails.
  */
 
 import { useEffect, useState, useMemo, Suspense } from "react";
@@ -79,7 +80,7 @@ function DashboardContent() {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        router.replace("/admin/login"); // 🟢 Changed to replace for better routing history
+        router.replace("/admin/login"); 
       } else {
         fetchDashboardData();
       }
@@ -176,7 +177,7 @@ function DashboardContent() {
         car_make: editingBooking?.car_make || null,
         car_color: editingBooking?.car_color || null,
         flight_number: editingBooking?.flight_number || null,
-        dropoff_date: editingBooking?.dropoff_date || null, // Safety fallback for empty dates
+        dropoff_date: editingBooking?.dropoff_date || null, 
         dropoff_time: editingBooking?.dropoff_time || null,
         pickup_date: editingBooking?.pickup_date || null,
         pickup_time: editingBooking?.pickup_time || null,
@@ -206,7 +207,6 @@ function DashboardContent() {
       const payload = { ...newBooking, booking_ref };
       if (payload.company_id === "ALL") payload.company_id = null; 
       
-      // Safety fallback for empty dates
       if (!payload.dropoff_date) payload.dropoff_date = null;
       if (!payload.dropoff_time) payload.dropoff_time = null;
       if (!payload.pickup_date) payload.pickup_date = null;
@@ -216,7 +216,6 @@ function DashboardContent() {
       
       if (error) throw error;
 
-      // TWILIO AUTOMATION TRIGGER
       if (!payload.flight_number || payload.flight_number.trim() === "") {
         fetch('/api/twilio', {
           method: 'POST',
@@ -238,6 +237,34 @@ function DashboardContent() {
       alert(error.message); 
     } finally { 
       setIsSaving(false); 
+    }
+  };
+
+  // 🟢 NEW: MANUAL EMAIL DISPATCHER
+  const sendManualEmail = async (booking: any, type: 'provider' | 'customer') => {
+    if (!confirm(`Are you sure you want to push a manual email to the ${type}?`)) return;
+
+    try {
+      const payload = { 
+        booking: booking, 
+        manual_provider_notify: type === 'provider',
+        manual_customer_notify: type === 'customer'
+      };
+
+      const response = await fetch('/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        alert(`✅ ${type === 'provider' ? 'Provider' : 'Customer'} email dispatched successfully!`);
+      } else {
+        alert(`❌ Failed to send ${type} email. Check server logs.`);
+      }
+    } catch (error) {
+      console.error("Manual Email Error:", error);
+      alert("❌ Critical routing error while sending email.");
     }
   };
 
@@ -569,6 +596,16 @@ function DashboardContent() {
 
                       <td className="px-8 py-6 text-right">
                         <div className="flex items-center justify-end gap-2 opacity-30 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                          
+                          {/* 🟢 NEW: MANUAL EMAIL TRIGGERS */}
+                          <button onClick={() => sendManualEmail(b, 'customer')} className="p-2.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white rounded-lg border border-blue-500/20 transition-all active:scale-95" title="Push Receipt to Customer">
+                            <Receipt className="w-4 h-4" />
+                          </button>
+                          
+                          <button onClick={() => sendManualEmail(b, 'provider')} className="p-2.5 bg-purple-500/10 text-purple-400 hover:bg-purple-500 hover:text-white rounded-lg border border-purple-500/20 transition-all active:scale-95" title="Push Job to Provider">
+                            <Briefcase className="w-4 h-4" />
+                          </button>
+
                           {b.status?.toLowerCase() === 'completed' && (
                             <button onClick={() => handleRequestReview(b)} className="p-2.5 bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white rounded-lg border border-amber-500/20 transition-all active:scale-95" title="Request 5-Star Review">
                               <Star className="w-4 h-4 fill-current" />
@@ -752,7 +789,6 @@ function DashboardContent() {
                   <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">License ID</label><input required type="text" value={editingBooking?.license_plate || ''} onChange={(e) => setEditingBooking({...editingBooking, license_plate: e.target.value.toUpperCase()})} className={yellowInputStyle} /></div>
                </div>
               
-               {/* 🟢 ADDED: LOGISTICS SCHEDULE (DATES & TIMES) */}
                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-6 border-t border-slate-800">
                  <div className="space-y-2">
                    <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Inbound Date</label>
@@ -837,7 +873,7 @@ function DashboardContent() {
   );
 }
 
-// 🟢 NEXT.JS 14+ SUSPENSE WRAPPER (REQUIRED TO PREVENT VERCEL BUILD ERRORS)
+// 🟢 NEXT.JS 14+ SUSPENSE WRAPPER
 export default function AdminDashboard() {
   return (
     <Suspense fallback={

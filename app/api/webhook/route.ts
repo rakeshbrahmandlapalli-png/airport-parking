@@ -90,19 +90,19 @@ export async function POST(req: Request) {
           console.error("❌ SUPABASE INSERT ERROR:", insertError);
         }
 
-        // 4. Send Emails
+        // 4. Send Emails (Non-blocking / Background)
         if (newBooking) {
-            // Send the customer receipt
-            await sendBookingReceipt(newBooking, resolvedCompany); 
+            // We remove 'await' so the server doesn't wait for the email to send
+            // before telling Stripe everything is OK.
+            sendBookingReceipt(newBooking, resolvedCompany)
+              .catch(err => console.error("Customer Email Failed:", err)); 
 
-            // 🟢 NEW: Trigger Provider Notification Check
+            // Trigger Provider Notification
             const allowedPartners = ['APD', '24/7 Meet & Greet', 'Airport Parking Bay'];
             
             if (resolvedCompany && allowedPartners.includes(resolvedCompany.name)) {
-              await sendProviderNotification(newBooking, resolvedCompany);
-              console.log(`✅ Provider Notification routed to ${resolvedCompany.name}`);
-            } else {
-              console.log(`ℹ️ No provider notification sent. ${resolvedCompany?.name || 'Unknown'} is not in the allowed partners list.`);
+              sendProviderNotification(newBooking, resolvedCompany)
+                .catch(err => console.error("Provider Email Failed:", err));
             }
         }
 
