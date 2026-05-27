@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * AeroPark Direct - Command Center v12.2 (Ultimate Master Build)
+ * AeroPark Direct - Command Center v12.3 (Ultimate Master Build)
  * ------------------------------------------------------
  * UPGRADES & FIXES:
  * 1. AUTOFILL BUG: Fixed invisible text. Forced Webkit fill colors on all inputs.
@@ -13,7 +13,8 @@
  * 7. MODAL FIX: Safely bound all inputs to prevent 'null' read crashes during unmounts.
  * 8. DB FIX: Handled empty date/time strings to prevent Supabase 500 rejection errors.
  * 9. NEXT.JS ROUTER FIX: Wrapped in Suspense and guarded router redirects.
- * 10. 🟢 MANUAL EMAILS: Added direct API triggers to dispatch Provider and Customer emails.
+ * 10. MANUAL EMAILS: Added direct API triggers to dispatch Provider and Customer emails.
+ * 11. 🟢 OPERATOR EDIT: Added ability to re-assign a booking to a different partner in Modify Case.
  */
 
 import { useEffect, useState, useMemo, Suspense } from "react";
@@ -169,6 +170,9 @@ function DashboardContent() {
     e.preventDefault();
     setIsSaving(true);
     try {
+      // 🟢 ADDED: company_id mapping for edits. Parse "ALL" to null.
+      const updatedCompanyId = editingBooking?.company_id === "ALL" ? null : (editingBooking?.company_id || null);
+
       const { error } = await supabase.from('bookings').update({
         full_name: editingBooking?.full_name || null,
         email: editingBooking?.email || null,
@@ -185,6 +189,7 @@ function DashboardContent() {
         status: editingBooking?.status || 'pending',
         airport: editingBooking?.airport || null,
         terminal: editingBooking?.terminal || null,
+        company_id: updatedCompanyId, // 🟢 NOW INCLUDED IN UPDATE
         service_type: editingBooking?.service_type || "Meet & Greet"
       }).eq('id', editingBooking.id);
       
@@ -240,7 +245,6 @@ function DashboardContent() {
     }
   };
 
-  // 🟢 NEW: MANUAL EMAIL DISPATCHER
   const sendManualEmail = async (booking: any, type: 'provider' | 'customer') => {
     if (!confirm(`Are you sure you want to push a manual email to the ${type}?`)) return;
 
@@ -597,7 +601,7 @@ function DashboardContent() {
                       <td className="px-8 py-6 text-right">
                         <div className="flex items-center justify-end gap-2 opacity-30 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
                           
-                          {/* 🟢 NEW: MANUAL EMAIL TRIGGERS */}
+                          {/* MANUAL EMAIL TRIGGERS */}
                           <button onClick={() => sendManualEmail(b, 'customer')} className="p-2.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white rounded-lg border border-blue-500/20 transition-all active:scale-95" title="Push Receipt to Customer">
                             <Receipt className="w-4 h-4" />
                           </button>
@@ -808,7 +812,21 @@ function DashboardContent() {
                  </div>
                </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-800">
+              {/* 🟢 EXPANDED: Now grid-cols-4 to fit Partner Node */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-6 border-t border-slate-800">
+                
+                {/* 🟢 NEW: Partner Node Dropdown */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Partner Node</label>
+                  <div className="relative">
+                    <select value={editingBooking?.company_id || 'ALL'} onChange={(e) => setEditingBooking({...editingBooking, company_id: e.target.value === 'ALL' ? null : e.target.value})} className={selectStyle}>
+                      <option value="ALL">Aero Direct (Internal)</option>
+                      {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Service Level</label>
                   <div className="relative">
@@ -820,7 +838,6 @@ function DashboardContent() {
                     <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                   </div>
                 </div>
-                
 
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Status Lifecycle</label>
