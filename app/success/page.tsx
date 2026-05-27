@@ -26,6 +26,26 @@ function SuccessContent() {
   const [status, setStatus] = useState<"verifying" | "success" | "error">("verifying");
   const [errorMsg, setErrorMsg] = useState("");
 
+  // 🟢 MANUAL GOOGLE ADS CONVERSION TRIGGER
+  const triggerGoogleAdsConversion = (value: number) => {
+    try {
+      if (typeof window !== 'undefined' && (window as any).gtag) {
+        (window as any).gtag('event', 'conversion', {
+          // ⚠️ REPLACE 'YOUR_CONVERSION_LABEL_HERE' WITH YOUR ACTUAL LABEL FROM GOOGLE ADS
+          'send_to': 'AW-18163936640/YOUR_CONVERSION_LABEL_HERE', 
+          'value': value,
+          'currency': 'GBP',
+          'transaction_id': sessionId 
+        });
+        console.log("Conversion fired to Google Ads:", value);
+      } else {
+        console.warn("Google Ads gtag not found on window object.");
+      }
+    } catch (e) {
+      console.error("Failed to fire Google Ads event:", e);
+    }
+  };
+
   useEffect(() => {
     const finalizePayment = async () => {
       if (!sessionId) {
@@ -55,13 +75,14 @@ function SuccessContent() {
         if (existing) {
           setBooking(existing);
           setStatus("success");
+          triggerGoogleAdsConversion(existing.total_price); // 🟢 Trigger tracking
           return;
         }
 
         // 3. GENERATE REF & SAVE TO SUPABASE (Backup if Webhook is slow)
         const shortId = "APD-" + Math.random().toString(36).substring(2, 8).toUpperCase();
         
-        // 🟢 FIXED: Match fields to schema.prisma and ensure company_id is linked
+        // Match fields to schema.prisma and ensure company_id is linked
         const { data: newBooking, error: dbError } = await supabase
           .from('bookings')
           .insert([{ 
@@ -82,7 +103,7 @@ function SuccessContent() {
             flight_number: m.flight_number || m.flightNumber || "TBC",
             airport: m.airport || "Luton (LTN)",
             terminal: m.terminal || "Main Terminal",
-            company_id: m.company_id || null, // 🟢 CRITICAL: Links to partner for financials
+            company_id: m.company_id || null, // Links to partner for financials
             status: "confirmed"
           }])
           .select()
@@ -95,12 +116,13 @@ function SuccessContent() {
           if (retry) {
             setBooking(retry);
             setStatus("success");
+            triggerGoogleAdsConversion(retry.total_price); // 🟢 Trigger tracking
             return;
           }
           throw dbError;
         }
 
-        // 4. TRIGGER EMAIL (Calling your existing send endpoint)
+        // 4. TRIGGER EMAIL
         try {
           await fetch('/api/send', {
             method: 'POST',
@@ -116,6 +138,7 @@ function SuccessContent() {
 
         setBooking(newBooking);
         setStatus("success");
+        triggerGoogleAdsConversion(newBooking.total_price); // 🟢 Trigger tracking
 
       } catch (err: any) {
         console.error("Finalization error:", err);
@@ -127,16 +150,76 @@ function SuccessContent() {
     finalizePayment();
   }, [sessionId]);
 
+  // 🟢 PREMIUM LOADING SKELETON (Fixes Clarity Hydration Issue)
   if (status === "verifying") {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-slate-900 px-4">
-        <div className="relative w-16 h-16 mb-8">
-          <div className="absolute inset-0 border-4 border-blue-100 rounded-full"></div>
-          <div className="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
-          <CreditCard className="absolute inset-0 m-auto w-6 h-6 text-blue-600 animate-pulse" />
+      <div className="relative z-10 max-w-2xl w-full animate-in fade-in duration-500">
+        <div className="bg-white rounded-[2.5rem] md:rounded-[3rem] p-6 sm:p-8 md:p-12 shadow-2xl border border-slate-200 text-center relative overflow-hidden">
+          
+          <div className="relative mb-8">
+            <div className="w-20 h-20 md:w-24 md:h-24 bg-slate-100 rounded-full mx-auto animate-pulse flex items-center justify-center">
+              <Loader2 className="w-8 h-8 text-slate-300 animate-spin" />
+            </div>
+          </div>
+
+          <div className="h-10 md:h-12 w-3/4 bg-slate-200 rounded-xl mx-auto mb-4 animate-pulse"></div>
+          <div className="h-4 w-1/2 bg-slate-100 rounded-full mx-auto mb-10 animate-pulse"></div>
+
+          {/* SKELETON TICKET */}
+          <div className="bg-slate-900 rounded-[2rem] p-6 md:p-8 text-left text-white mb-10 relative overflow-hidden shadow-2xl">
+            <div className="absolute top-0 left-0 w-full h-1 bg-slate-800"></div>
+            
+            <div className="flex justify-between items-start mb-8">
+              <div className="space-y-2">
+                <div className="h-3 w-24 bg-slate-800 rounded animate-pulse"></div>
+                <div className="h-8 w-48 bg-slate-700 rounded-lg animate-pulse"></div>
+              </div>
+              <div className="w-12 h-12 bg-slate-800 rounded-2xl animate-pulse"></div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 border-t border-white/10 pt-8">
+              <div className="space-y-6">
+                <div className="flex gap-3">
+                  <div className="w-4 h-4 bg-slate-800 rounded animate-pulse mt-1"></div>
+                  <div className="space-y-2 flex-1">
+                    <div className="h-2 w-16 bg-slate-800 rounded animate-pulse"></div>
+                    <div className="h-4 w-32 bg-slate-700 rounded animate-pulse"></div>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="w-4 h-4 bg-slate-800 rounded animate-pulse mt-1"></div>
+                  <div className="space-y-2 flex-1">
+                    <div className="h-2 w-16 bg-slate-800 rounded animate-pulse"></div>
+                    <div className="h-4 w-24 bg-slate-700 rounded animate-pulse"></div>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-6">
+                <div className="flex gap-3">
+                  <div className="w-4 h-4 bg-slate-800 rounded animate-pulse mt-1"></div>
+                  <div className="space-y-2 flex-1">
+                    <div className="h-2 w-16 bg-slate-800 rounded animate-pulse"></div>
+                    <div className="h-4 w-20 bg-slate-700 rounded animate-pulse"></div>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="w-4 h-4 bg-slate-800 rounded animate-pulse mt-1"></div>
+                  <div className="space-y-2 flex-1">
+                    <div className="h-2 w-20 bg-slate-800 rounded animate-pulse"></div>
+                    <div className="h-4 w-24 bg-slate-700 rounded animate-pulse"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="h-32 w-full bg-slate-50 rounded-[2rem] border border-slate-100 animate-pulse mb-10"></div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="h-14 w-full bg-slate-100 rounded-2xl animate-pulse"></div>
+            <div className="h-14 w-full bg-blue-100 rounded-2xl animate-pulse"></div>
+          </div>
         </div>
-        <h2 className="text-2xl font-black tracking-tight mb-2">Finalizing Reservation...</h2>
-        <p className="text-slate-500 font-medium text-center">Aero is securing your space and generating your voucher.</p>
       </div>
     );
   }
@@ -283,7 +366,7 @@ export default function SuccessPage() {
     <main className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-4 sm:p-6 relative font-sans antialiased overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-blue-600/5 to-transparent"></div>
       <Suspense fallback={
-        <div className="flex flex-col items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center justify-center min-h-screen z-10 relative">
           <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
           <p className="font-black uppercase text-xs tracking-widest text-slate-400">Loading Reservation...</p>
         </div>

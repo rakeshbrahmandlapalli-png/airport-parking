@@ -4,7 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { GoogleAnalytics } from '@next/third-parties/google';
 import Script from 'next/script';
 import Chatbot from "@/components/Chatbot";
-import PromoBanner from "@/components/PromoBanner"; // 🚀 Imported the rotating promo banner
+import PromoBanner from "@/components/PromoBanner"; 
 
 export const metadata: Metadata = {
   title: "AeroPark Direct",
@@ -25,13 +25,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Google Ads Tracking Tag */}
+        {/* 🟢 Google Ads Base Tracking Tag */}
         <Script
           strategy="afterInteractive"
           src={`https://www.googletagmanager.com/gtag/js?id=AW-18163936640`}
         />
         <Script
-          id="google-ads-tag"
+          id="google-ads-config"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
@@ -56,8 +56,8 @@ export default function RootLayout({
         {/* Vercel Speed & Traffic Analytics */}
         <Analytics /> 
         
-        {/* Google Analytics 4 - Integrated with G-4QPSFJJD6S */}
-        <GoogleAnalytics gaId="G-4QPSFJJD6S" />
+        {/* 🟢 CRITICAL FIX: Updated to match your actual Google Analytics Dashboard ID */}
+        <GoogleAnalytics gaId="G-D897179F7E" />
 
         {/* 🟢 MICROSOFT CLARITY HEATMAPS & RECORDINGS */}
         <Script id="microsoft-clarity" strategy="afterInteractive">

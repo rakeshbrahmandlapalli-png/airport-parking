@@ -1,10 +1,9 @@
 "use client";
 
-import { supabase } from "../lib/supabase";
-import { useState, Suspense, useEffect } from "react"; 
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-
+import { supabase } from "../lib/supabase"; 
 import { 
   ShieldCheck, ArrowLeft, Loader2, CarFront, User,
   PlaneTakeoff, Plane, Lock, CreditCard, Calendar,
@@ -200,7 +199,7 @@ function CheckoutContent() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState(""); 
   const [phone, setPhone] = useState("");
-  const [terminal, setTerminal] = useState(airport.includes("Heathrow") ? "Terminal 2" : "Main Terminal");
+  const [terminal, setTerminal] = useState("Main Terminal"); // 🟢 Hydration Fix
   const [flightNumber, setFlightNumber] = useState(urlFlightNumber);
   const [registration, setRegistration] = useState(""); 
   const [carMake, setCarMake] = useState("");
@@ -244,6 +243,8 @@ function CheckoutContent() {
   useEffect(() => {
     if (airport.toLowerCase().includes("luton")) {
       setTerminal("Main Terminal");
+    } else if (airport.toLowerCase().includes("heathrow")) {
+      setTerminal("Terminal 2");
     }
   }, [airport]);
 
@@ -521,7 +522,7 @@ function CheckoutContent() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-12 relative z-10">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-12 relative z-10 animate-in fade-in duration-500">
       
       {/* 🟢 AERO SECURE BANNER */}
       <div className="max-w-3xl mx-auto mb-8 bg-[#0B1120]/80 backdrop-blur-xl border border-blue-900/40 rounded-3xl p-4 md:p-6 flex items-center gap-5 shadow-2xl relative overflow-hidden">
@@ -945,6 +946,42 @@ function CheckoutContent() {
   );
 }
 
+// 🟢 NEW: HYPER-PREMIUM LOADING SKELETON
+function CheckoutSkeleton() {
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 relative z-10 w-full">
+      <div className="flex flex-col-reverse lg:flex-row gap-10 items-start">
+        <div className="flex-1 w-full space-y-8">
+          <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-xl opacity-60">
+            <div className="h-8 w-48 bg-slate-200 rounded animate-pulse mb-8"></div>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="h-14 bg-slate-100 rounded-xl animate-pulse col-span-2"></div>
+              <div className="h-14 bg-slate-100 rounded-xl animate-pulse"></div>
+              <div className="h-14 bg-slate-100 rounded-xl animate-pulse"></div>
+            </div>
+          </div>
+          <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-xl opacity-60">
+            <div className="h-8 w-64 bg-slate-200 rounded animate-pulse mb-8"></div>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="h-14 bg-slate-100 rounded-xl animate-pulse"></div>
+              <div className="h-14 bg-slate-100 rounded-xl animate-pulse"></div>
+              <div className="h-14 bg-yellow-100 rounded-xl animate-pulse col-span-2"></div>
+            </div>
+          </div>
+        </div>
+        <aside className="w-full lg:w-[420px] bg-[#0B1120] rounded-[2.5rem] border border-slate-800 p-10 shadow-2xl">
+           <div className="h-8 w-40 bg-slate-800 rounded animate-pulse mb-10"></div>
+           <div className="space-y-4 mb-10">
+             <div className="h-4 w-full bg-slate-800 rounded animate-pulse"></div>
+             <div className="h-4 w-3/4 bg-slate-800 rounded animate-pulse"></div>
+           </div>
+           <div className="h-16 w-full bg-blue-600/20 rounded-2xl animate-pulse"></div>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
 export default function CheckoutPage() {
   return (
     <main suppressHydrationWarning className="min-h-[100dvh] bg-[#F8FAFC] font-sans antialiased pb-24 selection:bg-blue-200 selection:text-blue-900 overflow-x-hidden relative">
@@ -970,7 +1007,8 @@ export default function CheckoutPage() {
         </div>
       </header>
 
-      <Suspense fallback={<div className="p-32 md:p-48 text-center font-black uppercase tracking-[0.3em] text-sm text-slate-400 animate-pulse">Aero is Initializing Checkout...</div>}>
+      {/* 🟢 REPLACED FLASHING TEXT WITH PREMIUM SKELETON */}
+      <Suspense fallback={<CheckoutSkeleton />}>
         <CheckoutContent />
       </Suspense>
     </main>
