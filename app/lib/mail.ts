@@ -260,7 +260,7 @@ export const sendProviderNotification = async (booking: any, company: any) => {
     // 4. Send Email
     const { data, error } = await resend.emails.send({
       from: 'AeroPark Bookings <info@aeroparkdirect.co.uk>',
-      to: 'provider-email@example.com', // 🟢 CHANGE THIS LATER TO THE PROVIDER'S INBOX
+      to: 'info@airportparkingbay.co.uk', // 🟢 CHANGE THIS LATER TO THE PROVIDER'S INBOX
       subject: `NEW BOOKING: ${booking.booking_ref} | ${booking.full_name}`,
       html: `
         <div style="font-family: sans-serif; color: #333; max-width: 600px; padding: 20px;">
