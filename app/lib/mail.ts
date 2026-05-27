@@ -240,7 +240,7 @@ export const sendReviewRequest = async (customerEmail: string, customerName: str
 
 /**
  * 🟢 NEW: Sends automated booking details strictly to specific parking providers
- * Automatically calculates the Stripe-deducted net payout.
+ * Shows the full Gross amount paid by the customer.
  */
 export const sendProviderNotification = async (booking: any, company: any) => {
   try {
@@ -254,9 +254,8 @@ export const sendProviderNotification = async (booking: any, company: any) => {
     const dropDate = formatEmailDate(booking.dropoff_date);
     const pickDate = formatEmailDate(booking.pickup_date);
 
-    // 3. Calculate Net Pay (Total - 1.5% Stripe Fee - £0.20)
-    const grossPrice = parseFloat(booking.total_price || 0);
-    const netAmount = (grossPrice - (grossPrice * 0.015 + 0.20)).toFixed(2);
+    // 3. 🟢 Get the Full Gross Price Paid
+    const totalPaid = parseFloat(booking.total_price || 0).toFixed(2);
 
     // 4. Send Email
     const { data, error } = await resend.emails.send({
@@ -274,14 +273,15 @@ export const sendProviderNotification = async (booking: any, company: any) => {
             <tr><td><strong>Phone Number:</strong></td><td>${booking.phone_number}</td></tr>
             <tr style="background-color: #f8fafc;"><td><strong>Car Details:</strong></td><td>${booking.car_make} (${booking.car_color})</td></tr>
             <tr><td><strong>Registration:</strong></td><td><strong>${booking.license_plate}</strong></td></tr>
-            <tr style="background-color: #f8fafc;"><td><strong>Drop-off:</strong></td><td>${dropDate} at ${booking.dropoff_time}</td></tr>
-            <tr><td><strong>Pick-up:</strong></td><td>${pickDate} at ${booking.pickup_time}</td></tr>
-            <tr style="background-color: #f8fafc;"><td><strong>Return Flight:</strong></td><td>${booking.flight_number || 'N/A'}</td></tr>
-            <tr><td><strong>Service Type:</strong></td><td>${booking.service_type || company.name}</td></tr>
+            <tr style="background-color: #f8fafc;"><td><strong>Airport:</strong></td><td>${booking.airport || 'Luton Airport (LTN)'}</td></tr>
+            <tr><td><strong>Drop-off:</strong></td><td>${dropDate} at ${booking.dropoff_time}</td></tr>
+            <tr style="background-color: #f8fafc;"><td><strong>Pick-up:</strong></td><td>${pickDate} at ${booking.pickup_time}</td></tr>
+            <tr><td><strong>Return Flight:</strong></td><td>${booking.flight_number || 'N/A'}</td></tr>
+            <tr style="background-color: #f8fafc;"><td><strong>Service Type:</strong></td><td>${booking.service_type || company.name}</td></tr>
             
             <tr style="background-color: #eff6ff; border-top: 2px solid #2563eb;">
-              <td><strong>Amount Payable (Net):</strong></td>
-              <td><strong style="color: #1e40af; font-size: 18px;">£${netAmount}</strong></td>
+              <td><strong>Total Paid by Customer:</strong></td>
+              <td><strong style="color: #1e40af; font-size: 18px;">£${totalPaid}</strong></td>
             </tr>
           </table>
           
