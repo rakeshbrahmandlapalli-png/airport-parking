@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * AeroPark Direct - Command Center v12.3 (Ultimate Master Build)
+ * AeroPark Direct - Command Center v12.4 (Ultimate Master Build)
  * ------------------------------------------------------
  * UPGRADES & FIXES:
  * 1. AUTOFILL BUG: Fixed invisible text. Forced Webkit fill colors on all inputs.
@@ -14,7 +14,10 @@
  * 8. DB FIX: Handled empty date/time strings to prevent Supabase 500 rejection errors.
  * 9. NEXT.JS ROUTER FIX: Wrapped in Suspense and guarded router redirects.
  * 10. MANUAL EMAILS: Added direct API triggers to dispatch Provider and Customer emails.
- * 11. 🟢 OPERATOR EDIT: Added ability to re-assign a booking to a different partner in Modify Case.
+ * 11. OPERATOR EDIT: Added ability to re-assign a booking to a different partner in Modify Case.
+ * 12. 🟢 FAST TRACK: Added 'Concierge' Fast Track tracking in DB, Modals, and Main Table view.
+ * 13. 🟢 SEARCH FIX: Fixed null-reference crash in search engine and added email/phone search.
+ * 14. 🟢 MOBILE UI: Replaced redundant Exit button in mobile bottom-nav with Promo Manager link.
  */
 
 import { useEffect, useState, useMemo, Suspense } from "react";
@@ -30,7 +33,7 @@ import {
   PlaneLanding, PlaneTakeoff, XCircle, ChevronDown, 
   Download, Briefcase, CreditCard, Receipt, Star, 
   Database, ShieldCheck, Smartphone, Wallet, Settings2,
-  Activity, Info, ArrowRightLeft, Tags, Zap
+  Activity, Info, ArrowRightLeft, Tags, Zap,PiggyBank
 } from "lucide-react";
 
 function DashboardContent() {
@@ -72,6 +75,7 @@ function DashboardContent() {
     terminal: "Main Terminal", 
     company_id: "ALL", 
     service_type: "Meet & Greet", 
+    fast_track_count: 0, // 🟢 FAST TRACK ADDED
   };
   
   const [newBooking, setNewBooking] = useState<any>(defaultNewBooking);
@@ -170,7 +174,6 @@ function DashboardContent() {
     e.preventDefault();
     setIsSaving(true);
     try {
-      // 🟢 ADDED: company_id mapping for edits. Parse "ALL" to null.
       const updatedCompanyId = editingBooking?.company_id === "ALL" ? null : (editingBooking?.company_id || null);
 
       const { error } = await supabase.from('bookings').update({
@@ -189,8 +192,9 @@ function DashboardContent() {
         status: editingBooking?.status || 'pending',
         airport: editingBooking?.airport || null,
         terminal: editingBooking?.terminal || null,
-        company_id: updatedCompanyId, // 🟢 NOW INCLUDED IN UPDATE
-        service_type: editingBooking?.service_type || "Meet & Greet"
+        company_id: updatedCompanyId, 
+        service_type: editingBooking?.service_type || "Meet & Greet",
+        fast_track_count: Number(editingBooking?.fast_track_count || 0) // 🟢 FAST TRACK ADDED
       }).eq('id', editingBooking.id);
       
       if (error) throw error;
@@ -216,6 +220,7 @@ function DashboardContent() {
       if (!payload.dropoff_time) payload.dropoff_time = null;
       if (!payload.pickup_date) payload.pickup_date = null;
       if (!payload.pickup_time) payload.pickup_time = null;
+      payload.fast_track_count = Number(payload.fast_track_count || 0); // 🟢 FAST TRACK SAFEGUARD
       
       const { error } = await supabase.from('bookings').insert([payload]);
       
@@ -283,11 +288,11 @@ function DashboardContent() {
   };
 
   const exportToCSV = () => {
-    let csv = "Reference,Customer,Email,Phone,Plate,Make,Airport,Terminal,Flight,Inbound Date,Inbound Time,Outbound Date,Outbound Time,Total Paid,Status,Service Type,Partner\n";
+    let csv = "Reference,Customer,Email,Phone,Plate,Make,Airport,Terminal,Flight,Inbound Date,Inbound Time,Outbound Date,Outbound Time,Total Paid,Status,Service Type,Partner,Fast Track\n";
     
     filteredBookings.forEach(b => {
       const partner = getCompanyName(b.company_id);
-      csv += `"${b.booking_ref}","${b.full_name}","${b.email}","${b.phone_number}","${b.license_plate}","${b.car_make}","${b.airport}","${b.terminal}","${b.flight_number}","${b.dropoff_date}","${b.dropoff_time}","${b.pickup_date}","${b.pickup_time}","${b.total_price}","${b.status}","${b.service_type || 'Meet & Greet'}","${partner}"\n`;
+      csv += `"${b.booking_ref}","${b.full_name}","${b.email}","${b.phone_number}","${b.license_plate}","${b.car_make}","${b.airport}","${b.terminal}","${b.flight_number}","${b.dropoff_date}","${b.dropoff_time}","${b.pickup_date}","${b.pickup_time}","${b.total_price}","${b.status}","${b.service_type || 'Meet & Greet'}","${partner}","${b.fast_track_count || 0}"\n`;
     });
     
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -327,9 +332,14 @@ function DashboardContent() {
   // --- 8. FILTER ENGINE ---
   const filteredBookings = useMemo(() => {
     return bookings.filter(b => {
-      const matchText = b.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        b.booking_ref?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        b.license_plate?.toLowerCase().includes(searchTerm.toLowerCase());
+      // 🟢 SEARCH BUG FIX: Prevents crash if name or plate is null in DB
+      const safeSearch = searchTerm.trim().toLowerCase();
+      const matchText = !safeSearch || 
+                        (b.full_name || '').toLowerCase().includes(safeSearch) ||
+                        (b.booking_ref || '').toLowerCase().includes(safeSearch) ||
+                        (b.license_plate || '').toLowerCase().includes(safeSearch) ||
+                        (b.email || '').toLowerCase().includes(safeSearch) ||
+                        (b.phone_number || '').toLowerCase().includes(safeSearch);
                         
       if (!matchText) return false;
       if (airportFilter !== "ALL" && !b.airport?.toLowerCase().includes(airportFilter.toLowerCase())) return false;
@@ -398,8 +408,8 @@ function DashboardContent() {
           <Link href="/admin/promos" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all">
             <Tags className="w-5 h-5 text-slate-500" /> Promo Manager
           </Link>
-          <Link href="/admin/schedule" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all">
-            <CalendarDays className="w-5 h-5 text-slate-500" /> Operational Plan
+          <Link href="/admin/financials" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all">
+            <PiggyBank className="w-5 h-5 text-slate-500" /> Financials
           </Link>
         </nav>
         
@@ -491,7 +501,7 @@ function DashboardContent() {
             <input 
               type="text" 
               autoComplete="off"
-              placeholder="Search reference, client name, or plate..." 
+              placeholder="Search reference, client name, plate, email, or phone..." 
               value={searchTerm} 
               onChange={(e) => setSearchTerm(e.target.value)} 
               className="w-full bg-[#1A2235] border border-slate-700 hover:border-blue-500/50 rounded-xl py-4 pl-12 pr-6 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white] placeholder:text-slate-500" 
@@ -538,7 +548,7 @@ function DashboardContent() {
                   <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
                     <th className="px-8 py-6">Subject Identity</th>
                     <th className="px-8 py-6">Asset Profile</th>
-                    <th className="px-8 py-6">Logistics Schedule</th>
+                    <th className="px-8 py-6">Financials</th>
                     <th className="px-8 py-6">Economic Status</th>
                     <th className="px-8 py-6 text-right">System Controls</th>
                   </tr>
@@ -592,6 +602,14 @@ function DashboardContent() {
                            <div className="flex items-center gap-1.5 text-sm font-black text-white">
                               <Wallet className="w-3.5 h-3.5 text-slate-500" /> £{Number(b.total_price || 0).toFixed(2)}
                            </div>
+                           
+                           {/* 🟢 VISIBLE FAST TRACK INDICATOR */}
+                           {b.fast_track_count > 0 && (
+                             <div className="flex items-center gap-1.5 text-[9px] font-black text-amber-400 uppercase tracking-widest bg-amber-500/10 w-max px-2 py-1 rounded border border-amber-500/20">
+                                <Zap className="w-3 h-3" /> {b.fast_track_count} Fast Track
+                             </div>
+                           )}
+
                            <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest bg-[#1A2235] w-max px-2 py-1 rounded border border-slate-700/50">
                               <Building2 className="w-3 h-3 text-slate-500" /> {getCompanyName(b.company_id)}
                            </div>
@@ -601,7 +619,6 @@ function DashboardContent() {
                       <td className="px-8 py-6 text-right">
                         <div className="flex items-center justify-end gap-2 opacity-30 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
                           
-                          {/* MANUAL EMAIL TRIGGERS */}
                           <button onClick={() => sendManualEmail(b, 'customer')} className="p-2.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white rounded-lg border border-blue-500/20 transition-all active:scale-95" title="Push Receipt to Customer">
                             <Receipt className="w-4 h-4" />
                           </button>
@@ -628,14 +645,14 @@ function DashboardContent() {
           </div>
         </div>
 
-        {/* MOBILE BOTTOM NAV */}
+        {/* 🟢 FIXED MOBILE BOTTOM NAV (Replaced Exit with Promo Manager) */}
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] px-4 pb-6 pt-2 bg-gradient-to-t from-[#0B1120] via-[#0B1120]/95 to-transparent pointer-events-none">
           <nav className="max-w-md mx-auto bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-3xl h-20 flex items-center justify-around px-5 shadow-2xl pointer-events-auto">
             <Link href="/admin" className="flex flex-col items-center justify-center gap-1 text-blue-500 transition-all"><LayoutDashboard className="w-6 h-6" /><span className="text-[9px] font-bold uppercase tracking-tighter">Live</span></Link>
             <Link href="/admin/companies" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><Building2 className="w-6 h-6" /><span className="text-[9px] font-bold uppercase tracking-tighter">Ops</span></Link>
             <div className="relative -top-8"><button onClick={() => setShowManualModal(true)} className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30 border-4 border-[#0B1120] active:scale-95 transition-transform"><Plus className="w-8 h-8 text-white" /></button></div>
-            <Link href="/admin/schedule" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><CalendarDays className="w-6 h-6" /><span className="text-[9px] font-bold uppercase tracking-tighter">Plan</span></Link>
-            <button onClick={() => router.replace("/admin/login")} className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-red-400 transition-colors"><LogOut className="w-6 h-6" /><span className="text-[9px] font-bold uppercase tracking-tighter">Exit</span></button>
+            <Link href="/admin/financials" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><PiggyBank  className="w-6 h-6" /><span className="text-[9px] font-bold uppercase tracking-tighter">Financials</span></Link>
+            <Link href="/admin/promos" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><Tags className="w-6 h-6" /><span className="text-[9px] font-bold uppercase tracking-tighter">Promos</span></Link>
           </nav>
         </div>
       </main>
@@ -730,7 +747,9 @@ function DashboardContent() {
                    <h3 className="text-xs font-black uppercase text-slate-300 tracking-widest">4. Economics</h3>
                    <div className="flex-1 h-px bg-slate-800"></div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                
+                {/* 🟢 EXPANDED TO 4 COLUMNS FOR FAST TRACK */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Partner Node</label>
                     <div className="relative">
@@ -752,6 +771,16 @@ function DashboardContent() {
                       <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                     </div>
                   </div>
+
+                  {/* 🟢 NEW FAST TRACK INPUT */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-amber-500 block ml-1 tracking-widest">Fast Track Passes</label>
+                    <div className="relative">
+                       <Zap className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-600" />
+                       <input type="number" min="0" value={newBooking.fast_track_count || 0} onChange={(e) => setNewBooking({...newBooking, fast_track_count: parseInt(e.target.value) || 0})} className={`${inputStyle} pl-12 text-amber-400 text-xl`} />
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-emerald-400 block ml-1 tracking-widest">Transaction (£)</label>
                     <div className="relative">
@@ -812,49 +841,56 @@ function DashboardContent() {
                  </div>
                </div>
 
-              {/* 🟢 EXPANDED: Now grid-cols-4 to fit Partner Node */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-6 border-t border-slate-800">
-                
-                {/* 🟢 NEW: Partner Node Dropdown */}
-                <div className="space-y-2">
+              {/* 🟢 EXPANDED TO 5 COLUMNS TO FIT FAST TRACK */}
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-6 pt-6 border-t border-slate-800">
+                <div className="space-y-2 lg:col-span-1">
                   <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Partner Node</label>
                   <div className="relative">
                     <select value={editingBooking?.company_id || 'ALL'} onChange={(e) => setEditingBooking({...editingBooking, company_id: e.target.value === 'ALL' ? null : e.target.value})} className={selectStyle}>
-                      <option value="ALL">Aero Direct (Internal)</option>
+                      <option value="ALL">Aero Direct</option>
                       {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                     <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 lg:col-span-1">
                   <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Service Level</label>
                   <div className="relative">
                     <select value={editingBooking?.service_type || "Meet & Greet"} onChange={(e) => setEditingBooking({...editingBooking, service_type: e.target.value})} className={selectStyle}>
-                      <option value="Meet & Greet">Meet & Greet</option>
-                      <option value="Park & Ride">Park & Ride</option>
-                      <option value="Hotel & Parking">Hotel & Parking</option>
+                      <option value="Meet & Greet">M&G</option>
+                      <option value="Park & Ride">P&R</option>
+                      <option value="Hotel & Parking">Hotel</option>
                     </select>
                     <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 lg:col-span-1">
                   <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Status Lifecycle</label>
                   <div className="relative">
                     <select value={editingBooking?.status || ''} onChange={(e) => setEditingBooking({...editingBooking, status: e.target.value})} className={selectStyle}>
-                      <option value="pending">Awaiting Checkout</option>
-                      <option value="confirmed">Confirmed: Paid</option>
-                      <option value="parked">Parked: Active</option>
-                      <option value="completed">Completed: Finalised</option>
-                      <option value="cancelled">Voided: Cancelled</option>
+                      <option value="pending">Pending</option>
+                      <option value="confirmed">Confirmed</option>
+                      <option value="parked">Parked</option>
+                      <option value="completed">Completed</option>
+                      <option value="cancelled">Voided</option>
                     </select>
                     <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-emerald-400 block ml-1 tracking-widest">Financial Override (£)</label>
+                {/* 🟢 NEW FAST TRACK INPUT */}
+                <div className="space-y-2 lg:col-span-1">
+                  <label className="text-[10px] font-black uppercase text-amber-500 block ml-1 tracking-widest">Fast Track</label>
+                  <div className="relative">
+                     <Zap className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-600" />
+                     <input type="number" min="0" value={editingBooking?.fast_track_count || 0} onChange={(e) => setEditingBooking({...editingBooking, fast_track_count: parseInt(e.target.value) || 0})} className={`${inputStyle} pl-12 text-amber-400 text-xl`} />
+                  </div>
+                </div>
+
+                <div className="space-y-2 lg:col-span-1">
+                  <label className="text-[10px] font-black uppercase text-emerald-400 block ml-1 tracking-widest">Override (£)</label>
                   <div className="relative group">
                     <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-600" />
                     <input type="number" step="0.01" value={editingBooking?.total_price || 0} onChange={(e) => setEditingBooking({...editingBooking, total_price: parseFloat(e.target.value) || 0})} className={`${inputStyle} pl-12 text-emerald-400 text-xl`} />
@@ -906,5 +942,3 @@ export default function AdminDashboard() {
     </Suspense>
   );
 }
-
-//* 123 *//
