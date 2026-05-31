@@ -2,7 +2,8 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
-import { computePrice, calculateDays, FAST_TRACK_PRICE, DEFAULT_SETTINGS, DYNAMIC_PROVIDERS } from "@/app/lib/pricing";
+// ✅ FIXED IMPORT
+import { computePrice, calculateDays, FAST_TRACK_PRICE, DEFAULT_SETTINGS } from "@/app/lib/pricing";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
