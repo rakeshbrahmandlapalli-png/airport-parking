@@ -39,8 +39,8 @@ function fireGoogleAdsConversion(value: number, transactionId: string) {
       return;
     }
     gtag("event", "conversion", {
-      // ⚠️ Replace with your actual label from Google Ads
-      send_to: "AW-18163936640/YOUR_CONVERSION_LABEL_HERE",
+      // ✅ YOUR EXACT NATIVE GOOGLE ADS LABEL
+      send_to: "AW-18163936640/lAsCCJO-0LYcEIDbntVD",
       value: value || 0,
       currency: "GBP",
       transaction_id: transactionId,
