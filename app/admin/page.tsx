@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * AeroPark Direct - Command Center v12.4 (Ultimate Master Build)
+ * AeroPark Direct - Command Center v12.5 (Ultimate Master Build)
  * ------------------------------------------------------
  * UPGRADES & FIXES:
  * 1. AUTOFILL BUG: Fixed invisible text. Forced Webkit fill colors on all inputs.
@@ -17,7 +17,7 @@
  * 11. OPERATOR EDIT: Added ability to re-assign a booking to a different partner in Modify Case.
  * 12. 🟢 FAST TRACK: Added 'Concierge' Fast Track tracking in DB, Modals, and Main Table view.
  * 13. 🟢 SEARCH FIX: Fixed null-reference crash in search engine and added email/phone search.
- * 14. 🟢 MOBILE UI: Replaced redundant Exit button in mobile bottom-nav with Promo Manager link.
+ * 14. 🟢 NAV FIX: Added missing "Platform Settings" tab to Desktop & Mobile navigation.
  */
 
 import { useEffect, useState, useMemo, Suspense } from "react";
@@ -75,7 +75,7 @@ function DashboardContent() {
     terminal: "Main Terminal", 
     company_id: "ALL", 
     service_type: "Meet & Greet", 
-    fast_track_count: 0, // 🟢 FAST TRACK ADDED
+    fast_track_count: 0, 
   };
   
   const [newBooking, setNewBooking] = useState<any>(defaultNewBooking);
@@ -194,7 +194,7 @@ function DashboardContent() {
         terminal: editingBooking?.terminal || null,
         company_id: updatedCompanyId, 
         service_type: editingBooking?.service_type || "Meet & Greet",
-        fast_track_count: Number(editingBooking?.fast_track_count || 0) // 🟢 FAST TRACK ADDED
+        fast_track_count: Number(editingBooking?.fast_track_count || 0)
       }).eq('id', editingBooking.id);
       
       if (error) throw error;
@@ -220,7 +220,7 @@ function DashboardContent() {
       if (!payload.dropoff_time) payload.dropoff_time = null;
       if (!payload.pickup_date) payload.pickup_date = null;
       if (!payload.pickup_time) payload.pickup_time = null;
-      payload.fast_track_count = Number(payload.fast_track_count || 0); // 🟢 FAST TRACK SAFEGUARD
+      payload.fast_track_count = Number(payload.fast_track_count || 0); 
       
       const { error } = await supabase.from('bookings').insert([payload]);
       
@@ -410,6 +410,10 @@ function DashboardContent() {
           </Link>
           <Link href="/admin/financials" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all">
             <PiggyBank className="w-5 h-5 text-slate-500" /> Financials
+          </Link>
+          {/* 🟢 NEW SETTINGS TAB ADDED HERE */}
+          <Link href="/admin/settings" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all border-t border-slate-800/50 mt-4 pt-6">
+            <Settings2 className="w-5 h-5 text-slate-500" /> Platform Settings
           </Link>
         </nav>
         
@@ -645,14 +649,15 @@ function DashboardContent() {
           </div>
         </div>
 
-        {/* 🟢 FIXED MOBILE BOTTOM NAV (Replaced Exit with Promo Manager) */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] px-4 pb-6 pt-2 bg-gradient-to-t from-[#0B1120] via-[#0B1120]/95 to-transparent pointer-events-none">
-          <nav className="max-w-md mx-auto bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-3xl h-20 flex items-center justify-around px-5 shadow-2xl pointer-events-auto">
-            <Link href="/admin" className="flex flex-col items-center justify-center gap-1 text-blue-500 transition-all"><LayoutDashboard className="w-6 h-6" /><span className="text-[9px] font-bold uppercase tracking-tighter">Live</span></Link>
-            <Link href="/admin/companies" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><Building2 className="w-6 h-6" /><span className="text-[9px] font-bold uppercase tracking-tighter">Ops</span></Link>
-            <div className="relative -top-8"><button onClick={() => setShowManualModal(true)} className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30 border-4 border-[#0B1120] active:scale-95 transition-transform"><Plus className="w-8 h-8 text-white" /></button></div>
-            <Link href="/admin/financials" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><PiggyBank  className="w-6 h-6" /><span className="text-[9px] font-bold uppercase tracking-tighter">Financials</span></Link>
-            <Link href="/admin/promos" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><Tags className="w-6 h-6" /><span className="text-[9px] font-bold uppercase tracking-tighter">Promos</span></Link>
+        {/* 🟢 FIXED MOBILE BOTTOM NAV */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] px-2 pb-6 pt-2 bg-gradient-to-t from-[#0B1120] via-[#0B1120]/95 to-transparent pointer-events-none">
+          <nav className="max-w-md mx-auto bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-3xl h-20 flex items-center justify-around px-2 shadow-2xl pointer-events-auto">
+            <Link href="/admin" className="flex flex-col items-center justify-center gap-1 text-blue-500 transition-all"><LayoutDashboard className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Live</span></Link>
+            <Link href="/admin/companies" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><Building2 className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Ops</span></Link>
+            <div className="relative -top-8"><button onClick={() => setShowManualModal(true)} className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30 border-4 border-[#0B1120] active:scale-95 transition-transform"><Plus className="w-6 h-6 text-white" /></button></div>
+            <Link href="/admin/financials" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><PiggyBank className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Finance</span></Link>
+            {/* 🟢 NEW SETTINGS TAB FOR MOBILE ADDED HERE */}
+            <Link href="/admin/settings" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><Settings2 className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Settings</span></Link>
           </nav>
         </div>
       </main>
@@ -748,7 +753,6 @@ function DashboardContent() {
                    <div className="flex-1 h-px bg-slate-800"></div>
                 </div>
                 
-                {/* 🟢 EXPANDED TO 4 COLUMNS FOR FAST TRACK */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Partner Node</label>
@@ -772,7 +776,6 @@ function DashboardContent() {
                     </div>
                   </div>
 
-                  {/* 🟢 NEW FAST TRACK INPUT */}
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-amber-500 block ml-1 tracking-widest">Fast Track Passes</label>
                     <div className="relative">
@@ -841,7 +844,6 @@ function DashboardContent() {
                  </div>
                </div>
 
-              {/* 🟢 EXPANDED TO 5 COLUMNS TO FIT FAST TRACK */}
               <div className="grid grid-cols-2 lg:grid-cols-5 gap-6 pt-6 border-t border-slate-800">
                 <div className="space-y-2 lg:col-span-1">
                   <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Partner Node</label>
@@ -880,7 +882,6 @@ function DashboardContent() {
                   </div>
                 </div>
 
-                {/* 🟢 NEW FAST TRACK INPUT */}
                 <div className="space-y-2 lg:col-span-1">
                   <label className="text-[10px] font-black uppercase text-amber-500 block ml-1 tracking-widest">Fast Track</label>
                   <div className="relative">

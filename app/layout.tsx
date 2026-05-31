@@ -24,9 +24,32 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        {/* 🟢 Google Ads Base Tracking Tag */}
+      <body className="subpixel-antialiased bg-[#F8FAFC]" suppressHydrationWarning>
+        
+        {/* 🚀 Dynamic Banner containing LAUNCH10 and AERO15 hooks */}
+        <PromoBanner />
+
+        {/* 🔥 THIS IS THE MAGIC FIX: We wrap your page in a relative container 🔥 */}
+        <main className="relative w-full">
+          {children}
+        </main>
+
+        {/* 24/7 AI Support Agent */}
+        <Chatbot />
+
+        {/* ========================================= */}
+        {/* 🟢 ANALYTICS & TRACKING SCRIPTS 🟢 */}
+        {/* ========================================= */}
+
+        {/* Vercel Speed & Traffic Analytics */}
+        <Analytics /> 
+        
+        {/* CRITICAL FIX: Updated to match your actual Google Analytics Dashboard ID */}
+        <GoogleAnalytics gaId="G-D897179F7E" />
+
+        {/* Google Ads Base Tracking Tag */}
         <Script
+          id="google-ads-js"
           strategy="afterInteractive"
           src={`https://www.googletagmanager.com/gtag/js?id=AW-18163936640`}
         />
@@ -42,24 +65,8 @@ export default function RootLayout({
             `,
           }}
         />
-      </head>
-      <body className="subpixel-antialiased bg-[#F8FAFC]" suppressHydrationWarning>
-        
-        {/* 🚀 Dynamic Banner containing LAUNCH10 and AERO15 hooks */}
-        <PromoBanner />
 
-        {/* 🔥 THIS IS THE MAGIC FIX: We wrap your page in a relative container 🔥 */}
-        <main className="relative w-full">
-          {children}
-        </main>
-
-        {/* Vercel Speed & Traffic Analytics */}
-        <Analytics /> 
-        
-        {/* 🟢 CRITICAL FIX: Updated to match your actual Google Analytics Dashboard ID */}
-        <GoogleAnalytics gaId="G-D897179F7E" />
-
-        {/* 🟢 MICROSOFT CLARITY HEATMAPS & RECORDINGS */}
+        {/* MICROSOFT CLARITY HEATMAPS & RECORDINGS */}
         <Script id="microsoft-clarity" strategy="afterInteractive">
           {`
             (function(c,l,a,r,i,t,y){
@@ -69,9 +76,6 @@ export default function RootLayout({
             })(window, document, "clarity", "script", "wssgetz48e");
           `}
         </Script>
-        
-        {/* 24/7 AI Support Agent */}
-        <Chatbot />
         
       </body>
     </html>

@@ -1,0 +1,605 @@
+"use client";
+
+import { useEffect, useState, useCallback, useRef } from "react";
+import { supabase } from "@/app/lib/supabase";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  LayoutDashboard, Building2, LogOut, Plane, Tags, Settings2,
+  PiggyBank, Save, Loader2, Percent, ArrowLeft, Zap, Coffee,
+  ShieldCheck, RefreshCw, CheckCircle2, AlertCircle, Gauge,
+  Clock, Users, Network, Tag, TriangleAlert, Activity, Eye
+} from "lucide-react";
+
+// ─── SETTINGS KEYS + DEFAULTS ────────────────────────────────────────────────
+const DEFAULTS: Record<string, string> = {
+  markup_enabled:   "true",
+  markup_percent:   "10",
+  fast_track_price: "8",
+  lounge_price:     "35",
+  price_tolerance:  "0.5",
+  slots_claimed:    "12",
+  slots_total:      "15",
+};
+
+// ─── PROMO TYPE ───────────────────────────────────────────────────────────────
+interface Promo {
+  id: string;
+  code: string;
+  discount_percent: number;
+  is_active: boolean;
+  expiry_date: string | null;
+}
+
+export default function SettingsPage() {
+  const router = useRouter();
+
+  const [loading,       setLoading]       = useState(true);
+  const [isSaving,      setIsSaving]      = useState(false);
+  const [saved,         setSaved]         = useState(false);
+  const [lastSaved,     setLastSaved]     = useState<Date | null>(null);
+  const [hasUnsaved,    setHasUnsaved]    = useState(false);
+  const [saveError,     setSaveError]     = useState<string | null>(null);
+
+  // ── Settings state ────────────────────────────────────────────────────────
+  const [markupEnabled,  setMarkupEnabled]  = useState(true);
+  const [markupPercent,  setMarkupPercent]  = useState(10);
+  const [fastTrackPrice, setFastTrackPrice] = useState(8);
+  const [loungePrice,    setLoungePrice]    = useState(35);
+  const [priceTolerance, setPriceTolerance] = useState(0.5);
+  const [slotsClaimed,   setSlotsClaimed]   = useState(12);
+  const [slotsTotal,     setSlotsTotal]     = useState(15);
+
+  // ── Promo state ───────────────────────────────────────────────────────────
+  const [promos,         setPromos]         = useState<Promo[]>([]);
+  const [loadingPromos,  setLoadingPromos]  = useState(false);
+  const [togglingPromo,  setTogglingPromo]  = useState<string | null>(null);
+
+  // ── API health state ──────────────────────────────────────────────────────
+  const [apiCompanies,   setApiCompanies]   = useState<any[]>([]);
+  const [apiResults,     setApiResults]     = useState<Record<string, any>>({});
+  const [testingApi,     setTestingApi]     = useState(false);
+
+  // ── Price preview ─────────────────────────────────────────────────────────
+  const [previewBase,    setPreviewBase]    = useState(76.94);
+
+  // Track initial values to detect unsaved changes
+  const initialRef = useRef<Record<string, any>>({});
+
+  // ─── FETCH SETTINGS ───────────────────────────────────────────────────────
+  const fetchSettings = useCallback(async () => {
+    setLoading(true);
+    setSaveError(null);
+    try {
+      const { data, error } = await supabase.from("settings").select("*");
+      if (error) throw error;
+      if (data) {
+        const get = (key: string) => data.find((r: any) => r.key === key)?.value ?? DEFAULTS[key];
+
+        const vals = {
+          markupEnabled:  get("markup_enabled") === "true",
+          markupPercent:  Number(get("markup_percent"))    || 10,
+          fastTrackPrice: Number(get("fast_track_price"))  || 8,
+          loungePrice:    Number(get("lounge_price"))      || 35,
+          priceTolerance: Number(get("price_tolerance"))   || 0.5,
+          slotsClaimed:   Number(get("slots_claimed"))     || 12,
+          slotsTotal:     Number(get("slots_total"))       || 15,
+        };
+
+        setMarkupEnabled(vals.markupEnabled);
+        setMarkupPercent(vals.markupPercent);
+        setFastTrackPrice(vals.fastTrackPrice);
+        setLoungePrice(vals.loungePrice);
+        setPriceTolerance(vals.priceTolerance);
+        setSlotsClaimed(vals.slotsClaimed);
+        setSlotsTotal(vals.slotsTotal);
+
+        initialRef.current = vals;
+        setHasUnsaved(false);
+      }
+    } catch (err: any) {
+      setSaveError("Failed to load settings: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // ─── FETCH PROMOS ─────────────────────────────────────────────────────────
+  const fetchPromos = useCallback(async () => {
+    setLoadingPromos(true);
+    const { data } = await supabase.from("promotions").select("*").order("code");
+    if (data) setPromos(data);
+    setLoadingPromos(false);
+  }, []);
+
+  // ─── FETCH API COMPANIES ──────────────────────────────────────────────────
+  const fetchApiCompanies = useCallback(async () => {
+    const { data } = await supabase.from("companies").select("id, name, api_token, dynamic_surcharge_percent, price_modifier").not("api_token", "is", null).neq("api_token", "");
+    if (data) setApiCompanies(data);
+  }, []);
+
+  // ─── AUTH + INIT ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) router.replace("/admin/login");
+      else {
+        fetchSettings();
+        fetchPromos();
+        fetchApiCompanies();
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ─── UNSAVED CHANGE DETECTOR ──────────────────────────────────────────────
+  useEffect(() => {
+    if (loading) return;
+    const curr = { markupEnabled, markupPercent, fastTrackPrice, loungePrice, priceTolerance, slotsClaimed, slotsTotal };
+    const changed = Object.keys(curr).some(k => (curr as any)[k] !== initialRef.current[k]);
+    setHasUnsaved(changed);
+  }, [markupEnabled, markupPercent, fastTrackPrice, loungePrice, priceTolerance, slotsClaimed, slotsTotal, loading]);
+
+  // ─── SAVE ─────────────────────────────────────────────────────────────────
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    setSaved(false);
+    setSaveError(null);
+
+    const rows = [
+      { key: "markup_enabled",   value: markupEnabled.toString()   },
+      { key: "markup_percent",   value: markupPercent.toString()   },
+      { key: "fast_track_price", value: fastTrackPrice.toString()  },
+      { key: "lounge_price",     value: loungePrice.toString()     },
+      { key: "price_tolerance",  value: priceTolerance.toString()  },
+      { key: "slots_claimed",    value: slotsClaimed.toString()    },
+      { key: "slots_total",      value: slotsTotal.toString()      },
+    ];
+
+    try {
+      // 🟢 FIXED: Sequential upserts to catch individual failures clearly
+      const errors: string[] = [];
+      for (const row of rows) {
+        const { error } = await supabase
+          .from("settings")
+          .upsert(row, { onConflict: "key" });
+        if (error) errors.push(`${row.key}: ${error.message}`);
+      }
+
+      if (errors.length > 0) {
+        // 🟢 Surface the real error — this is why toggle "resets"
+        // The upsert was failing silently because the key column may not exist
+        setSaveError("Some settings failed to save:\n" + errors.join("\n") + "\n\nRun the SQL fix below.");
+        return;
+      }
+
+      // Re-read from DB to confirm what actually saved
+      // This catches the case where upsert succeeded but wrote wrong value
+      const { data: verify } = await supabase.from("settings").select("*").eq("key", "markup_enabled").single();
+      if (verify && verify.value !== markupEnabled.toString()) {
+        setSaveError(`DB verification failed: markup_enabled shows '${verify.value}' but expected '${markupEnabled}'. Check the settings table 'key' column constraint.`);
+        return;
+      }
+
+      initialRef.current = { markupEnabled, markupPercent, fastTrackPrice, loungePrice, priceTolerance, slotsClaimed, slotsTotal };
+      setHasUnsaved(false);
+      setSaved(true);
+      setLastSaved(new Date());
+      setTimeout(() => setSaved(false), 3000);
+
+    } catch (err: any) {
+      setSaveError("Save failed: " + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // ─── TOGGLE PROMO ─────────────────────────────────────────────────────────
+  const togglePromo = async (promo: Promo) => {
+    setTogglingPromo(promo.id);
+    const newVal = !promo.is_active;
+    const { error } = await supabase.from("promotions").update({ is_active: newVal }).eq("id", promo.id);
+    if (!error) setPromos(prev => prev.map(p => p.id === promo.id ? { ...p, is_active: newVal } : p));
+    setTogglingPromo(null);
+  };
+
+  // ─── API HEALTH CHECK ─────────────────────────────────────────────────────
+  const runApiHealthCheck = async () => {
+    setTestingApi(true);
+    setApiResults({});
+    const drop = new Date(); drop.setDate(drop.getDate() + 7);
+    const pick = new Date(); pick.setDate(pick.getDate() + 10);
+    const dropStr = drop.toISOString().split("T")[0];
+    const pickStr = pick.toISOString().split("T")[0];
+
+    const results: Record<string, any> = {};
+    await Promise.all(
+      apiCompanies.map(async (c) => {
+        const start = Date.now();
+        try {
+          const res = await fetch("/api/parking-api", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token_no: c.api_token, drop_date: dropStr, drop_time: "09:00", return_date: pickStr, return_time: "09:00" }),
+          });
+          const data = await res.json();
+          const rates = data.rates || [];
+          const price = rates[0]?.parking_price;
+          results[c.id] = {
+            ok: res.ok && !!price,
+            price: price ? `£${Number(price).toFixed(2)}` : "No price",
+            ms: Date.now() - start,
+            status: res.status,
+          };
+        } catch (e: any) {
+          results[c.id] = { ok: false, price: null, ms: Date.now() - start, error: e.message };
+        }
+      })
+    );
+    setApiResults(results);
+    setTestingApi(false);
+  };
+
+  // ─── DANGER ZONE ─────────────────────────────────────────────────────────
+  const resetAllModifiers = async () => {
+    if (!confirm("⚠️ Reset ALL company price_modifiers to 1.0 (BASE)? This affects all operators.")) return;
+    await supabase.from("companies").update({ price_modifier: 1.0 }).neq("id", "00000000-0000-0000-0000-000000000000");
+    alert("✅ All modifiers reset to BASE.");
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.replace("/admin/login");
+  };
+
+  if (loading) return (
+    <div className="min-h-screen bg-[#060A14] flex flex-col items-center justify-center text-white">
+      <Plane className="w-10 h-10 text-blue-500 animate-pulse rotate-45" />
+      <p className="font-black text-slate-400 tracking-widest uppercase text-xs mt-6">Loading System Config...</p>
+    </div>
+  );
+
+  const inputCls = "w-full bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-xl font-black text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white]";
+  const labelCls = "text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest mb-2";
+  const sectionHeader = "p-6 md:p-8 border-b border-slate-800 bg-[#0F1523] flex items-center gap-4";
+
+  const previewFinal = markupEnabled ? previewBase * (1 + markupPercent / 100) : previewBase;
+
+  return (
+    <div className="min-h-screen bg-[#060A14] font-sans flex flex-col md:flex-row overflow-hidden text-slate-100 selection:bg-blue-600/30 selection:text-white antialiased">
+
+      {/* ── SIDEBAR ─────────────────────────────────────────────────────── */}
+      <aside className="w-full md:w-64 bg-[#0F1523] text-slate-400 hidden md:flex flex-col sticky top-0 h-screen border-r border-slate-800/80 shadow-2xl z-50 shrink-0">
+        <div className="p-8 flex items-center gap-4 text-white">
+          <div className="w-10 h-10 bg-blue-600/10 rounded-xl flex items-center justify-center border border-blue-500/20">
+            <Plane className="w-6 h-6 text-blue-500 rotate-45" />
+          </div>
+          <span className="font-black text-xl tracking-tighter uppercase">OPS <span className="text-blue-500">CENTER</span></span>
+        </div>
+        <nav className="px-5 space-y-3 flex-grow mt-6 font-bold text-sm">
+          <Link href="/admin"          className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all"><LayoutDashboard className="w-5 h-5 text-slate-500" /> Live Board</Link>
+          <Link href="/admin/companies" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all"><Building2 className="w-5 h-5 text-slate-500" /> Partner Network</Link>
+          <Link href="/admin/promos"   className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all"><Tags className="w-5 h-5 text-slate-500" /> Promo Manager</Link>
+          <Link href="/admin/financials" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all"><PiggyBank className="w-5 h-5 text-slate-500" /> Financials</Link>
+          <Link href="/admin/settings" className="flex items-center gap-4 px-5 py-4 bg-blue-600 text-white rounded-xl shadow-[0_10px_20px_-5px_rgba(37,99,235,0.4)] hover:bg-blue-500 transition-all"><Settings2 className="w-5 h-5" /> Platform Settings</Link>
+        </nav>
+        <div className="p-6">
+          <button type="button" onClick={handleLogout} className="flex items-center gap-4 text-sm font-bold hover:text-red-400 transition-colors w-full text-left px-5 py-4 group bg-slate-900/50 rounded-xl border border-slate-800/80">
+            <LogOut className="w-5 h-5 text-slate-500 group-hover:text-red-500 transition-colors" /> Secure Logout
+          </button>
+        </div>
+      </aside>
+
+      {/* ── MAIN ────────────────────────────────────────────────────────── */}
+      <main className="flex-1 p-4 md:p-8 lg:p-12 w-full overflow-y-auto h-screen relative pb-32 md:pb-12">
+
+        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-12">
+          <div>
+            <Link href="/admin" className="text-blue-500 hover:text-blue-400 font-bold text-xs uppercase tracking-widest flex items-center gap-2 mb-4 transition-colors w-max">
+              <ArrowLeft className="w-4 h-4" /> Back to Live Board
+            </Link>
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tight">Platform Settings</h1>
+            <div className="flex items-center gap-4 mt-3">
+              <p className="text-slate-400 font-medium text-xs uppercase tracking-widest">All pricing constants and system config</p>
+              {lastSaved && <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Last saved {lastSaved.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>}
+              {hasUnsaved && !isSaving && <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest animate-pulse">● Unsaved changes</span>}
+            </div>
+          </div>
+          <button type="button" onClick={() => { fetchSettings(); fetchPromos(); fetchApiCompanies(); }}
+            className="p-3 bg-[#131A2B] border border-slate-800 rounded-xl text-slate-400 hover:text-white hover:border-blue-500/50 transition-all" title="Reload from database">
+            <RefreshCw className="w-5 h-5" />
+          </button>
+        </header>
+
+        {/* 🔴 DB ERROR BANNER — the real reason toggle resets */}
+        {saveError && (
+          <div className="mb-6 bg-red-500/10 border border-red-500/30 rounded-2xl p-5">
+            <p className="text-red-400 font-black text-xs uppercase tracking-widest mb-2 flex items-center gap-2"><TriangleAlert className="w-4 h-4" /> Save Error — Toggle Reset Root Cause</p>
+            <pre className="text-red-300 text-[10px] font-mono whitespace-pre-wrap leading-relaxed">{saveError}</pre>
+            <div className="mt-4 bg-[#0A101D] rounded-xl p-4 border border-red-500/20">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Run this SQL in Supabase to fix:</p>
+              <pre className="text-emerald-400 text-[10px] font-mono">{`-- Ensure all settings rows exist with correct key column
+INSERT INTO settings (key, value) VALUES
+  ('markup_enabled',   'true'),
+  ('markup_percent',   '10'),
+  ('fast_track_price', '8'),
+  ('lounge_price',     '35'),
+  ('price_tolerance',  '0.5'),
+  ('slots_claimed',    '12'),
+  ('slots_total',      '15')
+ON CONFLICT (key) DO NOTHING;`}</pre>
+            </div>
+          </div>
+        )}
+
+        <form onSubmit={handleSave} className="max-w-3xl space-y-6">
+
+          {/* ── SECTION 1: GLOBAL MARKUP ──────────────────────────────────── */}
+          <div className="bg-[#131A2B] rounded-[2rem] border border-slate-800 shadow-2xl overflow-hidden">
+            <div className={sectionHeader}>
+              <div className="w-11 h-11 bg-blue-600/10 rounded-2xl flex items-center justify-center shrink-0 border border-blue-500/20"><Percent className="w-5 h-5 text-blue-500" /></div>
+              <div><h2 className="text-lg font-black text-white tracking-tight">Global Markup Engine</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Applied on top of every base price (API or pivot)</p></div>
+            </div>
+            <div className="p-6 md:p-8 space-y-6">
+
+              {/* Toggle */}
+              <div className="flex items-center justify-between bg-[#1A2235] p-5 rounded-2xl border border-slate-700/50">
+                <div>
+                  <p className="text-white font-black text-lg">Enable Global Markup</p>
+                  <p className="text-slate-400 text-xs mt-0.5">Multiplies all displayed prices by (1 + markup%)</p>
+                  <p className="text-[10px] font-bold text-slate-600 mt-1 uppercase tracking-widest">
+                    Currently: <span className={markupEnabled ? "text-emerald-400" : "text-red-400"}>{markupEnabled ? "ON" : "OFF"}</span>
+                    {" — "} Will save as: <span className="text-blue-400">"{markupEnabled.toString()}"</span>
+                  </p>
+                </div>
+                {/* 🟢 FIXED: Direct boolean, NOT functional updater */}
+                <button
+                  type="button"
+                  onClick={() => setMarkupEnabled(!markupEnabled)}
+                  aria-pressed={markupEnabled}
+                  className={`relative w-16 h-8 rounded-full transition-colors duration-300 shrink-0 focus:outline-none focus:ring-4 focus:ring-blue-500/30 ${markupEnabled ? "bg-blue-600" : "bg-slate-700"}`}
+                >
+                  <span className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-300 flex items-center justify-center ${markupEnabled ? "translate-x-8" : "translate-x-0"}`}>
+                    {markupEnabled ? <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" /> : <AlertCircle className="w-3.5 h-3.5 text-slate-400" />}
+                  </span>
+                </button>
+              </div>
+
+              {/* Percent + live preview */}
+              <div className={`space-y-4 transition-opacity duration-300 ${!markupEnabled ? "opacity-30 pointer-events-none select-none" : ""}`}>
+                <div>
+                  <label className={labelCls}>Markup Percentage</label>
+                  <div className="flex items-center gap-3">
+                    <input type="number" step="0.1" min="0" max="100" value={markupPercent}
+                      onChange={e => setMarkupPercent(Number(e.target.value) || 0)}
+                      disabled={!markupEnabled}
+                      className={`${inputCls} [-webkit-text-fill-color:#34d399]`} />
+                    <span className="text-3xl font-black text-slate-500 shrink-0">%</span>
+                  </div>
+                  <div className="mt-3 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full transition-all duration-300" style={{ width: `${Math.min(markupPercent, 50) * 2}%` }} />
+                  </div>
+                </div>
+
+                {/* 🟢 NEW: Interactive price preview */}
+                <div className="bg-[#0A101D] border border-slate-800 rounded-2xl p-5">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><Eye className="w-3.5 h-3.5" /> Live Price Preview</p>
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="text-slate-500 font-bold text-sm shrink-0">API base: £</span>
+                    <input type="number" step="0.01" value={previewBase} onChange={e => setPreviewBase(Number(e.target.value) || 0)}
+                      className="w-28 bg-[#1A2235] border border-slate-700 rounded-lg px-3 py-2 text-sm font-black text-white outline-none focus:border-blue-500 [-webkit-text-fill-color:white] shadow-[0_0_0_1000px_#1A2235_inset]" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400 text-sm font-bold">After {markupPercent}% markup:</span>
+                    <span className="text-2xl font-black text-emerald-400">£{previewFinal.toFixed(2)}</span>
+                  </div>
+                  <div className="text-[10px] text-slate-600 font-bold mt-1">
+                    Difference: +£{(previewFinal - previewBase).toFixed(2)} ({markupPercent}%)
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── SECTION 2: ADD-ON PRICES ──────────────────────────────────── */}
+          <div className="bg-[#131A2B] rounded-[2rem] border border-slate-800 shadow-2xl overflow-hidden">
+            <div className={sectionHeader}>
+              <div className="w-11 h-11 bg-amber-500/10 rounded-2xl flex items-center justify-center shrink-0 border border-amber-500/20"><Zap className="w-5 h-5 text-amber-400" /></div>
+              <div><h2 className="text-lg font-black text-white tracking-tight">Add-On Prices</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Fast Track & Lounge — 100% AeroPark revenue</p></div>
+            </div>
+            <div className="p-6 md:p-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label className={labelCls}><Zap className="w-3 h-3 inline mr-1 text-amber-400" /> Fast Track (£ / person)</label>
+                <input type="number" step="0.50" min="0" value={fastTrackPrice} onChange={e => setFastTrackPrice(Number(e.target.value) || 0)}
+                  className={`${inputCls} [-webkit-text-fill-color:#fbbf24]`} />
+                <p className="text-[10px] text-slate-500 font-bold mt-2">Reference — hardcoded in pricing.ts as FAST_TRACK_PRICE.</p>
+              </div>
+              <div>
+                <label className={labelCls}><Coffee className="w-3 h-3 inline mr-1 text-indigo-400" /> VIP Lounge (£ / person)</label>
+                <input type="number" step="1" min="0" value={loungePrice} onChange={e => setLoungePrice(Number(e.target.value) || 0)}
+                  className={`${inputCls} [-webkit-text-fill-color:#818cf8]`} />
+                <p className="text-[10px] text-slate-500 font-bold mt-2">LOUNGE_PRICE in checkout route. Redeploy to take effect.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* ── SECTION 3: CHECKOUT SAFETY ────────────────────────────────── */}
+          <div className="bg-[#131A2B] rounded-[2rem] border border-slate-800 shadow-2xl overflow-hidden">
+            <div className={sectionHeader}>
+              <div className="w-11 h-11 bg-emerald-500/10 rounded-2xl flex items-center justify-center shrink-0 border border-emerald-500/20"><ShieldCheck className="w-5 h-5 text-emerald-400" /></div>
+              <div><h2 className="text-lg font-black text-white tracking-tight">Checkout Safety</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Server-side price validation tolerance</p></div>
+            </div>
+            <div className="p-6 md:p-8 space-y-4">
+              <label className={labelCls}><Gauge className="w-3 h-3 inline mr-1 text-emerald-400" /> Price Tolerance (£)</label>
+              <div className="flex items-center gap-3">
+                <span className="text-3xl font-black text-slate-500 shrink-0">£</span>
+                <input type="number" step="0.10" min="0" max="10" value={priceTolerance} onChange={e => setPriceTolerance(Number(e.target.value) || 0)}
+                  className={`${inputCls} [-webkit-text-fill-color:#34d399]`} />
+              </div>
+              <p className="text-[10px] text-slate-500 font-bold leading-relaxed">Max price difference before checkout rejects. Default £0.50. Raise if you get false rejections.</p>
+              <div className="bg-[#1A2235] border border-slate-700/50 rounded-xl p-4 text-xs font-bold text-slate-400">
+                <span className="text-emerald-400 font-black">Example:</span> Customer sees £84.63. Server calculates £84.80. Diff = £0.17 → ✅ within tolerance.
+              </div>
+            </div>
+          </div>
+
+          {/* ── SECTION 4: LAUNCH TIMER ───────────────────────────────────── */}
+          <div className="bg-[#131A2B] rounded-[2rem] border border-slate-800 shadow-2xl overflow-hidden">
+            <div className={sectionHeader}>
+              <div className="w-11 h-11 bg-rose-500/10 rounded-2xl flex items-center justify-center shrink-0 border border-rose-500/20"><Users className="w-5 h-5 text-rose-400" /></div>
+              <div><h2 className="text-lg font-black text-white tracking-tight">Launch Timer & Slots</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Founding Member scarcity on results page</p></div>
+            </div>
+            <div className="p-6 md:p-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label className={labelCls}><Users className="w-3 h-3 inline mr-1 text-rose-400" /> Slots Claimed</label>
+                <input type="number" step="1" min="0" value={slotsClaimed} onChange={e => setSlotsClaimed(Number(e.target.value) || 0)}
+                  className={`${inputCls} [-webkit-text-fill-color:#fb7185]`} />
+              </div>
+              <div>
+                <label className={labelCls}><Clock className="w-3 h-3 inline mr-1 text-rose-400" /> Total Slots</label>
+                <input type="number" step="1" min="1" value={slotsTotal} onChange={e => setSlotsTotal(Number(e.target.value) || 15)}
+                  className={inputCls} />
+              </div>
+              <div className="sm:col-span-2">
+                <div className="bg-[#1A2235] border border-slate-700/50 rounded-xl p-4">
+                  <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-2">
+                    <span className="text-slate-500">Availability</span>
+                    <span className={slotsClaimed >= slotsTotal ? "text-red-400" : "text-emerald-400"}>{Math.max(0, slotsTotal - slotsClaimed)} left of {slotsTotal}</span>
+                  </div>
+                  <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-rose-500 to-orange-500 rounded-full transition-all duration-500" style={{ width: `${Math.min((slotsClaimed / Math.max(slotsTotal, 1)) * 100, 100)}%` }} />
+                  </div>
+                  <p className="text-[10px] text-slate-500 font-bold mt-2">
+                    {slotsClaimed >= slotsTotal ? "⚠️ All slots filled — timer shows SOLD OUT." : `Timer shows ${slotsTotal - slotsClaimed} spots left.`}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── SAVE ──────────────────────────────────────────────────────── */}
+          <div className="bg-[#131A2B] rounded-[2rem] border border-slate-800 p-6 md:p-8">
+            <button type="submit" disabled={isSaving}
+              className={`w-full h-16 font-black text-sm uppercase tracking-widest rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-60 text-white ${saved ? "bg-emerald-600 hover:bg-emerald-500 shadow-[0_15px_30px_-5px_rgba(16,185,129,0.4)]" : "bg-blue-600 hover:bg-blue-500 shadow-[0_15px_30px_-5px_rgba(37,99,235,0.4)]"}`}>
+              {isSaving ? <><Loader2 className="w-5 h-5 animate-spin" /> Saving...</>
+                : saved  ? <><CheckCircle2 className="w-5 h-5" /> Saved Successfully!</>
+                :           <><Save className="w-5 h-5" /> Save Platform Settings</>}
+            </button>
+            {hasUnsaved && !isSaving && (
+              <p className="text-center text-[10px] text-amber-400 font-bold uppercase tracking-widest mt-3 animate-pulse">● You have unsaved changes</p>
+            )}
+          </div>
+        </form>
+
+        {/* ── SECTION 5: PROMO QUICK MANAGER (outside form) ──────────────── */}
+        <div className="max-w-3xl mt-6">
+          <div className="bg-[#131A2B] rounded-[2rem] border border-slate-800 shadow-2xl overflow-hidden">
+            <div className={sectionHeader}>
+              <div className="w-11 h-11 bg-purple-500/10 rounded-2xl flex items-center justify-center shrink-0 border border-purple-500/20"><Tag className="w-5 h-5 text-purple-400" /></div>
+              <div className="flex-1"><h2 className="text-lg font-black text-white tracking-tight">Promo Code Manager</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Quick enable/disable without leaving settings</p></div>
+              <Link href="/admin/promos" className="text-[10px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300 border border-blue-500/20 px-3 py-1.5 rounded-lg transition-all">Full Manager →</Link>
+            </div>
+            <div className="p-6 md:p-8">
+              {loadingPromos ? (
+                <div className="flex items-center gap-3 text-slate-500"><Loader2 className="w-4 h-4 animate-spin" /> Loading promos...</div>
+              ) : promos.length === 0 ? (
+                <p className="text-slate-500 text-sm font-bold">No promo codes found.</p>
+              ) : (
+                <div className="space-y-3">
+                  {promos.map(promo => {
+                    const isExpired = promo.expiry_date && new Date(promo.expiry_date) < new Date();
+                    return (
+                      <div key={promo.id} className={`flex items-center justify-between bg-[#1A2235] px-5 py-4 rounded-xl border transition-all ${promo.is_active && !isExpired ? "border-emerald-500/20" : "border-slate-700/50 opacity-60"}`}>
+                        <div className="flex items-center gap-4">
+                          <span className="font-black text-white tracking-widest text-sm">{promo.code}</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">{promo.discount_percent}% off</span>
+                          {isExpired && <span className="text-[10px] font-black uppercase tracking-widest text-red-400 bg-red-500/10 px-2 py-0.5 rounded">Expired</span>}
+                          {promo.expiry_date && !isExpired && <span className="text-[10px] text-slate-500 font-bold">Expires {new Date(promo.expiry_date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>}
+                        </div>
+                        <button type="button" disabled={!!isExpired || togglingPromo === promo.id} onClick={() => togglePromo(promo)}
+                          className={`relative w-12 h-6 rounded-full transition-colors duration-300 disabled:opacity-40 ${promo.is_active ? "bg-emerald-600" : "bg-slate-700"}`}>
+                          {togglingPromo === promo.id
+                            ? <Loader2 className="w-3 h-3 animate-spin absolute inset-0 m-auto text-white" />
+                            : <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-300 ${promo.is_active ? "translate-x-6" : "translate-x-0"}`} />}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── SECTION 6: API HEALTH CHECK ─────────────────────────────────── */}
+        <div className="max-w-3xl mt-6">
+          <div className="bg-[#131A2B] rounded-[2rem] border border-slate-800 shadow-2xl overflow-hidden">
+            <div className={sectionHeader}>
+              <div className="w-11 h-11 bg-blue-500/10 rounded-2xl flex items-center justify-center shrink-0 border border-blue-500/20"><Activity className="w-5 h-5 text-blue-400" /></div>
+              <div className="flex-1"><h2 className="text-lg font-black text-white tracking-tight">API Gateway Health</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Test all live API companies at once</p></div>
+              <button type="button" onClick={runApiHealthCheck} disabled={testingApi || apiCompanies.length === 0}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
+                {testingApi ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Testing...</> : <><Network className="w-3.5 h-3.5" /> Run All</>}
+              </button>
+            </div>
+            <div className="p-6 md:p-8">
+              {apiCompanies.length === 0 ? (
+                <p className="text-slate-500 text-sm font-bold">No companies with API tokens found.</p>
+              ) : (
+                <div className="space-y-3">
+                  {apiCompanies.map(c => {
+                    const r = apiResults[c.id];
+                    return (
+                      <div key={c.id} className={`flex items-center justify-between bg-[#1A2235] px-5 py-4 rounded-xl border transition-all ${!r ? "border-slate-700/50" : r.ok ? "border-emerald-500/20" : "border-red-500/20"}`}>
+                        <div>
+                          <p className="font-black text-white text-sm">{c.name}</p>
+                          <p className="text-[10px] text-slate-500 font-bold mt-0.5">
+                            Surcharge: {c.dynamic_surcharge_percent || 0}% · Modifier: {c.price_modifier || 1}x
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          {!r && <span className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">Not tested</span>}
+                          {r && (
+                            <>
+                              <div className={`text-sm font-black ${r.ok ? "text-emerald-400" : "text-red-400"}`}>
+                                {r.ok ? r.price : r.error || "Failed"}
+                              </div>
+                              <div className="text-[10px] text-slate-500 font-bold">{r.ms}ms · HTTP {r.status}</div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── SECTION 7: DANGER ZONE ──────────────────────────────────────── */}
+        <div className="max-w-3xl mt-6 mb-12">
+          <div className="bg-[#131A2B] rounded-[2rem] border border-red-500/20 shadow-2xl overflow-hidden">
+            <div className="p-6 md:p-8 border-b border-red-500/10 bg-red-500/5 flex items-center gap-4">
+              <div className="w-11 h-11 bg-red-500/10 rounded-2xl flex items-center justify-center shrink-0 border border-red-500/20"><TriangleAlert className="w-5 h-5 text-red-400" /></div>
+              <div><h2 className="text-lg font-black text-white tracking-tight">Danger Zone</h2><p className="text-[10px] font-bold text-red-400/70 uppercase tracking-widest mt-0.5">Irreversible actions — use with caution</p></div>
+            </div>
+            <div className="p-6 md:p-8">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#1A2235] p-5 rounded-xl border border-slate-700/50">
+                <div>
+                  <p className="text-white font-black">Reset All Price Modifiers</p>
+                  <p className="text-slate-400 text-xs mt-0.5">Sets every company's price_modifier back to 1.0 (BASE). This cannot be undone.</p>
+                </div>
+                <button type="button" onClick={resetAllModifiers}
+                  className="shrink-0 px-5 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
+                  Reset All
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  );
+}

@@ -2,125 +2,170 @@
 
 import { redirect } from "next/navigation";
 import Stripe from "stripe";
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
-// 🟢 BYPASS PRISMA: Use Supabase to prevent the "Table does not exist" crash
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!, 
+// ─── SUPABASE CLIENTS ────────────────────────────────────────────────────────
+// 🟢 PUBLIC client — for safe reads (slots, availability checks)
+const supabasePublic = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// 🟢 SAFE DATE PARSER HELPER (Prevents Server-Side Invalid Date Crashes)
-const safeParseDate = (dateStr: string) => {
+// 🟢 SERVICE ROLE client — for server-side writes (bypasses RLS safely)
+// Never expose this key to the browser. Only used in "use server" context.
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! // fallback if service key not set yet
+);
+
+// ─── SAFE DATE PARSER ────────────────────────────────────────────────────────
+const safeParseDate = (dateStr: string): Date => {
   if (!dateStr) return new Date();
   if (dateStr.includes("/")) {
     const [day, month, year] = dateStr.split("/");
-    return new Date(`${year}-${month}-${day}`);
+    const d = new Date(`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`);
+    return isNaN(d.getTime()) ? new Date() : d;
   }
-  return new Date(dateStr);
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? new Date() : d;
+};
+
+// ─── BOOKING REF GENERATOR ────────────────────────────────────────────────────
+// 🟢 FIXED: crypto.randomUUID is available in Node 18+ / Edge runtime
+const generateRef = (): string => {
+  try {
+    // Use Node crypto for a collision-safe ref
+    const { randomBytes } = require("crypto");
+    return "APD-" + randomBytes(4).toString("hex").toUpperCase();
+  } catch {
+    // Fallback: still better than Math.random()
+    return "APD-" + Date.now().toString(36).toUpperCase();
+  }
 };
 
 // ============================================================================
-// 🚀 NEW: AUTOMATED LAUNCH TIMER SYNC
+// LAUNCH TIMER — slots claimed
 // ============================================================================
-// ============================================================================
-// 🚀 NEW: AUTOMATED LAUNCH TIMER SYNC
-// ============================================================================
-export async function getLaunchSlotsClaimed() {
+export async function getLaunchSlotsClaimed(): Promise<number> {
   try {
-    // 🟢 Fix: Use maybeSingle() to avoid errors if row is missing
-    const { data, error } = await supabase
-      .from('settings')
-      .select('value')
-      .eq('key', 'slots_claimed')
-      .maybeSingle(); 
+    const { data, error } = await supabasePublic
+      .from("settings")
+      .select("value")
+      .eq("key", "slots_claimed")
+      .maybeSingle();
 
-    if (error || !data) return 12; // Fallback to 12 if table empty or error
-    return parseInt(data.value || '12');
-  } catch (error) {
-    console.error("Error fetching slots:", error);
+    if (error || !data) return 12;
+    return parseInt(data.value || "12", 10);
+  } catch {
     return 12;
   }
 }
 
+// 🟢 NEW: Fetch both slots values in one call so LaunchTimer gets both
+export async function getLaunchSlots(): Promise<{ claimed: number; total: number }> {
+  try {
+    const { data } = await supabasePublic
+      .from("settings")
+      .select("key, value")
+      .in("key", ["slots_claimed", "slots_total"]);
+
+    const get = (key: string, fallback: number) =>
+      parseInt(data?.find((r: any) => r.key === key)?.value || String(fallback), 10);
+
+    return { claimed: get("slots_claimed", 12), total: get("slots_total", 15) };
+  } catch {
+    return { claimed: 12, total: 15 };
+  }
+}
+
 // ============================================================================
-// ⚠️ LEGACY/BACKUP CHECKOUT ACTION (Frontend currently uses /api/checkout)
+// INVENTORY CHECK — used by results page
+// ============================================================================
+export async function checkAvailability(
+  airport: string,
+  dropoffStr: string,
+  pickupStr: string
+): Promise<{ isAvailable: boolean; spotsLeft: number }> {
+  const MAX_CAPACITY = 50;
+  const FAIL_OPEN = { isAvailable: true, spotsLeft: MAX_CAPACITY }; // 🟢 FIXED: fail open
+
+  try {
+    if (!dropoffStr || !pickupStr) return FAIL_OPEN;
+
+    const requestedStart = safeParseDate(dropoffStr);
+    const requestedEnd   = safeParseDate(pickupStr);
+
+    if (isNaN(requestedStart.getTime()) || isNaN(requestedEnd.getTime())) {
+      return FAIL_OPEN;
+    }
+
+    const { count, error } = await supabasePublic
+      .from("bookings")
+      .select("*", { count: "exact", head: true })
+      .eq("airport", airport)
+      .neq("status", "cancelled")
+      .lte("dropoff_date", requestedEnd.toISOString())
+      .gte("pickup_date", requestedStart.toISOString());
+
+    if (error) throw error;
+
+    const overlapping = count || 0;
+    const spotsLeft   = Math.max(0, MAX_CAPACITY - overlapping);
+
+    return { isAvailable: overlapping < MAX_CAPACITY, spotsLeft };
+  } catch (err) {
+    console.error("Availability check failed — failing open:", err);
+    return FAIL_OPEN; // 🟢 FIXED: was failing CLOSED (blocking real bookings)
+  }
+}
+
+// ============================================================================
+// CREATE CHECKOUT SESSION
+// Legacy server action — kept for backwards compatibility.
+// The primary checkout flow uses /api/checkout route instead.
 // ============================================================================
 export async function createCheckoutSession(formData: FormData) {
-  // 1. Initialise Stripe
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
-  // 2. Extract every field from the form
-  const customerName = formData.get("customerName") as string;
-  const customerEmail = formData.get("customerEmail") as string;
-  const customerPhone = formData.get("customerPhone") as string;
-  const flightNumber = formData.get("flightNumber") as string;
-  const licensePlate = formData.get("licensePlate") as string;
-  
-  // 🟢 NEW FIELDS ADDED TO MATCH FRONTEND
-  const carMake = formData.get("carMake") as string || "";
-  const carColor = formData.get("carColor") as string || "";
-  const promoUsed = formData.get("promoUsed") as string || "";
-  
-  const parkingType = formData.get("parkingType") as string || "standard";
-  const totalPrice = parseFloat(formData.get("totalPrice") as string) || 0;
-  
-  const airport = formData.get("airport") as string || "Luton Airport (LTN)";
-  const terminal = formData.get("terminal") as string || "Main Terminal";
+  // ── Extract form fields ────────────────────────────────────────────────────
+  const customerName  = formData.get("customerName")  as string;
+  const customerEmail = formData.get("customerEmail")  as string;
+  const customerPhone = formData.get("customerPhone")  as string;
+  const flightNumber  = formData.get("flightNumber")   as string;
+  const licensePlate  = formData.get("licensePlate")   as string;
+  const carMake       = (formData.get("carMake")       as string) || "";
+  const carColor      = (formData.get("carColor")      as string) || "";
+  const promoUsed     = (formData.get("promoUsed")     as string) || "";
+  const fastTrackCount = parseInt((formData.get("fastTrackCount") as string) || "0", 10);
+  const parkingType   = (formData.get("parkingType")   as string) || "standard";
+  const totalPrice    = parseFloat((formData.get("totalPrice")   as string) || "0");
+  const airport       = (formData.get("airport")       as string) || "Luton Airport (LTN)";
+  const terminal      = (formData.get("terminal")      as string) || "Main Terminal";
+  const dropoffDateStr = formData.get("dropoffDate")   as string;
+  const pickupDateStr  = formData.get("pickupDate")    as string;
+  const companyId     = (formData.get("companyId")     as string) || "";
 
-  const dropoffDateStr = formData.get("dropoffDate") as string;
-  const pickupDateStr = formData.get("pickupDate") as string;
-  
-  // 🟢 EXTRACT COMPANY ID FROM FORM
-  const companyId = formData.get("companyId") as string;
+  const dropoffDate = safeParseDate(dropoffDateStr);
+  const pickupDate  = safeParseDate(pickupDateStr);
 
-  // 🚀 USE SAFE DATE PARSER
-  const dropoffDate = dropoffDateStr ? safeParseDate(dropoffDateStr) : new Date();
-  const pickupDate = pickupDateStr ? safeParseDate(pickupDateStr) : new Date();
+  // 🟢 FIXED: Collision-safe booking ref
+  const bookingRef = generateRef();
 
-  const tempRef = "VIP-" + Math.random().toString(36).substring(2, 8).toUpperCase();
   let sessionUrl = "";
 
-  // 3. DATABASE & STRIPE LOGIC
   try {
-    // 🟢 1. FETCH REAL COMPANY DATA (No more 'null'!)
-    let company = null;
-    if (companyId && companyId !== "null" && companyId !== "") {
-      const { data } = await supabase.from('companies').select('*').eq('id', companyId).maybeSingle();
+    // ── 1. Resolve company ─────────────────────────────────────────────────
+    let company: any = null;
+    if (companyId && companyId !== "null") {
+      const { data } = await supabaseAdmin.from("companies").select("*").eq("id", companyId).maybeSingle();
       company = data;
     }
-    
-    // Backup search by name just in case
-    if (!company) {
-      const { data } = await supabase.from('companies').select('*').ilike('name', `%${parkingType}%`).maybeSingle();
+    if (!company && parkingType) {
+      const { data } = await supabaseAdmin.from("companies").select("*").ilike("name", `%${parkingType}%`).maybeSingle();
       company = data;
     }
 
-    // A. Save the booking to Supabase Database (Status MUST be pending)
-    await supabase.from('bookings').insert([{
-      booking_ref: tempRef,
-      full_name: customerName,
-      email: customerEmail,
-      phone_number: customerPhone,
-      flight_number: flightNumber,
-      license_plate: licensePlate,
-      car_make: carMake,       // 🟢 SAVED TO DB
-      car_color: carColor,     // 🟢 SAVED TO DB
-      promo_used: promoUsed,   // 🟢 SAVED TO DB
-      service_type: parkingType,
-      total_price: totalPrice,
-      status: "pending", // 🟢 This prevents free access. Webhook must update to "paid"
-      airport: airport,    
-      terminal: terminal,   
-      dropoff_date: dropoffDate.toISOString(),
-      pickup_date: pickupDate.toISOString(),  
-      company_id: company ? company.id : null 
-    }]);
-
-    // ⛔ SECURITY FIX: Removed sendBookingReceipt() from here.
-    // Receipts must ONLY be sent by the Stripe Webhook after successful payment.
-
-    // B. Create the Stripe Checkout Session 💳
+    // ── 2. 🟢 FIXED: Create Stripe session FIRST (so we get the session_id) ─
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
@@ -128,8 +173,8 @@ export async function createCheckoutSession(formData: FormData) {
           price_data: {
             currency: "gbp",
             product_data: {
-              name: `AeroPark Direct: ${parkingType.toUpperCase()}`,
-              description: `Flight: ${flightNumber} | License: ${licensePlate} | Ref: ${tempRef}`,
+              name: `AeroPark Direct: ${company?.name || parkingType.toUpperCase()}`,
+              description: `Flight: ${flightNumber} | Plate: ${licensePlate} | Ref: ${bookingRef}`,
             },
             unit_amount: Math.round(totalPrice * 100),
           },
@@ -137,71 +182,54 @@ export async function createCheckoutSession(formData: FormData) {
         },
       ],
       metadata: {
-         company_id: company ? company.id : "",
-         provider_name: company ? company.name : parkingType,
-         booking_ref: tempRef,
-         terminal: terminal, // Added for cross-compatibility with webhook
-         promo_used: promoUsed // 🟢 ADDED TO STRIPE
+        booking_ref:      bookingRef,
+        company_id:       company?.id    || "",
+        provider_name:    company?.name  || parkingType,
+        terminal,
+        promo_used:       promoUsed,
+        fast_track_count: fastTrackCount.toString(),
       },
       mode: "payment",
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://www.aeroparkdirect.co.uk'}/success?session_id={CHECKOUT_SESSION_ID}&ref=${tempRef}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://www.aeroparkdirect.co.uk'}/checkout?type=${parkingType}`,
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || "https://www.aeroparkdirect.co.uk"}/success?session_id={CHECKOUT_SESSION_ID}&ref=${bookingRef}`,
+      cancel_url:  `${process.env.NEXT_PUBLIC_BASE_URL || "https://www.aeroparkdirect.co.uk"}/checkout?type=${parkingType}`,
       customer_email: customerEmail,
     });
 
     sessionUrl = session.url as string;
 
-  } catch (error) {
-    console.error("Critical Error in createCheckoutSession:", error);
-    return;
-  }
+    // ── 3. 🟢 FIXED: Insert booking AFTER session created, WITH session_id ─
+    const { error: insertError } = await supabaseAdmin.from("bookings").insert([{
+      booking_ref:      bookingRef,
+      stripe_session_id: session.id,   // 🟢 Now saved correctly for webhook matching
+      full_name:        customerName,
+      email:            customerEmail,
+      phone_number:     customerPhone,
+      flight_number:    flightNumber,
+      license_plate:    licensePlate,
+      car_make:         carMake,
+      car_color:        carColor,
+      promo_used:       promoUsed,
+      service_type:     parkingType,
+      total_price:      totalPrice,
+      fast_track_count: fastTrackCount,
+      status:           "pending",     // Webhook updates to "paid" on success
+      airport,
+      terminal,
+      dropoff_date:     dropoffDate.toISOString(),
+      pickup_date:      pickupDate.toISOString(),
+      company_id:       company?.id || null,
+    }]);
 
-  // 4. THE REDIRECT
-  if (sessionUrl) {
-    redirect(sessionUrl);
-  }
-}
-
-// ============================================================================
-// 🔥 INVENTORY ENGINE (Actively used by Results Page)
-// ============================================================================
-export async function checkAvailability(airport: string, dropoffStr: string, pickupStr: string) {
-  const MAX_CAPACITY = 50; 
-
-  try {
-    if (!dropoffStr || !pickupStr) {
-      return { isAvailable: true, spotsLeft: MAX_CAPACITY }; 
+    if (insertError) {
+      // Log but don't block — Stripe session exists, webhook will still fire
+      console.error("Booking DB insert failed (session still valid):", insertError.message);
     }
 
-    // 🚀 USE SAFE DATE PARSER
-    const requestedStart = safeParseDate(dropoffStr);
-    const requestedEnd = safeParseDate(pickupStr);
-
-    if (isNaN(requestedStart.getTime()) || isNaN(requestedEnd.getTime())) {
-       return { isAvailable: true, spotsLeft: MAX_CAPACITY };
-    }
-
-    // 🟢 Ask Supabase directly
-    const { count, error } = await supabase
-      .from('bookings')
-      .select('*', { count: 'exact', head: true })
-      .eq('airport', airport)
-      .neq('status', 'cancelled')
-      .lte('dropoff_date', requestedEnd.toISOString())
-      .gte('pickup_date', requestedStart.toISOString());
-
-    if (error) throw error;
-
-    const overlappingCars = count || 0;
-    const spotsLeft = MAX_CAPACITY - overlappingCars;
-
-    return {
-      isAvailable: overlappingCars < MAX_CAPACITY,
-      spotsLeft: spotsLeft > 0 ? spotsLeft : 0,
-    };
-    
-  } catch (error) {
-    console.error("Inventory check failed:", error);
-    return { isAvailable: false, spotsLeft: 0 }; 
+  } catch (err) {
+    console.error("createCheckoutSession failed:", err);
+    return; // Returns undefined — caller should handle gracefully
   }
+
+  // ── 4. Redirect to Stripe ─────────────────────────────────────────────────
+  if (sessionUrl) redirect(sessionUrl);
 }

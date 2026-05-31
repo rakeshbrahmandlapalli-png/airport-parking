@@ -1,104 +1,198 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Zap, CheckCircle2, AlertOctagon } from "lucide-react";
 
 interface TimerProps {
   hours?: number;
-  slotsClaimed: number;
+  slotsClaimed?: number;
   totalSlots?: number;
+  onTimerEnd?: () => void;
 }
 
-export default function LaunchTimer({ hours = 72, slotsClaimed, totalSlots = 15 }: TimerProps) {
+export default function LaunchTimer({
+  hours = 72,
+  slotsClaimed = 6,
+  totalSlots = 15,
+  onTimerEnd,
+}: TimerProps) {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  const validHours = Math.max(1, Math.min(8760, hours));
+  const validTotal = Math.max(1, totalSlots);
+  const validClaimed = Math.max(0, Math.min(validTotal, slotsClaimed));
+  const slotsLeft = validTotal - validClaimed;
+  const isCritical = slotsLeft <= 3;
+  const slotPct = Math.round((validClaimed / validTotal) * 100);
+
+  const d = timeLeft ? Math.floor(timeLeft / 86400000) : 0;
+  const h = timeLeft ? Math.floor((timeLeft % 86400000) / 3600000) : 0;
+  const m = timeLeft ? Math.floor((timeLeft % 3600000) / 60000) : 0;
+  const s = timeLeft ? Math.floor((timeLeft % 60000) / 1000) : 0;
+  const timePct = timeLeft ? Math.round((timeLeft / (validHours * 3600000)) * 100) : 100;
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
-    // 🟢 Changed key to 'v3' to force a fresh 72-hour reset for all users
-    const STORAGE_KEY = "launch_timer_end_v3";
-    let endTime = localStorage.getItem(STORAGE_KEY);
-    
-    if (!endTime) {
-      const now = new Date().getTime();
-      endTime = (now + hours * 60 * 60 * 1000).toString();
-      localStorage.setItem(STORAGE_KEY, endTime);
-    }
-
+    if (!mounted) return;
+    const KEY = "ap_lct_v1";
+    let end: number | null = null;
+    try {
+      const s = localStorage.getItem(KEY);
+      if (s) {
+        end = parseInt(s, 10);
+        if (isNaN(end) || end <= Date.now()) { localStorage.removeItem(KEY); end = null; }
+      }
+      if (!end) { end = Date.now() + validHours * 3600000; localStorage.setItem(KEY, String(end)); }
+    } catch { end = Date.now() + validHours * 3600000; }
+    const endTime = end;
+    setTimeLeft(Math.max(0, endTime - Date.now()));
     const interval = setInterval(() => {
-      const now = new Date().getTime();
-      const distance = parseInt(endTime!) - now;
-      setTimeLeft(distance > 0 ? distance : 0);
+      const rem = Math.max(0, endTime - Date.now());
+      setTimeLeft(rem);
+      if (rem === 0) onTimerEnd?.();
     }, 1000);
-    
     return () => clearInterval(interval);
-  }, [hours]);
+  }, [mounted, validHours, onTimerEnd]);
 
-  if (timeLeft === null) return null; 
+  const pad = (n: number) => String(n).padStart(2, "0");
 
-  // 🟢 Added Days calculation for the 72-hour range
-  const daysLeft = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
-  const hoursLeft = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const minsLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-  const secsLeft = Math.floor((timeLeft % (1000 * 60)) / 1000);
-
-  const slotsLeft = Math.max(0, totalSlots - slotsClaimed);
-  const isCritical = slotsLeft <= 3;
-  const percentage = Math.min(100, (slotsClaimed / totalSlots) * 100);
+  if (!mounted || timeLeft === null) {
+    return (
+      <div style={S.card}>
+        <span style={{ fontSize: 11, color: "#2a3a5c" }}>Loading...</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="relative bg-[#0F1523]/90 backdrop-blur-sm border border-blue-500/20 rounded-3xl p-6 md:p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] mb-10 overflow-hidden group">
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 via-indigo-400 to-blue-600 opacity-80"></div>
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(37,99,235,0.1),transparent_70%)] pointer-events-none"></div>
+    <div style={S.card}>
+      {/* Top glow */}
+      <div style={S.topGlow} />
 
-      <div className="flex flex-col items-center relative z-10" aria-live="polite">
-        <div className="flex items-center gap-2 text-blue-400 font-black uppercase tracking-[0.2em] text-[10px] md:text-xs mb-6">
-          <Zap className="w-4 h-4 fill-current animate-pulse" />
-          Founding Member Launch
-        </div>
+      {/* Badge */}
+      <div style={S.badge}>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Live Launch Event
+      </div>
 
-        {/* Digital Clock Display - Now with Days */}
-        <div className="flex items-center gap-2 md:gap-4 mb-8">
-          {[
-            { v: daysLeft, l: "Days" },
-            { v: hoursLeft, l: "Hrs" },
-            { v: minsLeft, l: "Mins" },
-            { v: secsLeft, l: "Secs" }
-          ].map((item, i) => (
-            <div key={i} className="flex flex-col items-center">
-              <div className="bg-[#1A2235] text-white font-black text-2xl sm:text-4xl px-4 py-3 md:px-5 md:py-4 rounded-2xl border border-white/10 tabular-nums shadow-[0_4px_12px_rgba(0,0,0,0.3)] backdrop-blur-md">
-                {item.v.toString().padStart(2, '0')}
-              </div>
-              <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mt-3">{item.l}</span>
+      <p style={S.title}>Founding Member Launch</p>
+      <p style={S.sub}>Secure your spot · 5% lifetime discount</p>
+
+      {/* Timer digits */}
+      <div style={S.timerRow}>
+        {[
+          { v: d, l: "Days" },
+          { v: h, l: "Hours" },
+          { v: m, l: "Mins" },
+          { v: s, l: "Secs" },
+        ].map((item, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            {i > 0 && <span style={S.colon}>:</span>}
+            <div style={S.unit}>
+              <span style={S.num}>{pad(item.v)}</span>
+              <span style={S.lbl}>{item.l}</span>
             </div>
-          ))}
-        </div>
-
-        <div className="flex items-center justify-center gap-3 text-emerald-400 bg-emerald-500/5 px-6 py-3 rounded-xl border border-emerald-500/10 mb-8 w-full max-w-sm text-center">
-           <CheckCircle2 className="w-5 h-5 shrink-0" />
-           <p className="text-[10px] md:text-[11px] font-black uppercase tracking-widest leading-relaxed">
-             Founding Members: <span className="text-white underline decoration-emerald-500/30 underline-offset-4">5% Lifetime Discount</span>
-           </p>
-        </div>
-
-        <div className="w-full max-w-sm bg-[#131A2B] p-4 rounded-2xl border border-white/5 shadow-inner">
-          <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-3 items-center">
-            <span className={isCritical ? "text-amber-400 flex items-center gap-1.5 animate-pulse" : "text-slate-400"}>
-              {isCritical && <AlertOctagon className="w-3 h-3" />}
-              {isCritical ? `Only ${slotsLeft} Spots Left!` : "Availability"}
-            </span>
-            <span className="text-white tabular-nums">{slotsClaimed} / {totalSlots}</span>
           </div>
-          
-          <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden shadow-inner">
-            <div 
-              className={`h-full rounded-full transition-all duration-1000 ease-out ${
-                isCritical 
-                  ? "bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.5)]" 
-                  : "bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
-              }`}
-              style={{ width: `${percentage}%` }}
-            />
-          </div>
+        ))}
+      </div>
+
+      {/* Time bar */}
+      <div style={S.barLabel}>
+        <span>Time remaining</span>
+        <span style={{ color: "#3b82f6", fontWeight: 700 }}>{timePct}%</span>
+      </div>
+      <div style={S.barTrack}>
+        <div style={{ ...S.barFill, width: `${timePct}%`, background: "linear-gradient(90deg, #1d4ed8, #3b82f6)" }} />
+      </div>
+
+      <div style={S.divider} />
+
+      {/* Benefit */}
+      <div style={S.benefit}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+          <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
+        </svg>
+        <div>
+          <p style={S.benefitTitle}>Founding Members Get</p>
+          <p style={S.benefitVal}>5% Lifetime Discount</p>
+          <p style={S.benefitNote}>Plus priority access to new features</p>
         </div>
+      </div>
+
+      {/* Availability */}
+      <div style={S.availRow}>
+        <span style={{ color: isCritical ? "#f59e0b" : "#94a3b8", fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>
+          {isCritical ? `⚠ Only ${slotsLeft} left` : "Availability"}
+        </span>
+        <span style={{ color: "#475569", fontSize: 11, fontWeight: 600 }}>{validClaimed} / {validTotal} slots</span>
+      </div>
+      <div style={S.barTrack}>
+        <div style={{
+          ...S.barFill,
+          width: `${slotPct}%`,
+          background: isCritical ? "#f59e0b" : "#4ade80",
+          boxShadow: isCritical ? "0 0 8px rgba(245,158,11,0.4)" : "0 0 8px rgba(74,222,128,0.3)",
+        }} />
+      </div>
+      <div style={{ textAlign: "right" as const, fontSize: 10, color: isCritical ? "#f59e0b" : "#334155", marginTop: 3, fontWeight: 600 }}>
+        {slotPct}% filled{isCritical ? ` · Only ${slotsLeft} spots left!` : ""}
       </div>
     </div>
   );
 }
+
+const S: Record<string, React.CSSProperties> = {
+  card: {
+    background: "linear-gradient(160deg, #0d1526 0%, #0a1020 100%)",
+    border: "1px solid #1a2844",
+    borderRadius: 20,
+    padding: "18px 20px 16px",
+    maxWidth: 420,
+    margin: "0 auto",
+    fontFamily: "'Inter', sans-serif",
+    position: "relative",
+    overflow: "hidden",
+    boxShadow: "0 24px 48px -12px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.04)",
+  },
+  topGlow: {
+    position: "absolute", top: 0, left: "10%", right: "10%", height: 1,
+    background: "linear-gradient(90deg, transparent, rgba(59,130,246,0.5), transparent)",
+  },
+  badge: {
+    display: "inline-flex", alignItems: "center", gap: 5,
+    fontSize: 9, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" as const,
+    color: "#60a5fa",
+    background: "rgba(59,130,246,0.08)",
+    border: "1px solid rgba(59,130,246,0.18)",
+    borderRadius: 100, padding: "3px 10px", marginBottom: 8,
+  },
+  title: { fontSize: 15, fontWeight: 800, color: "#fff", margin: "0 0 2px", letterSpacing: "-0.01em" },
+  sub: { fontSize: 11, color: "#334155", margin: "0 0 14px", fontWeight: 500 },
+  timerRow: { display: "flex", alignItems: "center", gap: 4, marginBottom: 10 },
+  unit: { textAlign: "center" as const },
+  num: {
+    fontFamily: "'Courier New', monospace",
+    fontSize: 26, fontWeight: 800, color: "#f1f5f9",
+    background: "#080f1c",
+    border: "1px solid #1a2844",
+    borderRadius: 8, padding: "7px 10px",
+    display: "block", lineHeight: 1, minWidth: 48,
+    letterSpacing: "0.05em",
+    boxShadow: "inset 0 2px 4px rgba(0,0,0,0.4)",
+  },
+  lbl: { fontSize: 9, color: "#1e2d45", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginTop: 4, display: "block", fontWeight: 700 },
+  colon: { fontSize: 20, fontWeight: 800, color: "#1e3a6e", paddingBottom: 14 },
+  barLabel: { display: "flex", justifyContent: "space-between", fontSize: 10, color: "#334155", fontWeight: 600, marginBottom: 4 },
+  barTrack: { height: 3, background: "#0d1a2e", borderRadius: 2, overflow: "hidden", marginBottom: 12 },
+  barFill: { height: "100%", borderRadius: 2, transition: "width 0.6s ease" },
+  divider: { borderTop: "1px solid #0d1a2e", margin: "10px 0" },
+  benefit: {
+    display: "flex", alignItems: "flex-start", gap: 8,
+    background: "#080f1c", border: "1px solid #0d1a2e",
+    borderRadius: 10, padding: "8px 10px", marginBottom: 10,
+  },
+  benefitTitle: { fontSize: 10, fontWeight: 700, color: "#94a3b8", margin: "0 0 1px", letterSpacing: "0.04em" },
+  benefitVal: { fontSize: 13, fontWeight: 800, color: "#4ade80", margin: "0 0 1px", letterSpacing: "-0.01em" },
+  benefitNote: { fontSize: 10, color: "#1e2d45", margin: 0, fontWeight: 500 },
+  availRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+};
