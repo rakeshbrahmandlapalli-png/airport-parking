@@ -81,6 +81,71 @@ export async function getLaunchSlots(): Promise<{ claimed: number; total: number
   }
 }
 
+// 🟢 NEW: Full launch-timer config (enabled, hours, slots, and all text)
+export interface LaunchTimerConfig {
+  enabled: boolean;
+  hours: number;
+  slotsClaimed: number;
+  slotsTotal: number;
+  badge: string;
+  title: string;
+  subtitle: string;
+  benefitTitle: string;
+  benefitValue: string;
+  benefitNote: string;
+}
+
+const TIMER_DEFAULTS: LaunchTimerConfig = {
+  enabled: true,
+  hours: 72,
+  slotsClaimed: 12,
+  slotsTotal: 15,
+  badge: "Live Launch Event",
+  title: "Founding Member Launch",
+  subtitle: "Secure your spot · 5% lifetime discount",
+  benefitTitle: "Founding Members Get",
+  benefitValue: "5% Lifetime Discount",
+  benefitNote: "Plus priority access to new features",
+};
+
+export async function getLaunchTimerConfig(): Promise<LaunchTimerConfig> {
+  try {
+    const { data } = await supabasePublic
+      .from("settings")
+      .select("key, value")
+      .in("key", [
+        "timer_enabled", "timer_hours", "slots_claimed", "slots_total",
+        "timer_badge", "timer_title", "timer_subtitle",
+        "timer_benefit_title", "timer_benefit_value", "timer_benefit_note",
+      ]);
+
+    const get = (key: string) => data?.find((r: any) => r.key === key)?.value;
+    const str = (key: string, fallback: string) => {
+      const v = get(key);
+      return v != null && v !== "" ? v : fallback;
+    };
+    const num = (key: string, fallback: number) => {
+      const v = parseInt(get(key) || "", 10);
+      return isNaN(v) ? fallback : v;
+    };
+
+    return {
+      enabled: get("timer_enabled") !== "false",
+      hours: num("timer_hours", TIMER_DEFAULTS.hours),
+      slotsClaimed: num("slots_claimed", TIMER_DEFAULTS.slotsClaimed),
+      slotsTotal: num("slots_total", TIMER_DEFAULTS.slotsTotal),
+      badge: str("timer_badge", TIMER_DEFAULTS.badge),
+      title: str("timer_title", TIMER_DEFAULTS.title),
+      subtitle: str("timer_subtitle", TIMER_DEFAULTS.subtitle),
+      benefitTitle: str("timer_benefit_title", TIMER_DEFAULTS.benefitTitle),
+      benefitValue: str("timer_benefit_value", TIMER_DEFAULTS.benefitValue),
+      benefitNote: str("timer_benefit_note", TIMER_DEFAULTS.benefitNote),
+    };
+  } catch {
+    return TIMER_DEFAULTS;
+  }
+}
+
 // ============================================================================
 // INVENTORY CHECK — used by results page
 // ============================================================================

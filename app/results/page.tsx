@@ -3,7 +3,7 @@
 import LaunchTimer from "@/components/LaunchTimer";
 import BookingStepper from "@/components/BookingStepper";
 import ModifySearchModal from "@/components/ModifySearchModal";
-import { checkAvailability, getLaunchSlotsClaimed } from "../actions";
+import { checkAvailability, getLaunchTimerConfig, type LaunchTimerConfig } from "../actions";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   MapPin, Clock, ShieldCheck, ChevronRight, ThumbsUp, ArrowLeft,
@@ -428,7 +428,7 @@ function ResultsContent() {
 
   const [companies,     setCompanies]     = useState<any[]>([]);
   const [settings,      setSettings]      = useState<PricingSettings>(DEFAULT_SETTINGS);
-  const [slotsClaimed,  setSlotsClaimed]  = useState(12);
+  const [timerConfig,   setTimerConfig]   = useState<LaunchTimerConfig | null>(null);
   const [loading,       setLoading]       = useState(true);
 
   // companyId → confirmed live price (number) or null (failed/no data)
@@ -596,7 +596,7 @@ function ResultsContent() {
 
         // STEP 4 — Background tasks (non-blocking)
         checkAvailability(airport, dropoff, pickup).catch(() => {});
-        getLaunchSlotsClaimed().then((s) => { if (!cancelled) setSlotsClaimed(s); }).catch(() => {});
+        getLaunchTimerConfig().then((cfg) => { if (!cancelled) setTimerConfig(cfg); }).catch(() => {});
 
       } catch (e) {
         console.error("loadData error:", e);
@@ -701,9 +701,21 @@ function ResultsContent() {
             )}
           </div>
         </div>
-        <div className="lg:w-[300px] shrink-0">
-          <LaunchTimer hours={72} slotsClaimed={slotsClaimed} totalSlots={15} />
-        </div>
+        {timerConfig?.enabled && (
+          <div className="lg:w-[300px] shrink-0">
+            <LaunchTimer
+              hours={timerConfig.hours}
+              slotsClaimed={timerConfig.slotsClaimed}
+              totalSlots={timerConfig.slotsTotal}
+              badge={timerConfig.badge}
+              title={timerConfig.title}
+              subtitle={timerConfig.subtitle}
+              benefitTitle={timerConfig.benefitTitle}
+              benefitValue={timerConfig.benefitValue}
+              benefitNote={timerConfig.benefitNote}
+            />
+          </div>
+        )}
       </div>
 
       {processedCompanies.length === 0 ? (
