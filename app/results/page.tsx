@@ -531,47 +531,56 @@ function ResultsContent() {
           if (apiCompanies.length > 0) {
             setLiveLoadingIds(new Set(apiCompanies.map((c) => c.id)));
 
+            // The upstream gateway is often slow on a COLD request and fast once
+            // warm — which is why a manual refresh "fixed" missing prices before.
+            // Retry up to 3 times so a cold timeout self-recovers automatically.
+            const MAX_ATTEMPTS = 3;
+
+            const fetchRawPrice = async (c: any): Promise<number | null> => {
+              for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+                if (cancelled) return null;
+                try {
+                  const res = await fetchWithTimeout(
+                    "/api/parking-api",
+                    {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        token_no:    c.api_token,
+                        drop_date:   dropoff,
+                        drop_time:   dropTime,
+                        return_date: pickup,
+                        return_time: apiPickTime,
+                      }),
+                    },
+                    9000
+                  );
+                  if (cancelled) return null;
+                  if (res.ok) {
+                    const json = await res.json();
+                    const rawPrice = extractApiPrice(json);
+                    if (rawPrice != null) return rawPrice; // success
+                  } else {
+                    console.warn(`API non-OK for ${c.name}: HTTP ${res.status} (attempt ${attempt})`);
+                  }
+                } catch (e: any) {
+                  if (e?.name === "AbortError") console.warn(`API timed out for ${c.name} (attempt ${attempt})`);
+                  else console.warn(`API error for ${c.name} (attempt ${attempt}):`, e?.message);
+                }
+                // No price yet — back off briefly, then retry (upstream is warmer now)
+                if (attempt < MAX_ATTEMPTS && !cancelled) {
+                  await new Promise((r) => setTimeout(r, 700 * attempt));
+                }
+              }
+              return null;
+            };
+
             apiCompanies.forEach(async (c) => {
               try {
-                const res = await fetchWithTimeout(
-                  "/api/parking-api",
-                  {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      token_no:    c.api_token,
-                      drop_date:   dropoff,
-                      drop_time:   dropTime,
-                      return_date: pickup,
-                      return_time: apiPickTime,
-                    }),
-                  },
-                  8000
-                );
-                if (cancelled) return;
-
-                let rawPrice: number | null = null;
-                if (res.ok) {
-                  try {
-                    const json = await res.json();
-                    rawPrice = extractApiPrice(json);
-                  } catch {
-                    console.warn(`Bad JSON from ${c.name}`);
-                  }
-                } else {
-                  console.warn(`API non-OK for ${c.name}: HTTP ${res.status}`);
-                }
-
-                // Apply dynamic_surcharge_percent on top of raw API price
+                const rawPrice = await fetchRawPrice(c);
                 const surcharge = Number(c.dynamic_surcharge_percent || 0);
                 const adjusted  = rawPrice != null ? rawPrice * (1 + surcharge / 100) : null;
-
                 if (!cancelled) setLivePrices(prev => ({ ...prev, [c.id]: adjusted }));
-
-              } catch (e: any) {
-                if (e?.name !== "AbortError") console.error(`API error for ${c.name}:`, e);
-                else console.warn(`API timed out for ${c.name}`);
-                if (!cancelled) setLivePrices(prev => ({ ...prev, [c.id]: null }));
               } finally {
                 if (!cancelled) {
                   setLiveLoadingIds(prev => {
