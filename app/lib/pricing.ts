@@ -145,7 +145,7 @@ export function computePrice(opts: {
     // 🟢 API company: try liveApiRates first, fall back to its own manual pivots
     const apiRate = getLiveApiBaseRate(liveApiRates);
     if (apiRate !== null) {
-      base = apiRate * (1 + surcharge / 100);
+      base = apiRate;
       source = "api";
     } else {
       // API failed or returned empty: fall to this company's manual pivots
@@ -169,6 +169,11 @@ export function computePrice(opts: {
       source = "pivots";
     }
   }
+
+  // 🟢 Dynamic surcharge applies to every real base (API + pivots), not the
+  // generic fallback. Previously it was only applied in the API branch, so
+  // pivot pricing silently ignored dynamic_surcharge_percent.
+  if (source !== "fallback") base = base * (1 + surcharge / 100);
 
   // Final validation: if still 0 or negative, mark as failed
   if (base <= 0) ok = false;
