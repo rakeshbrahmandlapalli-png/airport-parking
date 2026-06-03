@@ -8,6 +8,7 @@ import {
   isApiCompany,
   FAST_TRACK_PRICE,
   DEFAULT_SETTINGS,
+  loadPricingSettings,
 } from "@/app/lib/pricing";
 
 // ─── CLIENTS ──────────────────────────────────────────────────────────────────
@@ -127,25 +128,9 @@ export async function POST(req: Request) {
       console.warn(`No company found for id="${companyId}". Proceeding with null company (pivot fallback).`);
     }
 
-    // ── 5. Load markup settings ────────────────────────────────────────────────
-    let settings = { ...DEFAULT_SETTINGS };
-    try {
-      const { data: setRows, error: setErr } = await supabaseAdmin
-        .from("settings")
-        .select("*")
-        .in("key", ["markup_enabled", "markup_percent"]);
-      if (setErr) console.error("Settings fetch error:", setErr);
-      if (setRows?.length) {
-        const en = setRows.find((r) => r.key === "markup_enabled");
-        const pc = setRows.find((r) => r.key === "markup_percent");
-        settings = {
-          markupEnabled: en ? en.value === "true" : DEFAULT_SETTINGS.markupEnabled,
-          markupPercent: pc ? Number(pc.value) || DEFAULT_SETTINGS.markupPercent : DEFAULT_SETTINGS.markupPercent,
-        };
-      }
-    } catch (e) {
-      console.error("Settings fetch failed (using defaults):", e);
-    }
+    // ── 5. Load markup + auto-surge settings ───────────────────────────────────
+    // Shared loader so the server charges exactly what the results page showed.
+    const settings = await loadPricingSettings(supabaseAdmin);
 
     // ── 6. Live API fetch (for API-priced companies) ───────────────────────────
     let liveApiRates: any[] = [];

@@ -28,6 +28,8 @@ const DEFAULTS: Record<string, string> = {
   timer_benefit_title:  "Founding Members Get",
   timer_benefit_value:  "5% Lifetime Discount",
   timer_benefit_note:   "Plus priority access to new features",
+  auto_surge_enabled:     "false",
+  auto_surge_max_percent: "15",
 };
 
 // ─── PROMO TYPE ───────────────────────────────────────────────────────────────
@@ -67,6 +69,12 @@ export default function SettingsPage() {
   const [timerBenefitTitle, setTimerBenefitTitle] = useState("Founding Members Get");
   const [timerBenefitValue, setTimerBenefitValue] = useState("5% Lifetime Discount");
   const [timerBenefitNote,  setTimerBenefitNote]  = useState("Plus priority access to new features");
+
+  // ── Auto-surge state ────────────────────────────────────────────────────────
+  const [autoSurgeEnabled, setAutoSurgeEnabled] = useState(false);
+  const [autoSurgeMax,     setAutoSurgeMax]     = useState(15);
+  const [surgeExcluded,    setSurgeExcluded]    = useState<string[]>([]);
+  const [pivotCompanies,   setPivotCompanies]   = useState<any[]>([]);
 
   // ── Promo state ───────────────────────────────────────────────────────────
   const [promos,         setPromos]         = useState<Promo[]>([]);
@@ -110,7 +118,11 @@ export default function SettingsPage() {
           timerBenefitTitle: get("timer_benefit_title") ?? DEFAULTS.timer_benefit_title,
           timerBenefitValue: get("timer_benefit_value") ?? DEFAULTS.timer_benefit_value,
           timerBenefitNote:  get("timer_benefit_note")  ?? DEFAULTS.timer_benefit_note,
+          autoSurgeEnabled:  get("auto_surge_enabled") === "true",
+          autoSurgeMax:      Number(get("auto_surge_max_percent")) || 15,
+          surgeExcluded:     (() => { try { return JSON.parse(get("auto_surge_excluded_ids") || "[]"); } catch { return []; } })() as string[],
         };
+        (vals as any).surgeExcludedKey = JSON.stringify([...vals.surgeExcluded].sort());
 
         setMarkupEnabled(vals.markupEnabled);
         setMarkupPercent(vals.markupPercent);
@@ -127,6 +139,9 @@ export default function SettingsPage() {
         setTimerBenefitTitle(vals.timerBenefitTitle);
         setTimerBenefitValue(vals.timerBenefitValue);
         setTimerBenefitNote(vals.timerBenefitNote);
+        setAutoSurgeEnabled(vals.autoSurgeEnabled);
+        setAutoSurgeMax(vals.autoSurgeMax);
+        setSurgeExcluded(vals.surgeExcluded);
 
         initialRef.current = vals;
         setHasUnsaved(false);
@@ -152,6 +167,16 @@ export default function SettingsPage() {
     if (data) setApiCompanies(data);
   }, []);
 
+  // ─── FETCH PIVOT COMPANIES (for auto-surge opt-out list) ────────────────────
+  const fetchPivotCompanies = useCallback(async () => {
+    const { data } = await supabase.from("companies").select("id, name, category, pricing_mode, api_token, dynamic_surcharge_percent");
+    if (data) {
+      // Pivot-priced = explicit pivot mode OR no API token at all
+      const pivots = data.filter((c: any) => c.pricing_mode === "pivot" || !c.api_token);
+      setPivotCompanies(pivots);
+    }
+  }, []);
+
   // ─── AUTH + INIT ──────────────────────────────────────────────────────────
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -160,6 +185,7 @@ export default function SettingsPage() {
         fetchSettings();
         fetchPromos();
         fetchApiCompanies();
+        fetchPivotCompanies();
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -168,10 +194,10 @@ export default function SettingsPage() {
   // ─── UNSAVED CHANGE DETECTOR ──────────────────────────────────────────────
   useEffect(() => {
     if (loading) return;
-    const curr = { markupEnabled, markupPercent, fastTrackPrice, loungePrice, priceTolerance, slotsClaimed, slotsTotal, timerEnabled, timerHours, timerBadge, timerTitle, timerSubtitle, timerBenefitTitle, timerBenefitValue, timerBenefitNote };
+    const curr = { markupEnabled, markupPercent, fastTrackPrice, loungePrice, priceTolerance, slotsClaimed, slotsTotal, timerEnabled, timerHours, timerBadge, timerTitle, timerSubtitle, timerBenefitTitle, timerBenefitValue, timerBenefitNote, autoSurgeEnabled, autoSurgeMax, surgeExcludedKey: JSON.stringify([...surgeExcluded].sort()) };
     const changed = Object.keys(curr).some(k => (curr as any)[k] !== initialRef.current[k]);
     setHasUnsaved(changed);
-  }, [markupEnabled, markupPercent, fastTrackPrice, loungePrice, priceTolerance, slotsClaimed, slotsTotal, timerEnabled, timerHours, timerBadge, timerTitle, timerSubtitle, timerBenefitTitle, timerBenefitValue, timerBenefitNote, loading]);
+  }, [markupEnabled, markupPercent, fastTrackPrice, loungePrice, priceTolerance, slotsClaimed, slotsTotal, timerEnabled, timerHours, timerBadge, timerTitle, timerSubtitle, timerBenefitTitle, timerBenefitValue, timerBenefitNote, autoSurgeEnabled, autoSurgeMax, surgeExcluded, loading]);
 
   // ─── SAVE ─────────────────────────────────────────────────────────────────
   const handleSave = async (e: React.FormEvent) => {
@@ -196,6 +222,9 @@ export default function SettingsPage() {
       { key: "timer_benefit_title", value: timerBenefitTitle       },
       { key: "timer_benefit_value", value: timerBenefitValue       },
       { key: "timer_benefit_note",  value: timerBenefitNote        },
+      { key: "auto_surge_enabled",     value: autoSurgeEnabled.toString() },
+      { key: "auto_surge_max_percent", value: autoSurgeMax.toString()     },
+      { key: "auto_surge_excluded_ids", value: JSON.stringify(surgeExcluded) },
     ];
 
     try {
@@ -223,7 +252,7 @@ export default function SettingsPage() {
         return;
       }
 
-      initialRef.current = { markupEnabled, markupPercent, fastTrackPrice, loungePrice, priceTolerance, slotsClaimed, slotsTotal, timerEnabled, timerHours, timerBadge, timerTitle, timerSubtitle, timerBenefitTitle, timerBenefitValue, timerBenefitNote };
+      initialRef.current = { markupEnabled, markupPercent, fastTrackPrice, loungePrice, priceTolerance, slotsClaimed, slotsTotal, timerEnabled, timerHours, timerBadge, timerTitle, timerSubtitle, timerBenefitTitle, timerBenefitValue, timerBenefitNote, autoSurgeEnabled, autoSurgeMax, surgeExcludedKey: JSON.stringify([...surgeExcluded].sort()) };
       setHasUnsaved(false);
       setSaved(true);
       setLastSaved(new Date());
@@ -347,7 +376,7 @@ export default function SettingsPage() {
               {hasUnsaved && !isSaving && <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest animate-pulse">● Unsaved changes</span>}
             </div>
           </div>
-          <button type="button" onClick={() => { fetchSettings(); fetchPromos(); fetchApiCompanies(); }}
+          <button type="button" onClick={() => { fetchSettings(); fetchPromos(); fetchApiCompanies(); fetchPivotCompanies(); }}
             className="p-3 bg-[#131A2B] border border-slate-800 rounded-xl text-slate-400 hover:text-white hover:border-blue-500/50 transition-all" title="Reload from database">
             <RefreshCw className="w-5 h-5" />
           </button>
@@ -586,6 +615,85 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
                 </div>
               </div>
             </div>
+            </div>
+          </div>
+
+          {/* ── SECTION 4b: AUTO SURGE (pivot pricing) ────────────────────── */}
+          <div className="bg-[#131A2B] rounded-[2rem] border border-slate-800 shadow-2xl overflow-hidden">
+            <div className={sectionHeader}>
+              <div className="w-11 h-11 bg-orange-500/10 rounded-2xl flex items-center justify-center shrink-0 border border-orange-500/20"><Activity className="w-5 h-5 text-orange-400" /></div>
+              <div><h2 className="text-lg font-black text-white tracking-tight">Auto Surge</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Automatic demand pricing on pivot-priced companies</p></div>
+            </div>
+
+            {/* Enable / disable */}
+            <div className="p-6 md:p-8 border-b border-slate-800">
+              <div className="flex items-center justify-between bg-[#1A2235] p-5 rounded-2xl border border-slate-700/50">
+                <div>
+                  <p className="text-white font-black text-lg">Enable Auto Surge</p>
+                  <p className="text-slate-400 text-xs mt-0.5">Fluctuates pivot prices by lead-time, weekend, length-of-stay & daily jitter. Deterministic so the quote shown matches the amount charged.</p>
+                  <p className="text-[10px] font-bold text-slate-600 mt-1 uppercase tracking-widest">
+                    Currently: <span className={autoSurgeEnabled ? "text-emerald-400" : "text-red-400"}>{autoSurgeEnabled ? "ACTIVE" : "OFF"}</span>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAutoSurgeEnabled(!autoSurgeEnabled)}
+                  aria-pressed={autoSurgeEnabled}
+                  className={`relative w-16 h-8 rounded-full transition-colors duration-300 shrink-0 focus:outline-none focus:ring-4 focus:ring-orange-500/30 ${autoSurgeEnabled ? "bg-orange-600" : "bg-slate-700"}`}
+                >
+                  <span className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-300 flex items-center justify-center ${autoSurgeEnabled ? "translate-x-8" : "translate-x-0"}`}>
+                    {autoSurgeEnabled ? <CheckCircle2 className="w-3.5 h-3.5 text-orange-600" /> : <AlertCircle className="w-3.5 h-3.5 text-slate-400" />}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* Config — dimmed when off */}
+            <div className={`transition-opacity duration-300 ${!autoSurgeEnabled ? "opacity-30 pointer-events-none select-none" : ""}`}>
+
+              {/* Max surge % */}
+              <div className="p-6 md:p-8 border-b border-slate-800">
+                <label className={labelCls}><TriangleAlert className="w-3 h-3 inline mr-1 text-orange-400" /> Max Surge (%)</label>
+                <input type="number" step="1" min="0" max="100" value={autoSurgeMax}
+                  onChange={e => setAutoSurgeMax(Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
+                  className={`${inputCls} [-webkit-text-fill-color:#fb923c]`} />
+                <p className="text-[10px] text-slate-500 font-bold mt-2">Upper bound — prices can rise by up to this much. Recommended 10–20%.</p>
+              </div>
+
+              {/* Per-company opt-out */}
+              <div className="p-6 md:p-8">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 mb-3"><Network className="w-3.5 h-3.5" /> Pivot Companies — toggle off to exclude</p>
+                {pivotCompanies.length === 0 ? (
+                  <p className="text-xs text-slate-500 font-bold">No pivot-priced companies found.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {pivotCompanies.map((c) => {
+                      const excluded = surgeExcluded.includes(String(c.id));
+                      const on = !excluded;
+                      return (
+                        <div key={c.id} className="flex items-center justify-between bg-[#1A2235] p-4 rounded-xl border border-slate-700/50">
+                          <div>
+                            <p className="text-white font-black text-sm">{c.name}</p>
+                            <p className="text-[10px] font-bold uppercase tracking-widest mt-0.5">
+                              <span className={on ? "text-emerald-400" : "text-slate-500"}>{on ? "Surging" : "Excluded"}</span>
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            aria-pressed={on}
+                            onClick={() => setSurgeExcluded(prev =>
+                              excluded ? prev.filter(id => id !== String(c.id)) : [...prev, String(c.id)]
+                            )}
+                            className={`relative w-14 h-7 rounded-full transition-colors duration-300 shrink-0 focus:outline-none focus:ring-4 focus:ring-orange-500/30 ${on ? "bg-orange-600" : "bg-slate-700"}`}
+                          >
+                            <span className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-300 ${on ? "translate-x-7" : "translate-x-0"}`} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

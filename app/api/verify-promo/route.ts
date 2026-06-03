@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
-import { computePrice, calculateDays, isApiCompany, FAST_TRACK_PRICE, DEFAULT_SETTINGS } from "@/app/lib/pricing";
+import { computePrice, calculateDays, isApiCompany, FAST_TRACK_PRICE, DEFAULT_SETTINGS, loadPricingSettings } from "@/app/lib/pricing";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -36,15 +36,7 @@ export async function POST(req: Request) {
       company = data;
     }
 
-    let settings = { ...DEFAULT_SETTINGS };
-    try {
-      const { data: setRows } = await supabaseAdmin.from("settings").select("*").in("key", ["markup_enabled", "markup_percent"]);
-      if (setRows) {
-        const en = setRows.find((r) => r.key === "markup_enabled");
-        const pc = setRows.find((r) => r.key === "markup_percent");
-        settings = { markupEnabled: en ? en.value === "true" : true, markupPercent: pc ? Number(pc.value) || 10 : 10 };
-      }
-    } catch (e) {}
+    const settings = await loadPricingSettings(supabaseAdmin);
 
     let liveApiRates: any[] = [];
     const isLuton = (airport || "").toLowerCase().includes("luton");
