@@ -15,7 +15,7 @@ import {
 import Link from "next/link";
 import { Suspense, useState, useMemo, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabase";
-import { computePrice, calculateDays, DEFAULT_SETTINGS, type PricingSettings } from "../lib/pricing";
+import { computePrice, calculateDays, loadPricingSettings, DEFAULT_SETTINGS, type PricingSettings } from "../lib/pricing";
 
 // ─── LIVE ACTIVITY TICKER ─────────────────────────────────────────────────────
 function LiveActivity() {
@@ -470,25 +470,15 @@ function ResultsContent() {
 
       try {
         // STEP 1 — Fetch companies + settings (fast, blocks only the skeleton)
-        const [compRes, setRes] = await Promise.all([
+        const [compRes, resolvedSettings] = await Promise.all([
           supabase.from("companies").select("*"),
-          supabase.from("settings").select("*").in("key", ["markup_enabled", "markup_percent"]),
+          loadPricingSettings(supabase),
         ]);
         if (cancelled) return;
 
         const allCompanies: any[] = compRes.data || [];
         setCompanies(allCompanies);
-
-        let resolvedSettings = DEFAULT_SETTINGS;
-        if (setRes.data) {
-          const en = setRes.data.find((r: any) => r.key === "markup_enabled");
-          const pc = setRes.data.find((r: any) => r.key === "markup_percent");
-          resolvedSettings = {
-            markupEnabled: en ? en.value === "true" : true,
-            markupPercent: pc ? Number(pc.value) || 10 : 10,
-          };
-          setSettings(resolvedSettings);
-        }
+        setSettings(resolvedSettings);
 
         // STEP 2 — Filter + sort by pivot price, pin order immediately
         const relevantCompanies = allCompanies.filter((c) => {
