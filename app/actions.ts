@@ -13,9 +13,12 @@ const supabasePublic = createClient(
 
 // 🟢 SERVICE ROLE client — for server-side writes (bypasses RLS safely)
 // Never expose this key to the browser. Only used in "use server" context.
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set. Add it to your environment variables.");
+}
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! // fallback if service key not set yet
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 // ─── SAFE DATE PARSER ────────────────────────────────────────────────────────
