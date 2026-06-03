@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sendBookingReceipt, sendProviderNotification } from "@/app/lib/mail"; 
+import { sendBookingReceipt, sendProviderNotification, sendReviewRequest } from "@/app/lib/mail";
 import { Resend } from "resend";
 import { createClient } from '@supabase/supabase-js'; 
 
@@ -32,6 +32,21 @@ export async function POST(req: Request) {
 
       if (result.error) throw result.error;
       return NextResponse.json({ success: true });
+    }
+
+    // --- CASE 5: REVIEW REQUEST ---
+    if (body.review_request && body.booking) {
+      const b = body.booking;
+      const targetEmail = (b.email || b.customerEmail)?.trim();
+      if (!targetEmail) {
+        return NextResponse.json({ error: "Booking has no email address" }, { status: 400 });
+      }
+      console.log(`⭐ Sending review request to: ${targetEmail} | Ref: ${b.booking_ref}`);
+      const result = await sendReviewRequest(targetEmail, b.full_name || "", b.booking_ref || "");
+      if (!result.success) {
+        return NextResponse.json({ error: "Failed to send review request" }, { status: 500 });
+      }
+      return NextResponse.json({ success: true, message: "Review request sent" });
     }
 
     // --- CASE 3: MANUAL PROVIDER TRIGGER ---
