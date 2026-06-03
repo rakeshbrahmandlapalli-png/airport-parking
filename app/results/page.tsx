@@ -10,7 +10,7 @@ import {
   ChevronDown, Plane, Footprints, User, Star, Ban, Bus, BedDouble,
   Info, PlaneTakeoff, PlaneLanding, Map as MapIcon, Navigation,
   AlertCircle, Sparkles, MessageSquare, Zap, Tag, CarFront,
-  BatteryCharging, Briefcase, Percent, CheckCircle2, Lock, Loader2
+  BatteryCharging, Briefcase, Percent, CheckCircle2, Lock, Loader2, Gift
 } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useState, useMemo, useEffect, useCallback } from "react";
@@ -90,6 +90,7 @@ const getBadgeIcon = (label: string) => {
   if (l.includes("FREE") || l.includes("CANCEL") || l.includes("INCLUDED")) return CheckCircle2;
   if (l.includes("DISCOUNT") || l.includes("OFFER"))  return Percent;
   if (l.includes("VIP") || l.includes("STAR"))        return Star;
+  if (l.includes("LOYALTY") || l.includes("BONUS"))   return Gift;
   if (l.includes("HIDDEN") || l.includes("NO "))      return CheckCircle2;
   return Info;
 };
