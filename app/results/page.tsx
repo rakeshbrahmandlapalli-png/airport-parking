@@ -491,14 +491,14 @@ function ResultsContent() {
         });
 
         const initialSorted = [...relevantCompanies].sort((a, b) => {
-          const aSold = isHeathrow ? a.lhr_sold_out : a.ltn_sold_out;
-          const bSold = isHeathrow ? b.lhr_sold_out : b.ltn_sold_out;
-          if (aSold && !bSold) return 1;
-          if (!aSold && bSold) return -1;
           const aFeat = isHeathrow ? a.lhr_featured : a.ltn_featured;
           const bFeat = isHeathrow ? b.lhr_featured : b.ltn_featured;
           if (aFeat && !bFeat) return -1;
           if (!aFeat && bFeat) return 1;
+          const aSold = isHeathrow ? a.lhr_sold_out : a.ltn_sold_out;
+          const bSold = isHeathrow ? b.lhr_sold_out : b.ltn_sold_out;
+          if (aSold && !bSold) return 1;
+          if (!aSold && bSold) return -1;
           const aP = isHeathrow ? Number(a.heathrow_price || 0) : Number(a.luton_price || 0);
           const bP = isHeathrow ? Number(b.heathrow_price || 0) : Number(b.luton_price || 0);
           return aP - bP;
