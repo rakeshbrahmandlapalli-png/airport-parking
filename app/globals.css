@@ -3,171 +3,166 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 2. BASE STYLES & OVERRIDES */
-@layer base {
-  :root {
-    --primary-blue: #2563eb;
-    --dark-navy: #0f172a;
-    --light-bg: #f8fafc;
-  }
-
-  html, body {
-    margin: 0;
-    padding: 0;
-    background-color: var(--light-bg);
-    color: var(--dark-navy);
-    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  /* INPUT POLISH */
-  input[type="date"], 
-  input[type="time"], 
-  input[type="email"], 
-  input[type="tel"], 
-  input[type="text"] {
-    border: 1px solid #e2e8f0;
-    background-color: #ffffff;
-    padding: 0.75rem 1rem;
-    border-radius: 0.75rem;
-    font-size: 1rem;
-    width: 100%;
-    outline: none;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  input:focus {
-    border-color: var(--primary-blue);
-    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
-  }
-
-  /* BUTTON POLISH */
-  button {
-    cursor: pointer;
-    transition: transform 0.1s ease, background-color 0.2s ease;
-  }
-
-  button:active {
-    transform: scale(0.97);
-  }
+*{
+box-sizing: border-box;
 }
 
-/* 3. CUSTOM COMPONENTS */
+/* 2. BASE STYLES */
+:root {
+  --primary-blue: #2563eb;
+  --dark-navy: #0f172a;
+  --light-bg: #f8fafc;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--light-bg);
+  color: var(--dark-navy);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 3. INPUT POLISH — NEW SCOPING MODEL
+   ──────────────────────────────────────────────────────────────────────────
+   The white/light input styling now applies ONLY inside a `.light-ui` wrapper.
+   That class goes on the ROOT of each customer-facing (light-themed) page.
+
+   Anything NOT inside `.light-ui` is left to control its own input colours —
+   so every dark admin page is safe BY DEFAULT and can never inherit the old
+   white-on-white bug, even brand-new admin pages added later.
+
+   Dark inputs additionally use `.dark-ui` (on a dark page root) for an explicit
+   autofill guard. A `.dark-input` class on a single input also works.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Light theme inputs — scoped to .light-ui only */
+.light-ui input[type="date"],
+.light-ui input[type="time"],
+.light-ui input[type="email"],
+.light-ui input[type="tel"],
+.light-ui input[type="text"],
+.light-ui input[type="number"],
+.light-ui input[type="password"],
+.light-ui textarea,
+.light-ui select {
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  color: var(--dark-navy);
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  width: 100%;
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.light-ui input:focus,
+.light-ui textarea:focus,
+.light-ui select:focus {
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+/* Light-theme autofill — keep autofilled fields white-bg / dark-text */
+.light-ui input:-webkit-autofill,
+.light-ui input:-webkit-autofill:hover,
+.light-ui input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--dark-navy);
+  -webkit-box-shadow: 0 0 0px 1000px #ffffff inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+/* 3c. DARK-UI AUTOFILL GUARD — inputs inside a `.dark-ui` region (admin pages)
+   keep dark bg + white text even when the browser autofills them. */
+.dark-ui input:-webkit-autofill,
+.dark-ui input:-webkit-autofill:hover,
+.dark-ui input:-webkit-autofill:focus,
+.dark-ui textarea:-webkit-autofill,
+.dark-ui select:-webkit-autofill,
+input.dark-input:-webkit-autofill,
+input.dark-input:-webkit-autofill:hover,
+input.dark-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff;
+  -webkit-box-shadow: 0 0 0px 1000px #1A2235 inset !important;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+/* 4. BUTTON POLISH */
+button {
+  cursor: pointer;
+  transition: transform 0.1s ease, background-color 0.2s ease;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+/* 5. CUSTOM CLASSES */
 @layer components {
   .btn-primary {
     @apply bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2;
   }
-  
+
   .card-white {
     @apply bg-white p-6 rounded-[32px] shadow-2xl border border-slate-100;
   }
 }
 
-/* 4. UTILITIES & ANIMATION CLASSES */
-@layer utilities {
-  .animate-check {
-    animation: check-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-  }
-
-  .animate-fade-in {
-    animation: fadeIn 0.8s ease-out forwards;
-  }
-
-  .animate-drive-in {
-    animation: driveIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-  }
-
-  .animate-pop-in {
-    animation: popIn 0.6s cubic-bezier(0.17, 0.89, 0.32, 1.49) forwards;
-  }
-
-  .animate-road-line {
-    background: linear-gradient(90deg, 
-      transparent 0%, 
-      rgba(59, 130, 246, 0.2) 50%, 
-      transparent 100%);
-    background-size: 200% 100%;
-    animation: roadMove 1.5s linear infinite;
-  }
-
-  /* Standard Float */
-  .animate-float {
-    animation: float 3s ease-in-out infinite;
-  }
-
-  /* Aero Specific Float (Renamed to prevent conflict) */
-  .animate-aero-float {
-    animation: aeroFloat 3s ease-in-out infinite;
-  }
-
-  .animate-orbit {
-    animation: orbitMove linear infinite;
-  }
-
-  .animate-scanner-line {
-    animation: scanner 3s ease-in-out infinite;
-  }
-
-  .animate-float-subtle {
-    animation: floatSubtle 4s ease-in-out infinite;
-  }
-}
-
-/* 5. KEYFRAMES & MEDIA QUERIES */
-/* MOBILE FIXES */
+/* 6. MOBILE FIXES */
 @media (max-width: 640px) {
   input {
     font-size: 16px !important; /* Prevents iPhone auto-zoom on click */
   }
 }
 
-/* ALL KEYFRAMES */
+/* 7. SUCCESS PAGE ANIMATION */
 @keyframes check-pop {
   0% { transform: scale(0.5); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+.animate-check {
+  animation: check-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
-@keyframes driveIn {
-  from { opacity: 0; transform: translateX(50px); }
-  to { opacity: 1; transform: translateX(0); }
+/* 🟢 HOME PAGE ANIMATION ICONS */
+@layer utilities {
+  .animate-fade-in { animation: fadeIn 0.8s ease-out forwards; }
+  .animate-drive-in { animation: driveIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+  .animate-pop-in { animation: popIn 0.6s cubic-bezier(0.17, 0.89, 0.32, 1.49) forwards; }
 }
 
-@keyframes popIn {
-  0% { opacity: 0; transform: scale(0.5); }
-  70% { transform: scale(1.1); }
-  100% { opacity: 1; transform: scale(1); }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes driveIn { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes popIn { 0% { opacity: 0; transform: scale(0.5); } 70% { transform: scale(1.1); } 100% { opacity: 1; transform: scale(1); } }
+
+@layer utilities {
+  .animate-road-line {
+    background: linear-gradient(90deg, transparent 0%, rgba(59, 130, 246, 0.2) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: roadMove 1.5s linear infinite;
+  }
+  .animate-float { animation: float 3s ease-in-out infinite; }
 }
 
-@keyframes roadMove {
-  from { background-position: 200% 0; }
-  to { background-position: -200% 0; }
+@keyframes roadMove { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+
+@layer utilities {
+  .animate-scanner-line { animation: scanner 3s ease-in-out infinite; }
+  .animate-float-subtle { animation: floatSubtle 4s ease-in-out infinite; }
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
+@keyframes scanner { 0%, 100% { top: 0%; opacity: 0; } 50% { top: 100%; opacity: 0.5; } }
+@keyframes floatSubtle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+@layer utilities {
+  .animate-orbit { animation: orbitMove linear infinite; }
 }
 
-@keyframes aeroFloat {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
-}
-
-@keyframes scanner {
-  0%, 100% { top: 0%; opacity: 0; }
-  50% { top: 100%; opacity: 0.5; }
-}
-
-@keyframes floatSubtle {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-
+@keyframes aeroFloat { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
 @keyframes orbitMove {
   from { transform: rotate(0deg) translateX(180px) rotate(0deg); }
   to { transform: rotate(360deg) translateX(180px) rotate(-360deg); }

@@ -767,7 +767,7 @@ export default function AdminCompaniesPage() {
   const textareaCls = "w-full bg-[#1A2235] text-white border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-slate-500 leading-relaxed [-webkit-text-fill-color:#fff] caret-white [&:-webkit-autofill]:[-webkit-text-fill-color:#fff] [&:-webkit-autofill]:[box-shadow:0_0_0px_1000px_#1A2235_inset!important]";
 
   return (
-    <div className="min-h-screen bg-[#060A14] font-sans flex flex-col md:flex-row overflow-hidden text-slate-100 selection:bg-blue-600/30 selection:text-white antialiased">
+    <div className="dark-ui min-h-screen bg-[#060A14] font-sans flex flex-col md:flex-row overflow-hidden text-slate-100 selection:bg-blue-600/30 selection:text-white antialiased">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       <aside className="w-full md:w-64 bg-[#0F1523] text-slate-400 hidden md:flex flex-col sticky top-0 h-screen border-r border-slate-800/80 shadow-2xl z-50 shrink-0">

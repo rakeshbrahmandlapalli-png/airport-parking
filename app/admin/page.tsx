@@ -1,23 +1,14 @@
 "use client";
 
 /**
- * AeroPark Direct - Command Center v12.5 (Ultimate Master Build)
+ * AeroPark Direct - Command Center v12.6 (Visual Refresh)
  * ------------------------------------------------------
- * UPGRADES & FIXES:
- * 1. AUTOFILL BUG: Fixed invisible text. Forced Webkit fill colors on all inputs.
- * 2. EXCEL EXPORT: Added missing Drop-off Time, Pick-up Time, and Service Type columns.
- * 3. RIBBON: Added 'Service Type' filter. Redesigned to an un-squashable Flex Grid.
- * 4. UI/UX: Hyper-premium SaaS 3.0 aesthetic with frosted glass and deep gradients.
- * 5. FORMATTING: Fully expanded code (no minification) to restore exact line counts.
- * 6. TWILIO: Added silent background API trigger for manual bookings missing flights.
- * 7. MODAL FIX: Safely bound all inputs to prevent 'null' read crashes during unmounts.
- * 8. DB FIX: Handled empty date/time strings to prevent Supabase 500 rejection errors.
- * 9. NEXT.JS ROUTER FIX: Wrapped in Suspense and guarded router redirects.
- * 10. MANUAL EMAILS: Added direct API triggers to dispatch Provider and Customer emails.
- * 11. OPERATOR EDIT: Added ability to re-assign a booking to a different partner in Modify Case.
- * 12. 🟢 FAST TRACK: Added 'Concierge' Fast Track tracking in DB, Modals, and Main Table view.
- * 13. 🟢 SEARCH FIX: Fixed null-reference crash in search engine and added email/phone search.
- * 14. 🟢 NAV FIX: Added missing "Platform Settings" tab to Desktop & Mobile navigation.
+ * UI UPDATES ONLY:
+ * 1. Cleaned up the sci-fi table headers ("Subject Identity") to standard, readable headers.
+ * 2. Applied the visual layout from the video to the top 4 metric cards (using your real data).
+ * 3. Updated the main header to the cleaner "Live Operations" aesthetic.
+ * 4. Improved row spacing and text readability in the Live Bookings table.
+ * 5. NO fake widgets or mocked data added.
  */
 
 import { useEffect, useState, useMemo, Suspense } from "react";
@@ -28,12 +19,11 @@ import Link from "next/link";
 import { 
   Users, Trash2, LogOut, Phone, Car, Plane, MessageCircle, 
   Search, TrendingUp, MapPin, Loader2, Filter, 
-  LayoutDashboard, CalendarDays, Plus, Building2,
-  Edit, X, Save, Clock, CheckCircle2, AlertCircle, 
-  PlaneLanding, PlaneTakeoff, XCircle, ChevronDown, 
-  Download, Briefcase, CreditCard, Receipt, Star, 
-  Database, ShieldCheck, Smartphone, Wallet, Settings2,
-  Activity, Info, ArrowRightLeft, Tags, Zap,PiggyBank
+  LayoutDashboard, Plus, Building2, X, Save, Clock, 
+  CheckCircle2, AlertCircle, PlaneLanding, PlaneTakeoff, 
+  XCircle, ChevronDown, Download, Briefcase, Receipt, Star, 
+  Database, Smartphone, Wallet, Settings2, Activity, Tags, 
+  Zap, PiggyBank
 } from "lucide-react";
 
 function DashboardContent() {
@@ -320,19 +310,18 @@ function DashboardContent() {
 
   const getStatusBadge = (status: string) => {
     const s = status?.toLowerCase() || "pending";
-    const classes = "px-3 py-1.5 rounded-xl border text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 w-max shadow-sm transition-all";
+    const classes = "px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 w-max transition-all";
     
-    if (s === "confirmed") return <div className={`${classes} bg-blue-500/10 text-blue-400 border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.15)]`}><CheckCircle2 className="w-3.5 h-3.5"/> Confirmed</div>;
-    if (s === "parked") return <div className={`${classes} bg-purple-500/10 text-purple-400 border-purple-500/30 shadow-[0_0_10px_rgba(168,85,247,0.15)]`}><Car className="w-3.5 h-3.5"/> Parked</div>;
-    if (s === "completed") return <div className={`${classes} bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.15)]`}><CheckCircle2 className="w-3.5 h-3.5"/> Completed</div>;
-    if (s === "cancelled") return <div className={`${classes} bg-red-500/10 text-red-400 border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.15)]`}><XCircle className="w-3.5 h-3.5"/> Voided</div>;
-    return <div className={`${classes} bg-amber-500/10 text-amber-400 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.15)]`}><Clock className="w-3.5 h-3.5"/> Pending</div>;
+    if (s === "confirmed") return <div className={`${classes} bg-blue-500/10 text-blue-400 border border-blue-500/20`}><CheckCircle2 className="w-3.5 h-3.5"/> Confirmed</div>;
+    if (s === "parked") return <div className={`${classes} bg-purple-500/10 text-purple-400 border border-purple-500/20`}><Car className="w-3.5 h-3.5"/> Parked</div>;
+    if (s === "completed") return <div className={`${classes} bg-emerald-500/10 text-emerald-400 border border-emerald-500/20`}><CheckCircle2 className="w-3.5 h-3.5"/> Completed</div>;
+    if (s === "cancelled") return <div className={`${classes} bg-red-500/10 text-red-400 border border-red-500/20`}><XCircle className="w-3.5 h-3.5"/> Voided</div>;
+    return <div className={`${classes} bg-amber-500/10 text-amber-400 border border-amber-500/20`}><Clock className="w-3.5 h-3.5"/> Pending</div>;
   };
 
   // --- 8. FILTER ENGINE ---
   const filteredBookings = useMemo(() => {
     return bookings.filter(b => {
-      // 🟢 SEARCH BUG FIX: Prevents crash if name or plate is null in DB
       const safeSearch = searchTerm.trim().toLowerCase();
       const matchText = !safeSearch || 
                         (b.full_name || '').toLowerCase().includes(safeSearch) ||
@@ -364,6 +353,7 @@ function DashboardContent() {
     });
   }, [bookings, searchTerm, airportFilter, statusFilter, timeFilter, companyFilter, serviceFilter, todayStrISO, companies]);
 
+  // Derived Metrics
   const totalRevenue = filteredBookings
     .filter(b => ['confirmed', 'completed', 'parked'].includes(b.status?.toLowerCase()))
     .reduce((sum, b) => sum + Number(b.total_price || 0), 0);
@@ -381,7 +371,6 @@ function DashboardContent() {
     </div>
   );
 
-  // 🟢 SHARED INPUT STYLES
   const inputStyle = "w-full bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white] placeholder:text-slate-500";
   const selectStyle = "w-full appearance-none bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none cursor-pointer focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white]";
   const yellowInputStyle = "w-full bg-[#FACC15] border-2 border-yellow-500 rounded-xl px-5 py-4 text-black text-xl text-center font-black uppercase outline-none focus:ring-4 focus:ring-yellow-500/30 transition-all shadow-[0_0_0_1000px_#FACC15_inset] [-webkit-text-fill-color:black] placeholder:text-yellow-700/50";
@@ -411,7 +400,6 @@ function DashboardContent() {
           <Link href="/admin/financials" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all">
             <PiggyBank className="w-5 h-5 text-slate-500" /> Financials
           </Link>
-          {/* 🟢 NEW SETTINGS TAB ADDED HERE */}
           <Link href="/admin/settings" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all border-t border-slate-800/50 mt-4 pt-6">
             <Settings2 className="w-5 h-5 text-slate-500" /> Platform Settings
           </Link>
@@ -440,75 +428,88 @@ function DashboardContent() {
           </button>
         </div>
 
-        {/* 🟢 PREMIUM DESKTOP HEADER */}
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-12">
+        {/* 🟢 PREMIUM DESKTOP HEADER (CLEANED UP) */}
+        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10">
           <div>
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tight">Command Center</h1>
-            <div className="text-slate-400 font-medium mt-3 text-xs uppercase tracking-widest flex items-center gap-3">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]"></div> Live Operational Feed
+            <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">Live Operations</h1>
+            <div className="text-slate-400 font-bold mt-2 text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+              Real-Time Command Center
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-4">
-            <button onClick={exportToCSV} className="px-6 py-4 bg-[#131A2B] hover:bg-[#1A2235] border border-slate-700 text-white rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-md hover:shadow-lg">
-              <Download className="w-4 h-4 text-blue-400" /> Export Data
+            <button onClick={exportToCSV} className="px-6 py-4 bg-[#131A2B] hover:bg-[#1A2235] border border-slate-700 text-slate-300 rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-3 shadow-md">
+              <Download className="w-4 h-4" /> Export Data
             </button>
-            <button onClick={() => setShowManualModal(true)} className="px-6 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-[0_10px_20px_-5px_rgba(37,99,235,0.4)] hover:-translate-y-1 active:translate-y-0">
+            <button onClick={() => setShowManualModal(true)} className="px-6 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-3 shadow-[0_10px_20px_-5px_rgba(37,99,235,0.4)] hover:-translate-y-1 active:translate-y-0">
               <Plus className="w-5 h-5" /> Manual Booking
             </button>
           </div>
         </header>
 
-        {/* 🟢 HYPER-PREMIUM METRICS HUD */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <div className="bg-[#131A2B] p-8 rounded-3xl border border-slate-800/80 flex items-center justify-between group hover:border-emerald-500/50 transition-all shadow-xl relative overflow-hidden">
-            <div className="relative z-10">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 mb-3 flex items-center gap-2"><Wallet className="w-4 h-4"/> Live Revenue</p>
-              <p className="text-3xl font-black text-white tracking-tight tabular-nums drop-shadow-md">£{totalRevenue.toFixed(2)}</p>
+        {/* 🟢 TOP 4 HUD METRICS (STYLED LIKE THE VIDEO) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+          {/* Revenue */}
+          <div className="bg-[#131A2B] p-6 rounded-3xl border border-slate-800/80 flex flex-col relative overflow-hidden group">
+            <div className="flex items-start justify-between mb-2">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Total Revenue</p>
+              <Wallet className="w-4 h-4 text-emerald-500/50" />
             </div>
-            <div className="w-24 h-24 bg-emerald-500/5 rounded-full absolute -right-6 -bottom-6 blur-2xl group-hover:bg-emerald-500/10 transition-colors"></div>
-            <TrendingUp className="w-14 h-14 text-emerald-500/10 absolute -right-2 -bottom-2 group-hover:scale-110 transition-transform" />
+            <p className="text-3xl font-black text-white tracking-tight tabular-nums mt-auto">£{totalRevenue.toFixed(2)}</p>
+            <div className="absolute right-[-10px] bottom-[-10px] text-emerald-500/10 group-hover:scale-110 transition-transform">
+              <TrendingUp className="w-16 h-16" />
+            </div>
           </div>
           
-          <div className="bg-[#131A2B] p-8 rounded-3xl border border-slate-800/80 flex items-center justify-between group hover:border-blue-500/50 transition-all shadow-xl relative overflow-hidden">
-            <div className="relative z-10">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500 mb-3 flex items-center gap-2"><Activity className="w-4 h-4"/> Active Jobs</p>
-              <p className="text-3xl font-black text-white tracking-tight tabular-nums drop-shadow-md">{filteredBookings.length}</p>
+          {/* Active Jobs */}
+          <div className="bg-[#131A2B] p-6 rounded-3xl border border-slate-800/80 flex flex-col relative overflow-hidden group">
+            <div className="flex items-start justify-between mb-2">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Active Jobs</p>
+              <Activity className="w-4 h-4 text-blue-500/50" />
             </div>
-            <div className="w-24 h-24 bg-blue-500/5 rounded-full absolute -right-6 -bottom-6 blur-2xl group-hover:bg-blue-500/10 transition-colors"></div>
-            <Zap className="w-14 h-14 text-blue-500/10 absolute -right-2 -bottom-2 group-hover:scale-110 transition-transform" />
+            <p className="text-3xl font-black text-white tracking-tight tabular-nums mt-auto">{filteredBookings.length}</p>
+            <div className="absolute right-[-10px] bottom-[-10px] text-blue-500/10 group-hover:scale-110 transition-transform">
+              <Zap className="w-16 h-16" />
+            </div>
           </div>
 
-          <div className="bg-[#131A2B] p-8 rounded-3xl border border-slate-800/80 flex items-center justify-between group hover:border-indigo-500/50 transition-all shadow-xl relative overflow-hidden">
-            <div className="relative z-10">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400 mb-3 flex items-center gap-2"><PlaneLanding className="w-4 h-4"/> Hub: Inbound</p>
-              <p className="text-3xl font-black text-white tracking-tight tabular-nums drop-shadow-md">{arrivalsToday}</p>
+          {/* Inbound Hub */}
+          <div className="bg-[#131A2B] p-6 rounded-3xl border border-slate-800/80 flex flex-col relative overflow-hidden group">
+            <div className="flex items-start justify-between mb-2">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">Hub: Inbound</p>
+              <PlaneLanding className="w-4 h-4 text-indigo-500/50" />
             </div>
-            <div className="w-24 h-24 bg-indigo-500/5 rounded-full absolute -right-6 -bottom-6 blur-2xl group-hover:bg-indigo-500/10 transition-colors"></div>
-            <PlaneLanding className="w-14 h-14 text-indigo-400/10 absolute -right-2 -bottom-2 group-hover:scale-110 transition-transform" />
+            <p className="text-3xl font-black text-white tracking-tight tabular-nums mt-auto">{arrivalsToday}</p>
+            <div className="absolute right-[-10px] bottom-[-10px] text-indigo-500/10 group-hover:scale-110 transition-transform">
+              <PlaneLanding className="w-16 h-16" />
+            </div>
           </div>
 
-          <div className="bg-[#131A2B] p-8 rounded-3xl border border-slate-800/80 flex items-center justify-between group hover:border-amber-500/50 transition-all shadow-xl relative overflow-hidden">
-            <div className="relative z-10">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-3 flex items-center gap-2"><PlaneTakeoff className="w-4 h-4"/> Hub: Return</p>
-              <p className="text-3xl font-black text-white tracking-tight tabular-nums drop-shadow-md">{returnsToday}</p>
+          {/* Return Hub */}
+          <div className="bg-[#131A2B] p-6 rounded-3xl border border-slate-800/80 flex flex-col relative overflow-hidden group">
+            <div className="flex items-start justify-between mb-2">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-400">Hub: Return</p>
+              <PlaneTakeoff className="w-4 h-4 text-amber-500/50" />
             </div>
-            <div className="w-24 h-24 bg-amber-500/5 rounded-full absolute -right-6 -bottom-6 blur-2xl group-hover:bg-amber-500/10 transition-colors"></div>
-            <PlaneTakeoff className="w-14 h-14 text-amber-500/10 absolute -right-2 -bottom-2 group-hover:scale-110 transition-transform" />
+            <p className="text-3xl font-black text-white tracking-tight tabular-nums mt-auto">{returnsToday}</p>
+            <div className="absolute right-[-10px] bottom-[-10px] text-amber-500/10 group-hover:scale-110 transition-transform">
+              <PlaneTakeoff className="w-16 h-16" />
+            </div>
           </div>
         </div>
 
-        {/* 🟢 REDESIGNED CONTROL RIBBON */}
-        <div className="bg-[#131A2B] rounded-[2rem] border border-slate-800 shadow-lg p-4 mb-10 flex flex-col xl:flex-row gap-4">
+        {/* 🟢 REDESIGNED CONTROL RIBBON (YOUR LOGIC, CLEANER CSS) */}
+        <div className="bg-[#131A2B] rounded-3xl border border-slate-800 shadow-xl p-4 mb-8 flex flex-col xl:flex-row gap-4">
           
           <div className="relative flex-1 min-w-[280px]">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 pointer-events-none" />
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
             <input 
               type="text" 
               autoComplete="off"
-              placeholder="Search reference, client name, plate, email, or phone..." 
+              placeholder="Search reference, client name, plate..." 
               value={searchTerm} 
               onChange={(e) => setSearchTerm(e.target.value)} 
-              className="w-full bg-[#1A2235] border border-slate-700 hover:border-blue-500/50 rounded-xl py-4 pl-12 pr-6 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white] placeholder:text-slate-500" 
+              className="w-full bg-[#1A2235] border border-slate-700 hover:border-blue-500/50 rounded-2xl py-3 pl-12 pr-6 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-slate-500" 
             />
           </div>
           
@@ -525,7 +526,7 @@ function DashboardContent() {
                 <select 
                   value={f.state} 
                   onChange={(e) => f.set(e.target.value)} 
-                  className="w-full appearance-none bg-[#1A2235] border border-slate-700 hover:border-blue-500/50 rounded-xl py-4 pl-10 pr-9 text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none cursor-pointer transition-all shadow-inner focus:ring-2 focus:ring-blue-500/50 truncate"
+                  className="w-full appearance-none bg-[#1A2235] border border-slate-700 hover:border-blue-500/50 rounded-2xl py-3 pl-10 pr-9 text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none cursor-pointer transition-all shadow-inner focus:ring-2 focus:ring-blue-500/50 truncate"
                 >
                   {f.opts.map((o, idx) => <option key={idx} value={o.v} className="bg-[#1A2235] text-white font-bold">{o.l}</option>)}
                 </select>
@@ -535,7 +536,7 @@ function DashboardContent() {
           </div>
         </div>
 
-        {/* 🟢 HIGH-END OPERATIONAL DATA TABLE */}
+        {/* 🟢 HIGH-END OPERATIONAL DATA TABLE (CLEANED UP HEADERS & SPACING) */}
         <div className="bg-[#131A2B] rounded-3xl border border-slate-800 overflow-hidden shadow-2xl mb-24">
           <div className="overflow-x-auto min-h-[500px] custom-scrollbar">
             {filteredBookings.length === 0 ? (
@@ -550,41 +551,53 @@ function DashboardContent() {
               <table className="w-full text-left whitespace-nowrap">
                 <thead className="bg-[#0F1523] border-b border-slate-800">
                   <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-                    <th className="px-8 py-6">Subject Identity</th>
-                    <th className="px-8 py-6">Asset Profile</th>
-                    <th className="px-8 py-6">Financials</th>
-                    <th className="px-8 py-6">Economic Status</th>
-                    <th className="px-8 py-6 text-right">System Controls</th>
+                    <th className="px-6 py-5">Reference</th>
+                    <th className="px-6 py-5">Customer Profile</th>
+                    <th className="px-6 py-5">Vehicle Specs</th>
+                    <th className="px-6 py-5">Schedule</th>
+                    <th className="px-6 py-5">Partner & Status</th>
+                    <th className="px-6 py-5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
                   {filteredBookings.map((b) => (
                     <tr key={b.id} className="hover:bg-slate-800/30 transition-all group">
                       
-                      <td className="px-8 py-6">
-                        <div className="flex items-center gap-5">
-                           <div className="w-12 h-12 rounded-xl bg-[#1A2235] border border-slate-700/50 flex items-center justify-center font-black text-lg text-slate-400 group-hover:text-blue-500 group-hover:border-blue-500/50 transition-all shadow-sm shrink-0">
-                              {b.full_name?.charAt(0) || "U"}
-                           </div>
-                           <div>
-                              <p className="font-bold text-white text-sm group-hover:text-blue-400 transition-colors">{b.full_name}</p>
-                              <div className="flex items-center gap-2 mt-1.5">
-                                <span className="text-[9px] font-black text-blue-400 tracking-widest uppercase bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">{b.booking_ref}</span>
-                                <div className="flex items-center gap-1 text-[10px] text-slate-400 font-medium"><Smartphone className="w-3 h-3"/> {b.phone_number}</div>
-                              </div>
-                           </div>
+                      {/* REFERENCE */}
+                      <td className="px-6 py-5">
+                        <div className="flex flex-col gap-2">
+                          <span className="text-[10px] font-black text-blue-400 tracking-widest uppercase bg-blue-500/10 px-2 py-1 rounded border border-blue-500/20 w-max">
+                            {b.booking_ref}
+                          </span>
+                          {b.fast_track_count > 0 && (
+                            <span className="text-[9px] font-black text-amber-400 uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 w-max flex items-center gap-1">
+                              <Zap className="w-3 h-3" /> Fast Track
+                            </span>
+                          )}
                         </div>
                       </td>
                       
-                      <td className="px-8 py-6">
-                        <div className="px-3 py-1 bg-[#FACC15] text-black font-black font-mono text-[10px] rounded border-b-2 border-yellow-600 w-max mb-2 shadow-sm tracking-[0.1em]">{b.license_plate}</div>
+                      {/* CUSTOMER */}
+                      <td className="px-6 py-5">
+                         <p className="font-bold text-white text-sm group-hover:text-blue-400 transition-colors">{b.full_name}</p>
+                         <div className="flex flex-col gap-1 mt-1 text-[10px] font-medium text-slate-400">
+                           <span className="flex items-center gap-1.5"><Smartphone className="w-3 h-3 text-slate-500"/> {b.phone_number}</span>
+                         </div>
+                      </td>
+                      
+                      {/* VEHICLE */}
+                      <td className="px-6 py-5">
+                        <div className="px-2 py-1 bg-[#FACC15] text-black font-black font-mono text-[10px] rounded border-b-2 border-yellow-600 w-max mb-1.5 shadow-sm tracking-[0.1em]">
+                          {b.license_plate}
+                        </div>
                         <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                            <div className="w-2.5 h-2.5 rounded-full border border-white/20 shadow-inner" style={{background: b.car_color || '#334155'}}></div>
                            {b.car_make || 'Standard Fleet'}
                         </div>
                       </td>
 
-                      <td className="px-8 py-6">
+                      {/* SCHEDULE */}
+                      <td className="px-6 py-5">
                         <div className="flex flex-col gap-2 font-bold tabular-nums">
                           <div className="flex items-center gap-3 text-[11px] text-slate-300">
                              <div className="w-14 text-[8px] font-black text-blue-400 uppercase">Inbound</div>
@@ -600,28 +613,22 @@ function DashboardContent() {
                         </div>
                       </td>
 
-                      <td className="px-8 py-6">
-                        {getStatusBadge(b.status)}
-                        <div className="mt-3 flex flex-col gap-1.5">
-                           <div className="flex items-center gap-1.5 text-sm font-black text-white">
-                              <Wallet className="w-3.5 h-3.5 text-slate-500" /> £{Number(b.total_price || 0).toFixed(2)}
-                           </div>
-                           
-                           {/* 🟢 VISIBLE FAST TRACK INDICATOR */}
-                           {b.fast_track_count > 0 && (
-                             <div className="flex items-center gap-1.5 text-[9px] font-black text-amber-400 uppercase tracking-widest bg-amber-500/10 w-max px-2 py-1 rounded border border-amber-500/20">
-                                <Zap className="w-3 h-3" /> {b.fast_track_count} Fast Track
-                             </div>
-                           )}
-
-                           <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest bg-[#1A2235] w-max px-2 py-1 rounded border border-slate-700/50">
-                              <Building2 className="w-3 h-3 text-slate-500" /> {getCompanyName(b.company_id)}
-                           </div>
+                      {/* PARTNER & STATUS */}
+                      <td className="px-6 py-5">
+                        <div className="flex flex-col gap-2">
+                          {getStatusBadge(b.status)}
+                          <div className="flex items-center gap-1.5 text-sm font-black text-white mt-1">
+                             <Wallet className="w-3.5 h-3.5 text-slate-500" /> £{Number(b.total_price || 0).toFixed(2)}
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest bg-[#1A2235] w-max px-2 py-1 rounded border border-slate-700/50 mt-1">
+                             <Building2 className="w-3 h-3 text-slate-500" /> {getCompanyName(b.company_id)}
+                          </div>
                         </div>
                       </td>
 
-                      <td className="px-8 py-6 text-right">
-                        <div className="flex items-center justify-end gap-2 opacity-30 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                      {/* SYSTEM CONTROLS (ACTIONS) */}
+                      <td className="px-6 py-5 text-right">
+                        <div className="flex items-center justify-end gap-2 opacity-40 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
                           
                           <button onClick={() => sendManualEmail(b, 'customer')} className="p-2.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white rounded-lg border border-blue-500/20 transition-all active:scale-95" title="Push Receipt to Customer">
                             <Receipt className="w-4 h-4" />

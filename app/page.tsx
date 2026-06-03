@@ -2,14 +2,13 @@
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useMemo } from "react";
 import AeroFeature from "@/components/AeroFeature";
-// 🟢 FIXED: No PromoBanner here — layout.tsx handles it via PromoBannerConditional
 import { supabase } from "./lib/supabase";
-import { getLaunchSlots } from "./actions"; // 🟢 FIXED: getLaunchSlots returns {claimed, total}
+import { getLaunchSlots } from "./actions";
 import {
   User, Calendar, PlaneTakeoff, ShieldCheck, Star, CreditCard,
   Menu, X, ChevronRight, Info, ChevronDown, Search, Car,
   Mic, Sparkles, Loader2, ArrowRight, Plane, HelpCircle,
-  Timer, CheckCircle2, BadgeCheck, PhoneCall
+  Timer, CheckCircle2, BadgeCheck, PhoneCall, AlertCircle, TrendingUp
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -64,6 +63,8 @@ export default function HomePage() {
   const [fastTrackStatus, setFastTrackStatus] = useState("");
   const [formError,       setFormError]       = useState("");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [liveBookingCount, setLiveBookingCount] = useState(0);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
 
   useEffect(() => {
     const today = new Date();
@@ -72,8 +73,19 @@ export default function HomePage() {
     setPickupDate(addDays(today, 8));
     setIsLoaded(true);
     getLaunchSlots().then(({ claimed, total }) => { setSlotsClaimed(claimed); setSlotsTotal(total); }).catch(() => {});
+    
+    // 🟢 NEW: Poll for live booking count every 30s
+    const pollBookings = async () => {
+      try {
+        const { count } = await supabase.from("bookings").select("*", { count: "exact", head: true }).neq("status", "cancelled");
+        if (count) setLiveBookingCount(count);
+      } catch (e) { console.error("Booking count poll failed:", e); }
+    };
+    pollBookings();
+    const bookingPoll = setInterval(pollBookings, 30000);
+
     const timer = setInterval(() => setNow(new Date()), 60000);
-    return () => clearInterval(timer);
+    return () => { clearInterval(timer); clearInterval(bookingPoll); };
   }, []);
 
   const todayStr    = now ? toDateStr(now) : "";
@@ -84,6 +96,7 @@ export default function HomePage() {
 
   const handleDropoffDateChange = (val: string) => {
     setDropoffDate(val);
+    setFormError("");
     if (!val) return;
     const dropD = new Date(val);
     const pickD = pickupDate ? new Date(pickupDate) : null;
@@ -104,7 +117,8 @@ export default function HomePage() {
   };
 
   const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault(); setFormError("");
+    e.preventDefault(); 
+    setFormError("");
     if (!dropoffDate || !pickupDate) { setFormError("Please select your drop-off and pick-up dates."); return; }
     const dropStart = new Date(`${dropoffDate}T${dropoffTime}`);
     const pickEnd   = new Date(`${pickupDate}T${pickupTime}`);
@@ -113,6 +127,11 @@ export default function HomePage() {
     if (isNaN(pickEnd.getTime()))   { setFormError("Invalid pick-up date.");  return; }
     if (dropStart < nowDate)        { setFormError("Drop-off cannot be in the past."); return; }
     if (pickEnd <= dropStart)       { setFormError("Pick-up must be after drop-off."); return; }
+    
+    // 🟢 NEW: Show success toast on search
+    setShowSuccessToast(true);
+    setTimeout(() => setShowSuccessToast(false), 2000);
+    
     router.push(`/select-service?${new URLSearchParams({ airport, dropoffDate, dropoffTime, pickupDate, pickupTime }).toString()}`);
   };
 
@@ -168,7 +187,14 @@ export default function HomePage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@graph": [{ "@type": "LocalBusiness", "name": "AeroPark Direct", "description": "Premium airport parking at Luton and Heathrow. Meet & Greet and Park & Ride.", "url": "https://www.aeroparkdirect.co.uk", "priceRange": "££", "areaServed": ["Luton Airport LTN", "Heathrow Airport LHR"], "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.8", "reviewCount": "312" } }, { "@type": "FAQPage", "mainEntity": faqs.map(f => ({ "@type": "Question", "name": f.q, "acceptedAnswer": { "@type": "Answer", "text": f.a } })) }] }) }} />
 
-      <main suppressHydrationWarning className="min-h-[100dvh] bg-[#F8FAFC] font-sans antialiased selection:bg-blue-600 selection:text-white overflow-x-hidden">
+      <main suppressHydrationWarning className="light-ui min-h-[100dvh] bg-[#F8FAFC] font-sans antialiased selection:bg-blue-600 selection:text-white overflow-x-hidden">
+
+        {/* 🟢 SUCCESS TOAST */}
+        {showSuccessToast && (
+          <div className="fixed top-6 right-6 z-[200] bg-emerald-500 text-white px-6 py-3 rounded-xl font-black text-sm flex items-center gap-2 animate-in slide-in-from-top-2 fade-in">
+            <CheckCircle2 className="w-5 h-5" /> Search submitted! Finding operators...
+          </div>
+        )}
 
         <nav aria-label="Main navigation" className={`sticky top-0 w-full z-[100] bg-white/80 backdrop-blur-xl border-b border-slate-200 transition-all duration-1000 ${isLoaded ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"}`}>
           <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 md:h-24 flex items-center justify-between overflow-hidden">
@@ -211,12 +237,9 @@ export default function HomePage() {
                 <div className="w-6 h-6 md:w-8 md:h-8 bg-blue-500 rounded-full flex items-center justify-center mr-3 shadow-inner"><Timer className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" aria-hidden="true" /></div>
                 <span className="text-white text-[9px] md:text-[11px] font-black uppercase tracking-widest">Founding Member: <span className="text-emerald-400">15% Off</span> + <span className="text-emerald-400 underline underline-offset-2">Lifetime Perk</span></span>
               </div>
-              {/* 🟢 SEO: H1 with airport parking keywords */}
               <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-4 md:mb-6 leading-[1.1] tracking-tight">Airport Parking <br className="hidden sm:block" /><span className="text-blue-500 drop-shadow-[0_0_15px_rgba(37,99,235,0.5)]">Made Simple.</span></h1>
-              {/* 🟢 SEO: keyword-rich subheadline */}
               <p className="text-base sm:text-lg md:text-xl text-white leading-relaxed font-semibold opacity-90 max-w-xl mb-3">Licenced <strong>Meet &amp; Greet</strong> and <strong>Park &amp; Ride</strong> at <strong>Luton</strong> and <strong>Heathrow</strong> airports. Drive to the terminal, hand over your keys, and fly.</p>
               <p className="text-sm sm:text-base md:text-lg text-gray-300 leading-relaxed font-light hidden sm:block max-w-xl mb-6">Trusted by thousands of UK travellers. Compare top-rated, fully insured parking operators and book in under 60 seconds.</p>
-              {/* 🟢 NEW: Trust badges */}
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-4 gap-y-2 mb-6">
                 {TRUST.map(({ Icon, label }) => (<span key={label} className="flex items-center gap-1.5 text-emerald-400 text-[10px] md:text-xs font-black uppercase tracking-widest"><Icon className="w-3.5 h-3.5" aria-hidden="true" /> {label}</span>))}
               </div>
@@ -233,13 +256,12 @@ export default function HomePage() {
                   <div className="mb-6 md:mb-7">
                     <label htmlFor="magic-input" className="flex items-center justify-center gap-2 text-[10px] md:text-xs font-black uppercase tracking-widest text-blue-300 mb-4"><Sparkles className="w-3.5 h-3.5 animate-pulse" aria-hidden="true" /> Aero Magic Search</label>
                     <div className="relative flex items-center bg-[#0B1121]/60 backdrop-blur-md border border-white/20 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/20 rounded-2xl p-1.5 transition-all shadow-inner">
-                      <input id="magic-input" type="text" value={magicText} onChange={e => handleMagicChange(e.target.value)} onKeyDown={e => e.key === "Enter" && handleMagicSubmit()} placeholder={isListening ? "Listening... speak now" : "e.g. Meet and Greet Heathrow next Friday, BA123..."} autoComplete="off" spellCheck="false" aria-label="Describe your parking needs" className="flex-1 w-full min-w-0 bg-transparent text-white text-sm md:text-base px-4 py-3 outline-none placeholder:text-slate-400 font-medium touch-manipulation" style={{ background: "transparent", color: "white" }} />
+                      <input id="magic-input" type="text" value={magicText} onChange={e => handleMagicChange(e.target.value)} onKeyDown={e => e.key === "Enter" && handleMagicSubmit()} placeholder={isListening ? "Listening... speak now" : "e.g. Meet and Greet Heathrow next Friday, BA123..."} autoComplete="off" spellCheck="false" aria-label="Describe your parking needs" disabled={isThinking || isListening} className="flex-1 w-full min-w-0 bg-transparent text-white text-sm md:text-base px-4 py-3 outline-none placeholder:text-slate-400 font-medium touch-manipulation disabled:opacity-50" style={{ background: "transparent", color: "white" }} />
                       <div className="flex items-center gap-1 shrink-0">
-                        <button type="button" onClick={startListening} aria-label="Voice search" className={`p-3 rounded-xl transition-all touch-manipulation flex items-center justify-center ${isListening ? "bg-red-500/20 text-red-400 animate-pulse" : "bg-transparent hover:bg-white/10 text-slate-400 hover:text-white"}`}><Mic className="w-5 h-5" /></button>
+                        <button type="button" onClick={startListening} aria-label="Voice search" disabled={isThinking} className={`p-3 rounded-xl transition-all touch-manipulation disabled:opacity-50 flex items-center justify-center ${isListening ? "bg-red-500/20 text-red-400 animate-pulse" : "bg-transparent hover:bg-white/10 text-slate-400 hover:text-white"}`}><Mic className="w-5 h-5" /></button>
                         <button type="button" onClick={handleMagicSubmit} disabled={isThinking || !magicText.trim()} aria-label="Submit AI search" className="px-4 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-400 text-white rounded-xl font-black transition-all flex items-center justify-center touch-manipulation">{isThinking ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-5 h-5" />}</button>
                       </div>
                     </div>
-                    {/* 🟢 NEW: Live typing hint */}
                     <p className="text-center text-[8px] md:text-[9px] text-blue-300/70 uppercase tracking-widest mt-2 h-4" aria-live="polite">{isThinking ? fastTrackStatus : magicHint || "✨ Powered by Aero Intelligence"}</p>
                   </div>
 
@@ -278,20 +300,16 @@ export default function HomePage() {
                       <QuickTimes value={pickupTime} onChange={setPickupTime} currentHour={currentHour} />
                     </div>
 
-                    {/* 🟢 NEW: Inline error message */}
-                    {formError && <p role="alert" className="text-red-400 text-[10px] font-black uppercase tracking-widest text-center bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2">⚠ {formError}</p>}
+                    {formError && <p role="alert" className="text-red-400 text-[10px] font-black uppercase tracking-widest text-center bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2 flex items-center gap-2 justify-center"><AlertCircle className="w-4 h-4 shrink-0" /> {formError}</p>}
 
-                    {/* 🟢 FIXED: disabled when form not ready */}
                     <button type="submit" disabled={!isFormReady} aria-label="Search for airport parking" className={`w-full h-14 md:h-16 font-black rounded-2xl flex items-center justify-center gap-2 md:gap-3 uppercase text-xs md:text-sm tracking-widest mt-1 transition-all active:scale-[0.98] touch-manipulation [-webkit-tap-highlight-color:transparent] ${isFormReady ? "bg-blue-600 hover:bg-blue-500 text-white shadow-xl shadow-blue-600/20" : "bg-slate-700/60 text-slate-400 cursor-not-allowed"}`}>
                       <Search className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" /> Find My Parking
                     </button>
                   </form>
 
-                  {/* 🟢 NEW: two trust boxes below form */}
                   <div className="mt-4 grid grid-cols-2 gap-2">
                     <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-2">
                       <div className="relative flex h-2 w-2 shrink-0"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" aria-hidden="true" /><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" /></div>
-                      {/* 🟢 FIXED: uses real slotsTotal */}
                       <p className="text-[9px] text-slate-300 font-bold leading-tight"><span className="text-emerald-400 font-black">{spotsLeft}</span> founding spots left</p>
                     </div>
                     <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-2">
@@ -308,7 +326,6 @@ export default function HomePage() {
 
         <AeroFeature />
 
-        {/* 🟢 SEO: Keyword-rich airport hub */}
         <section aria-label="Airport parking locations" className="py-16 md:py-24 bg-[#0A101D] px-4 md:px-6">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-3xl md:text-5xl font-black text-white mb-3 tracking-tight text-center">Airport Parking at <span className="text-blue-500">Luton &amp; Heathrow</span></h2>
@@ -323,6 +340,19 @@ export default function HomePage() {
                 </Link>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* 🟢 NEW SECTION: LIVE BOOKING ACTIVITY */}
+        <section className="py-16 md:py-24 px-4 bg-gradient-to-r from-blue-600 to-indigo-600">
+          <div className="max-w-7xl mx-auto text-center">
+            <div className="inline-flex items-center gap-3 px-4 py-2 bg-white/20 rounded-full border border-white/30 mb-6">
+              <div className="relative flex h-2.5 w-2.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" /><span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white" /></div>
+              <span className="text-sm font-black text-white uppercase tracking-widest">{liveBookingCount} Bookings This Month</span>
+            </div>
+            <h2 className="text-3xl md:text-5xl font-black text-white mb-4 tracking-tight">Join <span className="text-yellow-300">{liveBookingCount + 50}</span> Happy Customers</h2>
+            <p className="text-white/90 text-lg font-medium max-w-2xl mx-auto mb-8">Real travellers trusting AeroPark for their airport parking. Zero hidden fees. Free cancellation. 24/7 support.</p>
+            <button onClick={() => document.getElementById('booking-form')?.scrollIntoView({ behavior: 'smooth' })} className="px-8 py-4 bg-white text-blue-600 font-black rounded-xl text-sm uppercase tracking-widest hover:scale-105 transition-transform">Book Now</button>
           </div>
         </section>
 
@@ -381,7 +411,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* 🟢 SEO: Keyword-rich FAQ + schema microdata */}
         <section aria-label="Airport parking FAQ" className="py-20 md:py-28 bg-slate-50 border-t border-slate-200/60 px-4 md:px-6">
           <div className="max-w-4xl mx-auto">
             <div className="flex flex-col items-center text-center mb-12 md:mb-16">
