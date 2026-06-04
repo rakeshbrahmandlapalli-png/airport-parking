@@ -305,7 +305,7 @@ function ApiDiagnosticPanel({ token, company, markupPercent = 10 }: { token: str
       const raw = await res.text();
       let data: any;
       try { data = JSON.parse(raw); } catch { data = { error: "JSON parse failed", raw }; }
-      result({ status: res.status, ok: res.ok, data });
+      setResult({ status: res.status, ok: res.ok, data });
     } catch (e: any) { setResult({ error: e.message || "Network error" }); }
     setLoading(false);
   };
@@ -552,6 +552,12 @@ export default function AdminCompaniesPage() {
   const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
+  // NEW: card/table view toggle, config-health filter, live API health monitor
+  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
+  const [onlyIssues, setOnlyIssues] = useState(false);
+  const [apiHealth, setApiHealth] = useState<Record<string, { ok: boolean; price: number | null; status: number }>>({});
+  const [healthChecking, setHealthChecking] = useState(false);
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingCompany, setEditingCompany] = useState<any>(null);
   const [modalTab, setModalTab] = useState<"general" | "ltn" | "lhr" | "terminals" | "financials">("general");
@@ -751,6 +757,47 @@ export default function AdminCompaniesPage() {
     } catch (err: any) { showToast("Duplicate failed: " + err.message, "error"); }
   };
 
+  // NEW FEATURE 1 — config health check (client-side, no network)
+  const companyHealth = (c: any): string[] => {
+    const issues: string[] = [];
+    const apiMode = c.pricing_mode !== "pivot";
+    if (apiMode && !c.api_token) issues.push("API mode but no token");
+    if (!apiMode) {
+      if (c.operates_at_luton && !(Number(c.luton_price) > 0)) issues.push("No LTN pivot price");
+      if (c.operates_at_heathrow && !(Number(c.heathrow_price) > 0)) issues.push("No LHR pivot price");
+    }
+    if (!c.operates_at_luton && !c.operates_at_heathrow) issues.push("No airport selected");
+    if (!c.logo_url) issues.push("No logo");
+    return issues;
+  };
+
+  // NEW FEATURE 2 — live API health monitor (pings every API-mode partner at once)
+  const runApiHealth = async () => {
+    const targets = companies.filter((c) => c.pricing_mode !== "pivot" && c.api_token);
+    if (!targets.length) { showToast("No Live-API partners to test", "info"); return; }
+    setHealthChecking(true);
+    const d1 = new Date(); d1.setDate(d1.getDate() + 7);
+    const d2 = new Date(); d2.setDate(d2.getDate() + 10);
+    const dropDate = d1.toISOString().split("T")[0];
+    const pickDate = d2.toISOString().split("T")[0];
+    const results: Record<string, { ok: boolean; price: number | null; status: number }> = {};
+    await Promise.all(targets.map(async (c) => {
+      try {
+        const res = await fetch("/api/parking-api", { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token_no: c.api_token, drop_date: dropDate, drop_time: "09:00", return_date: pickDate, return_time: "09:00" }) });
+        const raw = await res.text();
+        let data: any; try { data = JSON.parse(raw); } catch { data = null; }
+        const rates = data?.rates || (Array.isArray(data) ? data : []);
+        const first = Array.isArray(rates) ? rates.find((r: any) => r?.parking_price != null) : null;
+        results[c.id] = { ok: res.ok, status: res.status, price: first ? Number(first.parking_price) : null };
+      } catch { results[c.id] = { ok: false, status: 0, price: null }; }
+    }));
+    setApiHealth(results);
+    setHealthChecking(false);
+    const okCount = Object.values(results).filter((r) => r.ok && r.price != null).length;
+    showToast(`API health: ${okCount}/${targets.length} returning prices`, okCount === targets.length ? "success" : "warning");
+  };
+
   const downloadInvoiceCSV = () => {
     if (!editingCompany) return;
     const commRate = Number(editingCompany.commission_rate || 15) / 100;
@@ -778,6 +825,7 @@ export default function AdminCompaniesPage() {
     if (statusFilter === "OFFLINE") result = result.filter(c => !c.is_active);
     if (apiFilter === "API") result = result.filter(c => c.pricing_mode !== "pivot" && !!c.api_token);
     if (apiFilter === "MANUAL") result = result.filter(c => c.pricing_mode === "pivot" || !c.api_token);
+    if (onlyIssues) result = result.filter(c => companyHealth(c).length > 0);
     result.sort((a, b) => {
       const numFields = ["luton_price", "heathrow_price", "commission_rate"];
       const valA = numFields.includes(sortBy) ? Number(a[sortBy] || 0) : String(a[sortBy] || "").toLowerCase();
@@ -785,7 +833,8 @@ export default function AdminCompaniesPage() {
       return valA < valB ? (sortOrder === "asc" ? -1 : 1) : valA > valB ? (sortOrder === "asc" ? 1 : -1) : 0;
     });
     return result;
-  }, [companies, searchTerm, categoryFilter, airportFilter, statusFilter, apiFilter, sortBy, sortOrder]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companies, searchTerm, categoryFilter, airportFilter, statusFilter, apiFilter, sortBy, sortOrder, onlyIssues]);
 
   const toggleSort = (field: string) => { if (sortBy === field) setSortOrder(o => o === "asc" ? "desc" : "asc"); else { setSortBy(field); setSortOrder("asc"); } };
 
@@ -821,6 +870,7 @@ export default function AdminCompaniesPage() {
   const ltnCoverage = companies.filter(c => c.operates_at_luton && c.is_active).length;
   const lhrCoverage = companies.filter(c => c.operates_at_heathrow && c.is_active).length;
   const apiCount = companies.filter(c => c.pricing_mode !== "pivot" && !!c.api_token).length;
+  const needsAttentionCount = companies.filter(c => companyHealth(c).length > 0).length;
 
   if (loading) {
     return (
@@ -837,8 +887,13 @@ export default function AdminCompaniesPage() {
   const textareaCls = "w-full bg-[#1A2235] text-white border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-slate-500 leading-relaxed [-webkit-text-fill-color:#fff] caret-white [&:-webkit-autofill]:[-webkit-text-fill-color:#fff] [&:-webkit-autofill]:[box-shadow:0_0_0px_1000px_#1A2235_inset!important]";
 
   return (
-    <div className="dark-ui min-h-screen bg-[#060A14] font-sans flex flex-col md:flex-row overflow-hidden text-slate-100 selection:bg-blue-600/30 selection:text-white antialiased">
+    <div className="dark-ui min-h-screen bg-gradient-to-b from-[#0B1120] via-[#0A0E1A] to-[#0B1120] font-sans flex flex-col md:flex-row overflow-hidden text-slate-100 selection:bg-blue-600/30 selection:text-white antialiased relative">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
+      {/* 🌌 AMBIENT BACKGROUND GLOW LAYERS */}
+      <div className="fixed top-[-200px] left-[200px] w-[600px] h-[600px] bg-blue-600/8 rounded-full blur-[140px] pointer-events-none z-0"></div>
+      <div className="fixed bottom-[-200px] right-[100px] w-[500px] h-[500px] bg-indigo-600/8 rounded-full blur-[140px] pointer-events-none z-0"></div>
+      <div className="fixed top-[40%] right-[30%] w-[400px] h-[400px] bg-emerald-600/5 rounded-full blur-[120px] pointer-events-none z-0"></div>
 
       {confirmState && (
         <div className="fixed inset-0 bg-[#060A14]/90 backdrop-blur-sm z-[400] flex items-center justify-center p-4">
@@ -867,24 +922,26 @@ export default function AdminCompaniesPage() {
         </div>
       )}
 
-      <aside className="w-full md:w-64 bg-[#0F1523] text-slate-400 hidden md:flex flex-col sticky top-0 h-screen border-r border-slate-800/80 shadow-2xl z-50 shrink-0">
+      <aside className="w-full md:w-64 bg-[#0F1523]/90 backdrop-blur-xl text-slate-400 hidden md:flex flex-col sticky top-0 h-screen border-r border-slate-800/80 shadow-2xl z-50 shrink-0 relative">
+        <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-blue-500/20 to-transparent"></div>
         <div className="p-8 flex items-center gap-4 text-white">
-          <div className="w-10 h-10 bg-blue-600/10 rounded-xl flex items-center justify-center border border-blue-500/20"><Plane className="w-6 h-6 text-blue-500 rotate-45" /></div>
-          <span className="font-black text-xl tracking-tighter uppercase">OPS <span className="text-blue-500">CENTER</span></span>
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-600/30 to-blue-600/5 rounded-xl flex items-center justify-center border border-blue-500/30 shadow-[0_0_20px_rgba(37,99,235,0.25)]"><Plane className="w-6 h-6 text-blue-400 rotate-45 drop-shadow-[0_0_6px_rgba(59,130,246,0.6)]" /></div>
+          <span className="font-black text-xl tracking-tighter uppercase">OPS <span className="text-blue-500 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]">CENTER</span></span>
         </div>
         <nav className="px-5 space-y-3 flex-grow mt-6 font-bold text-sm">
-          <Link href="/admin" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all"><LayoutDashboard className="w-5 h-5 text-slate-500" /> Live Board</Link>
-          <Link href="/admin/companies" className="flex items-center gap-4 px-5 py-4 bg-blue-600 text-white rounded-xl shadow-[0_10px_20px_-5px_rgba(37,99,235,0.4)] hover:bg-blue-500"><Building2 className="w-5 h-5" /> Partner Network</Link>
-          <Link href="/admin/promos" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all"><Tags className="w-5 h-5 text-slate-500" /> Promo Manager</Link>
-          <Link href="/admin/financials" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all"><CalendarDays className="w-5 h-5 text-slate-500" /> Financials</Link>
+          <Link href="/admin" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50"><LayoutDashboard className="w-5 h-5 text-slate-500" /> Live Board</Link>
+          <Link href="/admin/companies" className="flex items-center gap-4 px-5 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl shadow-[0_10px_30px_-5px_rgba(37,99,235,0.5)] transition-all hover:shadow-[0_10px_40px_-5px_rgba(37,99,235,0.7)] hover:-translate-y-0.5 relative overflow-hidden group"><div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div><Building2 className="w-5 h-5" /> Partner Network</Link>
+          <Link href="/admin/promos" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50"><Tags className="w-5 h-5 text-slate-500" /> Promo Manager</Link>
+          <Link href="/admin/financials" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50"><CalendarDays className="w-5 h-5 text-slate-500" /> Financials</Link>
+          <Link href="/admin/settings" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all border-t border-slate-800/50 mt-4 pt-6 hover:border-l-2 hover:border-blue-500/50"><Settings2 className="w-5 h-5 text-slate-500" /> Platform Settings</Link>
         </nav>
         <div className="p-6">
-          <button onClick={handleLogout} className="flex items-center gap-4 text-sm font-bold hover:text-red-400 transition-colors w-full text-left px-5 py-4 group bg-slate-900/50 rounded-xl border border-slate-800/80"><LogOut className="w-5 h-5 text-slate-500 group-hover:text-red-500 transition-colors" /> Secure Logout</button>
+          <button onClick={handleLogout} className="flex items-center gap-4 text-sm font-bold hover:text-red-400 transition-colors w-full text-left px-5 py-4 group bg-slate-900/50 rounded-xl border border-slate-800/80 shadow-sm hover:border-red-500/30 hover:shadow-[0_0_20px_-8px_rgba(239,68,68,0.4)]"><LogOut className="w-5 h-5 text-slate-500 group-hover:text-red-500 transition-colors" /> Secure Logout</button>
         </div>
       </aside>
 
-      <main className="flex-1 p-4 md:p-8 lg:p-12 w-full overflow-y-auto h-screen relative pb-32 md:pb-12">
-        <div className="md:hidden flex items-center justify-between mb-8 bg-[#131A2B] p-5 rounded-3xl border border-slate-800 shadow-2xl">
+      <main className="flex-1 p-4 md:p-8 lg:p-12 w-full overflow-y-auto h-screen relative pb-32 md:pb-12 z-10">
+        <div className="md:hidden flex items-center justify-between mb-8 bg-[#131A2B]/80 backdrop-blur-xl p-5 rounded-3xl border border-slate-800 shadow-2xl">
           <div className="flex items-center gap-3 font-black text-xl uppercase tracking-tighter text-white">
             <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/30"><Plane className="w-6 h-6 text-white rotate-45" /></div>
             OPS<span className="text-blue-500">CENTER</span>
@@ -892,26 +949,62 @@ export default function AdminCompaniesPage() {
           <button onClick={handleLogout} className="p-3 bg-slate-800 rounded-xl text-slate-300 hover:text-red-400 transition-colors"><LogOut className="w-5 h-5" /></button>
         </div>
 
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-12">
-          <div>
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tight">Partner Network</h1>
-            <p className="text-slate-400 font-medium mt-3 text-xs uppercase tracking-widest">{filteredAndSortedCompanies.length} of {totalPartners} partners shown</p>
-          </div>
-          <button onClick={() => { setModalTab("general"); setShowAddModal(true); }} className="px-6 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-[0_10px_20px_-5px_rgba(37,99,235,0.4)] hover:-translate-y-1 active:translate-y-0"><Plus className="w-5 h-5" /> Onboard New Partner</button>
-        </header>
+        {/* 🟢 COMMAND HERO PANEL (header + live stat rail, one unit) */}
+        <div className="relative mb-8 rounded-[2rem] border border-slate-800/80 bg-gradient-to-br from-[#131A2B] to-[#0F1523] shadow-2xl overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/40 to-transparent"></div>
+          <div className="absolute -top-24 -left-24 w-72 h-72 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none"></div>
+          <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-indigo-600/10 rounded-full blur-[100px] pointer-events-none"></div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-          {[
-            { label: "Total Network", value: totalPartners, border: "border-blue-900/30 hover:border-blue-500/40", text: "text-blue-400", Icon: Network },
-            { label: "LTN Active", value: ltnCoverage, border: "border-emerald-900/30 hover:border-emerald-500/40", text: "text-emerald-400", Icon: Car },
-            { label: "LHR Active", value: lhrCoverage, border: "border-indigo-900/30 hover:border-indigo-500/40", text: "text-indigo-400", Icon: PlaneTakeoff },
-            { label: "Live API", value: apiCount, border: "border-amber-900/30 hover:border-amber-500/40", text: "text-amber-400", Icon: Zap },
-          ].map(({ label, value, border, text, Icon }) => (
-            <div key={label} className={`relative bg-[#131A2B] p-6 rounded-[2rem] border ${border} overflow-hidden shadow-xl transition-all cursor-default`}>
-              <p className={`text-[9px] font-black uppercase tracking-[0.3em] ${text} mb-2 flex items-center gap-1.5`}><Icon className="w-3.5 h-3.5" /> {label}</p>
-              <p className="text-4xl font-black text-white tracking-tighter tabular-nums">{value}</p>
+          {/* ROW 1 — title + actions */}
+          <div className="relative p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-slate-800/60">
+            <div className="flex items-center gap-5">
+              <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600/30 to-blue-600/5 border border-blue-500/30 items-center justify-center shadow-[0_0_25px_rgba(37,99,235,0.3)] shrink-0">
+                <Network className="w-7 h-7 text-blue-400" />
+              </div>
+              <div>
+                <h1 className="text-3xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-white via-white to-blue-200 bg-clip-text text-transparent">Partner Network</h1>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mt-2">
+                  <span className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.2em]">{filteredAndSortedCompanies.length} of {totalPartners} shown</span>
+                  {needsAttentionCount > 0 && (
+                    <button onClick={() => setOnlyIssues((v) => !v)} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg uppercase tracking-widest text-[9px] font-black border transition-all ${onlyIssues ? "bg-amber-500 text-white border-amber-400" : "bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20"}`}>
+                      <AlertOctagon className="w-3 h-3" /> {needsAttentionCount} need{needsAttentionCount === 1 ? "s" : ""} attention
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
-          ))}
+            <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+              <button onClick={runApiHealth} disabled={healthChecking} className="px-6 py-3.5 bg-[#1A2235]/80 backdrop-blur-sm hover:bg-[#1A2235] border border-emerald-500/30 hover:border-emerald-500/50 text-emerald-400 rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-3 shadow-md disabled:opacity-50">
+                {healthChecking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Network className="w-4 h-4" />} Check API Health
+              </button>
+              <button onClick={() => { setModalTab("general"); setShowAddModal(true); }} className="px-6 py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-3 shadow-[0_10px_30px_-5px_rgba(37,99,235,0.5)] hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                <Plus className="w-5 h-5" /> Onboard Partner
+              </button>
+            </div>
+          </div>
+
+          {/* ROW 2 — live stat rail */}
+          <div className="relative grid grid-cols-2 lg:grid-cols-4 divide-x divide-slate-800/60">
+            {[
+              { label: "Total Network", value: totalPartners, sub: "partners", color: "#3b82f6", Icon: Network },
+              { label: "LTN Active", value: ltnCoverage, sub: "live at Luton", color: "#10b981", Icon: Car },
+              { label: "LHR Active", value: lhrCoverage, sub: "live at Heathrow", color: "#6366f1", Icon: PlaneTakeoff },
+              { label: "Live API", value: apiCount, sub: "API pricing", color: "#f59e0b", Icon: Zap },
+            ].map((s, i) => (
+              <div key={i} className="p-5 md:p-6 relative group hover:bg-white/[0.02] transition-colors border-t border-slate-800/60 lg:border-t-0">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: s.color }}>{s.label}</p>
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center border" style={{ background: `${s.color}1A`, borderColor: `${s.color}33` }}>
+                    <s.Icon className="w-3.5 h-3.5" style={{ color: s.color }} />
+                  </div>
+                </div>
+                <p className="text-2xl md:text-3xl font-black text-white tracking-tight tabular-nums">{s.value}</p>
+                <p className="text-[10px] font-bold text-slate-500 mt-1.5 truncate">{s.sub}</p>
+                <div className="absolute bottom-0 left-0 h-0.5 w-0 group-hover:w-full transition-all duration-500" style={{ background: s.color }}></div>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="bg-gradient-to-r from-blue-900/20 to-indigo-900/20 rounded-[2rem] border border-blue-500/20 shadow-lg p-6 md:p-8 mb-8 relative overflow-hidden">
@@ -965,6 +1058,110 @@ export default function AdminCompaniesPage() {
           </div>
         </div>
 
+        {/* VIEW TOGGLE + SORT */}
+        <div className="flex items-center justify-between gap-3 mb-5 px-1">
+          <div className="flex items-center bg-[#1A2235]/80 border border-slate-800 rounded-xl p-1">
+            <button onClick={() => setViewMode("cards")} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${viewMode === "cards" ? "bg-blue-600 text-white shadow-md" : "text-slate-400 hover:text-white"}`}><Building2 className="w-3.5 h-3.5" /> Cards</button>
+            <button onClick={() => setViewMode("table")} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${viewMode === "table" ? "bg-blue-600 text-white shadow-md" : "text-slate-400 hover:text-white"}`}><SlidersHorizontal className="w-3.5 h-3.5" /> Table</button>
+          </div>
+          <div className="relative">
+            <ArrowUpDown className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 z-10 pointer-events-none" />
+            <select
+              value={`${sortBy}:${sortOrder}`}
+              onChange={(e) => { const [f, o] = e.target.value.split(":"); setSortBy(f); setSortOrder(o as "asc" | "desc"); }}
+              className="appearance-none bg-[#1A2235]/80 border border-slate-800 hover:border-blue-500/40 rounded-xl py-2.5 pl-10 pr-9 text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none cursor-pointer transition-all focus:ring-2 focus:ring-blue-500/40"
+            >
+              <option value="name:asc" className="bg-[#1A2235]">Name A → Z</option>
+              <option value="name:desc" className="bg-[#1A2235]">Name Z → A</option>
+              <option value="luton_price:desc" className="bg-[#1A2235]">LTN Price High → Low</option>
+              <option value="luton_price:asc" className="bg-[#1A2235]">LTN Price Low → High</option>
+              <option value="commission_rate:desc" className="bg-[#1A2235]">Commission High → Low</option>
+              <option value="commission_rate:asc" className="bg-[#1A2235]">Commission Low → High</option>
+            </select>
+            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+          </div>
+        </div>
+
+        {/* 🟢 CARD GRID VIEW */}
+        {viewMode === "cards" && (
+          filteredAndSortedCompanies.length === 0 ? (
+            <div className="bg-[#131A2B]/70 backdrop-blur-xl rounded-3xl border border-slate-800 py-32 flex flex-col items-center justify-center opacity-50 px-6 text-center mb-24">
+              <Search className="w-12 h-12 text-slate-500 mb-4" />
+              <p className="text-xl font-black uppercase tracking-[0.3em] text-white">No Partners Match</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-5 mb-24">
+              {filteredAndSortedCompanies.map((c) => {
+                const isApiMode = c.pricing_mode !== "pivot";
+                const issues = companyHealth(c);
+                const health = apiHealth[c.id];
+                return (
+                  <div key={c.id} onClick={() => openEditModal(c)}
+                    className={`group bg-gradient-to-br from-[#131A2B] to-[#0F1523] rounded-3xl border border-slate-800/80 hover:border-blue-500/40 shadow-xl hover:shadow-[0_20px_50px_-15px_rgba(59,130,246,0.25)] transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col hover:-translate-y-1 ${!c.is_active ? "opacity-60" : ""}`}>
+                    <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
+
+                    {/* HEAD */}
+                    <div className="p-5 flex items-start gap-4">
+                      <CompanyLogo logoUrl={c.logo_url} name={c.name} />
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-base font-black text-white truncate group-hover:text-blue-400 transition-colors">{c.name}</h3>
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                          <span className="text-[9px] font-black text-blue-400 tracking-widest uppercase bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">{c.category?.replace("-", " ")}</span>
+                          {issues.length > 0 && (
+                            <span title={issues.join(", ")} className="text-[9px] font-black text-amber-400 uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 flex items-center gap-1"><AlertOctagon className="w-2.5 h-2.5" /> {issues.length}</span>
+                          )}
+                        </div>
+                      </div>
+                      <button onClick={(e) => { e.stopPropagation(); quickToggle(c, "is_active"); }} className={`shrink-0 px-3 py-1.5 rounded-lg text-[9px] tracking-widest font-black border uppercase transition-all ${c.is_active ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" : "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20"}`}>{c.is_active ? "Active" : "Offline"}</button>
+                    </div>
+
+                    {/* BODY */}
+                    <div className="px-5 pb-4 space-y-3 flex-1" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button onClick={() => togglePricingMode(c)} title={isApiMode ? "Switch to Pivot pricing" : "Switch to Live API pricing"} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black border uppercase tracking-widest transition-all ${isApiMode ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" : "bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20"}`}>{isApiMode ? <><Zap className="w-3 h-3" /> API</> : <><Calculator className="w-3 h-3" /> Pivot</>}</button>
+                        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black border uppercase tracking-widest ${(c.price_modifier || 1) === 1 ? "border-slate-700 bg-slate-800 text-slate-400" : c.price_modifier < 1 ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400" : "border-rose-500/20 bg-rose-500/10 text-rose-400"}`}><Zap className="w-3 h-3" />{(c.price_modifier || 1) === 1 ? "BASE" : `${c.price_modifier > 1 ? "+" : ""}${Math.round(((c.price_modifier || 1) - 1) * 100)}%`}</div>
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black border border-slate-700 bg-slate-800 text-slate-300 uppercase tracking-widest"><Percent className="w-3 h-3" />{c.commission_rate || 15}% comm</div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div className="bg-[#1A2235]/60 border border-slate-800 rounded-xl px-3 py-2.5">
+                          <p className="text-[8px] font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1"><Car className="w-3 h-3" /> Luton</p>
+                          <p className="text-sm font-black text-white mt-1">{c.operates_at_luton ? (isApiMode && c.api_token ? <span className="text-emerald-400 text-[10px] uppercase tracking-widest">LIVE</span> : `£${Number(c.luton_price || 0).toFixed(2)}`) : <span className="text-slate-600">—</span>}{c.ltn_sold_out && <span className="text-red-400 text-[8px] ml-1.5 uppercase">Sold out</span>}</p>
+                          <p className="text-[9px] text-slate-500 font-bold mt-0.5">{c.operates_at_luton ? `★ ${getAvgRating(c.ltn_reviews)} · ${c.ltn_reviews?.length || 0} rev` : "not active"}</p>
+                        </div>
+                        <div className="bg-[#1A2235]/60 border border-slate-800 rounded-xl px-3 py-2.5">
+                          <p className="text-[8px] font-black uppercase tracking-widest text-indigo-400 flex items-center gap-1"><PlaneTakeoff className="w-3 h-3" /> Heathrow</p>
+                          <p className="text-sm font-black text-white mt-1">{c.operates_at_heathrow ? (isApiMode && c.api_token ? <span className="text-emerald-400 text-[10px] uppercase tracking-widest">LIVE</span> : `£${Number(c.heathrow_price || 0).toFixed(2)}`) : <span className="text-slate-600">—</span>}{c.lhr_sold_out && <span className="text-red-400 text-[8px] ml-1.5 uppercase">Sold out</span>}</p>
+                          <p className="text-[9px] text-slate-500 font-bold mt-0.5">{c.operates_at_heathrow ? `★ ${getAvgRating(c.lhr_reviews)} · ${c.lhr_reviews?.length || 0} rev` : "not active"}</p>
+                        </div>
+                      </div>
+
+                      {isApiMode && c.api_token && health && (
+                        <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-[9px] font-black uppercase tracking-widest ${health.ok && health.price != null ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-red-500/10 text-red-400 border-red-500/20"}`}>
+                          {health.ok && health.price != null ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
+                          {health.ok && health.price != null ? `API OK · £${Number(health.price).toFixed(2)}` : `API Failed · HTTP ${health.status || "ERR"}`}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* FOOTER */}
+                    <div className="px-4 py-3.5 border-t border-slate-800 bg-[#0F1523]/60 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                      <button onClick={() => quickToggle(c, "ltn_sold_out")} title={c.ltn_sold_out ? "Mark LTN Available" : "Mark LTN Sold Out"} className={`px-2.5 py-1.5 rounded-lg text-[8px] font-black border uppercase transition-all ${c.ltn_sold_out ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-slate-800 text-slate-500 border-slate-700 hover:border-red-500/30 hover:text-red-400"}`}>{c.ltn_sold_out ? "LTN 🔴" : "LTN ✓"}</button>
+                      <button onClick={() => quickToggle(c, "lhr_sold_out")} title={c.lhr_sold_out ? "Mark LHR Available" : "Mark LHR Sold Out"} className={`px-2.5 py-1.5 rounded-lg text-[8px] font-black border uppercase transition-all ${c.lhr_sold_out ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-slate-800 text-slate-500 border-slate-700 hover:border-red-500/30 hover:text-red-400"}`}>{c.lhr_sold_out ? "LHR 🔴" : "LHR ✓"}</button>
+                      <div className="flex-1"></div>
+                      <button onClick={() => openEditModal(c)} className="p-2.5 bg-[#1A2235] text-slate-300 hover:bg-blue-600 hover:text-white rounded-lg border border-slate-700 hover:border-transparent transition-all active:scale-95" title="Configure"><Settings2 className="w-4 h-4" /></button>
+                      <button onClick={() => duplicateCompany(c)} className="p-2.5 bg-[#1A2235] text-slate-500 hover:bg-indigo-600 hover:text-white rounded-lg border border-slate-700 hover:border-transparent transition-all active:scale-95" title="Duplicate"><Copy className="w-4 h-4" /></button>
+                      <button onClick={() => handleDelete(c.id, c.name)} className="p-2.5 bg-[#1A2235] text-slate-500 hover:bg-red-500 hover:text-white rounded-lg border border-slate-700 hover:border-transparent transition-all active:scale-95" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )
+        )}
+
+        {/* 🟢 TABLE VIEW */}
+        {viewMode === "table" && (
         <div className="bg-[#131A2B] rounded-3xl border border-slate-800 overflow-hidden shadow-2xl mb-24">
           <div className="overflow-x-auto min-h-[400px]">
             <table className="w-full text-left whitespace-nowrap">
@@ -1041,6 +1238,7 @@ export default function AdminCompaniesPage() {
             </table>
           </div>
         </div>
+        )}
       </main>
 
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] px-4 pb-6 pt-2 bg-gradient-to-t from-[#0B1120] via-[#0B1120]/95 to-transparent pointer-events-none">

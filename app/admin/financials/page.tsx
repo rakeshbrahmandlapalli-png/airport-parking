@@ -9,7 +9,7 @@ import {
   Tags, Wallet, TrendingUp, CreditCard, Users, Download, Zap, PiggyBank,
   Filter, ChevronDown, ExternalLink, DollarSign, Plus, X,
   Receipt, ArrowDownRight, FolderMinus, Save, CheckCircle2, Trash2,
-  FileText, Printer
+  FileText, Printer, Settings2
 } from "lucide-react";
 
 // ── Fee constants ──────────────────────────────────────────────
@@ -504,12 +504,13 @@ function FinancialsContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B1120] flex flex-col items-center justify-center text-white">
-        <div className="relative">
+      <div className="min-h-screen bg-gradient-to-b from-[#0B1120] via-[#0A0E1A] to-[#0B1120] flex flex-col items-center justify-center text-white relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-emerald-600/10 rounded-full blur-[120px]"></div>
+        <div className="relative z-10">
           <div className="absolute inset-0 border-t-2 border-emerald-500 rounded-full animate-spin"></div>
           <PiggyBank className="w-10 h-10 text-emerald-500 m-4 animate-pulse" />
         </div>
-        <p className="font-black text-slate-400 tracking-widest uppercase text-xs mt-6">Compiling Ledgers...</p>
+        <p className="font-black text-slate-400 tracking-widest uppercase text-xs mt-6 relative z-10">Compiling Ledgers...</p>
       </div>
     );
   }
@@ -518,44 +519,54 @@ function FinancialsContent() {
   const dateInputCls = "bg-[#131A2B] border border-slate-700 hover:border-blue-500/50 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all [color-scheme:dark] [-webkit-text-fill-color:white]";
 
   return (
-    <div className="min-h-screen bg-[#0B1120] font-sans flex flex-col md:flex-row overflow-hidden text-slate-100 antialiased selection:bg-blue-600/30">
+    <div className="min-h-screen bg-gradient-to-b from-[#0B1120] via-[#0A0E1A] to-[#0B1120] font-sans flex flex-col md:flex-row overflow-hidden text-slate-100 antialiased selection:bg-blue-600/30 relative">
 
-      {/* SIDEBAR */}
-      <aside className="w-full md:w-64 bg-[#0F1523] text-slate-400 hidden md:flex flex-col sticky top-0 h-screen border-r border-slate-800/80 shadow-2xl z-50 shrink-0">
+      {/* 🌌 AMBIENT BACKGROUND GLOW LAYERS */}
+      <div className="fixed top-[-200px] left-[200px] w-[600px] h-[600px] bg-emerald-600/8 rounded-full blur-[140px] pointer-events-none z-0"></div>
+      <div className="fixed bottom-[-200px] right-[100px] w-[500px] h-[500px] bg-blue-600/8 rounded-full blur-[140px] pointer-events-none z-0"></div>
+      <div className="fixed top-[40%] right-[30%] w-[400px] h-[400px] bg-indigo-600/5 rounded-full blur-[120px] pointer-events-none z-0"></div>
+
+      {/* 🟢 PREMIUM SIDEBAR */}
+      <aside className="w-full md:w-64 bg-[#0F1523]/90 backdrop-blur-xl text-slate-400 hidden md:flex flex-col sticky top-0 h-screen border-r border-slate-800/80 shadow-2xl z-50 shrink-0 relative">
+        <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-emerald-500/20 to-transparent"></div>
         <div className="p-8 flex items-center gap-4 text-white">
-          <div className="w-10 h-10 bg-blue-600/10 rounded-xl flex items-center justify-center border border-blue-500/20 shadow-[0_0_15px_rgba(37,99,235,0.15)]">
-            <Plane className="w-6 h-6 text-blue-500 rotate-45" />
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-600/30 to-blue-600/5 rounded-xl flex items-center justify-center border border-blue-500/30 shadow-[0_0_20px_rgba(37,99,235,0.25)]">
+            <Plane className="w-6 h-6 text-blue-400 rotate-45 drop-shadow-[0_0_6px_rgba(59,130,246,0.6)]" />
           </div>
-          <span className="font-black text-xl tracking-tighter uppercase">OPS <span className="text-blue-500">CENTER</span></span>
+          <span className="font-black text-xl tracking-tighter uppercase">OPS <span className="text-blue-500 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]">CENTER</span></span>
         </div>
         <nav className="px-5 space-y-3 flex-grow mt-6 font-bold text-sm">
-          <Link href="/admin" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all">
+          <Link href="/admin" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50">
             <LayoutDashboard className="w-5 h-5 text-slate-500" /> Live Board
           </Link>
-          <Link href="/admin/companies" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all">
+          <Link href="/admin/companies" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50">
             <Building2 className="w-5 h-5 text-slate-500" /> Partner Network
           </Link>
-          <Link href="/admin/promos" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all">
+          <Link href="/admin/promos" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50">
             <Tags className="w-5 h-5 text-slate-500" /> Promo Manager
           </Link>
-          <Link href="/admin/financials" className="flex items-center gap-4 px-5 py-4 bg-emerald-600 text-white rounded-xl shadow-[0_10px_20px_-5px_rgba(16,185,129,0.4)] transition-all">
+          <Link href="/admin/financials" className="flex items-center gap-4 px-5 py-4 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-xl shadow-[0_10px_30px_-5px_rgba(16,185,129,0.5)] transition-all hover:shadow-[0_10px_40px_-5px_rgba(16,185,129,0.7)] hover:-translate-y-0.5 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
             <PiggyBank className="w-5 h-5" /> Financials
+          </Link>
+          <Link href="/admin/settings" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all border-t border-slate-800/50 mt-4 pt-6 hover:border-l-2 hover:border-blue-500/50">
+            <Settings2 className="w-5 h-5 text-slate-500" /> Platform Settings
           </Link>
         </nav>
         <div className="p-6">
-          <button onClick={handleLogout} className="flex items-center gap-4 text-sm font-bold hover:text-red-400 transition-colors w-full text-left px-5 py-4 group bg-slate-900/50 rounded-xl border border-slate-800/80 shadow-sm">
+          <button onClick={handleLogout} className="flex items-center gap-4 text-sm font-bold hover:text-red-400 transition-colors w-full text-left px-5 py-4 group bg-slate-900/50 rounded-xl border border-slate-800/80 shadow-sm hover:border-red-500/30 hover:shadow-[0_0_20px_-8px_rgba(239,68,68,0.4)]">
             <LogOut className="w-5 h-5 text-slate-500 group-hover:text-red-500 transition-colors" /> Secure Logout
           </button>
         </div>
       </aside>
 
       {/* MAIN */}
-      <main className="flex-1 p-4 md:p-8 lg:p-12 w-full overflow-y-auto h-screen relative pb-32 md:pb-12 custom-scrollbar">
+      <main className="flex-1 p-4 md:p-8 lg:p-12 w-full overflow-y-auto h-screen relative pb-32 md:pb-12 custom-scrollbar z-10">
 
         {/* MOBILE HEADER */}
-        <div className="md:hidden flex items-center justify-between mb-8 bg-[#131A2B] p-5 rounded-3xl border border-slate-800 shadow-2xl">
+        <div className="md:hidden flex items-center justify-between mb-8 bg-[#131A2B]/80 backdrop-blur-xl p-5 rounded-3xl border border-slate-800 shadow-2xl">
           <div className="flex items-center gap-3 font-black text-xl uppercase tracking-tighter text-white">
-            <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-600/30">
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-600 to-emerald-500 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.5)]">
               <PiggyBank className="w-6 h-6 text-white" />
             </div>
             FINANCIAL<span className="text-emerald-500">HUB</span>
@@ -563,65 +574,82 @@ function FinancialsContent() {
           <button onClick={handleLogout} className="p-3 bg-slate-800 rounded-xl text-slate-300 hover:text-red-400 transition-colors"><LogOut className="w-5 h-5" /></button>
         </div>
 
-        {/* DESKTOP HEADER */}
-        <header className="flex flex-col lg:flex-row lg:items-start justify-between gap-6 mb-10">
-          <div>
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tight">Financial Ledger</h1>
-            <div className="text-slate-400 font-medium mt-3 text-xs uppercase tracking-widest flex items-center gap-3">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]"></div>
-              Real-Time Profit &amp; Loss
-              <span className="text-emerald-400 normal-case tracking-normal font-bold">· {rangeLabel}</span>
-            </div>
-          </div>
+        {/* 🟢 COMMAND HERO PANEL (header + controls, one unit) */}
+        <div className="relative mb-8 rounded-[2rem] border border-slate-800/80 bg-gradient-to-br from-[#131A2B] to-[#0F1523] shadow-2xl overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent"></div>
+          <div className="absolute -top-24 -left-24 w-72 h-72 bg-emerald-600/10 rounded-full blur-[100px] pointer-events-none"></div>
+          <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none"></div>
 
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative">
-                <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none z-10" />
-                <select value={range} onChange={(e) => setRange(e.target.value as RangeKey)}
-                  className="appearance-none bg-[#131A2B] border border-slate-700 hover:border-blue-500/50 rounded-xl py-4 pl-10 pr-10 text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none cursor-pointer transition-all shadow-[0_0_0_1000px_#131A2B_inset]">
-                  <option value="all">All Time</option>
-                  <option value="today">Today</option>
-                  <option value="week">Last 7 Days</option>
-                  <option value="month">Last 30 Days</option>
-                  <option value="custom">Custom Range…</option>
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+          <div className="relative p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="flex items-center gap-5">
+              <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-600/30 to-emerald-600/5 border border-emerald-500/30 items-center justify-center shadow-[0_0_25px_rgba(16,185,129,0.3)] shrink-0">
+                <PiggyBank className="w-7 h-7 text-emerald-400" />
               </div>
-              <button onClick={exportCSV} disabled={isCustomIncomplete}
-                className="px-6 py-4 bg-[#131A2B] hover:bg-[#1A2235] disabled:opacity-40 disabled:cursor-not-allowed border border-slate-700 text-white rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-md hover:shadow-lg">
-                <Download className="w-4 h-4 text-blue-400" /> Export P&amp;L
-              </button>
-              <button onClick={() => setShowInvoiceModal(true)}
-                className="px-6 py-4 bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/50 text-white rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-[0_10px_20px_-5px_rgba(16,185,129,0.4)] hover:-translate-y-0.5">
-                <FileText className="w-4 h-4" /> Generate Invoice
-              </button>
+              <div>
+                <h1 className="text-3xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-white via-white to-emerald-200 bg-clip-text text-transparent">Financial Ledger</h1>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
+                  <div className="text-emerald-400 font-bold text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
+                    Real-Time P&amp;L
+                  </div>
+                  <div className="hidden sm:block w-px h-3 bg-slate-700"></div>
+                  <div className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em] flex items-center gap-1.5">
+                    <Filter className="w-3 h-3" /> {rangeLabel}
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Custom date pickers */}
-            {range === "custom" && (
-              <div className="flex flex-wrap items-end gap-3 bg-[#131A2B] border border-slate-800 rounded-2xl p-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1"><CalendarDays className="w-3 h-3" /> From</label>
-                  <input type="date" value={fromDate} max={toDate || undefined} onChange={(e) => setFromDate(e.target.value)} className={dateInputCls} />
+            <div className="flex flex-col gap-3 shrink-0">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative">
+                  <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none z-10" />
+                  <select value={range} onChange={(e) => setRange(e.target.value as RangeKey)}
+                    className="w-full appearance-none bg-[#1A2235]/80 backdrop-blur-sm border border-slate-700 hover:border-emerald-500/50 rounded-xl py-3.5 pl-10 pr-10 text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none cursor-pointer transition-all focus:ring-2 focus:ring-emerald-500/40">
+                    <option value="all" className="bg-[#1A2235]">All Time</option>
+                    <option value="today" className="bg-[#1A2235]">Today</option>
+                    <option value="week" className="bg-[#1A2235]">Last 7 Days</option>
+                    <option value="month" className="bg-[#1A2235]">Last 30 Days</option>
+                    <option value="custom" className="bg-[#1A2235]">Custom Range…</option>
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1"><CalendarDays className="w-3 h-3" /> To</label>
-                  <input type="date" value={toDate} min={fromDate || undefined} onChange={(e) => setToDate(e.target.value)} className={dateInputCls} />
-                </div>
-                {(fromDate || toDate) && (
-                  <button onClick={() => { setFromDate(""); setToDate(""); }}
-                    className="flex items-center gap-1.5 px-3 py-3 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-red-400 border border-slate-700 hover:border-red-500/30 rounded-xl transition-all">
-                    <X className="w-3 h-3" /> Clear
-                  </button>
-                )}
-                {isCustomIncomplete && (
-                  <p className="text-[10px] font-bold text-amber-400 self-center">Pick both dates to enable export.</p>
-                )}
+                <button onClick={exportCSV} disabled={isCustomIncomplete}
+                  className="px-5 py-3.5 bg-[#1A2235]/80 backdrop-blur-sm hover:bg-[#1A2235] disabled:opacity-40 disabled:cursor-not-allowed border border-slate-700 hover:border-slate-600 text-slate-300 rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-2 shadow-md">
+                  <Download className="w-4 h-4 text-blue-400" /> Export P&amp;L
+                </button>
+                <button onClick={() => setShowInvoiceModal(true)}
+                  className="px-5 py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-2 shadow-[0_10px_30px_-5px_rgba(16,185,129,0.5)] hover:-translate-y-0.5 relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                  <FileText className="w-4 h-4" /> Generate Invoice
+                </button>
               </div>
-            )}
+
+              {/* Custom date pickers */}
+              {range === "custom" && (
+                <div className="flex flex-wrap items-end gap-3 bg-[#1A2235]/60 border border-slate-800 rounded-2xl p-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1"><CalendarDays className="w-3 h-3" /> From</label>
+                    <input type="date" value={fromDate} max={toDate || undefined} onChange={(e) => setFromDate(e.target.value)} className={dateInputCls} />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1"><CalendarDays className="w-3 h-3" /> To</label>
+                    <input type="date" value={toDate} min={fromDate || undefined} onChange={(e) => setToDate(e.target.value)} className={dateInputCls} />
+                  </div>
+                  {(fromDate || toDate) && (
+                    <button onClick={() => { setFromDate(""); setToDate(""); }}
+                      className="flex items-center gap-1.5 px-3 py-3 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-red-400 border border-slate-700 hover:border-red-500/30 rounded-xl transition-all">
+                      <X className="w-3 h-3" /> Clear
+                    </button>
+                  )}
+                  {isCustomIncomplete && (
+                    <p className="text-[10px] font-bold text-amber-400 self-center">Pick both dates to enable export.</p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-        </header>
+        </div>
 
         {/* 🟢 EXPANDED 5-COLUMN HUD METRICS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
@@ -1025,15 +1053,13 @@ function FinancialsContent() {
       )}
 
       {/* MOBILE BOTTOM NAV */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] px-4 pb-6 pt-2 bg-gradient-to-t from-[#0B1120] via-[#0B1120]/95 to-transparent pointer-events-none">
-        <nav className="max-w-md mx-auto bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-3xl h-20 flex items-center justify-around px-5 shadow-2xl pointer-events-auto">
-          <Link href="/admin" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><LayoutDashboard className="w-6 h-6" /><span className="text-[9px] font-bold uppercase tracking-tighter">Live</span></Link>
-          <Link href="/admin/companies" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><Building2 className="w-6 h-6" /><span className="text-[9px] font-bold uppercase tracking-tighter">Ops</span></Link>
-          <div className="relative -top-8">
-             <button onClick={() => router.push('/admin')} className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30 border-4 border-[#0B1120] active:scale-95 transition-transform"><Plus className="w-8 h-8 text-white" /></button>
-          </div>
-          <Link href="/admin/financials" className="flex flex-col items-center justify-center gap-1 text-emerald-500 transition-all"><PiggyBank className="w-6 h-6" /><span className="text-[9px] font-bold uppercase tracking-tighter">Finance</span></Link>
-          <Link href="/admin/promos" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><Tags className="w-6 h-6" /><span className="text-[9px] font-bold uppercase tracking-tighter">Promos</span></Link>
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] px-2 pb-6 pt-2 bg-gradient-to-t from-[#0B1120] via-[#0B1120]/95 to-transparent pointer-events-none">
+        <nav className="max-w-md mx-auto bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-3xl h-20 flex items-center justify-around px-2 shadow-2xl pointer-events-auto">
+          <Link href="/admin" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><LayoutDashboard className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Live</span></Link>
+          <Link href="/admin/companies" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><Building2 className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Ops</span></Link>
+          <Link href="/admin/promos" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><Tags className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Promo</span></Link>
+          <Link href="/admin/financials" className="flex flex-col items-center justify-center gap-1 text-emerald-500 transition-all"><PiggyBank className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Finance</span></Link>
+          <Link href="/admin/settings" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><Settings2 className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Settings</span></Link>
         </nav>
       </div>
     </div>
