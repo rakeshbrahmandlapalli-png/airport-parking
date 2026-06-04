@@ -413,6 +413,16 @@ function CheckoutContent() {
     if (type.toLowerCase().includes("park & ride") || type.toLowerCase().includes("park and ride")) finalServiceType = "Park & Ride";
     if (type.toLowerCase().includes("hotel")) finalServiceType = "Hotel & Parking";
 
+    // Pull the Google Ads click id captured on landing so the webhook can
+    // report a server-side conversion (immune to ad-blockers / ITP).
+    const readCookie = (name: string): string => {
+      try {
+        const m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+        return m ? decodeURIComponent(m[1]) : "";
+      } catch { return ""; }
+    };
+    const gclid = readCookie("ap_gclid") || readCookie("ap_wbraid") || readCookie("ap_gbraid");
+
     try {
       const response = await fetch("/api/checkout", {
         method: "POST",
@@ -441,6 +451,7 @@ function CheckoutContent() {
             promo_used:     discount.code || "None",
             fast_track_count: String(fastTrackCount),
             lounge:         wantsLounge ? "yes" : "no",
+            gclid,
             // FIX: removed duplicate camelCase keys — the route now normalises
             // everything via metaStr(); sending both keys caused ambiguity.
           },

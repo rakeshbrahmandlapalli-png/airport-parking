@@ -4,7 +4,8 @@ import { Analytics } from "@vercel/analytics/next";
 import { GoogleAnalytics } from '@next/third-parties/google';
 import Script from 'next/script';
 import Chatbot from "@/components/Chatbot";
-import PromoBanner from "@/components/PromoBanner"; 
+import PromoBanner from "@/components/PromoBanner";
+import GclidCapture from "@/components/GclidCapture";
 
 export const metadata: Metadata = {
   title: "AeroPark Direct",
@@ -26,6 +27,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="subpixel-antialiased bg-[#F8FAFC]" suppressHydrationWarning>
         
+        {/* Capture Google Ads click id (gclid) into a cookie for server-side conversions */}
+        <GclidCapture />
+
         {/* 🚀 Dynamic Banner containing LAUNCH10 and AERO15 hooks */}
         <PromoBanner />
 

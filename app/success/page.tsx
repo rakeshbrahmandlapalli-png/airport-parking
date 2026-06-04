@@ -31,7 +31,17 @@ function formatTime(t: string | null | undefined): string {
 // ─── GOOGLE ADS ───────────────────────────────────────────────────────────────
 // FIX: extracted so it can't be called multiple times (ref-guard in caller)
 
-function fireGoogleAdsConversion(value: number, transactionId: string, attempt = 0) {
+interface ConversionUser {
+  email?: string | null;
+  phone?: string | null;
+}
+
+function fireGoogleAdsConversion(
+  value: number,
+  transactionId: string,
+  user: ConversionUser = {},
+  attempt = 0
+) {
   try {
     const gtag = (window as any).gtag;
 
@@ -40,11 +50,25 @@ function fireGoogleAdsConversion(value: number, transactionId: string, attempt =
     // conversion (critical during a live ad campaign).
     if (typeof gtag !== "function") {
       if (attempt < 20) {
-        setTimeout(() => fireGoogleAdsConversion(value, transactionId, attempt + 1), 500);
+        setTimeout(() => fireGoogleAdsConversion(value, transactionId, user, attempt + 1), 500);
       } else {
         console.warn("Google Ads gtag never became available — conversion not sent.");
       }
       return;
+    }
+
+    // ── Enhanced Conversions ──────────────────────────────────────────────
+    // Provide first-party data so Google can recover attribution that Safari
+    // ITP / ad-blockers would otherwise break. gtag normalises + SHA-256 hashes
+    // this client-side before sending — raw PII never leaves the browser.
+    // (Requires "Enhanced Conversions" enabled in the Google Ads UI, gtag method.)
+    const userData: Record<string, string> = {};
+    const email = (user.email || "").trim().toLowerCase();
+    if (email) userData.email = email;
+    const phone = normalisePhoneE164(user.phone);
+    if (phone) userData.phone_number = phone;
+    if (Object.keys(userData).length > 0) {
+      gtag("set", "user_data", userData);
     }
 
     // 1. Google Ads conversion (for campaign bidding / ROAS)
@@ -67,6 +91,18 @@ function fireGoogleAdsConversion(value: number, transactionId: string, attempt =
   } catch (e) {
     console.error("Failed to fire Google Ads conversion:", e);
   }
+}
+
+// Best-effort UK → E.164 (+44...) for Enhanced Conversions phone matching.
+function normalisePhoneE164(raw: string | null | undefined): string {
+  if (!raw) return "";
+  let p = String(raw).replace(/[^\d+]/g, "");
+  if (!p) return "";
+  if (p.startsWith("+")) return p;
+  if (p.startsWith("00")) return "+" + p.slice(2);
+  if (p.startsWith("0")) return "+44" + p.slice(1); // UK national → +44
+  if (p.startsWith("44")) return "+" + p;
+  return "+" + p;
 }
 
 // ─── LOADING SKELETON ─────────────────────────────────────────────────────────
@@ -169,7 +205,10 @@ function SuccessContent() {
         setStatus("success");
         if (!conversionFiredRef.current) {
           conversionFiredRef.current = true;
-          fireGoogleAdsConversion(Number(existing.total_price) || 0, sessionId);
+          fireGoogleAdsConversion(Number(existing.total_price) || 0, sessionId, {
+            email: existing.email,
+            phone: existing.phone_number,
+          });
         }
         return;
       }
@@ -243,7 +282,10 @@ function SuccessContent() {
 
       if (!conversionFiredRef.current) {
         conversionFiredRef.current = true;
-        fireGoogleAdsConversion(Number(finalRow.total_price) || 0, sessionId);
+        fireGoogleAdsConversion(Number(finalRow.total_price) || 0, sessionId, {
+          email: finalRow.email,
+          phone: finalRow.phone_number,
+        });
       }
     } catch (err: any) {
       if (signal.aborted) return;
