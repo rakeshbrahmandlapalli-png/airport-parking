@@ -8,7 +8,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import {
   MapPin, Clock, ShieldCheck, ChevronRight, ThumbsUp, ArrowLeft,
   ChevronDown, Plane, Footprints, User, Star, Ban, Bus, BedDouble,
-  Info, PlaneTakeoff, PlaneLanding, Map as MapIcon, Navigation,
+  Info, PlaneTakeoff, PlaneLanding, MapIcon, Navigation,
   AlertCircle, Sparkles, MessageSquare, Zap, Tag, CarFront,
   BatteryCharging, Briefcase, Percent, CheckCircle2, Lock, Loader2
 } from "lucide-react";
@@ -82,7 +82,7 @@ const getBadgeIcon = (label: string) => {
   if (l.includes("AERO"))                              return Sparkles;
   if (l.includes("FAST"))                              return Zap;
   if (l.includes("PET"))                               return Footprints;
-  if (l.includes("SECURITY") || l.includes("SECURE")) return ShieldCheck;
+  if (l.includes("SECURITY") || l.includes("SECURE"))  return ShieldCheck;
   if (l.includes("MEET"))                              return User;
   if (l.includes("HOTEL"))                             return BedDouble;
   if (l.includes("CHARG"))                             return BatteryCharging;
@@ -105,15 +105,15 @@ function CompanyLogo({ logoUrl, name, size = "md" }: { logoUrl?: string; name: s
   useEffect(() => { setImgError(false); }, [logoUrl]);
   const sizes = {
     sm: "w-10 h-10 rounded-xl text-base",
-    md: "w-14 h-14 rounded-2xl text-xl",
-    lg: "w-16 h-16 rounded-2xl text-2xl",
+    md: "w-[72px] h-[72px] rounded-[1rem] text-xl",
+    lg: "w-20 h-20 rounded-2xl text-2xl",
   };
   if (logoUrl && !imgError) {
     return (
       <img
         src={logoUrl}
         alt={name}
-        className={`${sizes[size]} object-contain bg-white p-1.5 border border-slate-700/50 shrink-0`}
+        className={`${sizes[size]} object-contain bg-white shrink-0`}
         onError={() => setImgError(true)}
       />
     );
@@ -133,8 +133,8 @@ function DetailPanel({ option, isHeathrow }: any) {
   const currentReviews      = isHeathrow ? option.lhr_reviews || [] : option.ltn_reviews || [];
   const safeMapLink = `http://googleusercontent.com/maps.google.com/maps?q=${encodeURIComponent((option.address || "") + " " + (option.postcode || ""))}`;
   return (
-    <details className="group/details">
-      <summary className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-widest cursor-pointer list-none select-none text-blue-400 hover:text-blue-300 transition-colors touch-manipulation [-webkit-tap-highlight-color:transparent] [&::-webkit-details-marker]:hidden">
+    <details className="group/details mt-4">
+      <summary className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest cursor-pointer list-none select-none text-blue-400 hover:text-blue-300 transition-colors touch-manipulation [-webkit-tap-highlight-color:transparent] [&::-webkit-details-marker]:hidden">
         <span>View Details, Instructions &amp; Reviews</span>
         <ChevronDown className="w-4 h-4 transition-transform duration-300 group-open/details:rotate-180" />
       </summary>
@@ -220,24 +220,19 @@ function ParkingCard({
   const isDiscounted = original > final && !isSoldOut;
   const perDay = duration > 0 ? (final / duration) : final;
 
-  // ── Pricing mode from admin: "api" | "pivot"
-  // If pricing_mode === "api" and we are still loading → show spinner
-  // If pricing_mode === "api" and load done but no price → show N/A (never show pivot)
-  // If pricing_mode === "pivot" → always show pivot, never call API
   const pricingMode: "api" | "pivot" = option.pricing_mode === "pivot" ? "pivot" : "api";
   const isApiMode = pricingMode === "api";
 
-  const promoBadges: { label: string; color: string }[] = [];
-  if (isDiscounted) {
+  const promoBadges: { label: string; color: string; icon: any }[] = [];
+  if (isFeatured) promoBadges.push({ label: "Best Weekend Value", color: "bg-[#064E3B] text-emerald-400", icon: Sparkles });
+  else if (isDiscounted) {
     const savePct = Math.round(((original - final) / original) * 100);
-    if (savePct > 0) promoBadges.push({ label: `${savePct}% Launch Special`, color: "bg-blue-500/20 text-blue-300 border-blue-500/30" });
+    if (savePct > 0) promoBadges.push({ label: `${savePct}% Launch Special`, color: "bg-[#1E3A8A] text-blue-400", icon: Percent });
   }
-  if (isFeatured) promoBadges.push({ label: "Best Weekend Value", color: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" });
 
   const categoryLabel = option.category?.replace(/-/g, " ")?.replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Meet Greet";
   const featureBadges = (option.badges || []).filter((b: any) => b.category === "General" || b.category === option.category);
 
-  // What to show in the price box
   const showSpinner  = isApiMode && liveRateLoading;
   const showPrice    = !showSpinner && final > 0 && !isSoldOut;
   const showNA       = !showSpinner && !isSoldOut && final <= 0;
@@ -245,150 +240,132 @@ function ParkingCard({
 
   return (
     <div
-      className={`rounded-2xl overflow-hidden border transition-all ${featured ? "border-blue-500/40 shadow-[0_0_40px_-10px_rgba(37,99,235,0.3)]" : "border-slate-800 hover:border-slate-700"} ${isSoldOut ? "opacity-60 grayscale-[30%]" : ""}`}
+      className={`rounded-[1.25rem] overflow-hidden border transition-all ${featured ? "border-blue-500/40 shadow-[0_0_40px_-10px_rgba(37,99,235,0.2)]" : "border-slate-800 hover:border-slate-700"} ${isSoldOut ? "opacity-60 grayscale-[30%]" : ""}`}
       style={{ background: "#0B1120" }}
     >
       {featured && <div className="h-[2px] bg-gradient-to-r from-blue-600 via-indigo-500 to-emerald-500" />}
-      <div className="flex flex-col sm:flex-row">
+      <div className="flex flex-col md:flex-row">
 
-        {/* LEFT */}
-        <div className="flex-1 p-6 sm:p-8 flex flex-col gap-4">
+        {/* LEFT SECTION (Logo, Name, Badges) */}
+        <div className="flex-1 p-6 md:p-8 flex flex-col items-start justify-center">
+          
+          {/* Top Promo Badge */}
           {promoBadges.length > 0 && (
-            <div className="flex flex-wrap gap-2">
+            <div className="mb-4">
               {promoBadges.map((b, i) => (
-                <span key={i} className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${b.color}`}>
-                  <Sparkles className="w-3 h-3" /> {b.label}
+                <span key={i} className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${b.color}`}>
+                  <b.icon className="w-3 h-3" /> {b.label}
                 </span>
               ))}
             </div>
           )}
 
-          {/* Logo + name */}
-          <div className="flex items-center gap-4">
+          {/* Logo & Name Row */}
+          <div className="flex items-center gap-5 w-full">
             <CompanyLogo logoUrl={option.logo_url} name={option.name} size="md" />
             <div className="min-w-0">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-white leading-none truncate">
+              <h2 className="text-2xl md:text-[2rem] font-black uppercase tracking-tight text-white leading-none truncate pb-1">
                 {option.name}
               </h2>
-              {rating && (
-                <div className="flex items-center gap-1.5 mt-1.5">
-                  <div className="flex items-center gap-0.5">
-                    {[1,2,3,4,5].map(i => (
-                      <Star key={i} className={`w-3 h-3 ${i <= Math.round(Number(rating)) ? "text-amber-400 fill-amber-400" : "text-slate-700"}`} />
-                    ))}
-                  </div>
-                  <span className="text-[10px] font-black text-amber-400">{rating}</span>
-                  <span className="text-[10px] font-bold text-slate-500">({reviews.length})</span>
-                </div>
-              )}
             </div>
           </div>
 
-          {/* Feature badges */}
-          <div className="flex flex-wrap gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-slate-800 text-slate-300 border border-slate-700">
+          {/* Feature Badges (Green Tags) */}
+          <div className="flex flex-wrap gap-2 mt-5">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-slate-800 text-slate-300 border border-slate-700">
               <ThumbsUp className="w-3 h-3" /> {categoryLabel}
             </span>
             {source === "api" && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest text-emerald-400 border border-emerald-500/20" style={{ background: "rgba(16, 185, 129, 0.05)" }}>
                 <Zap className="w-3 h-3" /> Live Rate
               </span>
             )}
             {source === "pivot" && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-slate-700/50 text-slate-400 border border-slate-600/30">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-slate-700/50 text-slate-400 border border-slate-600/30">
                 <Clock className="w-3 h-3" /> Fixed Rate
               </span>
             )}
             {featureBadges.map((badge: any, i: number) => {
               const BadgeIcon = getBadgeIcon(badge.label);
               return (
-                <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest text-emerald-400 border border-emerald-500/20" style={{ background: "rgba(16, 185, 129, 0.05)" }}>
                   <BadgeIcon className="w-3 h-3" /> {badge.label}
                 </span>
               );
             })}
           </div>
 
-          <div className="mt-auto pt-2">
-            <DetailPanel option={option} isHeathrow={isHeathrow} />
-          </div>
+          {/* Details & Reviews Dropdown */}
+          <DetailPanel option={option} isHeathrow={isHeathrow} />
         </div>
 
-        {/* RIGHT: price */}
-        <div className="sm:w-[240px] md:w-[260px] shrink-0 border-t sm:border-t-0 sm:border-l border-slate-800/80 flex flex-col" style={{ background: "#080E1C" }}>
-          <div className="flex-1 p-6 flex flex-col items-center justify-center text-center gap-1">
-            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500 mb-1">Total Stay Cost</p>
+        {/* RIGHT SECTION (Pricing & CTA) */}
+        <div className="md:w-[300px] shrink-0 border-t md:border-t-0 md:border-l border-slate-800/80 flex flex-col justify-center items-center py-8 px-6 relative" style={{ background: "#060B14" }}>
+          
+          <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500 mb-1.5 text-center">Total Stay Cost</p>
 
-            {showSpinner && (
-              <div className="flex flex-col items-center gap-2 py-3">
-                <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
-                <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest animate-pulse">
-                  Fetching Live Rate...
-                </p>
-              </div>
-            )}
-
-            {showNA && (
-              <div className="flex flex-col items-center gap-1 py-3">
-                <AlertCircle className="w-5 h-5 text-slate-600" />
-                <p className="text-slate-500 text-sm font-black">Rate Unavailable</p>
-                <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest">
-                  {isApiMode ? "API returned no price" : "No pivot data set"}
-                </p>
-              </div>
-            )}
-
-            {isSoldOut && (
-              <p className="font-black tracking-tighter leading-none text-slate-500 line-through text-4xl sm:text-5xl">
-                £{final > 0 ? final.toFixed(2) : "—"}
+          {showSpinner && (
+            <div className="flex flex-col items-center gap-2 py-4">
+              <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
+              <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest animate-pulse">
+                Fetching Rate...
               </p>
-            )}
+            </div>
+          )}
 
-            {showPrice && (
-              <>
-                {isDiscounted && (
-                  <p className="text-sm font-bold text-slate-500 line-through">£{original.toFixed(2)}</p>
-                )}
-                <p className="font-black tracking-tighter leading-none text-emerald-400 text-4xl sm:text-5xl">
-                  £{final.toFixed(2)}
-                </p>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-                  Averaging £{perDay.toFixed(2)} / day
-                </p>
-                {source === "api" && (
-                  <p className="text-[8px] font-black uppercase tracking-widest text-emerald-600 mt-0.5 flex items-center gap-1">
-                    <Zap className="w-2.5 h-2.5" /> Live price
-                  </p>
-                )}
-              </>
-            )}
-          </div>
-
-          <div className="p-4 pt-0 flex flex-col items-center gap-2">
-            <button
-              disabled={!canSelect}
-              onClick={() => canSelect && handleBooking(option, final)}
-              className={`w-full h-12 font-black rounded-xl flex items-center justify-center gap-2 uppercase tracking-[0.15em] text-xs transition-all active:scale-95 ${
-                isSoldOut
-                  ? "bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700"
-                  : showSpinner
-                  ? "bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700"
-                  : showNA
-                  ? "bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700"
-                  : "bg-blue-600 hover:bg-blue-500 text-white shadow-[0_8px_20px_-5px_rgba(37,99,235,0.5)]"
-              }`}
-            >
-              {isSoldOut   ? <><Ban className="w-4 h-4" /> Sold Out</>
-              : showSpinner ? <><Loader2 className="w-4 h-4 animate-spin" /> Loading...</>
-              : showNA      ? <><AlertCircle className="w-4 h-4" /> Unavailable</>
-              :               <>Select <ChevronRight className="w-4 h-4" /></>}
-            </button>
-            {canSelect && (
-              <p className="flex items-center gap-1.5 text-[9px] font-bold text-slate-600 uppercase tracking-widest">
-                <Lock className="w-3 h-3" /> Payments secured by Stripe
+          {showNA && (
+            <div className="flex flex-col items-center gap-1 py-4 text-center">
+              <AlertCircle className="w-6 h-6 text-slate-600 mb-1" />
+              <p className="text-slate-400 text-lg font-black tracking-tight">Unavailable</p>
+              <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest">
+                {isApiMode ? "API Offline" : "No Manual Data"}
               </p>
-            )}
-          </div>
+            </div>
+          )}
+
+          {isSoldOut && (
+            <p className="font-black tracking-tighter leading-none text-slate-500 line-through text-4xl mb-4">
+              £{final > 0 ? final.toFixed(2) : "—"}
+            </p>
+          )}
+
+          {showPrice && (
+            <div className="flex flex-col items-center text-center">
+              <p className="font-black tracking-tighter leading-none text-emerald-400 text-[2.75rem] mb-2">
+                £{final.toFixed(2)}
+              </p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] mb-1">
+                Averaging £{perDay.toFixed(2)} / day
+              </p>
+              {source === "api" && (
+                <p className="text-[9px] font-black uppercase tracking-widest text-emerald-600 flex items-center gap-1 mb-4">
+                  <Zap className="w-3 h-3" /> Live Price
+                </p>
+              )}
+              {source === "pivot" && <div className="h-4 mb-4"></div>}
+            </div>
+          )}
+
+          <button
+            disabled={!canSelect}
+            onClick={() => canSelect && handleBooking(option, final)}
+            className={`w-full h-12 rounded-xl font-black flex items-center justify-center gap-2 uppercase tracking-[0.15em] text-xs transition-all ${
+              canSelect
+                ? "bg-[#2563EB] hover:bg-blue-500 text-white active:scale-95 shadow-[0_0_15px_rgba(37,99,235,0.3)]"
+                : "bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700"
+            }`}
+          >
+            {isSoldOut   ? <><Ban className="w-4 h-4" /> Sold Out</>
+            : showSpinner ? <><Loader2 className="w-4 h-4 animate-spin" /> Loading...</>
+            : showNA      ? <><AlertCircle className="w-4 h-4" /> Unavailable</>
+            :               <>Select <ChevronRight className="w-4 h-4" /></>}
+          </button>
+
+          {canSelect && (
+            <p className="flex items-center justify-center gap-1.5 text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-4">
+              <Lock className="w-3 h-3" /> Payments secured by Stripe
+            </p>
+          )}
         </div>
       </div>
     </div>
@@ -396,7 +373,8 @@ function ParkingCard({
 }
 
 // ─── FETCH WITH TIMEOUT ───────────────────────────────────────────────────────
-async function fetchWithTimeout(url: string, options: RequestInit, ms = 8000): Promise<Response> {
+// 🟢 TIMEOUT COMPRESSED: Lowered to 3500ms to immediately unblock UI performance
+async function fetchWithTimeout(url: string, options: RequestInit, ms = 3500): Promise<Response> {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), ms);
   try {
@@ -431,12 +409,8 @@ function ResultsContent() {
   const [slotsClaimed,  setSlotsClaimed]  = useState(12);
   const [loading,       setLoading]       = useState(true);
 
-  // companyId → confirmed live price (number) or null (failed/no data)
-  // Key presence means "request completed". Missing key means "still pending".
   const [livePrices,     setLivePrices]     = useState<Record<string, number | null>>({});
   const [liveLoadingIds, setLiveLoadingIds] = useState<Set<string>>(new Set());
-
-  // Card order pinned at first load — never re-sorted after that
   const [pinnedOrder, setPinnedOrder] = useState<string[]>([]);
 
   const airport     = searchParams.get("airport")      || "Luton (LTN)";
@@ -468,7 +442,6 @@ function ResultsContent() {
       setPinnedOrder([]);
 
       try {
-        // STEP 1 — Fetch companies + settings (fast, blocks only the skeleton)
         const [compRes, setRes] = await Promise.all([
           supabase.from("companies").select("*"),
           supabase.from("settings").select("*").in("key", ["markup_enabled", "markup_percent"]),
@@ -489,7 +462,6 @@ function ResultsContent() {
           setSettings(resolvedSettings);
         }
 
-        // STEP 2 — Filter + sort by pivot price, pin order immediately
         const relevantCompanies = allCompanies.filter((c) => {
           const cat = c.category?.toLowerCase().replace(/ & /g, "-").replace(/\s+/g, "-").trim();
           return (
@@ -514,16 +486,12 @@ function ResultsContent() {
         });
 
         setPinnedOrder(initialSorted.map((c) => c.id));
-        // ← PAGE IS VISIBLE NOW
         setLoading(false);
 
-        // STEP 3 — Only fire API calls for companies with pricing_mode = "api"
-        // pricing_mode = "pivot" → never call the API, always use pivot
         if (dropoff && pickup) {
           const isSameDay   = dropoff === pickup;
           const apiPickTime = isSameDay ? "23:59" : pickTime;
 
-          // Only companies that are set to API mode AND have a token
           const apiCompanies = relevantCompanies.filter(
             (c) => c.api_token && c.pricing_mode !== "pivot"
           );
@@ -546,7 +514,7 @@ function ResultsContent() {
                       return_time: apiPickTime,
                     }),
                   },
-                  8000
+                  3500 
                 );
                 if (cancelled) return;
 
@@ -562,9 +530,8 @@ function ResultsContent() {
                   console.warn(`API non-OK for ${c.name}: HTTP ${res.status}`);
                 }
 
-                // Apply dynamic_surcharge_percent on top of raw API price
                 const surcharge = Number(c.dynamic_surcharge_percent || 0);
-                const adjusted  = rawPrice != null ? rawPrice * (1 + surcharge / 100) : null;
+                const adjusted  = rawPrice != null && rawPrice > 0 ? rawPrice * (1 + surcharge / 100) : null;
 
                 if (!cancelled) setLivePrices(prev => ({ ...prev, [c.id]: adjusted }));
 
@@ -585,7 +552,6 @@ function ResultsContent() {
           }
         }
 
-        // STEP 4 — Background tasks (non-blocking)
         checkAvailability(airport, dropoff, pickup).catch(() => {});
         getLaunchSlotsClaimed().then((s) => { if (!cancelled) setSlotsClaimed(s); }).catch(() => {});
 
@@ -607,43 +573,43 @@ function ResultsContent() {
       const c = compMap.get(id);
       if (!c) return null;
 
-      // ── Determine pricing mode for this company ──
-      // pricing_mode field set in admin: "api" (default if token exists) or "pivot"
       const isApiMode = c.pricing_mode !== "pivot" && !!c.api_token;
-      const isPivotMode = !isApiMode;
 
       let priceObj: { original: number; final: number; modifier: number; source: string };
 
       if (isApiMode) {
-        // API mode: only use live price. If still loading or failed → price = 0 (N/A shown)
-        const requestDone  = id in livePrices;           // true once fetch completed (success or fail)
+        // ── API Mode: No Pivot Fallback Permitted ──
+        const requestDone  = id in livePrices;           
         const adjustedLive = requestDone ? livePrices[id] : null;
 
         if (adjustedLive != null && adjustedLive > 0) {
-          // Good API price — apply price_modifier + global markup
           const modifier = Number(c.price_modifier || 1);
           const markup   = settings.markupEnabled ? (1 + (settings.markupPercent || 10) / 100) : 1;
           const final    = adjustedLive * modifier * markup;
-          const original = adjustedLive * markup; // without per-company modifier for strikethrough
+          const original = adjustedLive * markup; 
           priceObj = { original, final, modifier, source: "api" };
         } else {
-          // Either still loading OR API returned nothing → show N/A, never fall back to pivot
+          // If still loading or API returned nothing/timed out → Fail Closed (price box displays Unavailable)
           priceObj = { original: 0, final: 0, modifier: 1, source: "api" };
         }
       } else {
-        // Pivot mode: use computePrice with pivot data, never call API
+        // ── Pivot Mode: Use Manual Rate Matrices ──
         const pr = computePrice({
           company:      c,
           airport,
           duration,
           dropDate:     dropoff,
-          liveApiRates: [],   // always empty — pivot mode never uses live rates
+          liveApiRates: [],   
           settings,
           fallbackPrice: 0,
         });
+
+        const surcharge = Number(c.dynamic_surcharge_percent || 0);
+        const surchargeMultiplier = 1 + (surcharge / 100);
+
         priceObj = {
-          original: pr.original,
-          final:    pr.final,
+          original: pr.original * surchargeMultiplier,
+          final:    pr.final * surchargeMultiplier,
           modifier: pr.modifier,
           source:   pr.ok ? "pivot" : "none",
         };
@@ -664,7 +630,7 @@ function ResultsContent() {
   }
 
   return (
-    <div className="max-w-[960px] mx-auto px-4 py-6 md:py-8">
+    <div className="max-w-[1000px] mx-auto px-4 py-6 md:py-8">
       <div className="mb-10 mt-4">
         <BookingStepper currentStep={1} />
       </div>
@@ -727,7 +693,7 @@ function ResultsContent() {
           )}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {processedCompanies.map((option, idx) => (
             <ParkingCard
               key={option.id}

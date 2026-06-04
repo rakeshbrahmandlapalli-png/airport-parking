@@ -348,7 +348,27 @@ function CheckoutContent() {
       settings,
       fallbackPrice: fallbackUrlPrice,
     });
-    return { original: pr.original, final: pr.final, modifier: pr.modifier };
+
+    // 🟢 EXACT FIX: Apply the Dynamic Surcharge multiplier to the final checkout price
+    const isApiMode = company && company.pricing_mode !== "pivot" && !!company.api_token;
+    
+    let finalTotal = pr.final;
+    let originalTotal = pr.original;
+
+    if (!isApiMode && company) {
+      // If we are in manual pivot mode, apply the surcharge percent
+      const surcharge = Number(company.dynamic_surcharge_percent || 0);
+      const surchargeMultiplier = 1 + (surcharge / 100);
+
+      finalTotal = finalTotal * surchargeMultiplier;
+      originalTotal = originalTotal * surchargeMultiplier;
+    }
+
+    return { 
+      original: originalTotal, 
+      final: finalTotal, 
+      modifier: pr.modifier 
+    };
   }, [company, urlName, type, bookingDays, liveApiRates, dropDate, airport, fallbackUrlPrice, settings]);
 
   const discountAmount    = priceData.final * discount.percent;

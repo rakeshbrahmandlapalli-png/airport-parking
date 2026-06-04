@@ -1,24 +1,26 @@
-// app/api/webhooks/stripe/route.ts - UPDATED with all fixes
+// app/api/webhooks/stripe/route.ts - UPDATED with VIP Email Intercept
 
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { sendBookingReceipt, sendAmendmentAlerts, sendProviderNotification } from "@/app/lib/mail";
 import { createClient } from "@supabase/supabase-js";
 import { triggerMissingFlightAlert } from "@/app/lib/twilio";
+import { Resend } from "resend";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+const resend = new Resend(process.env.RESEND_API_KEY!);
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// 🟢 UPDATED: Added APD Exclusive to allowed partners
+// 🟢 Allowed partners who receive automated booking assignments
 const ALLOWED_PARTNERS = ["APD", "24/7 Meet & Greet", "Airport Parking Bay", "APD Exclusive"];
 
 /**
- * 🟢 FIXED: Idempotency gate - prevents duplicate processing
+ * 🟢 Idempotency gate - prevents duplicate processing
  * Returns true if NEW (first time), false if DUPLICATE (already seen)
  */
 async function claimEvent(eventId: string, type: string): Promise<boolean> {
@@ -82,8 +84,6 @@ export async function POST(req: Request) {
 
       const oldTotal = Number(m.old_total) || 0;
       const extraCharged = Number(m.extra_charged) || 0;
-
-      // 🟢 FIXED: Use old_total + extra_charged, not amount_total
       const newTotal = Math.round((oldTotal + extraCharged) * 100) / 100;
 
       const updatePayload: Record<string, any> = { total_price: newTotal };
@@ -168,14 +168,44 @@ export async function POST(req: Request) {
       if (newBooking) {
         const webhookWon = newBooking.booking_ref === myRef;
 
+        // 🟢 VIP CONCIERGE INTERCEPT LOGIC
+        const isExclusive = newBooking.service_type?.toLowerCase().includes('exclusive') || resolvedCompany?.name?.toLowerCase().includes('exclusive');
+
         if (webhookWon) {
-          await sendBookingReceipt(newBooking, resolvedCompany).catch((err) =>
-            console.error("[WEBHOOK] Customer Email Failed:", err)
-          );
+          if (isExclusive) {
+            // Send the holding email for VIPs (no instructions yet)
+            await resend.emails.send({
+              from: 'AeroPark Direct <bookings@aeroparkdirect.co.uk>',
+              to: newBooking.email,
+              subject: `Booking Confirmed: AeroPark Direct Exclusive 👑`,
+              html: `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                  <h2 style="color: #2563eb;">Booking Confirmed: AeroPark Exclusive</h2>
+                  <p>Dear ${newBooking.full_name},</p>
+                  <p>Thank you for choosing the VIP standard! We have successfully received your booking and payment of <strong>£${newBooking.total_price}</strong>.</p>
+                  <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;">
+                    <h3 style="margin-top: 0;">What happens next?</h3>
+                    <p>Our concierge team is currently matching your vehicle with one of our top-rated, fully-vetted parking partners for your dates.</p>
+                    <p>We will email and text you your dedicated VIP driver's contact number and exact terminal meeting point <strong>24 hours before your flight</strong>.</p>
+                    <p>Rest assured, your airport barrier and drop-off fees are fully covered by us!</p>
+                  </div>
+                  <p><strong>Booking Reference:</strong> ${newBooking.booking_ref}</p>
+                </div>
+              `
+            }).catch((err) => console.error("[WEBHOOK] VIP Customer Email Failed:", err));
+            console.log(`[WEBHOOK] Sent VIP holding email to customer for ${newBooking.booking_ref}`);
+          } else {
+            // Send standard receipt with immediate instructions
+            await sendBookingReceipt(newBooking, resolvedCompany).catch((err) =>
+              console.error("[WEBHOOK] Standard Customer Email Failed:", err)
+            );
+          }
         }
 
-        // 🟢 FIXED: Now includes APD Exclusive
-        if (resolvedCompany && ALLOWED_PARTNERS.includes(resolvedCompany.name)) {
+        // 🟢 PROVIDER NOTIFICATION CHECK
+        // If it's an exclusive booking, we DO NOT send an automated provider email because
+        // we haven't manually assigned the job yet.
+        if (resolvedCompany && !isExclusive && ALLOWED_PARTNERS.includes(resolvedCompany.name)) {
           await sendProviderNotification(newBooking, resolvedCompany).catch((err) =>
             console.error("[WEBHOOK] Provider Email Failed:", err)
           );

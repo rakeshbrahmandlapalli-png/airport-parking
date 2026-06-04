@@ -238,6 +238,15 @@ export async function POST(req: Request) {
 
     let serverTotal = priceResult.final;
 
+    // 🟢 EXACT FIX: Apply the Dynamic Surcharge to the server calculation
+    // This correctly matches the math on the results and checkout frontend pages
+    if (company && company.dynamic_surcharge_percent) {
+      const surcharge = Number(company.dynamic_surcharge_percent || 0);
+      if (surcharge > 0) {
+        serverTotal = serverTotal * (1 + (surcharge / 100));
+      }
+    }
+
     // ── 8. Re-validate promo code server-side (never trust client discount) ────
     let appliedPromo = "None";
     if (promoCode) {

@@ -11,10 +11,8 @@ import {
   ArrowUpDown, Award, AlertOctagon, FileText, Download,
   Percent, Image as ImageIcon, ArrowUp, ArrowDown, PiggyBank,
   ChevronDown, AlertCircle, Filter, Phone, Code2, Tags, Zap,
-  Eye, EyeOff, Copy, Check, CheckCircle2, TrendingUp,
-  Calculator, RefreshCw, BadgeCheck, Ban, ToggleLeft, ToggleRight,
-  Bell, Star, Globe, Clipboard, ChevronUp, Info, ExternalLink,
-  BarChart2, Hash, Clock, ShieldCheck, Wifi, WifiOff
+  Eye, EyeOff, Copy, Check, CheckCircle2,
+  Calculator, RefreshCw, Info
 } from "lucide-react";
 
 interface Review {
@@ -205,7 +203,7 @@ function PricingModeToggle({ value, onChange, hasToken }: {
         {mode === "api" && !hasToken && (
           <div className="mt-3 px-4 py-3 bg-amber-500/5 border border-amber-500/20 rounded-xl flex items-center gap-2">
             <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <p className="text-[10px] font-bold text-amber-400">No API token set — customers will see "Rate Unavailable" until you add a token or switch to Pivot.</p>
+            <p className="text-[10px] font-bold text-amber-400">No API token set — customers will see &quot;Rate Unavailable&quot; until you add a token or switch to Pivot.</p>
           </div>
         )}
       </div>
@@ -214,7 +212,7 @@ function PricingModeToggle({ value, onChange, hasToken }: {
 }
 
 // ─── PRICE PREVIEW CALCULATOR ─────────────────────────────────────────────────
-function PricePreviewCalc({ company }: { company: any }) {
+function PricePreviewCalc({ company, markupPercent }: { company: any, markupPercent: number }) {
   const [days, setDays] = useState(7);
   const [airport, setAirport] = useState<"ltn" | "lhr">("ltn");
   const getPivotPrice = (c: any, d: number, ap: "ltn" | "lhr") => {
@@ -248,7 +246,7 @@ function PricePreviewCalc({ company }: { company: any }) {
   const rawBase = getPivotPrice(company, days, airport);
   const afterSurcharge = rawBase * (1 + surcharge / 100);
   const afterModifier = afterSurcharge * modifier;
-  const afterMarkup10 = afterModifier * 1.10;
+  const afterMarkup = afterModifier * (1 + markupPercent / 100);
   const hasData = rawBase > 0;
   return (
     <div className="bg-[#0A101D] border border-blue-500/20 rounded-2xl p-5 mt-4">
@@ -277,7 +275,7 @@ function PricePreviewCalc({ company }: { company: any }) {
             { label: "Base (Pivot)", value: rawBase, color: "text-slate-300" },
             { label: `After ${surcharge}% Surcharge`, value: afterSurcharge, color: "text-amber-400" },
             { label: `After ${modifier}x Modifier`, value: afterModifier, color: "text-blue-400" },
-            { label: "Final + 10% Markup", value: afterMarkup10, color: "text-emerald-400", bold: true },
+            { label: `Final + ${markupPercent}% Markup`, value: afterMarkup, color: "text-emerald-400", bold: true },
           ].map(({ label, value, color, bold }) => (
             <div key={label} className="bg-[#131A2B] p-3 rounded-xl border border-slate-800">
               <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">{label}</p>
@@ -307,7 +305,7 @@ function ApiDiagnosticPanel({ token, company, markupPercent = 10 }: { token: str
       const raw = await res.text();
       let data: any;
       try { data = JSON.parse(raw); } catch { data = { error: "JSON parse failed", raw }; }
-      setResult({ status: res.status, ok: res.ok, data });
+      result({ status: res.status, ok: res.ok, data });
     } catch (e: any) { setResult({ error: e.message || "Network error" }); }
     setLoading(false);
   };
@@ -503,6 +501,39 @@ function CompanyLogo({ logoUrl, name }: { logoUrl: string; name: string }) {
   );
 }
 
+// ─── REVIEW SECTION ───────────────────────────────────────────────────────────
+function ReviewSection({ airport, color, reviews, onAdd, onRemove, onUpdate }: {
+  airport: "ltn" | "lhr"; color: "blue" | "purple";
+  reviews: Review[]; onAdd: () => void; onRemove: (idx: number) => void; onUpdate: (idx: number, field: keyof Review, value: any) => void;
+}) {
+  const accent = color === "blue" ? "bg-blue-600 hover:bg-blue-500" : "bg-purple-600 hover:bg-purple-500";
+  const ring = color === "blue" ? "focus:ring-blue-500/50" : "focus:ring-purple-500/50";
+  const inputCls = `w-full bg-[#1A2235] text-white rounded-xl px-4 py-3 text-sm font-bold border border-slate-700/50 outline-none focus:ring-2 ${ring} transition-all placeholder:text-slate-500 [-webkit-text-fill-color:#fff] caret-white`;
+  return (
+    <div className="pt-8 border-t border-slate-800 mt-6">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-white font-black text-xl uppercase tracking-widest">{airport.toUpperCase()} Reviews <span className="text-slate-600 ml-2">({reviews.length})</span></h3>
+        <button type="button" onClick={onAdd} className={`px-5 py-3 ${accent} text-white rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all shadow-lg`}>+ Add Review</button>
+      </div>
+      <div className="space-y-6">
+        {reviews.map((rev, idx) => (
+          <div key={rev.id} className="bg-[#0F1523] p-6 rounded-2xl border border-slate-700/50 relative">
+            <button type="button" onClick={() => onRemove(idx)} className="absolute top-6 right-6 p-2 text-slate-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 pr-10">
+              <div className="space-y-1"><label className="text-[9px] font-black uppercase text-slate-500 tracking-widest block ml-1">Author</label><input value={rev.author || ""} onChange={e => onUpdate(idx, "author", e.target.value)} className={inputCls} /></div>
+              <div className="space-y-1"><label className="text-[9px] font-black uppercase text-slate-500 tracking-widest block ml-1">Rating</label><div className="relative"><select value={rev.rating || 5} onChange={e => onUpdate(idx, "rating", parseInt(e.target.value) || 5)} className={`${inputCls} appearance-none cursor-pointer !text-amber-400 [-webkit-text-fill-color:#fbbf24]`}>{[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} Stars</option>)}</select><ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" /></div></div>
+              <div className="space-y-1"><label className="text-[9px] font-black uppercase text-slate-500 tracking-widest block ml-1">Source</label><div className="relative"><select value={rev.source || "Trustpilot"} onChange={e => onUpdate(idx, "source", e.target.value)} className={`${inputCls} appearance-none cursor-pointer`}><option value="Trustpilot">Trustpilot</option><option value="Google">Google</option><option value="Internal">Internal</option></select><ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" /></div></div>
+              <div className="space-y-1"><label className="text-[9px] font-black uppercase text-slate-500 tracking-widest block ml-1">Date</label><input type="date" value={rev.date || ""} onChange={e => onUpdate(idx, "date", e.target.value)} className={`${inputCls} cursor-pointer [color-scheme:dark]`} /></div>
+            </div>
+            <div className="space-y-1 mb-4"><label className="text-[9px] font-black uppercase text-slate-500 tracking-widest block ml-1">Comment</label><textarea value={rev.comment || ""} onChange={e => onUpdate(idx, "comment", e.target.value)} className={`${inputCls} resize-none leading-relaxed`} rows={3} /></div>
+            <label className="flex items-center gap-2 cursor-pointer w-fit group"><input type="checkbox" checked={!!rev.verified} onChange={e => onUpdate(idx, "verified", e.target.checked)} className="w-4 h-4 rounded border-slate-700 bg-[#1A2235] accent-emerald-500 cursor-pointer" /><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest group-hover:text-emerald-400 transition-colors">Verified Booking</span></label>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function AdminCompaniesPage() {
   const router = useRouter();
@@ -580,7 +611,10 @@ export default function AdminCompaniesPage() {
   };
 
   const openEditModal = (company: any) => {
-    const withDefaults = { pricing_mode: company.api_token ? "api" : "pivot", ...company };
+    const withDefaults = {
+      ...company,
+      pricing_mode: company.pricing_mode ?? (company.api_token ? "api" : "pivot"),
+    };
     originalEditingRef.current = JSON.parse(JSON.stringify(withDefaults));
     setEditingCompany(withDefaults); setModalTab("general");
   };
@@ -610,7 +644,7 @@ export default function AdminCompaniesPage() {
   };
 
   const masterUpdate = async (val: number) => {
-    const text = val === 1 ? "RESET all prices to BASE" : `apply ${val > 1 ? "+" : ""}${Math.round((val - 1) * 100)}% modifier to ALL operators`;
+    const text = val === 1 ? "RESET the modifier to BASE (1.0x) for ALL operators" : `apply ${val > 1 ? "+" : ""}${Math.round((val - 1) * 100)}% modifier to ALL operators`;
     if (!confirm(`⚠️ Are you sure you want to ${text}?`)) return;
     setIsSaving(true);
     try {
@@ -635,7 +669,8 @@ export default function AdminCompaniesPage() {
   };
 
   const togglePricingMode = async (company: any) => {
-    const newMode = (company.pricing_mode === "pivot") ? "api" : "pivot";
+    const current = company.pricing_mode === "pivot" ? "pivot" : "api";
+    const newMode = current === "pivot" ? "api" : "pivot";
     setCompanies(prev => prev.map(c => c.id === company.id ? { ...c, pricing_mode: newMode } : c));
     const { error } = await supabase.from("companies").update({ pricing_mode: newMode }).eq("id", company.id);
     if (error) {
@@ -1020,7 +1055,7 @@ export default function AdminCompaniesPage() {
                           <ApiDiagnosticPanel token={getField(editingCompany, newCompany, "api_token") || ""} company={editingCompany || newCompany} markupPercent={markupPercent} />
                         )}
 
-                        {getField(editingCompany, newCompany, "pricing_mode") === "pivot" && <PricePreviewCalc company={editingCompany || newCompany} />}
+                        {getField(editingCompany, newCompany, "pricing_mode") === "pivot" && <PricePreviewCalc company={editingCompany || newCompany} markupPercent={markupPercent} />}
 
                         <div className="bg-[#1A2235] p-6 rounded-2xl border border-slate-700/50">
                           <h3 className="text-sm font-black text-white mb-4">Manage Badges</h3>
@@ -1096,7 +1131,7 @@ export default function AdminCompaniesPage() {
 
                     {modalTab === "terminals" && (
                       <div className="space-y-6 text-white">
-                        <div className="bg-[#131A2B] p-6 rounded-2xl border border-slate-800 mb-4"><h3 className="text-lg font-black text-white mb-2">Heathrow Terminal Maps & Addresses</h3><p className="text-xs text-slate-400">Injected into customer confirmation emails based on terminal selected at checkout.</p></div>
+                        <div className="bg-[#131A2B] p-6 rounded-2xl border border-slate-800 mb-4"><h3 className="text-lg font-black text-white mb-2">Heathrow Terminal Maps &amp; Addresses</h3><p className="text-xs text-slate-400">Injected into customer confirmation emails based on terminal selected at checkout.</p></div>
                         {(["T2", "T3", "T4", "T5"] as const).map(term => {
                           const tData = getField(editingCompany, newCompany, "terminal_data")?.[term] || defaultCompany.terminal_data[term];
                           return (
@@ -1221,7 +1256,7 @@ export default function AdminCompaniesPage() {
                             <thead><tr className="border-b border-slate-800 text-[9px] font-black uppercase tracking-[0.2em] text-slate-500"><th className="px-8 py-5">Reference</th><th className="px-8 py-5">Type</th><th className="px-8 py-5">Gross</th><th className="px-8 py-5">Aero Fee</th><th className="px-8 py-5">Partner Clear</th></tr></thead>
                             <tbody className="divide-y divide-slate-800/50">
                               {companyBookings.slice(0, 15).map((b) => { const gross = Number(b.total_price || 0); const aeroCut = gross * ((editingCompany?.commission_rate || 15) / 100); return (
-                                <tr key={b.id} className="hover:bg-white/[0.02]"><td className="px-8 py-4"><span className="text-xs font-bold text-white">{b.booking_ref}</span><CopyButton text={b.booking_ref} /></td><td className="px-8 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest">{b.service_type || "Meet & Greet"}</td><td className="px-8 py-4 text-xs font-bold text-slate-400">£{gross.toFixed(2)}</td><td className="px-8 py-4 text-xs font-bold text-blue-400">£{aeroCut.toFixed(2)}</td><td className="px-8 py-4 text-xs font-black text-emerald-400">£{(gross - aeroCut).toFixed(2)}</td></tr>
+                                <tr key={b.id} className="hover:bg-white/[0.02]"><td className="px-8 py-4 flex items-center gap-1"><span className="text-xs font-bold text-white">{b.booking_ref}</span><CopyButton text={b.booking_ref} /></td><td className="px-8 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest">{b.service_type || "Meet & Greet"}</td><td className="px-8 py-4 text-xs font-bold text-slate-400">£{gross.toFixed(2)}</td><td className="px-8 py-4 text-xs font-bold text-blue-400">£{aeroCut.toFixed(2)}</td><td className="px-8 py-4 text-xs font-black text-emerald-400">£{(gross - aeroCut).toFixed(2)}</td></tr>
                               ); })}
                               {companyBookings.length === 0 && <tr><td colSpan={5} className="px-8 py-10 text-center text-slate-500 text-xs font-bold">No completed bookings found.</td></tr>}
                             </tbody>
@@ -1236,39 +1271,6 @@ export default function AdminCompaniesPage() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-// ─── REVIEW SECTION ───────────────────────────────────────────────────────────
-function ReviewSection({ airport, color, reviews, onAdd, onRemove, onUpdate }: {
-  airport: "ltn" | "lhr"; color: "blue" | "purple";
-  reviews: Review[]; onAdd: () => void; onRemove: (idx: number) => void; onUpdate: (idx: number, field: keyof Review, value: any) => void;
-}) {
-  const accent = color === "blue" ? "bg-blue-600 hover:bg-blue-500" : "bg-purple-600 hover:bg-purple-500";
-  const ring = color === "blue" ? "focus:ring-blue-500/50" : "focus:ring-purple-500/50";
-  const inputCls = `w-full bg-[#1A2235] text-white rounded-xl px-4 py-3 text-sm font-bold border border-slate-700/50 outline-none focus:ring-2 ${ring} transition-all placeholder:text-slate-500 [-webkit-text-fill-color:#fff] caret-white`;
-  return (
-    <div className="pt-8 border-t border-slate-800 mt-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-white font-black text-xl uppercase tracking-widest">{airport.toUpperCase()} Reviews <span className="text-slate-600 ml-2">({reviews.length})</span></h3>
-        <button type="button" onClick={onAdd} className={`px-5 py-3 ${accent} text-white rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all shadow-lg`}>+ Add Review</button>
-      </div>
-      <div className="space-y-6">
-        {reviews.map((rev, idx) => (
-          <div key={rev.id} className="bg-[#0F1523] p-6 rounded-2xl border border-slate-700/50 relative">
-            <button type="button" onClick={() => onRemove(idx)} className="absolute top-6 right-6 p-2 text-slate-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 pr-10">
-              <div className="space-y-1"><label className="text-[9px] font-black uppercase text-slate-500 tracking-widest block ml-1">Author</label><input value={rev.author || ""} onChange={e => onUpdate(idx, "author", e.target.value)} className={inputCls} /></div>
-              <div className="space-y-1"><label className="text-[9px] font-black uppercase text-slate-500 tracking-widest block ml-1">Rating</label><div className="relative"><select value={rev.rating || 5} onChange={e => onUpdate(idx, "rating", parseInt(e.target.value) || 5)} className={`${inputCls} appearance-none cursor-pointer !text-amber-400 [-webkit-text-fill-color:#fbbf24]`}>{[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} Stars</option>)}</select><ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" /></div></div>
-              <div className="space-y-1"><label className="text-[9px] font-black uppercase text-slate-500 tracking-widest block ml-1">Source</label><div className="relative"><select value={rev.source || "Trustpilot"} onChange={e => onUpdate(idx, "source", e.target.value)} className={`${inputCls} appearance-none cursor-pointer`}><option value="Trustpilot">Trustpilot</option><option value="Google">Google</option><option value="Internal">Internal</option></select><ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" /></div></div>
-              <div className="space-y-1"><label className="text-[9px] font-black uppercase text-slate-500 tracking-widest block ml-1">Date</label><input type="date" value={rev.date || ""} onChange={e => onUpdate(idx, "date", e.target.value)} className={`${inputCls} cursor-pointer [color-scheme:dark]`} /></div>
-            </div>
-            <div className="space-y-1 mb-4"><label className="text-[9px] font-black uppercase text-slate-500 tracking-widest block ml-1">Comment</label><textarea value={rev.comment || ""} onChange={e => onUpdate(idx, "comment", e.target.value)} className={`${inputCls} resize-none leading-relaxed`} rows={3} /></div>
-            <label className="flex items-center gap-2 cursor-pointer w-fit group"><input type="checkbox" checked={!!rev.verified} onChange={e => onUpdate(idx, "verified", e.target.checked)} className="w-4 h-4 rounded border-slate-700 bg-[#1A2235] accent-emerald-500 cursor-pointer" /><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest group-hover:text-emerald-400 transition-colors">Verified Booking</span></label>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

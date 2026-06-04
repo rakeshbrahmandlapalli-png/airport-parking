@@ -1,14 +1,12 @@
 "use client";
 
 /**
- * AeroPark Direct - Command Center v12.6 (Visual Refresh)
- * ------------------------------------------------------
- * UI UPDATES ONLY:
- * 1. Cleaned up the sci-fi table headers ("Subject Identity") to standard, readable headers.
- * 2. Applied the visual layout from the video to the top 4 metric cards (using your real data).
- * 3. Updated the main header to the cleaner "Live Operations" aesthetic.
- * 4. Improved row spacing and text readability in the Live Bookings table.
- * 5. NO fake widgets or mocked data added.
+ * AeroPark Direct - Command Center v12.8 (Advanced Visual Overhaul)
+ * ─────────────────────────────────────────────────────────────────
+ * ✅ WHOLE CODE PRESERVED - EVERY FEATURE & HANDLER INTACT
+ * ✅ ADVANCED COOL LOOK - glow effects, glassmorphism, depth, gradients
+ * ✅ ORIGINAL COLOR DNA KEPT (#0B1120 / #0F1523 / #131A2B / blue accent)
+ * Visual layer only — no logic touched.
  */
 
 import { useEffect, useState, useMemo, Suspense } from "react";
@@ -310,13 +308,13 @@ function DashboardContent() {
 
   const getStatusBadge = (status: string) => {
     const s = status?.toLowerCase() || "pending";
-    const classes = "px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 w-max transition-all";
+    const classes = "px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 w-max transition-all backdrop-blur-sm";
     
-    if (s === "confirmed") return <div className={`${classes} bg-blue-500/10 text-blue-400 border border-blue-500/20`}><CheckCircle2 className="w-3.5 h-3.5"/> Confirmed</div>;
-    if (s === "parked") return <div className={`${classes} bg-purple-500/10 text-purple-400 border border-purple-500/20`}><Car className="w-3.5 h-3.5"/> Parked</div>;
-    if (s === "completed") return <div className={`${classes} bg-emerald-500/10 text-emerald-400 border border-emerald-500/20`}><CheckCircle2 className="w-3.5 h-3.5"/> Completed</div>;
-    if (s === "cancelled") return <div className={`${classes} bg-red-500/10 text-red-400 border border-red-500/20`}><XCircle className="w-3.5 h-3.5"/> Voided</div>;
-    return <div className={`${classes} bg-amber-500/10 text-amber-400 border border-amber-500/20`}><Clock className="w-3.5 h-3.5"/> Pending</div>;
+    if (s === "confirmed") return <div className={`${classes} bg-blue-500/10 text-blue-400 border border-blue-500/30 shadow-[0_0_12px_-2px_rgba(59,130,246,0.4)]`}><CheckCircle2 className="w-3.5 h-3.5"/> Confirmed</div>;
+    if (s === "parked") return <div className={`${classes} bg-purple-500/10 text-purple-400 border border-purple-500/30 shadow-[0_0_12px_-2px_rgba(168,85,247,0.4)]`}><Car className="w-3.5 h-3.5"/> Parked</div>;
+    if (s === "completed") return <div className={`${classes} bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-[0_0_12px_-2px_rgba(16,185,129,0.4)]`}><CheckCircle2 className="w-3.5 h-3.5"/> Completed</div>;
+    if (s === "cancelled") return <div className={`${classes} bg-red-500/10 text-red-400 border border-red-500/30 shadow-[0_0_12px_-2px_rgba(239,68,68,0.4)]`}><XCircle className="w-3.5 h-3.5"/> Voided</div>;
+    return <div className={`${classes} bg-amber-500/10 text-amber-400 border border-amber-500/30 shadow-[0_0_12px_-2px_rgba(245,158,11,0.4)]`}><Clock className="w-3.5 h-3.5"/> Pending</div>;
   };
 
   // --- 8. FILTER ENGINE ---
@@ -362,63 +360,72 @@ function DashboardContent() {
   const returnsToday = filteredBookings.filter(b => b.pickup_date && String(b.pickup_date).startsWith(todayStrISO) && b.status !== 'cancelled').length;
 
   if (loading) return (
-    <div className="min-h-screen bg-[#0B1120] flex flex-col items-center justify-center text-white">
-      <div className="relative">
+    <div className="min-h-screen bg-[#0B1120] flex flex-col items-center justify-center text-white relative overflow-hidden">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px]"></div>
+      <div className="relative z-10">
         <div className="absolute inset-0 border-t-2 border-blue-500 rounded-full animate-spin"></div>
         <Plane className="w-10 h-10 text-blue-500 m-4 animate-pulse rotate-45" />
       </div>
-      <p className="font-black text-slate-400 tracking-widest uppercase text-xs mt-6">Initializing Command Hub...</p>
+      <p className="font-black text-slate-400 tracking-widest uppercase text-xs mt-6 relative z-10">Initializing Command Hub...</p>
     </div>
   );
 
-  const inputStyle = "w-full bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white] placeholder:text-slate-500";
-  const selectStyle = "w-full appearance-none bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none cursor-pointer focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white]";
-  const yellowInputStyle = "w-full bg-[#FACC15] border-2 border-yellow-500 rounded-xl px-5 py-4 text-black text-xl text-center font-black uppercase outline-none focus:ring-4 focus:ring-yellow-500/30 transition-all shadow-[0_0_0_1000px_#FACC15_inset] [-webkit-text-fill-color:black] placeholder:text-yellow-700/50";
+  // ADVANCED GLASS INPUT STYLES (same colors, cooler finish)
+  const inputStyle = "w-full bg-[#1A2235]/80 backdrop-blur-sm border border-slate-700/50 hover:border-blue-500/60 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/60 transition-all duration-300 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)] [-webkit-text-fill-color:white] placeholder:text-slate-500";
+  const selectStyle = "w-full appearance-none bg-[#1A2235]/80 backdrop-blur-sm border border-slate-700/50 hover:border-blue-500/60 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none cursor-pointer focus:ring-2 focus:ring-blue-500/50 transition-all duration-300 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)] [-webkit-text-fill-color:white]";
+  const yellowInputStyle = "w-full bg-[#FACC15] border-2 border-yellow-500 rounded-xl px-5 py-4 text-black text-xl text-center font-black uppercase outline-none focus:ring-4 focus:ring-yellow-500/30 transition-all shadow-[0_0_20px_-4px_rgba(250,204,21,0.5)] [-webkit-text-fill-color:black] placeholder:text-yellow-700/50";
 
   return (
-    <div className="min-h-screen bg-[#0B1120] font-sans flex flex-col md:flex-row overflow-hidden text-slate-100 antialiased selection:bg-blue-600/30">
+    <div className="min-h-screen bg-[#0B1120] font-sans flex flex-col md:flex-row overflow-hidden text-slate-100 antialiased selection:bg-blue-600/30 relative">
       
+      {/* 🌌 AMBIENT BACKGROUND GLOW LAYERS */}
+      <div className="fixed top-[-200px] left-[200px] w-[600px] h-[600px] bg-blue-600/8 rounded-full blur-[140px] pointer-events-none z-0"></div>
+      <div className="fixed bottom-[-200px] right-[100px] w-[500px] h-[500px] bg-indigo-600/8 rounded-full blur-[140px] pointer-events-none z-0"></div>
+      <div className="fixed top-[40%] right-[30%] w-[400px] h-[400px] bg-emerald-600/5 rounded-full blur-[120px] pointer-events-none z-0"></div>
+
       {/* 🟢 PREMIUM SIDEBAR */}
-      <aside className="w-full md:w-64 bg-[#0F1523] text-slate-400 hidden md:flex flex-col sticky top-0 h-screen border-r border-slate-800/80 shadow-2xl z-50 shrink-0">
+      <aside className="w-full md:w-64 bg-[#0F1523]/90 backdrop-blur-xl text-slate-400 hidden md:flex flex-col sticky top-0 h-screen border-r border-slate-800/80 shadow-2xl z-50 shrink-0 relative">
+        <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-blue-500/20 to-transparent"></div>
         <div className="p-8 flex items-center gap-4 text-white">
-          <div className="w-10 h-10 bg-blue-600/10 rounded-xl flex items-center justify-center border border-blue-500/20 shadow-[0_0_15px_rgba(37,99,235,0.15)]">
-            <Plane className="w-6 h-6 text-blue-500 rotate-45" />
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-600/30 to-blue-600/5 rounded-xl flex items-center justify-center border border-blue-500/30 shadow-[0_0_20px_rgba(37,99,235,0.25)]">
+            <Plane className="w-6 h-6 text-blue-400 rotate-45 drop-shadow-[0_0_6px_rgba(59,130,246,0.6)]" />
           </div>
-          <span className="font-black text-xl tracking-tighter uppercase">OPS <span className="text-blue-500">CENTER</span></span>
+          <span className="font-black text-xl tracking-tighter uppercase">OPS <span className="text-blue-500 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]">CENTER</span></span>
         </div>
         
         <nav className="px-5 space-y-3 flex-grow mt-6 font-bold text-sm">
-          <Link href="/admin" className="flex items-center gap-4 px-5 py-4 bg-blue-600 text-white rounded-xl shadow-[0_10px_20px_-5px_rgba(37,99,235,0.4)] transition-all hover:bg-blue-500">
+          <Link href="/admin" className="flex items-center gap-4 px-5 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl shadow-[0_10px_30px_-5px_rgba(37,99,235,0.5)] transition-all hover:shadow-[0_10px_40px_-5px_rgba(37,99,235,0.7)] hover:-translate-y-0.5 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
             <LayoutDashboard className="w-5 h-5" /> Live Board
           </Link>
-          <Link href="/admin/companies" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all">
+          <Link href="/admin/companies" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50">
             <Building2 className="w-5 h-5 text-slate-500" /> Partner Network
           </Link>
-          <Link href="/admin/promos" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all">
+          <Link href="/admin/promos" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50">
             <Tags className="w-5 h-5 text-slate-500" /> Promo Manager
           </Link>
-          <Link href="/admin/financials" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all">
+          <Link href="/admin/financials" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50">
             <PiggyBank className="w-5 h-5 text-slate-500" /> Financials
           </Link>
-          <Link href="/admin/settings" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all border-t border-slate-800/50 mt-4 pt-6">
+          <Link href="/admin/settings" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all border-t border-slate-800/50 mt-4 pt-6 hover:border-l-2 hover:border-blue-500/50">
             <Settings2 className="w-5 h-5 text-slate-500" /> Platform Settings
           </Link>
         </nav>
         
         <div className="p-6">
-          <button onClick={() => supabase.auth.signOut().then(() => router.replace("/admin/login"))} className="flex items-center gap-4 text-sm font-bold hover:text-red-400 transition-colors w-full text-left px-5 py-4 group bg-slate-900/50 rounded-xl border border-slate-800/80 shadow-sm">
+          <button onClick={() => supabase.auth.signOut().then(() => router.replace("/admin/login"))} className="flex items-center gap-4 text-sm font-bold hover:text-red-400 transition-colors w-full text-left px-5 py-4 group bg-slate-900/50 rounded-xl border border-slate-800/80 shadow-sm hover:border-red-500/30 hover:shadow-[0_0_20px_-8px_rgba(239,68,68,0.4)]">
             <LogOut className="w-5 h-5 text-slate-500 group-hover:text-red-500 transition-colors" /> Secure Logout
           </button>
         </div>
       </aside>
 
       {/* PRIMARY WORKSPACE */}
-      <main className="flex-1 p-4 md:p-8 lg:p-12 w-full overflow-y-auto h-screen relative pb-32 md:pb-12 custom-scrollbar">
+      <main className="flex-1 p-4 md:p-8 lg:p-12 w-full overflow-y-auto h-screen relative pb-32 md:pb-12 custom-scrollbar z-10">
         
         {/* MOBILE HEADER */}
-        <div className="md:hidden flex items-center justify-between mb-8 bg-[#131A2B] p-5 rounded-3xl border border-slate-800 shadow-2xl">
+        <div className="md:hidden flex items-center justify-between mb-8 bg-[#131A2B]/80 backdrop-blur-xl p-5 rounded-3xl border border-slate-800 shadow-2xl">
           <div className="flex items-center gap-3 font-black text-xl uppercase tracking-tighter text-white">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/30">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-500 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(37,99,235,0.5)]">
               <Plane className="w-6 h-6 text-white rotate-45" />
             </div> 
             OPS<span className="text-blue-500">CENTER</span>
@@ -431,75 +438,85 @@ function DashboardContent() {
         {/* 🟢 PREMIUM DESKTOP HEADER (CLEANED UP) */}
         <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10">
           <div>
-            <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">Live Operations</h1>
+            <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight bg-gradient-to-r from-white via-white to-blue-200 bg-clip-text text-transparent">Live Operations</h1>
             <div className="text-slate-400 font-bold mt-2 text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
               Real-Time Command Center
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-4">
-            <button onClick={exportToCSV} className="px-6 py-4 bg-[#131A2B] hover:bg-[#1A2235] border border-slate-700 text-slate-300 rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-3 shadow-md">
+            <button onClick={exportToCSV} className="px-6 py-4 bg-[#131A2B]/80 backdrop-blur-sm hover:bg-[#1A2235] border border-slate-700 hover:border-slate-600 text-slate-300 rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-3 shadow-md hover:shadow-lg">
               <Download className="w-4 h-4" /> Export Data
             </button>
-            <button onClick={() => setShowManualModal(true)} className="px-6 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-3 shadow-[0_10px_20px_-5px_rgba(37,99,235,0.4)] hover:-translate-y-1 active:translate-y-0">
+            <button onClick={() => setShowManualModal(true)} className="px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-3 shadow-[0_10px_30px_-5px_rgba(37,99,235,0.5)] hover:-translate-y-1 active:translate-y-0 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
               <Plus className="w-5 h-5" /> Manual Booking
             </button>
           </div>
         </header>
 
-        {/* 🟢 TOP 4 HUD METRICS (STYLED LIKE THE VIDEO) */}
+        {/* 🟢 TOP 4 HUD METRICS (ADVANCED GLASS + GLOW) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {/* Revenue */}
-          <div className="bg-[#131A2B] p-6 rounded-3xl border border-slate-800/80 flex flex-col relative overflow-hidden group">
-            <div className="flex items-start justify-between mb-2">
+          <div className="bg-gradient-to-br from-[#131A2B] to-[#0F1523] p-6 rounded-3xl border border-slate-800/80 flex flex-col relative overflow-hidden group hover:border-emerald-500/30 transition-all duration-500 hover:shadow-[0_20px_50px_-15px_rgba(16,185,129,0.25)]">
+            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent"></div>
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-all"></div>
+            <div className="flex items-start justify-between mb-2 relative z-10">
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Total Revenue</p>
-              <Wallet className="w-4 h-4 text-emerald-500/50" />
+              <div className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20"><Wallet className="w-4 h-4 text-emerald-400" /></div>
             </div>
-            <p className="text-3xl font-black text-white tracking-tight tabular-nums mt-auto">£{totalRevenue.toFixed(2)}</p>
-            <div className="absolute right-[-10px] bottom-[-10px] text-emerald-500/10 group-hover:scale-110 transition-transform">
+            <p className="text-3xl font-black text-white tracking-tight tabular-nums mt-auto relative z-10 drop-shadow-[0_0_15px_rgba(16,185,129,0.15)]">£{totalRevenue.toFixed(2)}</p>
+            <div className="absolute right-[-10px] bottom-[-10px] text-emerald-500/10 group-hover:scale-110 group-hover:text-emerald-500/20 transition-all duration-500">
               <TrendingUp className="w-16 h-16" />
             </div>
           </div>
           
           {/* Active Jobs */}
-          <div className="bg-[#131A2B] p-6 rounded-3xl border border-slate-800/80 flex flex-col relative overflow-hidden group">
-            <div className="flex items-start justify-between mb-2">
+          <div className="bg-gradient-to-br from-[#131A2B] to-[#0F1523] p-6 rounded-3xl border border-slate-800/80 flex flex-col relative overflow-hidden group hover:border-blue-500/30 transition-all duration-500 hover:shadow-[0_20px_50px_-15px_rgba(59,130,246,0.25)]">
+            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/40 to-transparent"></div>
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-all"></div>
+            <div className="flex items-start justify-between mb-2 relative z-10">
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Active Jobs</p>
-              <Activity className="w-4 h-4 text-blue-500/50" />
+              <div className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20"><Activity className="w-4 h-4 text-blue-400" /></div>
             </div>
-            <p className="text-3xl font-black text-white tracking-tight tabular-nums mt-auto">{filteredBookings.length}</p>
-            <div className="absolute right-[-10px] bottom-[-10px] text-blue-500/10 group-hover:scale-110 transition-transform">
+            <p className="text-3xl font-black text-white tracking-tight tabular-nums mt-auto relative z-10 drop-shadow-[0_0_15px_rgba(59,130,246,0.15)]">{filteredBookings.length}</p>
+            <div className="absolute right-[-10px] bottom-[-10px] text-blue-500/10 group-hover:scale-110 group-hover:text-blue-500/20 transition-all duration-500">
               <Zap className="w-16 h-16" />
             </div>
           </div>
 
           {/* Inbound Hub */}
-          <div className="bg-[#131A2B] p-6 rounded-3xl border border-slate-800/80 flex flex-col relative overflow-hidden group">
-            <div className="flex items-start justify-between mb-2">
+          <div className="bg-gradient-to-br from-[#131A2B] to-[#0F1523] p-6 rounded-3xl border border-slate-800/80 flex flex-col relative overflow-hidden group hover:border-indigo-500/30 transition-all duration-500 hover:shadow-[0_20px_50px_-15px_rgba(99,102,241,0.25)]">
+            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent"></div>
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500/5 rounded-full blur-2xl group-hover:bg-indigo-500/10 transition-all"></div>
+            <div className="flex items-start justify-between mb-2 relative z-10">
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">Hub: Inbound</p>
-              <PlaneLanding className="w-4 h-4 text-indigo-500/50" />
+              <div className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20"><PlaneLanding className="w-4 h-4 text-indigo-400" /></div>
             </div>
-            <p className="text-3xl font-black text-white tracking-tight tabular-nums mt-auto">{arrivalsToday}</p>
-            <div className="absolute right-[-10px] bottom-[-10px] text-indigo-500/10 group-hover:scale-110 transition-transform">
+            <p className="text-3xl font-black text-white tracking-tight tabular-nums mt-auto relative z-10 drop-shadow-[0_0_15px_rgba(99,102,241,0.15)]">{arrivalsToday}</p>
+            <div className="absolute right-[-10px] bottom-[-10px] text-indigo-500/10 group-hover:scale-110 group-hover:text-indigo-500/20 transition-all duration-500">
               <PlaneLanding className="w-16 h-16" />
             </div>
           </div>
 
           {/* Return Hub */}
-          <div className="bg-[#131A2B] p-6 rounded-3xl border border-slate-800/80 flex flex-col relative overflow-hidden group">
-            <div className="flex items-start justify-between mb-2">
+          <div className="bg-gradient-to-br from-[#131A2B] to-[#0F1523] p-6 rounded-3xl border border-slate-800/80 flex flex-col relative overflow-hidden group hover:border-amber-500/30 transition-all duration-500 hover:shadow-[0_20px_50px_-15px_rgba(245,158,11,0.25)]">
+            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-amber-500/40 to-transparent"></div>
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-amber-500/5 rounded-full blur-2xl group-hover:bg-amber-500/10 transition-all"></div>
+            <div className="flex items-start justify-between mb-2 relative z-10">
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-400">Hub: Return</p>
-              <PlaneTakeoff className="w-4 h-4 text-amber-500/50" />
+              <div className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20"><PlaneTakeoff className="w-4 h-4 text-amber-400" /></div>
             </div>
-            <p className="text-3xl font-black text-white tracking-tight tabular-nums mt-auto">{returnsToday}</p>
-            <div className="absolute right-[-10px] bottom-[-10px] text-amber-500/10 group-hover:scale-110 transition-transform">
+            <p className="text-3xl font-black text-white tracking-tight tabular-nums mt-auto relative z-10 drop-shadow-[0_0_15px_rgba(245,158,11,0.15)]">{returnsToday}</p>
+            <div className="absolute right-[-10px] bottom-[-10px] text-amber-500/10 group-hover:scale-110 group-hover:text-amber-500/20 transition-all duration-500">
               <PlaneTakeoff className="w-16 h-16" />
             </div>
           </div>
         </div>
 
-        {/* 🟢 REDESIGNED CONTROL RIBBON (YOUR LOGIC, CLEANER CSS) */}
-        <div className="bg-[#131A2B] rounded-3xl border border-slate-800 shadow-xl p-4 mb-8 flex flex-col xl:flex-row gap-4">
+        {/* 🟢 REDESIGNED CONTROL RIBBON (YOUR LOGIC, COOLER GLASS) */}
+        <div className="bg-[#131A2B]/80 backdrop-blur-xl rounded-3xl border border-slate-800 shadow-xl p-4 mb-8 flex flex-col xl:flex-row gap-4 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
           
           <div className="relative flex-1 min-w-[280px]">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
@@ -509,7 +526,7 @@ function DashboardContent() {
               placeholder="Search reference, client name, plate..." 
               value={searchTerm} 
               onChange={(e) => setSearchTerm(e.target.value)} 
-              className="w-full bg-[#1A2235] border border-slate-700 hover:border-blue-500/50 rounded-2xl py-3 pl-12 pr-6 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-slate-500" 
+              className="w-full bg-[#1A2235]/80 backdrop-blur-sm border border-slate-700 hover:border-blue-500/50 rounded-2xl py-3 pl-12 pr-6 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-slate-500" 
             />
           </div>
           
@@ -526,7 +543,7 @@ function DashboardContent() {
                 <select 
                   value={f.state} 
                   onChange={(e) => f.set(e.target.value)} 
-                  className="w-full appearance-none bg-[#1A2235] border border-slate-700 hover:border-blue-500/50 rounded-2xl py-3 pl-10 pr-9 text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none cursor-pointer transition-all shadow-inner focus:ring-2 focus:ring-blue-500/50 truncate"
+                  className="w-full appearance-none bg-[#1A2235]/80 backdrop-blur-sm border border-slate-700 hover:border-blue-500/50 rounded-2xl py-3 pl-10 pr-9 text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none cursor-pointer transition-all shadow-inner focus:ring-2 focus:ring-blue-500/50 truncate"
                 >
                   {f.opts.map((o, idx) => <option key={idx} value={o.v} className="bg-[#1A2235] text-white font-bold">{o.l}</option>)}
                 </select>
@@ -536,8 +553,9 @@ function DashboardContent() {
           </div>
         </div>
 
-        {/* 🟢 HIGH-END OPERATIONAL DATA TABLE (CLEANED UP HEADERS & SPACING) */}
-        <div className="bg-[#131A2B] rounded-3xl border border-slate-800 overflow-hidden shadow-2xl mb-24">
+        {/* 🟢 HIGH-END OPERATIONAL DATA TABLE (ADVANCED GLASS) */}
+        <div className="bg-[#131A2B]/70 backdrop-blur-xl rounded-3xl border border-slate-800 overflow-hidden shadow-2xl mb-24 relative">
+          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent"></div>
           <div className="overflow-x-auto min-h-[500px] custom-scrollbar">
             {filteredBookings.length === 0 ? (
               <div className="py-40 flex flex-col items-center justify-center opacity-40">
@@ -549,7 +567,7 @@ function DashboardContent() {
               </div>
             ) : (
               <table className="w-full text-left whitespace-nowrap">
-                <thead className="bg-[#0F1523] border-b border-slate-800">
+                <thead className="bg-[#0F1523]/90 backdrop-blur-sm border-b border-slate-800">
                   <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
                     <th className="px-6 py-5">Reference</th>
                     <th className="px-6 py-5">Customer Profile</th>
@@ -561,12 +579,12 @@ function DashboardContent() {
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
                   {filteredBookings.map((b) => (
-                    <tr key={b.id} className="hover:bg-slate-800/30 transition-all group">
+                    <tr key={b.id} className="hover:bg-blue-500/5 transition-all group">
                       
                       {/* REFERENCE */}
                       <td className="px-6 py-5">
                         <div className="flex flex-col gap-2">
-                          <span className="text-[10px] font-black text-blue-400 tracking-widest uppercase bg-blue-500/10 px-2 py-1 rounded border border-blue-500/20 w-max">
+                          <span className="text-[10px] font-black text-blue-400 tracking-widest uppercase bg-blue-500/10 px-2 py-1 rounded border border-blue-500/20 w-max group-hover:border-blue-500/40 group-hover:shadow-[0_0_12px_-2px_rgba(59,130,246,0.4)] transition-all">
                             {b.booking_ref}
                           </span>
                           {b.fast_track_count > 0 && (
@@ -587,7 +605,7 @@ function DashboardContent() {
                       
                       {/* VEHICLE */}
                       <td className="px-6 py-5">
-                        <div className="px-2 py-1 bg-[#FACC15] text-black font-black font-mono text-[10px] rounded border-b-2 border-yellow-600 w-max mb-1.5 shadow-sm tracking-[0.1em]">
+                        <div className="px-2 py-1 bg-[#FACC15] text-black font-black font-mono text-[10px] rounded border-b-2 border-yellow-600 w-max mb-1.5 shadow-[0_0_15px_-4px_rgba(250,204,21,0.5)] tracking-[0.1em]">
                           {b.license_plate}
                         </div>
                         <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
@@ -630,20 +648,20 @@ function DashboardContent() {
                       <td className="px-6 py-5 text-right">
                         <div className="flex items-center justify-end gap-2 opacity-40 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
                           
-                          <button onClick={() => sendManualEmail(b, 'customer')} className="p-2.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white rounded-lg border border-blue-500/20 transition-all active:scale-95" title="Push Receipt to Customer">
+                          <button onClick={() => sendManualEmail(b, 'customer')} className="p-2.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white rounded-lg border border-blue-500/20 transition-all active:scale-95 hover:shadow-[0_0_15px_-3px_rgba(59,130,246,0.6)]" title="Push Receipt to Customer">
                             <Receipt className="w-4 h-4" />
                           </button>
                           
-                          <button onClick={() => sendManualEmail(b, 'provider')} className="p-2.5 bg-purple-500/10 text-purple-400 hover:bg-purple-500 hover:text-white rounded-lg border border-purple-500/20 transition-all active:scale-95" title="Push Job to Provider">
+                          <button onClick={() => sendManualEmail(b, 'provider')} className="p-2.5 bg-purple-500/10 text-purple-400 hover:bg-purple-500 hover:text-white rounded-lg border border-purple-500/20 transition-all active:scale-95 hover:shadow-[0_0_15px_-3px_rgba(168,85,247,0.6)]" title="Push Job to Provider">
                             <Briefcase className="w-4 h-4" />
                           </button>
 
                           {b.status?.toLowerCase() === 'completed' && (
-                            <button onClick={() => handleRequestReview(b)} className="p-2.5 bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white rounded-lg border border-amber-500/20 transition-all active:scale-95" title="Request 5-Star Review">
+                            <button onClick={() => handleRequestReview(b)} className="p-2.5 bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white rounded-lg border border-amber-500/20 transition-all active:scale-95 hover:shadow-[0_0_15px_-3px_rgba(245,158,11,0.6)]" title="Request 5-Star Review">
                               <Star className="w-4 h-4 fill-current" />
                             </button>
                           )}
-                          <button onClick={() => sendToWhatsApp(b)} className="p-2.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-lg border border-emerald-500/20 transition-all active:scale-95" title="WhatsApp Dispatch"><MessageCircle className="w-4 h-4" /></button>
+                          <button onClick={() => sendToWhatsApp(b)} className="p-2.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-lg border border-emerald-500/20 transition-all active:scale-95 hover:shadow-[0_0_15px_-3px_rgba(16,185,129,0.6)]" title="WhatsApp Dispatch"><MessageCircle className="w-4 h-4" /></button>
                           <button onClick={() => setEditingBooking(b)} className="p-2.5 bg-[#1A2235] text-slate-300 hover:bg-blue-600 hover:text-white rounded-lg border border-slate-700 hover:border-transparent transition-all active:scale-95" title="Modify Record"><Settings2 className="w-4 h-4" /></button>
                           <button onClick={() => deleteBooking(b.id)} className="p-2.5 bg-[#1A2235] text-slate-500 hover:bg-red-500 hover:text-white rounded-lg border border-slate-700 hover:border-transparent transition-all active:scale-95" title="Delete Record"><Trash2 className="w-4 h-4" /></button>
                         </div>
@@ -661,7 +679,7 @@ function DashboardContent() {
           <nav className="max-w-md mx-auto bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-3xl h-20 flex items-center justify-around px-2 shadow-2xl pointer-events-auto">
             <Link href="/admin" className="flex flex-col items-center justify-center gap-1 text-blue-500 transition-all"><LayoutDashboard className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Live</span></Link>
             <Link href="/admin/companies" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><Building2 className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Ops</span></Link>
-            <div className="relative -top-8"><button onClick={() => setShowManualModal(true)} className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30 border-4 border-[#0B1120] active:scale-95 transition-transform"><Plus className="w-6 h-6 text-white" /></button></div>
+            <div className="relative -top-8"><button onClick={() => setShowManualModal(true)} className="w-14 h-14 bg-gradient-to-br from-blue-600 to-blue-500 rounded-2xl flex items-center justify-center shadow-[0_0_25px_rgba(37,99,235,0.6)] border-4 border-[#0B1120] active:scale-95 transition-transform"><Plus className="w-6 h-6 text-white" /></button></div>
             <Link href="/admin/financials" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><PiggyBank className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Finance</span></Link>
             {/* 🟢 NEW SETTINGS TAB FOR MOBILE ADDED HERE */}
             <Link href="/admin/settings" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><Settings2 className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Settings</span></Link>
@@ -671,8 +689,9 @@ function DashboardContent() {
 
       {/* --- 🟢 MODAL: MANUAL BOOKING ENTRY --- */}
       {showManualModal && (
-        <div className="fixed inset-0 bg-[#0B1120]/95 backdrop-blur-sm z-[300] flex items-center justify-center p-4 sm:p-8 overflow-hidden">
-          <div className="bg-[#0F1523] border border-slate-800 w-full max-w-5xl rounded-[2rem] max-h-[95vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-[#0B1120]/95 backdrop-blur-md z-[300] flex items-center justify-center p-4 sm:p-8 overflow-hidden">
+          <div className="bg-[#0F1523]/95 backdrop-blur-2xl border border-slate-800 w-full max-w-5xl rounded-[2rem] max-h-[95vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 relative">
+            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/40 to-transparent z-20"></div>
             <div className="p-8 border-b border-slate-800 flex justify-between items-center bg-[#131A2B] relative">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
               <div>
@@ -804,7 +823,7 @@ function DashboardContent() {
             
             <div className="p-8 bg-[#131A2B] border-t border-slate-800 flex gap-4">
                <button onClick={() => setShowManualModal(false)} className="px-8 py-4 text-slate-400 font-bold text-xs hover:text-white transition-colors">Cancel</button>
-               <button disabled={isSaving} onClick={handleCreateManualBooking} className="flex-1 bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-sm text-white shadow-md transition-all flex items-center justify-center gap-2 active:scale-95">
+               <button disabled={isSaving} onClick={handleCreateManualBooking} className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 py-4 rounded-xl font-bold text-sm text-white shadow-[0_10px_30px_-5px_rgba(37,99,235,0.5)] transition-all flex items-center justify-center gap-2 active:scale-95">
                 {isSaving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4"/>} Commit Deployment
               </button>
             </div>
@@ -814,8 +833,9 @@ function DashboardContent() {
 
       {/* --- 🟢 MODAL: MODIFY LIVE RECORD --- */}
       {editingBooking && (
-        <div className="fixed inset-0 bg-[#0B1120]/95 backdrop-blur-sm z-[300] flex items-center justify-center p-4 sm:p-8 overflow-hidden">
-          <div className="bg-[#0F1523] border border-slate-800 w-full max-w-4xl rounded-[2rem] max-h-[95vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-[#0B1120]/95 backdrop-blur-md z-[300] flex items-center justify-center p-4 sm:p-8 overflow-hidden">
+          <div className="bg-[#0F1523]/95 backdrop-blur-2xl border border-slate-800 w-full max-w-4xl rounded-[2rem] max-h-[95vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 relative">
+            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-amber-500/40 to-transparent z-20"></div>
             <div className="p-8 border-b border-slate-800 flex justify-between items-center bg-[#131A2B] relative">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-red-500"></div>
               <div>
@@ -923,7 +943,7 @@ function DashboardContent() {
             
             <div className="p-8 bg-[#131A2B] border-t border-slate-800 flex gap-4">
                <button onClick={() => setEditingBooking(null)} className="px-8 py-4 text-slate-400 font-bold text-xs hover:text-white transition-colors">Abandon</button>
-               <button disabled={isSaving} onClick={handleUpdateBooking} className="flex-1 bg-amber-600 hover:bg-amber-500 py-4 rounded-xl font-bold text-sm text-white shadow-md transition-all flex items-center justify-center gap-2 active:scale-95">
+               <button disabled={isSaving} onClick={handleUpdateBooking} className="flex-1 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 py-4 rounded-xl font-bold text-sm text-white shadow-[0_10px_30px_-5px_rgba(245,158,11,0.5)] transition-all flex items-center justify-center gap-2 active:scale-95">
                 {isSaving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4"/>} Authorize Update
               </button>
             </div>
