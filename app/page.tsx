@@ -42,7 +42,17 @@ const TRUST = [
   { Icon: PhoneCall,    label: "24/7 Support"        },
 ];
 
-export default function HomePage() {
+// Optional preset lets keyword landing pages (e.g. /luton-airport-parking)
+// reuse this exact page with an ad-matched headline + pre-selected airport.
+// All fields are optional — the bare "/" route renders with the defaults.
+export type HomePreset = {
+  airportDefault?: string;  // "Luton (LTN)" | "Heathrow (LHR)"
+  h1Top?: string;           // first headline line
+  h1Highlight?: string;     // blue highlighted line
+  intro?: string;           // lead paragraph
+};
+
+export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
   const router = useRouter();
   const [slotsClaimed, setSlotsClaimed] = useState(12);
   const [slotsTotal,   setSlotsTotal]   = useState(15);
@@ -51,7 +61,7 @@ export default function HomePage() {
   const [isMapOpen,        setIsMapOpen]        = useState(false);
   const [isPriceMatchOpen, setIsPriceMatchOpen] = useState(false);
   const [isLoaded,         setIsLoaded]         = useState(false);
-  const [airport,     setAirport]     = useState("Luton (LTN)");
+  const [airport,     setAirport]     = useState(preset?.airportDefault ?? "Luton (LTN)");
   const [dropoffDate, setDropoffDate] = useState("");
   const [dropoffTime, setDropoffTime] = useState("09:00");
   const [pickupDate,  setPickupDate]  = useState("");
@@ -227,7 +237,18 @@ export default function HomePage() {
 
         <section aria-label="Airport parking search" className="relative min-h-[100dvh] w-full flex items-center justify-center overflow-hidden bg-slate-950 pt-24 pb-12 md:py-20">
           <div className="absolute inset-0 z-0 overflow-hidden">
-            <div className={`absolute inset-0 bg-cover bg-center transition-all duration-[3000ms] ease-out origin-center ${isLoaded ? "scale-105 opacity-100" : "scale-150 opacity-0"}`} style={{ backgroundImage: "url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format&fit=crop')" }} role="img" aria-label="Airport terminal" />
+            <div className={`absolute inset-0 transition-all duration-[3000ms] ease-out origin-center ${isLoaded ? "scale-105 opacity-100" : "scale-150 opacity-0"}`}>
+              <Image
+                src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=1920&auto=format&fit=crop"
+                alt="Airport terminal at dusk"
+                fill
+                priority
+                fetchPriority="high"
+                sizes="100vw"
+                quality={70}
+                className="object-cover object-center"
+              />
+            </div>
             <div className={`absolute inset-0 bg-gradient-to-b md:bg-gradient-to-r from-slate-950 via-slate-900/80 md:via-slate-900/60 to-transparent transition-opacity duration-[2500ms] ${isLoaded ? "opacity-100" : "opacity-0"}`} />
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay" aria-hidden="true" />
           </div>
@@ -237,8 +258,8 @@ export default function HomePage() {
                 <div className="w-6 h-6 md:w-8 md:h-8 bg-blue-500 rounded-full flex items-center justify-center mr-3 shadow-inner"><Timer className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" aria-hidden="true" /></div>
                 <span className="text-white text-[9px] md:text-[11px] font-black uppercase tracking-widest">Founding Member: <span className="text-emerald-400">15% Off</span> + <span className="text-emerald-400 underline underline-offset-2">Lifetime Perk</span></span>
               </div>
-              <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-4 md:mb-6 leading-[1.1] tracking-tight">Airport Parking <br className="hidden sm:block" /><span className="text-blue-500 drop-shadow-[0_0_15px_rgba(37,99,235,0.5)]">Made Simple.</span></h1>
-              <p className="text-base sm:text-lg md:text-xl text-white leading-relaxed font-semibold opacity-90 max-w-xl mb-3">Licenced <strong>Meet &amp; Greet</strong> and <strong>Park &amp; Ride</strong> at <strong>Luton</strong> and <strong>Heathrow</strong> airports. Drive to the terminal, hand over your keys, and fly.</p>
+              <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-4 md:mb-6 leading-[1.1] tracking-tight">{preset?.h1Top ?? "Airport Parking"} <br className="hidden sm:block" /><span className="text-blue-500 drop-shadow-[0_0_15px_rgba(37,99,235,0.5)]">{preset?.h1Highlight ?? "Made Simple."}</span></h1>
+              <p className="text-base sm:text-lg md:text-xl text-white leading-relaxed font-semibold opacity-90 max-w-xl mb-3">{preset?.intro ? preset.intro : <>Licenced <strong>Meet &amp; Greet</strong> and <strong>Park &amp; Ride</strong> at <strong>Luton</strong> and <strong>Heathrow</strong> airports. Drive to the terminal, hand over your keys, and fly.</>}</p>
               <p className="text-sm sm:text-base md:text-lg text-gray-300 leading-relaxed font-light hidden sm:block max-w-xl mb-6">Trusted by thousands of UK travellers. Compare top-rated, fully insured parking operators and book in under 60 seconds.</p>
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-4 gap-y-2 mb-6">
                 {TRUST.map(({ Icon, label }) => (<span key={label} className="flex items-center gap-1.5 text-emerald-400 text-[10px] md:text-xs font-black uppercase tracking-widest"><Icon className="w-3.5 h-3.5" aria-hidden="true" /> {label}</span>))}

@@ -10,7 +10,8 @@ import {
   ChevronDown, Plane, Footprints, User, Star, Ban, Bus, BedDouble,
   Info, PlaneTakeoff, PlaneLanding, MapIcon, Navigation,
   AlertCircle, Sparkles, MessageSquare, Zap, Tag, CarFront,
-  BatteryCharging, Briefcase, Percent, CheckCircle2, Lock, Loader2, Gift
+  BatteryCharging, Briefcase, Percent, CheckCircle2, Lock, Loader2, Gift,
+  Mail, Send
 } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useState, useMemo, useEffect, useCallback } from "react";
@@ -249,7 +250,7 @@ function ParkingCard({
 
         {/* LEFT SECTION (Logo, Name, Badges) */}
         <div className="flex-1 p-6 md:p-8 flex flex-col items-start justify-center">
-          
+
           {/* Top Promo Badge */}
           {promoBadges.length > 0 && (
             <div className="mb-4">
@@ -398,6 +399,111 @@ function extractApiPrice(json: any): number | null {
   if (json?.price != null) return Number(json.price);
   if (json?.total != null) return Number(json.total);
   return null;
+}
+
+// ─── EMAIL ME THIS QUOTE ──────────────────────────────────────────────────────
+function EmailQuoteCard({
+  airport, dropoffDate, pickupDate, dropoffTime, pickupTime, serviceType, fromPrice,
+}: {
+  airport: string; dropoffDate: string; pickupDate: string;
+  dropoffTime: string; pickupTime: string; serviceType: string; fromPrice?: number;
+}) {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [error, setError] = useState("");
+
+  const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!valid || status === "sending") return;
+    setStatus("sending");
+    setError("");
+    try {
+      const res = await fetch("/api/email-quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          airport, dropoffDate, pickupDate, dropoffTime, pickupTime, serviceType,
+          fromPrice: fromPrice ?? "",
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.success) {
+        setStatus("sent");
+        try {
+          (window as any).gtag?.("event", "generate_lead", {
+            currency: "GBP",
+            value: fromPrice ?? 0,
+          });
+        } catch { /* analytics is best-effort */ }
+      } else {
+        setStatus("error");
+        setError(data?.error || "Couldn't send your quote. Please try again.");
+      }
+    } catch {
+      setStatus("error");
+      setError("Network error. Please try again.");
+    }
+  };
+
+  if (status === "sent") {
+    return (
+      <div className="mt-6 bg-[#0F1523] border border-emerald-700/40 rounded-3xl p-6 sm:p-7 flex items-center gap-4">
+        <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
+          <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+        </div>
+        <div>
+          <p className="text-white font-black text-base">Quote sent — check your inbox</p>
+          <p className="text-slate-400 text-sm mt-0.5">
+            We've emailed your {airport} quote. Your prices and free cancellation are held — book whenever you're ready.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-6 bg-gradient-to-br from-[#0F1523] to-[#0B1220] border border-blue-900/40 rounded-3xl p-6 sm:p-7 shadow-xl relative overflow-hidden">
+      <div className="absolute -right-12 -top-12 w-40 h-40 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="relative z-10 flex flex-col sm:flex-row sm:items-center gap-5">
+        <div className="flex items-center gap-4 flex-1 min-w-0">
+          <div className="w-12 h-12 rounded-2xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center shrink-0">
+            <Mail className="w-6 h-6 text-blue-400" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-white font-black text-base leading-tight">Not ready to book? Email me this quote</p>
+            <p className="text-slate-400 text-sm mt-0.5">
+              We'll send your prices and a link to pick up exactly where you left off.
+            </p>
+          </div>
+        </div>
+        <form onSubmit={submit} className="flex flex-col sm:flex-row gap-2.5 sm:w-[360px] shrink-0">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); if (status === "error") setStatus("idle"); }}
+            placeholder="your@email.com"
+            autoComplete="email"
+            className="flex-1 bg-[#070B14] border border-slate-700 focus:border-blue-500 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition-colors"
+          />
+          <button
+            type="submit"
+            disabled={!valid || status === "sending"}
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black uppercase tracking-widest text-[11px] rounded-xl transition-all active:scale-95 shrink-0"
+          >
+            {status === "sending"
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending</>
+              : <><Send className="w-4 h-4" /> Send</>}
+          </button>
+        </form>
+      </div>
+      {status === "error" && (
+        <p className="relative z-10 text-rose-400 text-xs font-semibold mt-3 sm:text-right">{error}</p>
+      )}
+    </div>
+  );
 }
 
 // ─── MAIN RESULTS CONTENT ─────────────────────────────────────────────────────
@@ -720,6 +826,18 @@ function ResultsContent() {
             />
           ))}
         </div>
+      )}
+
+      {processedCompanies.length > 0 && (
+        <EmailQuoteCard
+          airport={airport}
+          dropoffDate={dropoff}
+          pickupDate={pickup}
+          dropoffTime={dropTime}
+          pickupTime={pickTime}
+          serviceType={serviceType}
+          fromPrice={Number(processedCompanies[0]?.calculatedPriceObj?.final) || undefined}
+        />
       )}
     </div>
   );
