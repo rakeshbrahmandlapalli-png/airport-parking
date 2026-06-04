@@ -31,13 +31,23 @@ function formatTime(t: string | null | undefined): string {
 // ─── GOOGLE ADS ───────────────────────────────────────────────────────────────
 // FIX: extracted so it can't be called multiple times (ref-guard in caller)
 
-function fireGoogleAdsConversion(value: number, transactionId: string) {
+function fireGoogleAdsConversion(value: number, transactionId: string, attempt = 0) {
   try {
     const gtag = (window as any).gtag;
+
+    // gtag.js loads `afterInteractive`, which can resolve AFTER this runs on a
+    // fast connection. Retry for ~10s instead of silently dropping the
+    // conversion (critical during a live ad campaign).
     if (typeof gtag !== "function") {
-      console.warn("Google Ads gtag not found on window.");
+      if (attempt < 20) {
+        setTimeout(() => fireGoogleAdsConversion(value, transactionId, attempt + 1), 500);
+      } else {
+        console.warn("Google Ads gtag never became available — conversion not sent.");
+      }
       return;
     }
+
+    // 1. Google Ads conversion (for campaign bidding / ROAS)
     gtag("event", "conversion", {
       // ✅ YOUR EXACT NATIVE GOOGLE ADS LABEL
       send_to: "AW-18163936640/lAsCCJO-0LYcEIDbntVD",
@@ -45,7 +55,15 @@ function fireGoogleAdsConversion(value: number, transactionId: string) {
       currency: "GBP",
       transaction_id: transactionId,
     });
-    console.log("Google Ads conversion fired:", value);
+
+    // 2. GA4 ecommerce purchase (so revenue/transactions show in GA4)
+    gtag("event", "purchase", {
+      transaction_id: transactionId,
+      value: value || 0,
+      currency: "GBP",
+    });
+
+    console.log("Google Ads conversion + GA4 purchase fired:", value);
   } catch (e) {
     console.error("Failed to fire Google Ads conversion:", e);
   }
