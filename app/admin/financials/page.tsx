@@ -7,8 +7,9 @@ import Link from "next/link";
 import {
   Plane, LayoutDashboard, Building2, CalendarDays, LogOut, Loader2,
   Tags, Wallet, TrendingUp, CreditCard, Users, Download, Zap, PiggyBank,
-  Filter, ChevronDown, ExternalLink, DollarSign, Plus, X, 
-  Receipt, ArrowDownRight, FolderMinus, Save, CheckCircle2, Trash2
+  Filter, ChevronDown, ExternalLink, DollarSign, Plus, X,
+  Receipt, ArrowDownRight, FolderMinus, Save, CheckCircle2, Trash2,
+  FileText, Printer
 } from "lucide-react";
 
 // ── Fee constants ──────────────────────────────────────────────
@@ -60,6 +61,17 @@ function FinancialsContent() {
     date: toISODate(new Date())
   };
   const [newExpense, setNewExpense] = useState(defaultExpense);
+
+  // 🟢 NEW: Invoice / Remittance generator state
+  const monthStartISO = (() => {
+    const n = new Date();
+    return toISODate(new Date(n.getFullYear(), n.getMonth(), 1));
+  })();
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [invoiceOperatorId, setInvoiceOperatorId] = useState<string>(""); // company_id, or "DIRECT", or "" = all
+  const [invFrom, setInvFrom] = useState<string>(monthStartISO);
+  const [invTo, setInvTo] = useState<string>(toISODate(new Date()));
+  const [invBasis, setInvBasis] = useState<"created" | "dropoff">("created");
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -233,7 +245,7 @@ function FinancialsContent() {
       const key = r.company_id || "DIRECT";
       if (!map.has(key)) {
         map.set(key, {
-          name: r.operatorName, commPct: r.commPct, isDirect: !r.company_id,
+          id: key, name: r.operatorName, commPct: r.commPct, isDirect: !r.company_id,
           gross: 0, operatorPayout: 0, yourCut: 0, count: 0,
         });
       }
@@ -245,6 +257,197 @@ function FinancialsContent() {
     });
     return Array.from(map.values()).sort((a, b) => b.yourCut - a.yourCut);
   }, [computed]);
+
+  // ── Invoice / Remittance: independent date range + operator + basis ──────────
+  // "What I owe a provider" = sum of operatorPayout (= parkingGross × (1 − comm%/100)).
+  const invoice = useMemo(() => {
+    const s = parseLocalStart(invFrom);
+    const e = parseLocalEnd(invTo);
+
+    const lines = bookings
+      .filter((b) => {
+        // Operator filter
+        const key = b.company_id || "DIRECT";
+        if (invoiceOperatorId && key !== invoiceOperatorId) return false;
+        // Date filter (basis: booking created date vs drop-off date)
+        const raw = invBasis === "dropoff" ? b.dropoff_date : b.created_at;
+        const d = raw ? new Date(raw) : null;
+        if (!d || isNaN(d.getTime())) return false;
+        if (s && d < s) return false;
+        if (e && d > e) return false;
+        return true;
+      })
+      .map((b) => {
+        const total = Number(b.total_price || 0);
+        const addOns = Number(b.fast_track_count || 0) * FAST_TRACK_PRICE;
+        const parkingGross = Math.max(0, total - addOns);
+        const commPct = commissionFor(b.company_id);
+        const operatorPayout = parkingGross - parkingGross * (commPct / 100);
+        return {
+          ref: b.booking_ref || b.id,
+          operatorName: nameFor(b.company_id),
+          createdLabel: b.created_at ? new Date(b.created_at).toLocaleDateString("en-GB") : "",
+          dropoffLabel: b.dropoff_date ? new Date(b.dropoff_date).toLocaleDateString("en-GB") : "",
+          customer: b.full_name || "",
+          plate: b.license_plate || "",
+          total, addOns, parkingGross, commPct, operatorPayout,
+        };
+      })
+      .sort((a, b) => {
+        const da = invBasis === "dropoff" ? a.dropoffLabel : a.createdLabel;
+        const db = invBasis === "dropoff" ? b.dropoffLabel : b.createdLabel;
+        return da.localeCompare(db);
+      });
+
+    const totalOwed = lines.reduce((sum, l) => sum + l.operatorPayout, 0);
+    const grossSold = lines.reduce((sum, l) => sum + l.total, 0);
+    const parkingGrossTotal = lines.reduce((sum, l) => sum + l.parkingGross, 0);
+
+    let operatorLabel = "All Providers";
+    if (invoiceOperatorId === "DIRECT") operatorLabel = "Aero Direct";
+    else if (invoiceOperatorId) operatorLabel = nameFor(invoiceOperatorId);
+
+    const periodLabel = `${s ? toISODate(s) : "start"} → ${e ? toISODate(e) : "today"}`;
+
+    return { lines, totalOwed, grossSold, parkingGrossTotal, count: lines.length, operatorLabel, periodLabel };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookings, companies, invoiceOperatorId, invFrom, invTo, invBasis]);
+
+  // Operators that actually have bookings (for the invoice dropdown)
+  const operatorOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    bookings.forEach((b) => {
+      const key = b.company_id || "DIRECT";
+      if (!map.has(key)) map.set(key, nameFor(b.company_id));
+    });
+    return Array.from(map.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookings, companies]);
+
+  // Open the invoice modal pre-filtered to a given operator (from the rollup table)
+  const openInvoiceFor = (companyId: string | null) => {
+    setInvoiceOperatorId(companyId || "DIRECT");
+    setShowInvoiceModal(true);
+  };
+
+  // Download the current invoice as a CSV remittance advice
+  const exportInvoiceCSV = () => {
+    let csv = "AEROPARK DIRECT - SUPPLIER REMITTANCE ADVICE\n";
+    csv += `Provider:,${invoice.operatorLabel}\n`;
+    csv += `Period (${invBasis === "dropoff" ? "drop-off date" : "booking date"}):,${invoice.periodLabel}\n`;
+    csv += `Bookings:,${invoice.count}\n`;
+    csv += `Generated:,${new Date().toLocaleString()}\n\n`;
+    csv += "Booking Ref,Booking Date,Drop-off Date,Customer,Reg,Total Charged,Add-ons,Parking Value,Comm %,Amount Owed\n";
+    invoice.lines.forEach((l) => {
+      csv += `${l.ref},${l.createdLabel},${l.dropoffLabel},"${l.customer}",${l.plate},${l.total.toFixed(2)},${l.addOns.toFixed(2)},${l.parkingGross.toFixed(2)},${l.commPct}%,${l.operatorPayout.toFixed(2)}\n`;
+    });
+    csv += `\nTOTAL PARKING VALUE,,,,,${invoice.parkingGrossTotal.toFixed(2)}\n`;
+    csv += `TOTAL AMOUNT OWED,,,,,${invoice.totalOwed.toFixed(2)}\n`;
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const slug = invoice.operatorLabel.replace(/[^a-z0-9]+/gi, "_");
+    a.href = url;
+    a.download = `Remittance_${slug}_${invFrom}_to_${invTo}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  // Render a clean, printable invoice in a new window (Print → Save as PDF)
+  const printInvoice = () => {
+    const rows = invoice.lines.map((l) => `
+      <tr>
+        <td>${l.ref}</td>
+        <td>${invBasis === "dropoff" ? l.dropoffLabel : l.createdLabel}</td>
+        <td>${l.customer || "—"}</td>
+        <td>${l.plate || "—"}</td>
+        <td class="num">£${l.parkingGross.toFixed(2)}</td>
+        <td class="num">${l.commPct}%</td>
+        <td class="num">£${l.operatorPayout.toFixed(2)}</td>
+      </tr>`).join("");
+
+    const invNo = `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${(invoice.operatorLabel.replace(/[^A-Z0-9]/gi, "").slice(0, 4) || "ALL").toUpperCase()}`;
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${invNo}</title>
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1e293b;padding:48px;font-size:13px;line-height:1.5}
+      .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #10b981;padding-bottom:24px;margin-bottom:32px}
+      .brand{font-size:26px;font-weight:800;letter-spacing:-.5px}
+      .brand span{color:#10b981}
+      .muted{color:#64748b;font-size:11px}
+      .title{text-align:right}
+      .title h1{font-size:22px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#0f172a}
+      .meta{display:flex;justify-content:space-between;margin-bottom:32px;gap:24px}
+      .meta .box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px;flex:1}
+      .meta .label{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;font-weight:700;margin-bottom:6px}
+      .meta .val{font-weight:700;font-size:14px}
+      table{width:100%;border-collapse:collapse;margin-bottom:24px}
+      th{background:#0f172a;color:#fff;text-align:left;padding:10px 12px;font-size:9px;text-transform:uppercase;letter-spacing:1px}
+      th.num,td.num{text-align:right}
+      td{padding:10px 12px;border-bottom:1px solid #e2e8f0;font-size:12px}
+      tr:nth-child(even) td{background:#f8fafc}
+      .totals{display:flex;justify-content:flex-end;margin-top:8px}
+      .totals table{width:340px}
+      .totals td{border:none;padding:6px 12px}
+      .totals .grand td{border-top:2px solid #0f172a;font-size:18px;font-weight:800;padding-top:14px}
+      .totals .grand .amt{color:#10b981}
+      .foot{margin-top:48px;border-top:1px solid #e2e8f0;padding-top:20px;color:#64748b;font-size:11px}
+      @media print{body{padding:24px}.noprint{display:none}}
+      .btn{background:#10b981;color:#fff;border:none;padding:12px 28px;border-radius:10px;font-weight:700;cursor:pointer;font-size:13px}
+    </style></head><body>
+      <div class="noprint" style="text-align:right;margin-bottom:20px">
+        <button class="btn" onclick="window.print()">Print / Save as PDF</button>
+      </div>
+      <div class="head">
+        <div>
+          <div class="brand">AEROPARK <span>DIRECT</span></div>
+          <div class="muted" style="margin-top:6px">Airport Parking Services<br/>info@aeroparkdirect.co.uk</div>
+        </div>
+        <div class="title">
+          <h1>Remittance Advice</h1>
+          <div class="muted" style="margin-top:6px">${invNo}</div>
+          <div class="muted">Issued: ${new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })}</div>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="box">
+          <div class="label">Payable To</div>
+          <div class="val">${invoice.operatorLabel}</div>
+        </div>
+        <div class="box">
+          <div class="label">Period (${invBasis === "dropoff" ? "Drop-off Date" : "Booking Date"})</div>
+          <div class="val">${invoice.periodLabel}</div>
+        </div>
+        <div class="box">
+          <div class="label">Bookings</div>
+          <div class="val">${invoice.count}</div>
+        </div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>Booking Ref</th><th>Date</th><th>Customer</th><th>Reg</th>
+          <th class="num">Parking Value</th><th class="num">Comm</th><th class="num">Owed</th>
+        </tr></thead>
+        <tbody>${rows || `<tr><td colspan="7" style="text-align:center;padding:24px;color:#94a3b8">No bookings for this provider in the selected period.</td></tr>`}</tbody>
+      </table>
+      <div class="totals"><table>
+        <tr><td>Total Parking Value</td><td class="num">£${invoice.parkingGrossTotal.toFixed(2)}</td></tr>
+        <tr class="grand"><td>Total Owed</td><td class="num amt">£${invoice.totalOwed.toFixed(2)}</td></tr>
+      </table></div>
+      <div class="foot">
+        Amount owed is the operator's share of parking revenue (parking value net of AeroPark Direct commission). Fast-track add-ons are excluded as they are retained by AeroPark Direct. Please remit payment queries to info@aeroparkdirect.co.uk.
+      </div>
+    </body></html>`;
+
+    const w = window.open("", "_blank", "width=900,height=1000");
+    if (!w) { alert("Please allow pop-ups to print the invoice."); return; }
+    w.document.write(html);
+    w.document.close();
+  };
 
   const isCustomIncomplete = range === "custom" && (!startDate || !endDate);
 
@@ -389,6 +592,10 @@ function FinancialsContent() {
                 className="px-6 py-4 bg-[#131A2B] hover:bg-[#1A2235] disabled:opacity-40 disabled:cursor-not-allowed border border-slate-700 text-white rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-md hover:shadow-lg">
                 <Download className="w-4 h-4 text-blue-400" /> Export P&amp;L
               </button>
+              <button onClick={() => setShowInvoiceModal(true)}
+                className="px-6 py-4 bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/50 text-white rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-[0_10px_20px_-5px_rgba(16,185,129,0.4)] hover:-translate-y-0.5">
+                <FileText className="w-4 h-4" /> Generate Invoice
+              </button>
             </div>
 
             {/* Custom date pickers */}
@@ -494,6 +701,7 @@ function FinancialsContent() {
                     <th className="px-4 py-5 text-center">Bookings</th>
                     <th className="px-4 py-5 text-right">Their Payout</th>
                     <th className="px-6 py-5 text-right text-emerald-400">Your Cut</th>
+                    <th className="px-4 py-5 text-center">Invoice</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/50">
@@ -510,10 +718,18 @@ function FinancialsContent() {
                       <td className="px-4 py-5 text-center text-slate-400 font-bold text-xs tabular-nums">{o.count}</td>
                       <td className="px-4 py-5 text-right text-blue-400 font-bold text-xs tabular-nums">£{o.operatorPayout.toFixed(2)}</td>
                       <td className="px-6 py-5 text-right text-emerald-400 font-black text-sm tabular-nums">£{o.yourCut.toFixed(2)}</td>
+                      <td className="px-4 py-5 text-center">
+                        <button
+                          onClick={() => openInvoiceFor(o.id === "DIRECT" ? "DIRECT" : o.id)}
+                          title={`Generate remittance invoice for ${o.name}`}
+                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 text-[9px] font-black uppercase tracking-widest transition-colors">
+                          <FileText className="w-3 h-3" /> Invoice
+                        </button>
+                      </td>
                     </tr>
                   ))}
                   {byOperator.length === 0 && (
-                    <tr><td colSpan={4} className="px-6 py-12 text-center text-slate-500 font-bold text-sm">No bookings in this period.</td></tr>
+                    <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-bold text-sm">No bookings in this period.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -614,6 +830,129 @@ function FinancialsContent() {
         </div>
 
       </main>
+
+      {/* 🟢 NEW: INVOICE / REMITTANCE GENERATOR MODAL */}
+      {showInvoiceModal && (
+        <div className="fixed inset-0 bg-[#0B1120]/95 backdrop-blur-sm z-[300] flex items-start md:items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#0F1523] border border-slate-800 w-full max-w-4xl rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 my-8">
+            <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-[#131A2B] relative">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-green-500"></div>
+              <div>
+                <h2 className="text-xl font-black text-white tracking-tight flex items-center gap-2"><FileText className="w-5 h-5 text-emerald-400" /> Provider Remittance</h2>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">What You Owe · By Date Range</p>
+              </div>
+              <button onClick={() => setShowInvoiceModal(false)} className="p-2 bg-[#1A2235] rounded-xl text-slate-400 hover:text-white border border-slate-700/50"><X className="w-5 h-5"/></button>
+            </div>
+
+            <div className="p-6 md:p-8 space-y-6">
+              {/* CONTROLS */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Provider</label>
+                  <div className="relative">
+                    <select value={invoiceOperatorId} onChange={(e) => setInvoiceOperatorId(e.target.value)}
+                      className="w-full appearance-none bg-[#1A2235] border border-slate-700 hover:border-emerald-500/50 rounded-xl px-4 py-3 text-sm text-white font-bold outline-none cursor-pointer focus:ring-2 focus:ring-emerald-500/50 transition-all">
+                      <option value="">All Providers</option>
+                      {operatorOptions.map((o) => (
+                        <option key={o.id} value={o.id}>{o.name}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black uppercase text-slate-500 block ml-1 tracking-widest">From</label>
+                  <input type="date" value={invFrom} max={invTo || undefined} onChange={(e) => setInvFrom(e.target.value)} className={dateInputCls + " w-full"} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black uppercase text-slate-500 block ml-1 tracking-widest">To</label>
+                  <input type="date" value={invTo} min={invFrom || undefined} onChange={(e) => setInvTo(e.target.value)} className={dateInputCls + " w-full"} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Date Basis</label>
+                  <div className="relative">
+                    <select value={invBasis} onChange={(e) => setInvBasis(e.target.value as "created" | "dropoff")}
+                      className="w-full appearance-none bg-[#1A2235] border border-slate-700 hover:border-emerald-500/50 rounded-xl px-4 py-3 text-sm text-white font-bold outline-none cursor-pointer focus:ring-2 focus:ring-emerald-500/50 transition-all">
+                      <option value="created">Booking Date</option>
+                      <option value="dropoff">Drop-off Date</option>
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                  </div>
+                </div>
+              </div>
+
+              {/* QUICK MONTH PRESETS */}
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { label: "This Month", from: monthStartISO, to: toISODate(new Date()) },
+                  { label: "Last Month", ...(() => { const n = new Date(); const s = new Date(n.getFullYear(), n.getMonth() - 1, 1); const e = new Date(n.getFullYear(), n.getMonth(), 0); return { from: toISODate(s), to: toISODate(e) }; })() },
+                ].map((p) => (
+                  <button key={p.label} onClick={() => { setInvFrom(p.from); setInvTo(p.to); }}
+                    className="px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-slate-300 bg-[#1A2235] hover:bg-[#222b40] border border-slate-700 rounded-lg transition-colors">
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* SUMMARY BAR */}
+              <div className="bg-gradient-to-r from-emerald-900/30 to-[#131A2B] border border-emerald-500/40 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Total Owed to {invoice.operatorLabel}</p>
+                  <p className="text-[11px] font-bold text-slate-400 mt-1">{invoice.count} booking{invoice.count === 1 ? "" : "s"} · {invoice.periodLabel}</p>
+                </div>
+                <p className="text-4xl font-black text-emerald-400 tracking-tight tabular-nums drop-shadow">£{invoice.totalOwed.toFixed(2)}</p>
+              </div>
+
+              {/* PREVIEW TABLE */}
+              <div className="bg-[#131A2B] rounded-2xl border border-slate-800 overflow-hidden max-h-[40vh] overflow-y-auto">
+                <table className="w-full text-left whitespace-nowrap">
+                  <thead className="border-b border-slate-800 text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 bg-[#0B1120] sticky top-0">
+                    <tr>
+                      <th className="px-4 py-3">Ref</th>
+                      <th className="px-4 py-3">{invBasis === "dropoff" ? "Drop-off" : "Booked"}</th>
+                      <th className="px-4 py-3">Customer</th>
+                      {!invoiceOperatorId && <th className="px-4 py-3">Provider</th>}
+                      <th className="px-4 py-3 text-right">Parking</th>
+                      <th className="px-4 py-3 text-right">Comm</th>
+                      <th className="px-4 py-3 text-right text-emerald-400">Owed</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/50">
+                    {invoice.lines.map((l, i) => (
+                      <tr key={i} className="hover:bg-slate-800/30 transition-colors">
+                        <td className="px-4 py-3 text-xs font-bold text-white">{l.ref}</td>
+                        <td className="px-4 py-3 text-[10px] font-bold text-slate-400 tabular-nums">{invBasis === "dropoff" ? l.dropoffLabel : l.createdLabel}</td>
+                        <td className="px-4 py-3 text-[11px] font-bold text-slate-300">{l.customer || "—"}</td>
+                        {!invoiceOperatorId && <td className="px-4 py-3 text-[10px] font-black uppercase text-slate-500 tracking-wider">{l.operatorName}</td>}
+                        <td className="px-4 py-3 text-right text-xs font-bold text-slate-300 tabular-nums">£{l.parkingGross.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right text-[10px] font-bold text-slate-500 tabular-nums">{l.commPct}%</td>
+                        <td className="px-4 py-3 text-right text-xs font-black text-emerald-400 tabular-nums">£{l.operatorPayout.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                    {invoice.lines.length === 0 && (
+                      <tr><td colSpan={!invoiceOperatorId ? 7 : 6} className="px-4 py-10 text-center text-slate-500 font-bold text-sm">No bookings for this selection.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* ACTIONS */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <button onClick={() => setShowInvoiceModal(false)} className="px-6 py-4 text-slate-400 font-bold text-xs hover:text-white transition-colors">Close</button>
+                <div className="flex-1" />
+                <button onClick={exportInvoiceCSV} disabled={invoice.lines.length === 0}
+                  className="px-6 py-4 bg-[#1A2235] hover:bg-[#222b40] disabled:opacity-40 disabled:cursor-not-allowed border border-slate-700 text-white rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2">
+                  <Download className="w-4 h-4 text-blue-400" /> CSV
+                </button>
+                <button onClick={printInvoice} disabled={invoice.lines.length === 0}
+                  className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 shadow-[0_10px_20px_-5px_rgba(16,185,129,0.4)]">
+                  <Printer className="w-4 h-4" /> Print / Save PDF
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 🟢 NEW: ADD EXPENSE MODAL */}
       {showExpenseModal && (
