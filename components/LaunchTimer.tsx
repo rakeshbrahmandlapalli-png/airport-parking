@@ -6,6 +6,12 @@ interface TimerProps {
   slotsClaimed?: number;
   totalSlots?: number;
   onTimerEnd?: () => void;
+  badge?: string;
+  title?: string;
+  subtitle?: string;
+  benefitTitle?: string;
+  benefitValue?: string;
+  benefitNote?: string;
 }
 
 export default function LaunchTimer({
@@ -13,6 +19,12 @@ export default function LaunchTimer({
   slotsClaimed = 6,
   totalSlots = 15,
   onTimerEnd,
+  badge = "Live Launch Event",
+  title = "Founding Member Launch",
+  subtitle = "Secure your spot · 5% lifetime discount",
+  benefitTitle = "Founding Members Get",
+  benefitValue = "5% Lifetime Discount",
+  benefitNote = "Plus priority access to new features",
 }: TimerProps) {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -34,7 +46,7 @@ export default function LaunchTimer({
 
   useEffect(() => {
     if (!mounted) return;
-    const KEY = "ap_lct_v1";
+    const KEY = `ap_lct_v1_${validHours}`;
     let end: number | null = null;
     try {
       const s = localStorage.getItem(KEY);
@@ -72,11 +84,11 @@ export default function LaunchTimer({
       {/* Badge */}
       <div style={S.badge}>
         <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-        Live Launch Event
+        {badge}
       </div>
 
-      <p style={S.title}>Founding Member Launch</p>
-      <p style={S.sub}>Secure your spot · 5% lifetime discount</p>
+      <p style={S.title}>{title}</p>
+      <p style={S.sub}>{subtitle}</p>
 
       {/* Timer digits */}
       <div style={S.timerRow}>
@@ -113,9 +125,9 @@ export default function LaunchTimer({
           <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
         </svg>
         <div>
-          <p style={S.benefitTitle}>Founding Members Get</p>
-          <p style={S.benefitVal}>5% Lifetime Discount</p>
-          <p style={S.benefitNote}>Plus priority access to new features</p>
+          <p style={S.benefitTitle}>{benefitTitle}</p>
+          <p style={S.benefitVal}>{benefitValue}</p>
+          <p style={S.benefitNote}>{benefitNote}</p>
         </div>
       </div>
 

@@ -17,6 +17,13 @@ const supabaseAdmin = createClient(
 
 const GATEWAY_URL = "https://luton247airportparking.co.uk/agent/get_parking_price";
 
+// 🟢 Short-lived in-memory cache. The upstream gateway is slow on a cold request
+// but the same token+dates query returns the same price for a while, so caching
+// successful responses makes retries and subsequent page loads instant.
+const CACHE_TTL_MS = 60_000;
+type CacheEntry = { rates: any[]; expires: number };
+const rateCache = new Map<string, CacheEntry>();
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -32,9 +39,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing dates", rates: [] }, { status: 200 });
     }
 
-    // ── 1. CHECK SUPABASE CACHE FIRST (Speed Boost) ───────────────────────────
+    const dt = drop_time || "09:00";
+    const rt = return_time || "09:00";
+    const cacheKey = `${token}|${drop_date}|${dt}|${return_date}|${rt}`;
+
+    // ── 1a. IN-MEMORY CACHE (fastest — same serverless instance) ──────────────
+    const cached = rateCache.get(cacheKey);
+    if (cached && cached.expires > Date.now()) {
+      return NextResponse.json({ rates: cached.rates, cached: true }, { status: 200 });
+    }
+
+    // ── 1b. SUPABASE CACHE (persistent across instances) ──────────────────────
     const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
-    
     try {
       const { data: cachedData } = await supabaseAdmin
         .from('api_price_cache')
@@ -59,25 +75,28 @@ export async function POST(req: Request) {
     // ── 2. LIVE FETCH FROM SLOW GATEWAY ───────────────────────────────────────
     console.log(`🐌 CACHE MISS. Fetching live for ${token}...`);
 
-    // TIMEOUT: If Luton 247 hangs, abort after 7 seconds and fail soft
+    // 🟢 TIMEOUT: If Luton 247 hangs, abort after 9 seconds and fail soft
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 7000);
+    const timeout = setTimeout(() => controller.abort(), 9000);
 
-    const res = await fetch(GATEWAY_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      cache: "no-store",
-      signal: controller.signal,
-      body: JSON.stringify({
-        token_no: token,
-        drop_date,                       // YYYY-MM-DD
-        drop_time: drop_time || "09:00", // HH:MM
-        return_date,                     // YYYY-MM-DD
-        return_time: return_time || "09:00",
-      }),
-    });
-
-    clearTimeout(timeout);
+    let res: Response;
+    try {
+      res = await fetch(GATEWAY_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        signal: controller.signal,
+        body: JSON.stringify({
+          token_no: token,
+          drop_date,            // YYYY-MM-DD
+          drop_time: dt,        // HH:MM
+          return_date,          // YYYY-MM-DD
+          return_time: rt,
+        }),
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
 
     // The provider returns Content-Type: text/html even though the body is JSON,
     // so parse defensively.
@@ -94,11 +113,15 @@ export async function POST(req: Request) {
     const rates = Array.isArray(data) ? data : [data];
 
     // ── 3. STORE RESULT IN CACHE (Non-blocking) ───────────────────────────────
-    const validRate = rates.find(r => r && r.parking_price != null);
+    // Only cache genuine, priced responses so we never pin an empty/failed result.
+    const validRate = rates.find((r: any) => r && r.parking_price != null);
     if (validRate) {
+      // In-memory cache (instant for subsequent same-instance loads)
+      rateCache.set(cacheKey, { rates, expires: Date.now() + CACHE_TTL_MS });
+
+      // Supabase persistent cache (fire-and-forget)
       const fetchedPrice = Number(validRate.parking_price);
       if (fetchedPrice > 0) {
-        // Fire and forget cache insert
         supabaseAdmin.from('api_price_cache').insert([{
           token_no: token,
           drop_date,

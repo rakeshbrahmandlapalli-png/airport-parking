@@ -3,19 +3,19 @@
 import LaunchTimer from "@/components/LaunchTimer";
 import BookingStepper from "@/components/BookingStepper";
 import ModifySearchModal from "@/components/ModifySearchModal";
-import { checkAvailability, getLaunchSlotsClaimed } from "../actions";
+import { checkAvailability, getLaunchTimerConfig, type LaunchTimerConfig } from "../actions";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   MapPin, Clock, ShieldCheck, ChevronRight, ThumbsUp, ArrowLeft,
   ChevronDown, Plane, Footprints, User, Star, Ban, Bus, BedDouble,
   Info, PlaneTakeoff, PlaneLanding, MapIcon, Navigation,
   AlertCircle, Sparkles, MessageSquare, Zap, Tag, CarFront,
-  BatteryCharging, Briefcase, Percent, CheckCircle2, Lock, Loader2
+  BatteryCharging, Briefcase, Percent, CheckCircle2, Lock, Loader2, Gift
 } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useState, useMemo, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabase";
-import { computePrice, calculateDays, DEFAULT_SETTINGS, type PricingSettings } from "../lib/pricing";
+import { computePrice, calculateDays, loadPricingSettings, DEFAULT_SETTINGS, type PricingSettings } from "../lib/pricing";
 
 // ─── LIVE ACTIVITY TICKER ─────────────────────────────────────────────────────
 function LiveActivity() {
@@ -90,6 +90,7 @@ const getBadgeIcon = (label: string) => {
   if (l.includes("FREE") || l.includes("CANCEL") || l.includes("INCLUDED")) return CheckCircle2;
   if (l.includes("DISCOUNT") || l.includes("OFFER"))  return Percent;
   if (l.includes("VIP") || l.includes("STAR"))        return Star;
+  if (l.includes("LOYALTY") || l.includes("BONUS"))   return Gift;
   if (l.includes("HIDDEN") || l.includes("NO "))      return CheckCircle2;
   return Info;
 };
@@ -406,7 +407,7 @@ function ResultsContent() {
 
   const [companies,     setCompanies]     = useState<any[]>([]);
   const [settings,      setSettings]      = useState<PricingSettings>(DEFAULT_SETTINGS);
-  const [slotsClaimed,  setSlotsClaimed]  = useState(12);
+  const [timerConfig,   setTimerConfig]   = useState<LaunchTimerConfig | null>(null);
   const [loading,       setLoading]       = useState(true);
 
   const [livePrices,     setLivePrices]     = useState<Record<string, number | null>>({});
@@ -442,25 +443,16 @@ function ResultsContent() {
       setPinnedOrder([]);
 
       try {
-        const [compRes, setRes] = await Promise.all([
+        // STEP 1 — Fetch companies + settings (fast, blocks only the skeleton)
+        const [compRes, resolvedSettings] = await Promise.all([
           supabase.from("companies").select("*"),
-          supabase.from("settings").select("*").in("key", ["markup_enabled", "markup_percent"]),
+          loadPricingSettings(supabase),
         ]);
         if (cancelled) return;
 
         const allCompanies: any[] = compRes.data || [];
         setCompanies(allCompanies);
-
-        let resolvedSettings = DEFAULT_SETTINGS;
-        if (setRes.data) {
-          const en = setRes.data.find((r: any) => r.key === "markup_enabled");
-          const pc = setRes.data.find((r: any) => r.key === "markup_percent");
-          resolvedSettings = {
-            markupEnabled: en ? en.value === "true" : true,
-            markupPercent: pc ? Number(pc.value) || 10 : 10,
-          };
-          setSettings(resolvedSettings);
-        }
+        setSettings(resolvedSettings);
 
         const relevantCompanies = allCompanies.filter((c) => {
           const cat = c.category?.toLowerCase().replace(/ & /g, "-").replace(/\s+/g, "-").trim();
@@ -472,14 +464,14 @@ function ResultsContent() {
         });
 
         const initialSorted = [...relevantCompanies].sort((a, b) => {
-          const aSold = isHeathrow ? a.lhr_sold_out : a.ltn_sold_out;
-          const bSold = isHeathrow ? b.lhr_sold_out : b.ltn_sold_out;
-          if (aSold && !bSold) return 1;
-          if (!aSold && bSold) return -1;
           const aFeat = isHeathrow ? a.lhr_featured : a.ltn_featured;
           const bFeat = isHeathrow ? b.lhr_featured : b.ltn_featured;
           if (aFeat && !bFeat) return -1;
           if (!aFeat && bFeat) return 1;
+          const aSold = isHeathrow ? a.lhr_sold_out : a.ltn_sold_out;
+          const bSold = isHeathrow ? b.lhr_sold_out : b.ltn_sold_out;
+          if (aSold && !bSold) return 1;
+          if (!aSold && bSold) return -1;
           const aP = isHeathrow ? Number(a.heathrow_price || 0) : Number(a.luton_price || 0);
           const bP = isHeathrow ? Number(b.heathrow_price || 0) : Number(b.luton_price || 0);
           return aP - bP;
@@ -499,46 +491,56 @@ function ResultsContent() {
           if (apiCompanies.length > 0) {
             setLiveLoadingIds(new Set(apiCompanies.map((c) => c.id)));
 
+            // The upstream gateway is often slow on a COLD request and fast once
+            // warm — which is why a manual refresh "fixed" missing prices before.
+            // Retry up to 3 times so a cold timeout self-recovers automatically.
+            const MAX_ATTEMPTS = 3;
+
+            const fetchRawPrice = async (c: any): Promise<number | null> => {
+              for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+                if (cancelled) return null;
+                try {
+                  const res = await fetchWithTimeout(
+                    "/api/parking-api",
+                    {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        token_no:    c.api_token,
+                        drop_date:   dropoff,
+                        drop_time:   dropTime,
+                        return_date: pickup,
+                        return_time: apiPickTime,
+                      }),
+                    },
+                    9000
+                  );
+                  if (cancelled) return null;
+                  if (res.ok) {
+                    const json = await res.json();
+                    const rawPrice = extractApiPrice(json);
+                    if (rawPrice != null) return rawPrice; // success
+                  } else {
+                    console.warn(`API non-OK for ${c.name}: HTTP ${res.status} (attempt ${attempt})`);
+                  }
+                } catch (e: any) {
+                  if (e?.name === "AbortError") console.warn(`API timed out for ${c.name} (attempt ${attempt})`);
+                  else console.warn(`API error for ${c.name} (attempt ${attempt}):`, e?.message);
+                }
+                // No price yet — back off briefly, then retry (upstream is warmer now)
+                if (attempt < MAX_ATTEMPTS && !cancelled) {
+                  await new Promise((r) => setTimeout(r, 700 * attempt));
+                }
+              }
+              return null;
+            };
+
             apiCompanies.forEach(async (c) => {
               try {
-                const res = await fetchWithTimeout(
-                  "/api/parking-api",
-                  {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      token_no:    c.api_token,
-                      drop_date:   dropoff,
-                      drop_time:   dropTime,
-                      return_date: pickup,
-                      return_time: apiPickTime,
-                    }),
-                  },
-                  3500 
-                );
-                if (cancelled) return;
-
-                let rawPrice: number | null = null;
-                if (res.ok) {
-                  try {
-                    const json = await res.json();
-                    rawPrice = extractApiPrice(json);
-                  } catch {
-                    console.warn(`Bad JSON from ${c.name}`);
-                  }
-                } else {
-                  console.warn(`API non-OK for ${c.name}: HTTP ${res.status}`);
-                }
-
+                const rawPrice = await fetchRawPrice(c);
                 const surcharge = Number(c.dynamic_surcharge_percent || 0);
                 const adjusted  = rawPrice != null && rawPrice > 0 ? rawPrice * (1 + surcharge / 100) : null;
-
                 if (!cancelled) setLivePrices(prev => ({ ...prev, [c.id]: adjusted }));
-
-              } catch (e: any) {
-                if (e?.name !== "AbortError") console.error(`API error for ${c.name}:`, e);
-                else console.warn(`API timed out for ${c.name}`);
-                if (!cancelled) setLivePrices(prev => ({ ...prev, [c.id]: null }));
               } finally {
                 if (!cancelled) {
                   setLiveLoadingIds(prev => {
@@ -553,7 +555,7 @@ function ResultsContent() {
         }
 
         checkAvailability(airport, dropoff, pickup).catch(() => {});
-        getLaunchSlotsClaimed().then((s) => { if (!cancelled) setSlotsClaimed(s); }).catch(() => {});
+        getLaunchTimerConfig().then((cfg) => { if (!cancelled) setTimerConfig(cfg); }).catch(() => {});
 
       } catch (e) {
         console.error("loadData error:", e);
@@ -658,9 +660,21 @@ function ResultsContent() {
             )}
           </div>
         </div>
-        <div className="lg:w-[300px] shrink-0">
-          <LaunchTimer hours={72} slotsClaimed={slotsClaimed} totalSlots={15} />
-        </div>
+        {timerConfig?.enabled && (
+          <div className="lg:w-[300px] shrink-0">
+            <LaunchTimer
+              hours={timerConfig.hours}
+              slotsClaimed={timerConfig.slotsClaimed}
+              totalSlots={timerConfig.slotsTotal}
+              badge={timerConfig.badge}
+              title={timerConfig.title}
+              subtitle={timerConfig.subtitle}
+              benefitTitle={timerConfig.benefitTitle}
+              benefitValue={timerConfig.benefitValue}
+              benefitNote={timerConfig.benefitNote}
+            />
+          </div>
+        )}
       </div>
 
       {processedCompanies.length === 0 ? (

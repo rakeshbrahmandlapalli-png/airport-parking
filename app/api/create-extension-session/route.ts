@@ -13,6 +13,7 @@ import {
   calculateDays,
   isApiCompany,
   DEFAULT_SETTINGS,
+  loadPricingSettings,
 } from "@/app/lib/pricing";
 
 if (!process.env.STRIPE_SECRET_KEY) throw new Error("STRIPE_SECRET_KEY is not set");
@@ -119,24 +120,8 @@ export async function POST(req: Request) {
       company = data ?? null;
     }
 
-    // ── 6. Load markup settings (same as checkout) ───────────────────────────
-    let settings = { ...DEFAULT_SETTINGS };
-    try {
-      const { data: setRows } = await supabaseAdmin
-        .from("settings")
-        .select("*")
-        .in("key", ["markup_enabled", "markup_percent"]);
-      if (setRows?.length) {
-        const en = setRows.find((r) => r.key === "markup_enabled");
-        const pc = setRows.find((r) => r.key === "markup_percent");
-        settings = {
-          markupEnabled: en ? en.value === "true" : DEFAULT_SETTINGS.markupEnabled,
-          markupPercent: pc ? Number(pc.value) || DEFAULT_SETTINGS.markupPercent : DEFAULT_SETTINGS.markupPercent,
-        };
-      }
-    } catch (e) {
-      console.error("Extension: settings fetch failed (using defaults):", e);
-    }
+    // ── 6. Load markup + auto-surge settings (same as checkout) ──────────────
+    const settings = await loadPricingSettings(supabaseAdmin);
 
     // ── 7. Respect pricing_mode: only call live API for api-mode companies ───
     const dropTime = String(booking.dropoff_time || "09:00").slice(0, 5) || "09:00";

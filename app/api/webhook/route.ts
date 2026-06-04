@@ -6,6 +6,7 @@ import { sendBookingReceipt, sendAmendmentAlerts, sendProviderNotification } fro
 import { createClient } from "@supabase/supabase-js";
 import { triggerMissingFlightAlert } from "@/app/lib/twilio";
 import { Resend } from "resend";
+import { reportOfflineConversion } from "@/app/lib/googleAds";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
@@ -222,6 +223,19 @@ export async function POST(req: Request) {
             flight_number: newBooking.flight_number,
             car_make: newBooking.car_make,
           }).catch((err) => console.error("[WEBHOOK] Twilio Trigger Failed:", err));
+        }
+
+        // 🟢 Server-side Google Ads conversion — fires for EVERY paid booking,
+        // even if the shopper never returned to /success or blocks the tag.
+        // Uses Stripe session id as orderId so it dedupes with the client-side
+        // conversion (which also passes session id as transaction_id).
+        if (m.gclid) {
+          await reportOfflineConversion({
+            gclid: m.gclid,
+            value: Number(newBooking.total_price) || 0,
+            currency: "GBP",
+            orderId: session.id,
+          }).catch((err) => console.error("[WEBHOOK] Google Ads conversion failed:", err));
         }
 
         console.log(`[WEBHOOK] Booking created: ${newBooking.booking_ref} (£${newBooking.total_price})`);

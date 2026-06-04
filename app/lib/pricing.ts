@@ -7,13 +7,87 @@ export const FAST_TRACK_PRICE = 8.0;
 
 export interface PricingSettings {
   markupEnabled: boolean;
-  markupPercent: number; 
+  markupPercent: number;
+  // 🟢 Automatic surge for pivot-priced companies. Layered on top of the manual
+  // dynamic_surcharge_percent. Bounded by autoSurgeMaxPercent.
+  autoSurgeEnabled?: boolean;
+  autoSurgeMaxPercent?: number;
+  autoSurgeExcludedIds?: string[]; // pivot companies that opt OUT of auto-surge
 }
 
 export const DEFAULT_SETTINGS: PricingSettings = {
   markupEnabled: true,
   markupPercent: 10,
+  autoSurgeEnabled: false,
+  autoSurgeMaxPercent: 15,
+  autoSurgeExcludedIds: [],
 };
+
+// ── Deterministic auto-surge percent (0 … maxPercent) ────────────────────────
+// Same dates + same UTC day => same result, so the price the customer sees on
+// the results page matches the price the server charges at checkout. It drifts
+// day-to-day (lead time shrinks, jitter reseeds) so prices look "live".
+function hashStr(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+
+export function computeAutoSurgePercent(opts: {
+  dropDate: string;
+  duration: number;
+  maxPercent: number;
+  seed?: string;     // company id/name, so different companies surge differently
+  now?: Date;
+}): number {
+  const { dropDate, duration, maxPercent, seed = "", now = new Date() } = opts;
+  if (!(maxPercent > 0) || !dropDate) return 0;
+
+  const drop = safeParseDate(dropDate);
+  const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const leadDays = Math.max(0, Math.round((drop.getTime() - todayUTC.getTime()) / 86400000));
+
+  // 1) Lead time: closer drop-off => higher surge (last-minute premium).
+  const leadFactor = Math.max(0, Math.min(1, (30 - leadDays) / 30));
+  // 2) Weekend: Fri/Sat/Sun departures surge harder than mid-week.
+  const dow = drop.getUTCDay();
+  const weekendFactor = (dow === 5 || dow === 6 || dow === 0) ? 1 : 0.3;
+  // 3) Length of stay: longer stays get a small premium.
+  const stayFactor = Math.max(0, Math.min(1, (duration - 1) / 13));
+  // 4) Day-bucketed jitter so prices visibly move day to day.
+  const todayStr = todayUTC.toISOString().split("T")[0];
+  const jitterFactor = (hashStr(`${seed}|${dropDate}|${todayStr}`) % 1000) / 1000;
+
+  const blend =
+    0.45 * leadFactor +
+    0.25 * weekendFactor +
+    0.15 * stayFactor +
+    0.15 * jitterFactor;
+
+  const pct = Math.round(blend * maxPercent * 10) / 10;
+  return Math.max(0, Math.min(maxPercent, pct));
+}
+
+// ── Shared settings loader (works with any Supabase client) ──────────────────
+// Used by the results page (browser client) and the server checkout routes so
+// they all read the same markup + auto-surge config.
+export async function loadPricingSettings(supa: any): Promise<PricingSettings> {
+  const out: PricingSettings = { ...DEFAULT_SETTINGS };
+  try {
+    const { data } = await supa
+      .from("settings")
+      .select("key, value")
+      .in("key", ["markup_enabled", "markup_percent", "auto_surge_enabled", "auto_surge_max_percent", "auto_surge_excluded_ids"]);
+    const get = (k: string) => data?.find((r: any) => r.key === k)?.value;
+    if (get("markup_enabled") != null) out.markupEnabled = get("markup_enabled") === "true";
+    if (get("markup_percent") != null) out.markupPercent = Number(get("markup_percent")) || out.markupPercent;
+    out.autoSurgeEnabled = get("auto_surge_enabled") === "true";
+    out.autoSurgeMaxPercent = Number(get("auto_surge_max_percent")) || 0;
+    try { out.autoSurgeExcludedIds = JSON.parse(get("auto_surge_excluded_ids") || "[]"); }
+    catch { out.autoSurgeExcludedIds = []; }
+  } catch { /* fall back to defaults */ }
+  return out;
+}
 
 // ── Helper: Is this company API-priced? ──────────────────────────────────────
 // 🟢 THIS IS THE NEW DECISION POINT (replaces DYNAMIC_PROVIDERS name-matching)
@@ -108,7 +182,8 @@ export interface PriceResult {
   modifier: number;    
   isDynamic: boolean;  // true if company has api_token
   ok: boolean;         // false if calculation failed (price <= 0)
-  source: "api" | "pivots" | "fallback"; 
+  source: "api" | "pivots" | "fallback";
+  autoSurgePercent?: number; // auto-surge % applied to a pivot base (0 if none)
 }
 
 // ── THE ENGINE ───────────────────────────────────────────────────────────────
@@ -145,7 +220,7 @@ export function computePrice(opts: {
     // 🟢 API company: try liveApiRates first, fall back to its own manual pivots
     const apiRate = getLiveApiBaseRate(liveApiRates);
     if (apiRate !== null) {
-      base = apiRate * (1 + surcharge / 100);
+      base = apiRate;
       source = "api";
     } else {
       // API failed or returned empty: fall to this company's manual pivots
@@ -170,11 +245,34 @@ export function computePrice(opts: {
     }
   }
 
+  // 🟢 Dynamic surcharge applies to every real base (API + pivots), not the
+  // generic fallback. Previously it was only applied in the API branch, so
+  // pivot pricing silently ignored dynamic_surcharge_percent.
+  if (source !== "fallback") base = base * (1 + surcharge / 100);
+
+  // 🟢 Automatic surge — pivot companies only, when globally enabled and this
+  // company hasn't opted out. Layered on top of the manual surcharge.
+  let autoSurgePercent = 0;
+  if (
+    source === "pivots" &&
+    settings.autoSurgeEnabled &&
+    (settings.autoSurgeMaxPercent ?? 0) > 0 &&
+    !(settings.autoSurgeExcludedIds || []).includes(String(company?.id))
+  ) {
+    autoSurgePercent = computeAutoSurgePercent({
+      dropDate,
+      duration,
+      maxPercent: settings.autoSurgeMaxPercent!,
+      seed: String(company?.id || company?.name || ""),
+    });
+    base = base * (1 + autoSurgePercent / 100);
+  }
+
   // Final validation: if still 0 or negative, mark as failed
   if (base <= 0) ok = false;
 
   const original = base * markupFactor;          
   const final = base * modifier * markupFactor;  
 
-  return { base, original, final, modifier, isDynamic, ok, source };
+  return { base, original, final, modifier, isDynamic, ok, source, autoSurgePercent };
 }

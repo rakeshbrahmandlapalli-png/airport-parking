@@ -43,6 +43,7 @@ function FinancialsContent() {
   const [expenses, setExpenses] = useState<any[]>([]); // 🟢 NEW: Expenses State
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [range, setRange] = useState<RangeKey>("all");
 
   // Custom range (used only when range === "custom")
@@ -101,7 +102,7 @@ function FinancialsContent() {
       if (error) throw error;
       setShowExpenseModal(false);
       setNewExpense(defaultExpense);
-      fetchData(); // Refresh to show new expense
+      await fetchData(); // Refresh to show new expense
     } catch (error: any) {
       alert(`Error saving expense: ${error.message} \n\n(Make sure you have created the 'expenses' table in Supabase)`);
     } finally {
@@ -109,9 +110,15 @@ function FinancialsContent() {
     }
   };
 
-  // 🟢 NEW: Handle Expense Deletion
+  // Expense deletion — requires a second click to confirm (avoids browser confirm())
   const deleteExpense = async (id: string) => {
-    if (!confirm("Delete this expense record?")) return;
+    if (pendingDeleteId !== id) {
+      setPendingDeleteId(id);
+      // Auto-cancel the pending state after 3s if user doesn't confirm
+      setTimeout(() => setPendingDeleteId((cur) => (cur === id ? null : cur)), 3000);
+      return;
+    }
+    setPendingDeleteId(null);
     const { error } = await supabase.from("expenses").delete().eq("id", id);
     if (!error) setExpenses(expenses.filter(e => e.id !== id));
   };
@@ -545,7 +552,13 @@ function FinancialsContent() {
                       <td className="px-4 py-5 text-center text-slate-400 font-bold text-[10px] uppercase tracking-wider">{e.category}</td>
                       <td className="px-6 py-5 text-right text-rose-400 font-black text-sm tabular-nums">−£{Number(e.amount).toFixed(2)}</td>
                       <td className="px-4 py-5 text-right">
-                        <button onClick={() => deleteExpense(e.id)} className="p-2 text-slate-500 hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                        <button
+                          onClick={() => deleteExpense(e.id)}
+                          className={`p-2 transition-colors text-xs font-bold ${pendingDeleteId === e.id ? "text-red-400 animate-pulse" : "text-slate-500 hover:text-red-400"}`}
+                          title={pendingDeleteId === e.id ? "Click again to confirm deletion" : "Delete expense"}
+                        >
+                          {pendingDeleteId === e.id ? "Confirm?" : <Trash2 className="w-4 h-4" />}
+                        </button>
                       </td>
                     </tr>
                   ))}

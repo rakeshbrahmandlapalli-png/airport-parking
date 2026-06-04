@@ -1,9 +1,7 @@
-// @ts-nocheck
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
-// ✅ FIXED IMPORT
-import { computePrice, calculateDays, FAST_TRACK_PRICE, DEFAULT_SETTINGS } from "@/app/lib/pricing";
+import { computePrice, calculateDays, isApiCompany, FAST_TRACK_PRICE, DEFAULT_SETTINGS, loadPricingSettings } from "@/app/lib/pricing";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -12,7 +10,6 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const PRICING_FEED_URL = "https://script.google.com/macros/s/AKfycbwd4zT_JLMbufzexsJ4GKtkyvVh5EvxUQ0XA_i5cg6f19QXFutErdrU3i57TIF-D8Ku/exec";
 const GATEWAY_URL = "https://luton247airportparking.co.uk/agent/get_parking_price";
 const FALLBACK_TOKEN = "6a0b8fa913e0463e9ad0247";
 
@@ -39,26 +36,11 @@ export async function POST(req: Request) {
       company = data;
     }
 
-    let pricingEngine = [];
-    try {
-      const feedRes = await fetch(PRICING_FEED_URL, { headers: { "Content-Type": "text/plain;charset=utf-8" }, cache: "no-store" });
-      pricingEngine = await feedRes.json();
-    } catch (e) {}
+    const settings = await loadPricingSettings(supabaseAdmin);
 
-    let settings = { ...DEFAULT_SETTINGS };
-    try {
-      const { data: setRows } = await supabaseAdmin.from("settings").select("*").in("key", ["markup_enabled", "markup_percent"]);
-      if (setRows) {
-        const en = setRows.find((r) => r.key === "markup_enabled");
-        const pc = setRows.find((r) => r.key === "markup_percent");
-        settings = { markupEnabled: en ? en.value === "true" : true, markupPercent: pc ? Number(pc.value) || 10 : 10 };
-      }
-    } catch (e) {}
-
-    let liveApiPrice: number | null = null;
+    let liveApiRates: any[] = [];
     const isLuton = (airport || "").toLowerCase().includes("luton");
-    const nameLower = (company?.name || provider || "").toLowerCase().trim();
-    const isDynamic = !!company?.api_token || DYNAMIC_PROVIDERS.includes(nameLower);
+    const isDynamic = isApiCompany(company);
 
     if (isDynamic && isLuton && dropDate && pickDate) {
       const token = company?.api_token || process.env.LUTON247_API_TOKEN || FALLBACK_TOKEN;
@@ -68,17 +50,16 @@ export async function POST(req: Request) {
           body: JSON.stringify({ token_no: token, drop_date: dropDate, drop_time: dropTime, return_date: pickDate, return_time: pickTime })
         });
         const text = await apiRes.text();
-        let parsedData;
-        try { parsedData = JSON.parse(text); } catch (e) {}
-        const rates = Array.isArray(parsedData) ? parsedData : (parsedData && typeof parsedData === 'object' && parsedData.parking_price ? [parsedData] : []);
-        const validQuote = rates.find((q: any) => q && q.parking_price != null);
-        if (validQuote) liveApiPrice = Number(validQuote.parking_price);
-      } catch (e) {}
+        let parsedData: unknown;
+        try { parsedData = JSON.parse(text); } catch (e) { /* non-JSON response — skip */ }
+        liveApiRates = Array.isArray(parsedData) ? parsedData
+          : (parsedData && typeof parsedData === "object" && (parsedData as any).parking_price ? [parsedData] : []);
+      } catch (e) { /* network error — fall back to pivots */ }
     }
 
     const duration = calculateDays(dropDate, pickDate);
     const priceResult = computePrice({
-      company, providerName: provider || metadata?.service_type || "", airport, duration, dropDate, pricingEngine, liveApiPrice, settings, fallbackPrice: 0,
+      company, providerName: provider || metadata?.service_type || "", airport, duration, dropDate, liveApiRates, settings, fallbackPrice: 0,
     });
 
     if (!priceResult.ok || priceResult.final <= 0) {
@@ -116,7 +97,15 @@ export async function POST(req: Request) {
   }
 }
 
-async function createSession({ price, airport, provider, metadata, isAmendment }) {
+interface SessionArgs {
+  price: number;
+  airport: string;
+  provider: string;
+  metadata: Record<string, string>;
+  isAmendment: boolean;
+}
+
+async function createSession({ price, airport, provider, metadata, isAmendment }: SessionArgs) {
   const productName = isAmendment ? `Booking Amendment: ${metadata.booking_ref}` : `AeroPark: ${airport}`;
   const productDesc = isAmendment ? `Date Change Adjustment - ${provider}` : `${provider} Parking Services`;
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_BASE_URL || "https://www.aeroparkdirect.co.uk";

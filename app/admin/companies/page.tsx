@@ -563,6 +563,11 @@ export default function AdminCompaniesPage() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const originalEditingRef = useRef<any>(null);
 
+  const [confirmState, setConfirmState] = useState<{ title: string; body: string; confirmLabel: string; danger: boolean; onConfirm: () => void } | null>(null);
+  const askConfirm = (opts: { title: string; body: string; confirmLabel?: string; danger?: boolean; onConfirm: () => void }) => {
+    setConfirmState({ title: opts.title, body: opts.body, confirmLabel: opts.confirmLabel || "Confirm", danger: opts.danger || false, onConfirm: opts.onConfirm });
+  };
+
   const activeFilterCount = [categoryFilter !== "ALL", airportFilter !== "ALL", statusFilter !== "ALL", apiFilter !== "ALL"].filter(Boolean).length;
 
   useEffect(() => {
@@ -586,6 +591,18 @@ export default function AdminCompaniesPage() {
     setHasUnsavedChanges(JSON.stringify(editingCompany) !== JSON.stringify(originalEditingRef.current));
   }, [editingCompany]);
 
+  // ESC closes the topmost overlay (confirm dialog first, then the modal)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (confirmState) { setConfirmState(null); return; }
+      if (editingCompany || showAddModal) closeModal();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [confirmState, editingCompany, showAddModal, hasUnsavedChanges]);
+
   async function fetchCompanies() {
     setLoading(true);
     const { data, error } = await supabase.from("companies").select("*").order("name", { ascending: true });
@@ -604,17 +621,21 @@ export default function AdminCompaniesPage() {
 
   const handleLogout = async () => { await supabase.auth.signOut(); router.push("/admin/login"); };
 
-  const closeModal = () => {
-    if (hasUnsavedChanges && !confirm("You have unsaved changes. Discard them?")) return;
+  const doClose = () => {
     setEditingCompany(null); setShowAddModal(false); setModalTab("general");
     setCompanyBookings([]); setHasUnsavedChanges(false); originalEditingRef.current = null;
   };
 
+  const closeModal = () => {
+    if (hasUnsavedChanges) {
+      askConfirm({ title: "Unsaved Changes", body: "You have unsaved changes. Discard them and close?", confirmLabel: "Discard", danger: true, onConfirm: doClose });
+      return;
+    }
+    doClose();
+  };
+
   const openEditModal = (company: any) => {
-    const withDefaults = {
-      ...company,
-      pricing_mode: company.pricing_mode ?? (company.api_token ? "api" : "pivot"),
-    };
+    const withDefaults = { ...company, pricing_mode: company.pricing_mode || (company.api_token ? "api" : "pivot") };
     originalEditingRef.current = JSON.parse(JSON.stringify(withDefaults));
     setEditingCompany(withDefaults); setModalTab("general");
   };
@@ -643,16 +664,23 @@ export default function AdminCompaniesPage() {
     } catch (error: any) { showToast("Error updating partner: " + error.message, "error"); } finally { setIsSaving(false); }
   };
 
-  const masterUpdate = async (val: number) => {
-    const text = val === 1 ? "RESET the modifier to BASE (1.0x) for ALL operators" : `apply ${val > 1 ? "+" : ""}${Math.round((val - 1) * 100)}% modifier to ALL operators`;
-    if (!confirm(`⚠️ Are you sure you want to ${text}?`)) return;
-    setIsSaving(true);
-    try {
-      const { error } = await supabase.from("companies").update({ price_modifier: val }).neq("id", "00000000-0000-0000-0000-000000000000");
-      if (error) throw error;
-      await fetchCompanies();
-      showToast(`All operators updated to ${val}x modifier`, "success");
-    } catch (error: any) { showToast("Error: " + error.message, "error"); } finally { setIsSaving(false); }
+  const masterUpdate = (val: number) => {
+    const text = val === 1 ? "RESET all prices to BASE" : `apply a ${val > 1 ? "+" : ""}${Math.round((val - 1) * 100)}% modifier to ALL operators`;
+    askConfirm({
+      title: "Master Price Modifier",
+      body: `This will ${text}. Every partner's modifier will be overwritten.`,
+      confirmLabel: "Apply to All",
+      danger: val !== 1,
+      onConfirm: async () => {
+        setIsSaving(true);
+        try {
+          const { error } = await supabase.from("companies").update({ price_modifier: val }).neq("id", "00000000-0000-0000-0000-000000000000");
+          if (error) throw error;
+          await fetchCompanies();
+          showToast(`All operators updated to ${val}x modifier`, "success");
+        } catch (error: any) { showToast("Error: " + error.message, "error"); } finally { setIsSaving(false); }
+      },
+    });
   };
 
   const quickToggle = async (company: any, field: string) => {
@@ -690,14 +718,21 @@ export default function AdminCompaniesPage() {
     setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "badges", current.filter((_: any, i: number) => i !== index));
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`⚠️ CRITICAL: Permanently delete "${name}"?`)) return;
-    try {
-      const { error } = await supabase.from("companies").delete().eq("id", id);
-      if (error) throw error;
-      setCompanies(companies.filter((c) => c.id !== id));
-      showToast(`${name} deleted`, "error");
-    } catch (error: any) { showToast("Error deleting partner: " + error.message, "error"); }
+  const handleDelete = (id: string, name: string) => {
+    askConfirm({
+      title: "Delete Partner",
+      body: `Permanently delete "${name}"? This removes the partner and cannot be undone.`,
+      confirmLabel: "Delete Partner",
+      danger: true,
+      onConfirm: async () => {
+        try {
+          const { error } = await supabase.from("companies").delete().eq("id", id);
+          if (error) throw error;
+          setCompanies(companies.filter((c) => c.id !== id));
+          showToast(`${name} deleted`, "error");
+        } catch (error: any) { showToast("Error deleting partner: " + error.message, "error"); }
+      },
+    });
   };
 
   const updateTerminalField = (term: string, field: string, value: string) => {
@@ -756,7 +791,7 @@ export default function AdminCompaniesPage() {
 
   const addReview = (airport: "ltn" | "lhr") => {
     const key = airport === "ltn" ? "ltn_reviews" : "lhr_reviews";
-    const rev: Review = { id: Date.now(), author: "Customer Name", rating: 5, comment: "Write review here...", date: new Date().toISOString().split("T")[0], verified: true, source: "Trustpilot" };
+    const rev: Review = { id: Date.now() + Math.floor(Math.random() * 100000), author: "Customer Name", rating: 5, comment: "Write review here...", date: new Date().toISOString().split("T")[0], verified: true, source: "Trustpilot" };
     if (editingCompany) setEditingCompany({ ...editingCompany, [key]: [...(editingCompany[key] || []), rev] });
     else setNewCompany({ ...newCompany, [key]: [...(newCompany[key] || []), rev] });
   };
@@ -805,6 +840,33 @@ export default function AdminCompaniesPage() {
     <div className="dark-ui min-h-screen bg-[#060A14] font-sans flex flex-col md:flex-row overflow-hidden text-slate-100 selection:bg-blue-600/30 selection:text-white antialiased">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
+      {confirmState && (
+        <div className="fixed inset-0 bg-[#060A14]/90 backdrop-blur-sm z-[400] flex items-center justify-center p-4">
+          <div className="bg-[#0F1523] border border-slate-800 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-7">
+              <div className="flex items-start gap-4">
+                <div className={`w-11 h-11 shrink-0 rounded-xl flex items-center justify-center border ${confirmState.danger ? "bg-red-500/10 border-red-500/20 text-red-400" : "bg-blue-500/10 border-blue-500/20 text-blue-400"}`}>
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-black text-white tracking-tight">{confirmState.title}</h3>
+                  <p className="text-sm font-medium text-slate-400 mt-1.5 leading-relaxed">{confirmState.body}</p>
+                </div>
+              </div>
+            </div>
+            <div className="px-7 py-5 bg-[#131A2B] border-t border-slate-800 flex gap-3 justify-end">
+              <button onClick={() => setConfirmState(null)} className="px-5 py-3 text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-white transition-colors">Cancel</button>
+              <button
+                onClick={() => { const fn = confirmState.onConfirm; setConfirmState(null); fn(); }}
+                className={`px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest text-white transition-all active:scale-95 ${confirmState.danger ? "bg-red-600 hover:bg-red-500 shadow-[0_8px_16px_-4px_rgba(220,38,38,0.4)]" : "bg-blue-600 hover:bg-blue-500 shadow-[0_8px_16px_-4px_rgba(37,99,235,0.4)]"}`}
+              >
+                {confirmState.confirmLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <aside className="w-full md:w-64 bg-[#0F1523] text-slate-400 hidden md:flex flex-col sticky top-0 h-screen border-r border-slate-800/80 shadow-2xl z-50 shrink-0">
         <div className="p-8 flex items-center gap-4 text-white">
           <div className="w-10 h-10 bg-blue-600/10 rounded-xl flex items-center justify-center border border-blue-500/20"><Plane className="w-6 h-6 text-blue-500 rotate-45" /></div>
@@ -840,13 +902,13 @@ export default function AdminCompaniesPage() {
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           {[
-            { label: "Total Network", value: totalPartners, color: "blue", Icon: Network },
-            { label: "LTN Active", value: ltnCoverage, color: "emerald", Icon: Car },
-            { label: "LHR Active", value: lhrCoverage, color: "indigo", Icon: PlaneTakeoff },
-            { label: "Live API", value: apiCount, color: "amber", Icon: Zap },
-          ].map(({ label, value, color, Icon }) => (
-            <div key={label} className={`relative bg-[#131A2B] p-6 rounded-[2rem] border border-${color}-900/30 hover:border-${color}-500/40 overflow-hidden shadow-xl transition-all cursor-default`}>
-              <p className={`text-[9px] font-black uppercase tracking-[0.3em] text-${color}-400 mb-2 flex items-center gap-1.5`}><Icon className="w-3.5 h-3.5" /> {label}</p>
+            { label: "Total Network", value: totalPartners, border: "border-blue-900/30 hover:border-blue-500/40", text: "text-blue-400", Icon: Network },
+            { label: "LTN Active", value: ltnCoverage, border: "border-emerald-900/30 hover:border-emerald-500/40", text: "text-emerald-400", Icon: Car },
+            { label: "LHR Active", value: lhrCoverage, border: "border-indigo-900/30 hover:border-indigo-500/40", text: "text-indigo-400", Icon: PlaneTakeoff },
+            { label: "Live API", value: apiCount, border: "border-amber-900/30 hover:border-amber-500/40", text: "text-amber-400", Icon: Zap },
+          ].map(({ label, value, border, text, Icon }) => (
+            <div key={label} className={`relative bg-[#131A2B] p-6 rounded-[2rem] border ${border} overflow-hidden shadow-xl transition-all cursor-default`}>
+              <p className={`text-[9px] font-black uppercase tracking-[0.3em] ${text} mb-2 flex items-center gap-1.5`}><Icon className="w-3.5 h-3.5" /> {label}</p>
               <p className="text-4xl font-black text-white tracking-tighter tabular-nums">{value}</p>
             </div>
           ))}

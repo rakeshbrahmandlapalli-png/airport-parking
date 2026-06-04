@@ -68,6 +68,26 @@ function DashboardContent() {
   
   const [newBooking, setNewBooking] = useState<any>(defaultNewBooking);
 
+  // --- 3b. TOAST + CONFIRM STATE ---
+  const [toasts, setToasts] = useState<{ id: number; type: "success" | "error" | "info"; msg: string }[]>([]);
+  const [confirmState, setConfirmState] = useState<{ title: string; body: string; confirmLabel: string; danger: boolean; onConfirm: () => void } | null>(null);
+
+  const notify = (type: "success" | "error" | "info", msg: string) => {
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    setToasts((prev) => [...prev, { id, type, msg }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
+  };
+
+  const askConfirm = (opts: { title: string; body: string; confirmLabel?: string; danger?: boolean; onConfirm: () => void }) => {
+    setConfirmState({
+      title: opts.title,
+      body: opts.body,
+      confirmLabel: opts.confirmLabel || "Confirm",
+      danger: opts.danger || false,
+      onConfirm: opts.onConfirm,
+    });
+  };
+
   // --- 4. DATA FETCHING & REAL-TIME SYNC ---
   useEffect(() => {
     const checkUser = async () => {
@@ -152,10 +172,22 @@ function DashboardContent() {
   }, [newBooking.dropoff_date, newBooking.pickup_date, newBooking.company_id, newBooking.airport]);
 
   // --- 6. CORE LOGIC HANDLERS ---
-  const deleteBooking = async (id: string) => {
-    if (!confirm("⚠️ PERMANENT DELETION: Are you sure? This cannot be undone.")) return;
-    const { error } = await supabase.from("bookings").delete().eq("id", id);
-    if (!error) setBookings(bookings.filter(b => b.id !== id));
+  const deleteBooking = (id: string, ref?: string) => {
+    askConfirm({
+      title: "Permanent Deletion",
+      body: `This will permanently delete booking ${ref || id}. This cannot be undone.`,
+      confirmLabel: "Delete Record",
+      danger: true,
+      onConfirm: async () => {
+        const { error } = await supabase.from("bookings").delete().eq("id", id);
+        if (error) {
+          notify("error", `Delete failed: ${error.message}`);
+        } else {
+          setBookings(bookings.filter((b) => b.id !== id));
+          notify("success", "Booking deleted.");
+        }
+      },
+    });
   };
 
   const handleUpdateBooking = async (e: React.FormEvent) => {
@@ -189,9 +221,10 @@ function DashboardContent() {
       
       setEditingBooking(null);
       await fetchDashboardData();
-    } catch (error: any) { 
-      alert(`Update Error: ${error.message}`); 
-    } finally { 
+      notify("success", "Booking updated.");
+    } catch (error: any) {
+      notify("error", `Update error: ${error.message}`);
+    } finally {
       setIsSaving(false); 
     }
   };
@@ -200,7 +233,7 @@ function DashboardContent() {
     e.preventDefault();
     setIsSaving(true);
     try {
-      const booking_ref = `APD-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      const booking_ref = generateRef();
       const payload = { ...newBooking, booking_ref };
       if (payload.company_id === "ALL") payload.company_id = null; 
       
@@ -231,38 +264,43 @@ function DashboardContent() {
       setShowManualModal(false);
       setNewBooking(defaultNewBooking);
       await fetchDashboardData();
-    } catch (error: any) { 
-      alert(error.message); 
-    } finally { 
+      notify("success", `Booking ${booking_ref} created.`);
+    } catch (error: any) {
+      notify("error", error.message);
+    } finally {
       setIsSaving(false); 
     }
   };
 
-  const sendManualEmail = async (booking: any, type: 'provider' | 'customer') => {
-    if (!confirm(`Are you sure you want to push a manual email to the ${type}?`)) return;
-
-    try {
-      const payload = { 
-        booking: booking, 
-        manual_provider_notify: type === 'provider',
-        manual_customer_notify: type === 'customer'
-      };
-
-      const response = await fetch('/api/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.ok) {
-        alert(`✅ ${type === 'provider' ? 'Provider' : 'Customer'} email dispatched successfully!`);
-      } else {
-        alert(`❌ Failed to send ${type} email. Check server logs.`);
-      }
-    } catch (error) {
-      console.error("Manual Email Error:", error);
-      alert("❌ Critical routing error while sending email.");
-    }
+  const sendManualEmail = (booking: any, type: 'provider' | 'customer') => {
+    const label = type === 'provider' ? 'Provider' : 'Customer';
+    askConfirm({
+      title: `Dispatch ${label} Email`,
+      body: `Send a manual ${type} email for booking ${booking.booking_ref}?`,
+      confirmLabel: "Send Email",
+      onConfirm: async () => {
+        try {
+          const payload = {
+            booking: booking,
+            manual_provider_notify: type === 'provider',
+            manual_customer_notify: type === 'customer',
+          };
+          const response = await fetch('/api/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (response.ok) {
+            notify("success", `${label} email dispatched.`);
+          } else {
+            notify("error", `Failed to send ${type} email. Check server logs.`);
+          }
+        } catch (error) {
+          console.error("Manual Email Error:", error);
+          notify("error", "Critical routing error while sending email.");
+        }
+      },
+    });
   };
 
   const sendToWhatsApp = (booking: any) => {
@@ -270,9 +308,33 @@ function DashboardContent() {
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
   };
 
-  const handleRequestReview = async (booking: any) => {
-    if(!confirm(`Authorize system to send review request to ${booking.full_name}?`)) return;
-    alert(`Success: Marketing automation queued for ${booking.email}.`);
+  const handleRequestReview = (booking: any) => {
+    if (!booking.email) {
+      notify("error", "This booking has no email address on file.");
+      return;
+    }
+    askConfirm({
+      title: "Request Customer Review",
+      body: `Send a review request email to ${booking.full_name || "the customer"} (${booking.email})?`,
+      confirmLabel: "Send Request",
+      onConfirm: async () => {
+        try {
+          const response = await fetch('/api/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ review_request: true, booking }),
+          });
+          if (response.ok) {
+            notify("success", `Review request sent to ${booking.email}.`);
+          } else {
+            notify("error", "Failed to send review request. Check server logs.");
+          }
+        } catch (error) {
+          console.error("Review Request Error:", error);
+          notify("error", "Critical routing error while sending review request.");
+        }
+      },
+    });
   };
 
   const exportToCSV = () => {
@@ -295,6 +357,17 @@ function DashboardContent() {
   const todayDate = new Date();
   const todayStrISO = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-${String(todayDate.getDate()).padStart(2, '0')}`;
 
+  // 🟢 Collision-safe, browser-native booking ref
+  const generateRef = (): string => {
+    try {
+      const bytes = new Uint8Array(4);
+      crypto.getRandomValues(bytes);
+      return "APD-" + Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+    } catch {
+      return "APD-" + Date.now().toString(36).toUpperCase();
+    }
+  };
+
   const getCompanyName = (id: string) => {
     if (!id) return "AeroPark Direct";
     const match = companies.find(c => c.id === id);
@@ -303,7 +376,13 @@ function DashboardContent() {
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "TBC";
-    return new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+    // Parse YYYY-MM-DD as a LOCAL date to avoid UTC day-shift
+    const isoMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr);
+    const d = isoMatch
+      ? new Date(Number(isoMatch[1]), Number(isoMatch[2]) - 1, Number(isoMatch[3]))
+      : new Date(dateStr);
+    if (isNaN(d.getTime())) return "TBC";
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
   };
 
   const getStatusBadge = (status: string) => {
@@ -663,7 +742,7 @@ function DashboardContent() {
                           )}
                           <button onClick={() => sendToWhatsApp(b)} className="p-2.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-lg border border-emerald-500/20 transition-all active:scale-95 hover:shadow-[0_0_15px_-3px_rgba(16,185,129,0.6)]" title="WhatsApp Dispatch"><MessageCircle className="w-4 h-4" /></button>
                           <button onClick={() => setEditingBooking(b)} className="p-2.5 bg-[#1A2235] text-slate-300 hover:bg-blue-600 hover:text-white rounded-lg border border-slate-700 hover:border-transparent transition-all active:scale-95" title="Modify Record"><Settings2 className="w-4 h-4" /></button>
-                          <button onClick={() => deleteBooking(b.id)} className="p-2.5 bg-[#1A2235] text-slate-500 hover:bg-red-500 hover:text-white rounded-lg border border-slate-700 hover:border-transparent transition-all active:scale-95" title="Delete Record"><Trash2 className="w-4 h-4" /></button>
+                          <button onClick={() => deleteBooking(b.id, b.booking_ref)} className="p-2.5 bg-[#1A2235] text-slate-500 hover:bg-red-500 hover:text-white rounded-lg border border-slate-700 hover:border-transparent transition-all active:scale-95" title="Delete Record"><Trash2 className="w-4 h-4" /></button>
                         </div>
                       </td>
                     </tr>
@@ -950,6 +1029,56 @@ function DashboardContent() {
           </div>
         </div>
       )}
+
+      {/* --- 🟢 CONFIRM DIALOG --- */}
+      {confirmState && (
+        <div className="fixed inset-0 bg-[#0B1120]/90 backdrop-blur-sm z-[400] flex items-center justify-center p-4">
+          <div className="bg-[#0F1523] border border-slate-800 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-7">
+              <div className="flex items-start gap-4">
+                <div className={`w-11 h-11 shrink-0 rounded-xl flex items-center justify-center border ${confirmState.danger ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-blue-500/10 border-blue-500/20 text-blue-400'}`}>
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-black text-white tracking-tight">{confirmState.title}</h3>
+                  <p className="text-sm font-medium text-slate-400 mt-1.5 leading-relaxed">{confirmState.body}</p>
+                </div>
+              </div>
+            </div>
+            <div className="px-7 py-5 bg-[#131A2B] border-t border-slate-800 flex gap-3 justify-end">
+              <button onClick={() => setConfirmState(null)} className="px-5 py-3 text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-white transition-colors">Cancel</button>
+              <button
+                onClick={() => { const fn = confirmState.onConfirm; setConfirmState(null); fn(); }}
+                className={`px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest text-white transition-all active:scale-95 ${confirmState.danger ? 'bg-red-600 hover:bg-red-500 shadow-[0_8px_16px_-4px_rgba(220,38,38,0.4)]' : 'bg-blue-600 hover:bg-blue-500 shadow-[0_8px_16px_-4px_rgba(37,99,235,0.4)]'}`}
+              >
+                {confirmState.confirmLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- 🟢 TOAST STACK --- */}
+      <div className="fixed bottom-6 right-6 z-[500] flex flex-col gap-3 pointer-events-none">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className={`pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-2xl border shadow-2xl backdrop-blur-xl animate-in slide-in-from-right-8 duration-300 max-w-sm ${
+              t.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+              : t.type === 'error' ? 'bg-red-500/10 border-red-500/30 text-red-300'
+              : 'bg-blue-500/10 border-blue-500/30 text-blue-300'
+            }`}
+          >
+            {t.type === 'success' ? <CheckCircle2 className="w-5 h-5 shrink-0" />
+              : t.type === 'error' ? <XCircle className="w-5 h-5 shrink-0" />
+              : <AlertCircle className="w-5 h-5 shrink-0" />}
+            <span className="text-xs font-bold tracking-wide">{t.msg}</span>
+            <button onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))} className="ml-auto text-current/60 hover:text-current transition-colors shrink-0">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
