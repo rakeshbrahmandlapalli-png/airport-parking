@@ -45,6 +45,10 @@ function DashboardContent() {
   const [editingBooking, setEditingBooking] = useState<any>(null);
   const [showManualModal, setShowManualModal] = useState(false);
 
+  // --- 3a. DOSSIER + SORT STATE (new design) ---
+  const [viewBooking, setViewBooking] = useState<any>(null); // booking shown in the dossier modal
+  const [sortKey, setSortKey] = useState<string>("NEWEST"); // NEW FEATURE 1: sortable grid
+
   const defaultNewBooking = {
     full_name: "", 
     email: "", 
@@ -353,6 +357,21 @@ function DashboardContent() {
     link.click();
   };
 
+  // NEW FEATURE 2: inline quick-status change (no full edit modal needed)
+  const quickStatus = async (b: any, newStatus: string) => {
+    if (!b || (b.status?.toLowerCase() || "pending") === newStatus.toLowerCase()) return;
+    // optimistic local update
+    setBookings((prev) => prev.map((x) => (x.id === b.id ? { ...x, status: newStatus } : x)));
+    if (viewBooking?.id === b.id) setViewBooking({ ...viewBooking, status: newStatus });
+    const { error } = await supabase.from("bookings").update({ status: newStatus }).eq("id", b.id);
+    if (error) {
+      notify("error", `Status update failed: ${error.message}`);
+      await fetchDashboardData();
+    } else {
+      notify("success", `${b.booking_ref} → ${newStatus}`);
+    }
+  };
+
   // --- 7. UI HELPERS ---
   const todayDate = new Date();
   const todayStrISO = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-${String(todayDate.getDate()).padStart(2, '0')}`;
@@ -396,6 +415,16 @@ function DashboardContent() {
     return <div className={`${classes} bg-amber-500/10 text-amber-400 border border-amber-500/30 shadow-[0_0_12px_-2px_rgba(245,158,11,0.4)]`}><Clock className="w-3.5 h-3.5"/> Pending</div>;
   };
 
+  // Status → row "spine" colour (lets operators scan status down the table at a glance)
+  const statusAccentColor = (status: string) => {
+    const s = status?.toLowerCase() || "pending";
+    if (s === "confirmed") return "#3b82f6"; // blue
+    if (s === "parked") return "#a855f7";    // purple
+    if (s === "completed") return "#10b981"; // emerald
+    if (s === "cancelled") return "#ef4444"; // red
+    return "#f59e0b";                          // amber (pending)
+  };
+
   // --- 8. FILTER ENGINE ---
   const filteredBookings = useMemo(() => {
     return bookings.filter(b => {
@@ -426,9 +455,30 @@ function DashboardContent() {
           if (b.company_id !== companyFilter) return false; 
         }
       }
-      return true; 
+      return true;
     });
   }, [bookings, searchTerm, airportFilter, statusFilter, timeFilter, companyFilter, serviceFilter, todayStrISO, companies]);
+
+  // NEW FEATURE 1: sort the filtered grid by the chosen key
+  const displayBookings = useMemo(() => {
+    const arr = [...filteredBookings];
+    const t = (d?: string) => (d ? new Date(d).getTime() || 0 : 0);
+    switch (sortKey) {
+      case "PRICE_HIGH":
+        return arr.sort((a, b) => Number(b.total_price || 0) - Number(a.total_price || 0));
+      case "PRICE_LOW":
+        return arr.sort((a, b) => Number(a.total_price || 0) - Number(b.total_price || 0));
+      case "INBOUND":
+        return arr.sort((a, b) => t(a.dropoff_date) - t(b.dropoff_date));
+      case "RETURN":
+        return arr.sort((a, b) => t(a.pickup_date) - t(b.pickup_date));
+      case "NAME":
+        return arr.sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
+      case "NEWEST":
+      default:
+        return arr.sort((a, b) => t(b.created_at) - t(a.created_at));
+    }
+  }, [filteredBookings, sortKey]);
 
   // Derived Metrics
   const totalRevenue = filteredBookings
@@ -437,6 +487,28 @@ function DashboardContent() {
     
   const arrivalsToday = filteredBookings.filter(b => b.dropoff_date && String(b.dropoff_date).startsWith(todayStrISO) && b.status !== 'cancelled').length;
   const returnsToday = filteredBookings.filter(b => b.pickup_date && String(b.pickup_date).startsWith(todayStrISO) && b.status !== 'cancelled').length;
+
+  // --- Extra context metrics (presentational only) ---
+  const paidCount = filteredBookings.filter(b => ['confirmed', 'completed', 'parked'].includes(b.status?.toLowerCase())).length;
+  const pendingCount = filteredBookings.filter(b => (b.status?.toLowerCase() || 'pending') === 'pending').length;
+  const avgBookingValue = paidCount > 0 ? totalRevenue / paidCount : 0;
+  const activeFilterCount = [
+    searchTerm.trim() !== "",
+    airportFilter !== "ALL",
+    statusFilter !== "ALL",
+    timeFilter !== "ALL",
+    companyFilter !== "ALL",
+    serviceFilter !== "ALL",
+  ].filter(Boolean).length;
+  const resetFilters = () => {
+    setSearchTerm("");
+    setAirportFilter("ALL");
+    setStatusFilter("ALL");
+    setTimeFilter("ALL");
+    setCompanyFilter("ALL");
+    setServiceFilter("ALL");
+  };
+  const todayPretty = todayDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   if (loading) return (
     <div className="min-h-screen bg-[#0B1120] flex flex-col items-center justify-center text-white relative overflow-hidden">
@@ -454,8 +526,135 @@ function DashboardContent() {
   const selectStyle = "w-full appearance-none bg-[#1A2235]/80 backdrop-blur-sm border border-slate-700/50 hover:border-blue-500/60 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none cursor-pointer focus:ring-2 focus:ring-blue-500/50 transition-all duration-300 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)] [-webkit-text-fill-color:white]";
   const yellowInputStyle = "w-full bg-[#FACC15] border-2 border-yellow-500 rounded-xl px-5 py-4 text-black text-xl text-center font-black uppercase outline-none focus:ring-4 focus:ring-yellow-500/30 transition-all shadow-[0_0_20px_-4px_rgba(250,204,21,0.5)] [-webkit-text-fill-color:black] placeholder:text-yellow-700/50";
 
+  // ── MASTER–DETAIL: the right-hand detail panel for the selected booking ──────
+  const detailRow = (label: string, value: any, accent = "text-white") => (
+    <div className="flex items-center justify-between gap-4 py-2.5 border-b border-slate-800/60 last:border-0">
+      <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 shrink-0">{label}</span>
+      <span className={`text-sm font-bold text-right ${accent}`}>{value || <span className="text-slate-600">—</span>}</span>
+    </div>
+  );
+
+  const renderDetail = (b: any) => {
+    if (!b) {
+      return (
+        <div className="h-full flex flex-col items-center justify-center text-center py-24 opacity-40">
+          <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-slate-700 flex items-center justify-center mb-5 bg-slate-900/40">
+            <LayoutDashboard className="w-9 h-9 text-slate-600" />
+          </div>
+          <p className="text-sm font-black uppercase tracking-[0.25em] text-slate-400">No record selected</p>
+          <p className="text-xs font-bold text-slate-600 mt-2">Choose a booking from the list to view its dossier.</p>
+        </div>
+      );
+    }
+    return (
+      <div className="flex flex-col h-full">
+        {/* HEADER */}
+        <div className="p-6 border-b border-slate-800 bg-[#0F1523]/70 relative" style={{ boxShadow: `inset 4px 0 0 0 ${statusAccentColor(b.status)}` }}>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-2">
+              <span className="text-[11px] font-black font-mono text-blue-400 tracking-widest uppercase bg-blue-500/10 px-2.5 py-1 rounded border border-blue-500/20 w-max">{b.booking_ref}</span>
+              <h3 className="text-2xl font-black text-white tracking-tight">{b.full_name || "Unnamed Client"}</h3>
+              <div className="flex flex-wrap items-center gap-2">
+                {getStatusBadge(b.status)}
+                {b.fast_track_count > 0 && (
+                  <span className="text-[9px] font-black text-amber-400 uppercase tracking-widest bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20 flex items-center gap-1">
+                    <Zap className="w-3 h-3" /> {b.fast_track_count}× Fast Track
+                  </span>
+                )}
+              </div>
+            </div>
+            {/* close the dossier modal */}
+            <button onClick={() => setViewBooking(null)} className="p-2.5 bg-[#1A2235] rounded-xl text-slate-400 hover:text-white border border-slate-700/50 shrink-0">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* BODY */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+          {/* PRICE BANNER */}
+          <div className="bg-gradient-to-br from-emerald-900/30 to-[#131A2B] border border-emerald-500/30 rounded-2xl p-5 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Transaction Value</p>
+              <p className="text-3xl font-black text-white tracking-tight tabular-nums mt-1">£{Number(b.total_price || 0).toFixed(2)}</p>
+            </div>
+            <Wallet className="w-12 h-12 text-emerald-500/20" />
+          </div>
+
+          {/* CONTACT */}
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500 mb-2 flex items-center gap-2"><Users className="w-3.5 h-3.5" /> Customer</p>
+            <div className="bg-[#1A2235]/60 border border-slate-800 rounded-2xl px-5 py-2">
+              {detailRow("Phone", b.phone_number)}
+              {detailRow("Email", b.email, "text-slate-300 break-all")}
+            </div>
+          </div>
+
+          {/* VEHICLE */}
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500 mb-2 flex items-center gap-2"><Car className="w-3.5 h-3.5" /> Vehicle</p>
+            <div className="bg-[#1A2235]/60 border border-slate-800 rounded-2xl px-5 py-4 flex items-center gap-4">
+              <div className="px-3 py-2 bg-[#FACC15] text-black font-black font-mono text-sm rounded border-b-2 border-yellow-600 shadow-[0_0_15px_-4px_rgba(250,204,21,0.5)] tracking-[0.1em]">
+                {b.license_plate || "—"}
+              </div>
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-300 uppercase tracking-widest">
+                <div className="w-3 h-3 rounded-full border border-white/20 shadow-inner" style={{ background: b.car_color || "#334155" }}></div>
+                {b.car_make || "Standard Fleet"}
+              </div>
+            </div>
+          </div>
+
+          {/* SCHEDULE */}
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500 mb-2 flex items-center gap-2"><Clock className="w-3.5 h-3.5" /> Logistics</p>
+            <div className="bg-[#1A2235]/60 border border-slate-800 rounded-2xl px-5 py-2">
+              {detailRow("Inbound", <span className="tabular-nums">{formatDate(b.dropoff_date)} {b.dropoff_time || ""}</span>, "text-blue-300")}
+              {detailRow("Return", <span className="tabular-nums">{formatDate(b.pickup_date)} {b.pickup_time || ""}</span>, "text-emerald-300")}
+              {detailRow("Airport", b.airport)}
+              {detailRow("Terminal", b.terminal)}
+              {detailRow("Flight", b.flight_number)}
+            </div>
+          </div>
+
+          {/* COMMERCIAL */}
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500 mb-2 flex items-center gap-2"><Building2 className="w-3.5 h-3.5" /> Commercial</p>
+            <div className="bg-[#1A2235]/60 border border-slate-800 rounded-2xl px-5 py-2">
+              {detailRow("Partner", getCompanyName(b.company_id))}
+              {detailRow("Service", b.service_type || "Meet & Greet")}
+            </div>
+          </div>
+        </div>
+
+        {/* ACTION BAR */}
+        <div className="p-5 border-t border-slate-800 bg-[#0F1523]/70 grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+          <button onClick={() => sendManualEmail(b, "customer")} className="flex items-center justify-center gap-2 px-3 py-3 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white rounded-xl border border-blue-500/20 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest">
+            <Receipt className="w-4 h-4" /> Customer
+          </button>
+          <button onClick={() => sendManualEmail(b, "provider")} className="flex items-center justify-center gap-2 px-3 py-3 bg-purple-500/10 text-purple-400 hover:bg-purple-500 hover:text-white rounded-xl border border-purple-500/20 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest">
+            <Briefcase className="w-4 h-4" /> Provider
+          </button>
+          <button onClick={() => sendToWhatsApp(b)} className="flex items-center justify-center gap-2 px-3 py-3 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-xl border border-emerald-500/20 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest">
+            <MessageCircle className="w-4 h-4" /> WhatsApp
+          </button>
+          {b.status?.toLowerCase() === "completed" && (
+            <button onClick={() => handleRequestReview(b)} className="flex items-center justify-center gap-2 px-3 py-3 bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white rounded-xl border border-amber-500/20 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest">
+              <Star className="w-4 h-4 fill-current" /> Review
+            </button>
+          )}
+          <button onClick={() => setEditingBooking(b)} className="flex items-center justify-center gap-2 px-3 py-3 bg-[#1A2235] text-slate-300 hover:bg-blue-600 hover:text-white rounded-xl border border-slate-700 hover:border-transparent transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest">
+            <Settings2 className="w-4 h-4" /> Edit
+          </button>
+          <button onClick={() => deleteBooking(b.id, b.booking_ref)} className="flex items-center justify-center gap-2 px-3 py-3 bg-[#1A2235] text-slate-500 hover:bg-red-500 hover:text-white rounded-xl border border-slate-700 hover:border-transparent transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest">
+            <Trash2 className="w-4 h-4" /> Delete
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-[#0B1120] font-sans flex flex-col md:flex-row overflow-hidden text-slate-100 antialiased selection:bg-blue-600/30 relative">
+    <div className="min-h-screen bg-gradient-to-b from-[#0B1120] via-[#0A0E1A] to-[#0B1120] font-sans flex flex-col md:flex-row overflow-hidden text-slate-100 antialiased selection:bg-blue-600/30 relative">
       
       {/* 🌌 AMBIENT BACKGROUND GLOW LAYERS */}
       <div className="fixed top-[-200px] left-[200px] w-[600px] h-[600px] bg-blue-600/8 rounded-full blur-[140px] pointer-events-none z-0"></div>
@@ -514,102 +713,81 @@ function DashboardContent() {
           </button>
         </div>
 
-        {/* 🟢 PREMIUM DESKTOP HEADER (CLEANED UP) */}
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight bg-gradient-to-r from-white via-white to-blue-200 bg-clip-text text-transparent">Live Operations</h1>
-            <div className="text-slate-400 font-bold mt-2 text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
-              Real-Time Command Center
-            </div>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <button onClick={exportToCSV} className="px-6 py-4 bg-[#131A2B]/80 backdrop-blur-sm hover:bg-[#1A2235] border border-slate-700 hover:border-slate-600 text-slate-300 rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-3 shadow-md hover:shadow-lg">
-              <Download className="w-4 h-4" /> Export Data
-            </button>
-            <button onClick={() => setShowManualModal(true)} className="px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-3 shadow-[0_10px_30px_-5px_rgba(37,99,235,0.5)] hover:-translate-y-1 active:translate-y-0 relative overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-              <Plus className="w-5 h-5" /> Manual Booking
-            </button>
-          </div>
-        </header>
+        {/* 🟢 COMMAND HERO PANEL (header + live stat rail, one unit) */}
+        <div className="relative mb-8 rounded-[2rem] border border-slate-800/80 bg-gradient-to-br from-[#131A2B] to-[#0F1523] shadow-2xl overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/40 to-transparent"></div>
+          <div className="absolute -top-24 -left-24 w-72 h-72 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none"></div>
+          <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-indigo-600/10 rounded-full blur-[100px] pointer-events-none"></div>
 
-        {/* 🟢 TOP 4 HUD METRICS (ADVANCED GLASS + GLOW) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-          {/* Revenue */}
-          <div className="bg-gradient-to-br from-[#131A2B] to-[#0F1523] p-6 rounded-3xl border border-slate-800/80 flex flex-col relative overflow-hidden group hover:border-emerald-500/30 transition-all duration-500 hover:shadow-[0_20px_50px_-15px_rgba(16,185,129,0.25)]">
-            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent"></div>
-            <div className="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-all"></div>
-            <div className="flex items-start justify-between mb-2 relative z-10">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Total Revenue</p>
-              <div className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20"><Wallet className="w-4 h-4 text-emerald-400" /></div>
+          {/* ROW 1 — title + actions */}
+          <div className="relative p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-slate-800/60">
+            <div className="flex items-center gap-5">
+              <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600/30 to-blue-600/5 border border-blue-500/30 items-center justify-center shadow-[0_0_25px_rgba(37,99,235,0.3)] shrink-0">
+                <Activity className="w-7 h-7 text-blue-400" />
+              </div>
+              <div>
+                <h1 className="text-3xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-white via-white to-blue-200 bg-clip-text text-transparent">Live Operations</h1>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
+                  <div className="text-emerald-400 font-bold text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
+                    Real-Time Sync
+                  </div>
+                  <div className="hidden sm:block w-px h-3 bg-slate-700"></div>
+                  <div className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.2em] flex items-center gap-1.5">
+                    <Clock className="w-3 h-3" /> {todayPretty}
+                  </div>
+                </div>
+              </div>
             </div>
-            <p className="text-3xl font-black text-white tracking-tight tabular-nums mt-auto relative z-10 drop-shadow-[0_0_15px_rgba(16,185,129,0.15)]">£{totalRevenue.toFixed(2)}</p>
-            <div className="absolute right-[-10px] bottom-[-10px] text-emerald-500/10 group-hover:scale-110 group-hover:text-emerald-500/20 transition-all duration-500">
-              <TrendingUp className="w-16 h-16" />
-            </div>
-          </div>
-          
-          {/* Active Jobs */}
-          <div className="bg-gradient-to-br from-[#131A2B] to-[#0F1523] p-6 rounded-3xl border border-slate-800/80 flex flex-col relative overflow-hidden group hover:border-blue-500/30 transition-all duration-500 hover:shadow-[0_20px_50px_-15px_rgba(59,130,246,0.25)]">
-            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/40 to-transparent"></div>
-            <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-all"></div>
-            <div className="flex items-start justify-between mb-2 relative z-10">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Active Jobs</p>
-              <div className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20"><Activity className="w-4 h-4 text-blue-400" /></div>
-            </div>
-            <p className="text-3xl font-black text-white tracking-tight tabular-nums mt-auto relative z-10 drop-shadow-[0_0_15px_rgba(59,130,246,0.15)]">{filteredBookings.length}</p>
-            <div className="absolute right-[-10px] bottom-[-10px] text-blue-500/10 group-hover:scale-110 group-hover:text-blue-500/20 transition-all duration-500">
-              <Zap className="w-16 h-16" />
+            <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+              <button onClick={exportToCSV} className="px-6 py-3.5 bg-[#1A2235]/80 backdrop-blur-sm hover:bg-[#1A2235] border border-slate-700 hover:border-slate-600 text-slate-300 rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-3 shadow-md">
+                <Download className="w-4 h-4" /> Export
+              </button>
+              <button onClick={() => setShowManualModal(true)} className="px-6 py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-3 shadow-[0_10px_30px_-5px_rgba(37,99,235,0.5)] hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                <Plus className="w-5 h-5" /> New Booking
+              </button>
             </div>
           </div>
 
-          {/* Inbound Hub */}
-          <div className="bg-gradient-to-br from-[#131A2B] to-[#0F1523] p-6 rounded-3xl border border-slate-800/80 flex flex-col relative overflow-hidden group hover:border-indigo-500/30 transition-all duration-500 hover:shadow-[0_20px_50px_-15px_rgba(99,102,241,0.25)]">
-            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent"></div>
-            <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500/5 rounded-full blur-2xl group-hover:bg-indigo-500/10 transition-all"></div>
-            <div className="flex items-start justify-between mb-2 relative z-10">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">Hub: Inbound</p>
-              <div className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20"><PlaneLanding className="w-4 h-4 text-indigo-400" /></div>
-            </div>
-            <p className="text-3xl font-black text-white tracking-tight tabular-nums mt-auto relative z-10 drop-shadow-[0_0_15px_rgba(99,102,241,0.15)]">{arrivalsToday}</p>
-            <div className="absolute right-[-10px] bottom-[-10px] text-indigo-500/10 group-hover:scale-110 group-hover:text-indigo-500/20 transition-all duration-500">
-              <PlaneLanding className="w-16 h-16" />
-            </div>
-          </div>
-
-          {/* Return Hub */}
-          <div className="bg-gradient-to-br from-[#131A2B] to-[#0F1523] p-6 rounded-3xl border border-slate-800/80 flex flex-col relative overflow-hidden group hover:border-amber-500/30 transition-all duration-500 hover:shadow-[0_20px_50px_-15px_rgba(245,158,11,0.25)]">
-            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-amber-500/40 to-transparent"></div>
-            <div className="absolute -top-10 -right-10 w-40 h-40 bg-amber-500/5 rounded-full blur-2xl group-hover:bg-amber-500/10 transition-all"></div>
-            <div className="flex items-start justify-between mb-2 relative z-10">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-400">Hub: Return</p>
-              <div className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20"><PlaneTakeoff className="w-4 h-4 text-amber-400" /></div>
-            </div>
-            <p className="text-3xl font-black text-white tracking-tight tabular-nums mt-auto relative z-10 drop-shadow-[0_0_15px_rgba(245,158,11,0.15)]">{returnsToday}</p>
-            <div className="absolute right-[-10px] bottom-[-10px] text-amber-500/10 group-hover:scale-110 group-hover:text-amber-500/20 transition-all duration-500">
-              <PlaneTakeoff className="w-16 h-16" />
-            </div>
+          {/* ROW 2 — live stat rail */}
+          <div className="relative grid grid-cols-2 lg:grid-cols-4 divide-x divide-slate-800/60">
+            {[
+              { label: "Total Revenue", value: `£${totalRevenue.toFixed(2)}`, sub: `${paidCount} paid · avg £${avgBookingValue.toFixed(0)}`, color: "#10b981", Icon: Wallet },
+              { label: "Active Jobs", value: `${filteredBookings.length}`, sub: pendingCount > 0 ? `${pendingCount} awaiting action` : "all up to date", color: "#3b82f6", Icon: Zap },
+              { label: "Inbound Today", value: `${arrivalsToday}`, sub: "cars in today", color: "#6366f1", Icon: PlaneLanding },
+              { label: "Return Today", value: `${returnsToday}`, sub: "cars out today", color: "#f59e0b", Icon: PlaneTakeoff },
+            ].map((s, i) => (
+              <div key={i} className="p-5 md:p-6 relative group hover:bg-white/[0.02] transition-colors border-t border-slate-800/60 lg:border-t-0">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: s.color }}>{s.label}</p>
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center border" style={{ background: `${s.color}1A`, borderColor: `${s.color}33` }}>
+                    <s.Icon className="w-3.5 h-3.5" style={{ color: s.color }} />
+                  </div>
+                </div>
+                <p className="text-2xl md:text-3xl font-black text-white tracking-tight tabular-nums">{s.value}</p>
+                <p className="text-[10px] font-bold text-slate-500 mt-1.5 tabular-nums truncate">{s.sub}</p>
+                <div className="absolute bottom-0 left-0 h-0.5 w-0 group-hover:w-full transition-all duration-500" style={{ background: s.color }}></div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* 🟢 REDESIGNED CONTROL RIBBON (YOUR LOGIC, COOLER GLASS) */}
-        <div className="bg-[#131A2B]/80 backdrop-blur-xl rounded-3xl border border-slate-800 shadow-xl p-4 mb-8 flex flex-col xl:flex-row gap-4 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
-          
-          <div className="relative flex-1 min-w-[280px]">
+        {/* 🟢 CONTROL TOOLBAR */}
+        <div className="mb-6">
+          <div className="relative mb-3">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
-            <input 
-              type="text" 
+            <input
+              type="text"
               autoComplete="off"
-              placeholder="Search reference, client name, plate..." 
-              value={searchTerm} 
-              onChange={(e) => setSearchTerm(e.target.value)} 
-              className="w-full bg-[#1A2235]/80 backdrop-blur-sm border border-slate-700 hover:border-blue-500/50 rounded-2xl py-3 pl-12 pr-6 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-slate-500" 
+              placeholder="Search reference, client name, plate, email or phone..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-[#131A2B]/80 backdrop-blur-xl border border-slate-800 hover:border-blue-500/40 rounded-2xl py-4 pl-12 pr-6 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/40 transition-all placeholder:text-slate-500 shadow-lg"
             />
           </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 w-full xl:w-auto shrink-0">
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
             {[
               { id: 'time', icon: Filter, state: timeFilter, set: setTimeFilter, opts: [{v: "ALL", l: "Dates: All"}, {v: "TODAY_DROP", l: "Inbound Today"}, {v: "TODAY_PICK", l: "Return Today"}] },
               { id: 'air', icon: MapPin, state: airportFilter, set: setAirportFilter, opts: [{v: "ALL", l: "Hubs: All"}, {v: "Luton", l: "Luton (LTN)"}, {v: "Heathrow", l: "Heathrow (LHR)"}] },
@@ -632,126 +810,156 @@ function DashboardContent() {
           </div>
         </div>
 
-        {/* 🟢 HIGH-END OPERATIONAL DATA TABLE (ADVANCED GLASS) */}
-        <div className="bg-[#131A2B]/70 backdrop-blur-xl rounded-3xl border border-slate-800 overflow-hidden shadow-2xl mb-24 relative">
-          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent"></div>
-          <div className="overflow-x-auto min-h-[500px] custom-scrollbar">
-            {filteredBookings.length === 0 ? (
-              <div className="py-40 flex flex-col items-center justify-center opacity-40">
-                <div className="w-24 h-24 rounded-full border-4 border-dashed border-slate-600 flex items-center justify-center mb-6 bg-slate-900/50">
-                  <Search className="w-10 h-10 text-slate-500" />
-                </div>
-                <p className="text-2xl font-black uppercase tracking-[0.3em] text-white">Registry Exhausted</p>
-                <p className="text-sm font-bold text-slate-400 mt-3">Adjust system filters to retrieve records.</p>
-              </div>
-            ) : (
-              <table className="w-full text-left whitespace-nowrap">
-                <thead className="bg-[#0F1523]/90 backdrop-blur-sm border-b border-slate-800">
-                  <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-                    <th className="px-6 py-5">Reference</th>
-                    <th className="px-6 py-5">Customer Profile</th>
-                    <th className="px-6 py-5">Vehicle Specs</th>
-                    <th className="px-6 py-5">Schedule</th>
-                    <th className="px-6 py-5">Partner & Status</th>
-                    <th className="px-6 py-5 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60">
-                  {filteredBookings.map((b) => (
-                    <tr key={b.id} className="hover:bg-blue-500/5 transition-all group">
-                      
-                      {/* REFERENCE */}
-                      <td className="px-6 py-5">
-                        <div className="flex flex-col gap-2">
-                          <span className="text-[10px] font-black text-blue-400 tracking-widest uppercase bg-blue-500/10 px-2 py-1 rounded border border-blue-500/20 w-max group-hover:border-blue-500/40 group-hover:shadow-[0_0_12px_-2px_rgba(59,130,246,0.4)] transition-all">
-                            {b.booking_ref}
-                          </span>
-                          {b.fast_track_count > 0 && (
-                            <span className="text-[9px] font-black text-amber-400 uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 w-max flex items-center gap-1">
-                              <Zap className="w-3 h-3" /> Fast Track
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      
-                      {/* CUSTOMER */}
-                      <td className="px-6 py-5">
-                         <p className="font-bold text-white text-sm group-hover:text-blue-400 transition-colors">{b.full_name}</p>
-                         <div className="flex flex-col gap-1 mt-1 text-[10px] font-medium text-slate-400">
-                           <span className="flex items-center gap-1.5"><Smartphone className="w-3 h-3 text-slate-500"/> {b.phone_number}</span>
-                         </div>
-                      </td>
-                      
-                      {/* VEHICLE */}
-                      <td className="px-6 py-5">
-                        <div className="px-2 py-1 bg-[#FACC15] text-black font-black font-mono text-[10px] rounded border-b-2 border-yellow-600 w-max mb-1.5 shadow-[0_0_15px_-4px_rgba(250,204,21,0.5)] tracking-[0.1em]">
-                          {b.license_plate}
-                        </div>
-                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                           <div className="w-2.5 h-2.5 rounded-full border border-white/20 shadow-inner" style={{background: b.car_color || '#334155'}}></div>
-                           {b.car_make || 'Standard Fleet'}
-                        </div>
-                      </td>
-
-                      {/* SCHEDULE */}
-                      <td className="px-6 py-5">
-                        <div className="flex flex-col gap-2 font-bold tabular-nums">
-                          <div className="flex items-center gap-3 text-[11px] text-slate-300">
-                             <div className="w-14 text-[8px] font-black text-blue-400 uppercase">Inbound</div>
-                             {formatDate(b.dropoff_date)} <span className="text-white">{b.dropoff_time}</span>
-                          </div>
-                          <div className="flex items-center gap-3 text-[11px] text-slate-300">
-                             <div className="w-14 text-[8px] font-black text-emerald-400 uppercase">Return</div>
-                             {formatDate(b.pickup_date)} <span className="text-white">{b.pickup_time}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 mt-1 text-[9px] font-black text-slate-500 uppercase tracking-widest">
-                             <MapPin className="w-3 h-3 text-slate-600" /> {b.airport}
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* PARTNER & STATUS */}
-                      <td className="px-6 py-5">
-                        <div className="flex flex-col gap-2">
-                          {getStatusBadge(b.status)}
-                          <div className="flex items-center gap-1.5 text-sm font-black text-white mt-1">
-                             <Wallet className="w-3.5 h-3.5 text-slate-500" /> £{Number(b.total_price || 0).toFixed(2)}
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest bg-[#1A2235] w-max px-2 py-1 rounded border border-slate-700/50 mt-1">
-                             <Building2 className="w-3 h-3 text-slate-500" /> {getCompanyName(b.company_id)}
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* SYSTEM CONTROLS (ACTIONS) */}
-                      <td className="px-6 py-5 text-right">
-                        <div className="flex items-center justify-end gap-2 opacity-40 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
-                          
-                          <button onClick={() => sendManualEmail(b, 'customer')} className="p-2.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white rounded-lg border border-blue-500/20 transition-all active:scale-95 hover:shadow-[0_0_15px_-3px_rgba(59,130,246,0.6)]" title="Push Receipt to Customer">
-                            <Receipt className="w-4 h-4" />
-                          </button>
-                          
-                          <button onClick={() => sendManualEmail(b, 'provider')} className="p-2.5 bg-purple-500/10 text-purple-400 hover:bg-purple-500 hover:text-white rounded-lg border border-purple-500/20 transition-all active:scale-95 hover:shadow-[0_0_15px_-3px_rgba(168,85,247,0.6)]" title="Push Job to Provider">
-                            <Briefcase className="w-4 h-4" />
-                          </button>
-
-                          {b.status?.toLowerCase() === 'completed' && (
-                            <button onClick={() => handleRequestReview(b)} className="p-2.5 bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white rounded-lg border border-amber-500/20 transition-all active:scale-95 hover:shadow-[0_0_15px_-3px_rgba(245,158,11,0.6)]" title="Request 5-Star Review">
-                              <Star className="w-4 h-4 fill-current" />
-                            </button>
-                          )}
-                          <button onClick={() => sendToWhatsApp(b)} className="p-2.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-lg border border-emerald-500/20 transition-all active:scale-95 hover:shadow-[0_0_15px_-3px_rgba(16,185,129,0.6)]" title="WhatsApp Dispatch"><MessageCircle className="w-4 h-4" /></button>
-                          <button onClick={() => setEditingBooking(b)} className="p-2.5 bg-[#1A2235] text-slate-300 hover:bg-blue-600 hover:text-white rounded-lg border border-slate-700 hover:border-transparent transition-all active:scale-95" title="Modify Record"><Settings2 className="w-4 h-4" /></button>
-                          <button onClick={() => deleteBooking(b.id, b.booking_ref)} className="p-2.5 bg-[#1A2235] text-slate-500 hover:bg-red-500 hover:text-white rounded-lg border border-slate-700 hover:border-transparent transition-all active:scale-95" title="Delete Record"><Trash2 className="w-4 h-4" /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        {/* 🟢 RESULTS BAR + SORT (NEW FEATURE 1) */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 px-1">
+          <div className="flex items-center gap-3 text-[11px] font-bold text-slate-400">
+            <span className="text-white font-black tabular-nums">{displayBookings.length}</span>
+            <span className="uppercase tracking-widest text-slate-500">record{displayBookings.length === 1 ? "" : "s"}</span>
+            {activeFilterCount > 0 && (
+              <span className="flex items-center gap-1.5 text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-lg uppercase tracking-widest text-[9px] font-black">
+                <Filter className="w-3 h-3" /> {activeFilterCount} filter{activeFilterCount === 1 ? "" : "s"} active
+              </span>
             )}
+            <span className="hidden md:flex items-center gap-1.5 text-emerald-400 bg-emerald-500/5 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
+              <Wallet className="w-3 h-3" /> <span className="tabular-nums">£{totalRevenue.toFixed(2)}</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            {activeFilterCount > 0 && (
+              <button onClick={resetFilters} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-red-400 border border-slate-700 hover:border-red-500/30 px-3 py-2.5 rounded-xl transition-all">
+                <X className="w-3 h-3" /> Clear All
+              </button>
+            )}
+            <div className="relative group/sort flex-1 sm:flex-none">
+              <TrendingUp className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 z-10 pointer-events-none group-hover/sort:text-blue-400 transition-colors" />
+              <select
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value)}
+                className="w-full appearance-none bg-[#1A2235]/80 backdrop-blur-sm border border-slate-700 hover:border-blue-500/50 rounded-xl py-2.5 pl-10 pr-9 text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none cursor-pointer transition-all focus:ring-2 focus:ring-blue-500/50"
+              >
+                <option value="NEWEST" className="bg-[#1A2235] text-white">Sort: Newest</option>
+                <option value="PRICE_HIGH" className="bg-[#1A2235] text-white">Sort: Price High → Low</option>
+                <option value="PRICE_LOW" className="bg-[#1A2235] text-white">Sort: Price Low → High</option>
+                <option value="INBOUND" className="bg-[#1A2235] text-white">Sort: Inbound Date</option>
+                <option value="RETURN" className="bg-[#1A2235] text-white">Sort: Return Date</option>
+                <option value="NAME" className="bg-[#1A2235] text-white">Sort: Name A → Z</option>
+              </select>
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none group-hover/sort:text-blue-500 transition-colors" />
+            </div>
           </div>
         </div>
+
+        {/* 🟢 BOOKING CARD GRID */}
+        {displayBookings.length === 0 ? (
+          <div className="bg-[#131A2B]/70 backdrop-blur-xl rounded-3xl border border-slate-800 py-32 flex flex-col items-center justify-center opacity-50 px-6 text-center mb-24">
+            <div className="w-20 h-20 rounded-full border-4 border-dashed border-slate-600 flex items-center justify-center mb-5 bg-slate-900/50">
+              <Search className="w-8 h-8 text-slate-500" />
+            </div>
+            <p className="text-lg font-black uppercase tracking-[0.25em] text-white">No Records</p>
+            <p className="text-xs font-bold text-slate-400 mt-2">Adjust filters to retrieve bookings.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-5 mb-24">
+            {displayBookings.map((b) => (
+              <div
+                key={b.id}
+                onClick={() => setViewBooking(b)}
+                className="group bg-gradient-to-br from-[#131A2B] to-[#0F1523] rounded-3xl border border-slate-800/80 hover:border-blue-500/40 shadow-xl hover:shadow-[0_20px_50px_-15px_rgba(59,130,246,0.25)] transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col hover:-translate-y-1"
+                style={{ boxShadow: `inset 4px 0 0 0 ${statusAccentColor(b.status)}` }}
+              >
+                <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
+
+                {/* CARD HEAD */}
+                <div className="p-5 pb-4 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[9px] font-black font-mono text-blue-400 tracking-widest uppercase bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">{b.booking_ref}</span>
+                      {b.fast_track_count > 0 && (
+                        <span className="text-[8px] font-black text-amber-400 uppercase tracking-widest bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 flex items-center gap-1">
+                          <Zap className="w-2.5 h-2.5" /> {b.fast_track_count}×
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="text-lg font-black text-white tracking-tight mt-2 truncate">{b.full_name || "Unnamed Client"}</h3>
+                  </div>
+                  {getStatusBadge(b.status)}
+                </div>
+
+                {/* CARD BODY */}
+                <div className="px-5 pb-4 space-y-3.5 flex-1">
+                  {/* vehicle */}
+                  <div className="flex items-center gap-3">
+                    <div className="px-2.5 py-1.5 bg-[#FACC15] text-black font-black font-mono text-xs rounded border-b-2 border-yellow-600 tracking-[0.08em] shrink-0">{b.license_plate || "—"}</div>
+                    <div className="flex items-center gap-2 text-[11px] font-bold text-slate-300 uppercase tracking-wider truncate">
+                      <span className="w-2.5 h-2.5 rounded-full border border-white/20 shrink-0" style={{ background: b.car_color || "#334155" }}></span>
+                      <span className="truncate">{b.car_make || "Standard Fleet"}</span>
+                    </div>
+                  </div>
+                  {/* schedule */}
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="bg-[#1A2235]/60 border border-slate-800 rounded-xl px-3 py-2.5">
+                      <p className="text-[8px] font-black uppercase tracking-widest text-blue-400 flex items-center gap-1"><PlaneLanding className="w-3 h-3" /> Inbound</p>
+                      <p className="text-xs font-bold text-white tabular-nums mt-1">{formatDate(b.dropoff_date)} {b.dropoff_time || ""}</p>
+                    </div>
+                    <div className="bg-[#1A2235]/60 border border-slate-800 rounded-xl px-3 py-2.5">
+                      <p className="text-[8px] font-black uppercase tracking-widest text-amber-400 flex items-center gap-1"><PlaneTakeoff className="w-3 h-3" /> Return</p>
+                      <p className="text-xs font-bold text-white tabular-nums mt-1">{formatDate(b.pickup_date)} {b.pickup_time || ""}</p>
+                    </div>
+                  </div>
+                  {/* price + partner */}
+                  <div className="flex items-center justify-between pt-1">
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate">
+                      <Building2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <span className="truncate">{getCompanyName(b.company_id)}</span>
+                    </div>
+                    <span className="text-xl font-black text-white tabular-nums shrink-0">£{Number(b.total_price || 0).toFixed(2)}</span>
+                  </div>
+                </div>
+
+                {/* CARD FOOTER — quick-status (NEW FEATURE 2) + ALL actions */}
+                <div className="px-4 py-3.5 border-t border-slate-800 bg-[#0F1523]/60 space-y-2.5" onClick={(e) => e.stopPropagation()}>
+                  {/* quick status */}
+                  <div className="relative">
+                    <select
+                      value={b.status?.toLowerCase() || "pending"}
+                      onChange={(e) => quickStatus(b, e.target.value)}
+                      className="w-full appearance-none bg-[#1A2235] border rounded-lg py-2 pl-3 pr-7 text-[9px] font-black uppercase tracking-widest text-white outline-none cursor-pointer transition-all focus:ring-2 focus:ring-blue-500/40"
+                      style={{ borderColor: `${statusAccentColor(b.status)}66` }}
+                    >
+                      <option value="pending" className="bg-[#1A2235]">Set Status: Pending</option>
+                      <option value="confirmed" className="bg-[#1A2235]">Set Status: Confirmed</option>
+                      <option value="parked" className="bg-[#1A2235]">Set Status: Parked</option>
+                      <option value="completed" className="bg-[#1A2235]">Set Status: Completed</option>
+                      <option value="cancelled" className="bg-[#1A2235]">Set Status: Voided</option>
+                    </select>
+                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-500 pointer-events-none" />
+                  </div>
+                  {/* full action row */}
+                  <div className="flex items-center gap-1.5">
+                    <button title="Email customer" onClick={() => sendManualEmail(b, "customer")} className="flex-1 flex items-center justify-center p-2 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white rounded-lg border border-blue-500/20 transition-all active:scale-95"><Receipt className="w-4 h-4" /></button>
+                    <button title="Email provider" onClick={() => sendManualEmail(b, "provider")} className="flex-1 flex items-center justify-center p-2 bg-purple-500/10 text-purple-400 hover:bg-purple-500 hover:text-white rounded-lg border border-purple-500/20 transition-all active:scale-95"><Briefcase className="w-4 h-4" /></button>
+                    <button title="WhatsApp dispatch" onClick={() => sendToWhatsApp(b)} className="flex-1 flex items-center justify-center p-2 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-lg border border-emerald-500/20 transition-all active:scale-95"><MessageCircle className="w-4 h-4" /></button>
+                    {b.status?.toLowerCase() === "completed" && (
+                      <button title="Request review" onClick={() => handleRequestReview(b)} className="flex-1 flex items-center justify-center p-2 bg-amber-500/10 text-amber-400 hover:bg-amber-500 hover:text-white rounded-lg border border-amber-500/20 transition-all active:scale-95"><Star className="w-4 h-4 fill-current" /></button>
+                    )}
+                    <button title="Edit record" onClick={() => setEditingBooking(b)} className="flex-1 flex items-center justify-center p-2 bg-[#1A2235] text-slate-300 hover:bg-blue-600 hover:text-white rounded-lg border border-slate-700 transition-all active:scale-95"><Settings2 className="w-4 h-4" /></button>
+                    <button title="Delete record" onClick={() => deleteBooking(b.id, b.booking_ref)} className="flex-1 flex items-center justify-center p-2 bg-[#1A2235] text-slate-500 hover:bg-red-500 hover:text-white rounded-lg border border-slate-700 transition-all active:scale-95"><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 🟢 DOSSIER MODAL — full record + all dispatch actions */}
+        {viewBooking && (
+          <div className="fixed inset-0 z-[200] bg-[#0B1120]/95 backdrop-blur-md flex items-center justify-center p-0 sm:p-6 animate-in fade-in duration-150" onClick={() => setViewBooking(null)}>
+            <div className="bg-[#131A2B] border border-slate-800 w-full max-w-2xl sm:rounded-3xl h-full sm:h-auto sm:max-h-[92vh] flex flex-col shadow-2xl overflow-hidden relative animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+              <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent z-10"></div>
+              {renderDetail(viewBooking)}
+            </div>
+          </div>
+        )}
 
         {/* 🟢 FIXED MOBILE BOTTOM NAV */}
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] px-2 pb-6 pt-2 bg-gradient-to-t from-[#0B1120] via-[#0B1120]/95 to-transparent pointer-events-none">
