@@ -1,15 +1,22 @@
 // @ts-nocheck
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
+import { rateLimit, getClientIp } from "@/app/lib/rateLimit";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function GET(req: Request) {
+  const rl = rateLimit(`verify-session:${getClientIp(req)}`, 20, 60_000);
+  if (!rl.ok) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } });
+  }
+
   const { searchParams } = new URL(req.url);
   const sessionId = searchParams.get("session_id");
 
-  if (!sessionId) {
-    return NextResponse.json({ error: "Missing session ID" }, { status: 400 });
+  // Validate the shape so this can't be used to probe arbitrary Stripe objects.
+  if (!sessionId || !/^cs_[A-Za-z0-9_]+$/.test(sessionId)) {
+    return NextResponse.json({ error: "Missing or invalid session ID" }, { status: 400 });
   }
 
   try {

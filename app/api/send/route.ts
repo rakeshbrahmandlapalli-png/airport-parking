@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { sendBookingReceipt, sendProviderNotification, sendReviewRequest } from "@/app/lib/mail";
 import { Resend } from "resend";
-import { createClient } from '@supabase/supabase-js'; 
+import { createClient } from '@supabase/supabase-js';
+import { rateLimit, getClientIp } from "@/app/lib/rateLimit";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -72,9 +73,13 @@ function getExclusiveInstructions(booking: any) {
 
 
 export async function POST(req: Request) {
+  const rl = rateLimit(`send:${getClientIp(req)}`, 20, 60_000);
+  if (!rl.ok) {
+    return NextResponse.json({ success: false, error: "Too many requests." }, { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } });
+  }
   try {
     const body = await req.json();
-    
+
     // --- CASE 1: GENERAL CONTACT FORM INQUIRY ---
     if (body.message && body.name) {
       const { name, email, reference, message } = body;

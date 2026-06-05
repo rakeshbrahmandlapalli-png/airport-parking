@@ -8,24 +8,55 @@
  */
 
 import { useState, useEffect, useRef } from "react";
-import { Send, Minus, Bot, ShieldCheck, Plane } from "lucide-react";
+import { Send, Minus, Bot, ShieldCheck, Mail, Volume2, VolumeX, CheckCircle2, Loader2 } from "lucide-react";
 import { useChat } from "@ai-sdk/react";
 import type { Message, ToolInvocation } from "ai";
 
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+const STORAGE_KEY = "aero_chat_history_v1";
+const QUICK_REPLIES = [
+  "Heathrow parking prices",
+  "Luton Meet & Greet",
+  "Any discount codes?",
+  "Is there ULEZ?",
+];
+const WELCOME_MESSAGE: Message = {
+  id: "welcome",
+  role: "assistant",
+  content:
+    "Hi, I'm Aero! ✈️ I can check live rates for Heathrow and Luton, find discount codes, and build your booking. How can I help?",
+};
+
+// Detect an airport mention in free chat text for the email-quote lead.
+function detectAirport(messages: Message[]): string {
+  const text = messages.map((m) => m.content || "").join(" ").toLowerCase();
+  if (text.includes("heathrow") || text.includes("lhr")) return "Heathrow (LHR)";
+  return "Luton (LTN)";
+}
+
 // ─── RESULT TYPES ─────────────────────────────────────────────────────────────
 interface PriceRate {
-  provider:  string;
-  type:      string;
-  dailyRate: number;
+  provider:   string;
+  type:       string;
+  dailyRate:  number | null;
+  total?:     number | null;
+  priceType?: 'total' | 'from-daily';
 }
 interface CheckLivePricesResult {
   airport?: string;
   rates?:   PriceRate[];
+  dated?:   boolean;
   error?:   string;
 }
 interface BuildBookingResult {
   success?: boolean;
   url?:     string;
+}
+interface GetPromoResult {
+  hasPromo?:        boolean;
+  code?:            string;
+  discountPercent?: number;
+  message?:         string;
 }
 
 // ─── TOOL BLOCK ───────────────────────────────────────────────────────────────
@@ -45,22 +76,44 @@ function ToolBlock({ tool }: { tool: ToolInvocation }) {
     return (
       <div className="mt-3 space-y-2">
         <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">
-          Live rates — {data.airport}
+          {data.dated ? "Live total for your dates" : "Live rates"} — {data.airport}
         </p>
-        {data.rates.map((r, i) => (
-          <div key={i} className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5">
-            <div>
-              <p className="text-xs font-black text-slate-800 leading-tight">{r.provider}</p>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                {r.type?.replace("-", " ")}
-              </p>
+        {data.rates.map((r, i) => {
+          const hasTotal = r.total != null && Number(r.total) > 0;
+          return (
+            <div key={i} className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5">
+              <div>
+                <p className="text-xs font-black text-slate-800 leading-tight">{r.provider}</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                  {r.type?.replace("-", " ")}
+                </p>
+              </div>
+              <span className="text-sm font-black text-blue-600 text-right">
+                {hasTotal ? (
+                  <>£{Number(r.total).toFixed(2)}<span className="text-[9px] font-bold text-slate-400"> total</span></>
+                ) : r.dailyRate != null ? (
+                  <><span className="text-[9px] font-bold text-slate-400">from </span>£{Number(r.dailyRate).toFixed(2)}<span className="text-[9px] font-bold text-slate-400">/day</span></>
+                ) : null}
+              </span>
             </div>
-            <span className="text-sm font-black text-blue-600">
-              £{Number(r.dailyRate).toFixed(2)}
-              <span className="text-[9px] font-bold text-slate-400">/day</span>
-            </span>
-          </div>
-        ))}
+          );
+        })}
+      </div>
+    );
+  }
+
+  if (tool.toolName === "getActivePromo" && tool.state === "result") {
+    const data = tool.result as GetPromoResult;
+    if (!data?.hasPromo || !data.code) return null;
+    return (
+      <div className="mt-3 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-3 flex items-center gap-3">
+        <span className="text-lg">🎟️</span>
+        <div>
+          <p className="text-xs font-black text-emerald-700 tracking-wide">
+            {data.discountPercent}% OFF · code <span className="font-mono">{data.code}</span>
+          </p>
+          <p className="text-[10px] font-bold text-emerald-600/80">Apply at checkout</p>
+        </div>
       </div>
     );
   }
@@ -79,6 +132,7 @@ function ToolBlock({ tool }: { tool: ToolInvocation }) {
     return (
       <a
         href={data.url}
+        onClick={() => { try { (window as any).gtag?.("event", "chat_booking_click", { destination: data.url }); } catch {} }}
         className="inline-block mt-3 bg-blue-600 text-white px-5 py-3 rounded-xl text-xs font-black uppercase tracking-wider hover:bg-blue-700 transition-all shadow-md active:scale-95"
       >
         👉 View Custom Parking Options
@@ -131,30 +185,130 @@ function TypingIndicator() {
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
+  const [showNudge, setShowNudge] = useState(false);
+  const [ttsOn, setTtsOn] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [leadEmail, setLeadEmail] = useState("");
+  const [leadStatus, setLeadStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const spokenRef = useRef<Set<string>>(new Set());
 
   const {
     messages,
     input,
     handleInputChange,
     handleSubmit,
+    append,
+    setMessages,
     isLoading,
     error,
   } = useChat({
     api:      "/api/chat",
     maxSteps: 5,
-    initialMessages: [{
-      id:      "welcome",
-      role:    "assistant",
-      content: "Hi, I'm Aero! ✈️ I'm currently scanning live rates for Heathrow and Luton. How can I assist with your secure parking today?",
-    }],
+    initialMessages: [WELCOME_MESSAGE],
   });
 
+  // ── Restore persisted conversation on mount ──────────────────────────────
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const saved = JSON.parse(raw) as Message[];
+        if (Array.isArray(saved) && saved.length > 1) setMessages(saved);
+      }
+    } catch { /* ignore corrupt storage */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Persist conversation whenever it changes ─────────────────────────────
+  useEffect(() => {
+    try {
+      if (messages.length > 1) localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-40)));
+    } catch { /* quota / private mode — ignore */ }
+  }, [messages]);
+
+  // ── Auto-scroll ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
     }
   }, [messages, isLoading]);
+
+  // ── Proactive nudge after inactivity (once per session) ──────────────────
+  useEffect(() => {
+    if (isOpen) { setShowNudge(false); return; }
+    if (sessionStorage.getItem("aero_nudged")) return;
+    const t = setTimeout(() => {
+      if (!isOpen) {
+        setShowNudge(true);
+        try { sessionStorage.setItem("aero_nudged", "1"); } catch {}
+        try { (window as any).gtag?.("event", "chat_nudge_shown"); } catch {}
+      }
+    }, 25000);
+    return () => clearTimeout(t);
+  }, [isOpen]);
+
+  // ── Speak new assistant replies when TTS is enabled ──────────────────────
+  useEffect(() => {
+    if (!ttsOn || typeof window === "undefined" || !window.speechSynthesis) return;
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== "assistant" || !last.content || isLoading) return;
+    if (spokenRef.current.has(last.id)) return;
+    spokenRef.current.add(last.id);
+    try {
+      const u = new SpeechSynthesisUtterance(last.content.replace(/[*_#`]/g, ""));
+      u.rate = 1.05; u.pitch = 1; u.lang = "en-GB";
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    } catch { /* TTS unsupported — ignore */ }
+  }, [messages, ttsOn, isLoading]);
+
+  const openChat = () => {
+    setIsOpen(true);
+    setShowNudge(false);
+    try { (window as any).gtag?.("event", "chat_opened"); } catch {}
+  };
+
+  const closeChat = () => {
+    setIsOpen(false);
+    try { window.speechSynthesis?.cancel(); } catch {}
+  };
+
+  const sendQuickReply = (text: string) => {
+    try { (window as any).gtag?.("event", "chat_quick_reply", { reply: text }); } catch {}
+    append({ role: "user", content: text });
+  };
+
+  const toggleTts = () => {
+    setTtsOn((on) => {
+      if (on) { try { window.speechSynthesis?.cancel(); } catch {} }
+      return !on;
+    });
+  };
+
+  const submitLead = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(leadEmail.trim());
+    if (!valid || leadStatus === "sending") return;
+    setLeadStatus("sending");
+    try {
+      const res = await fetch("/api/email-quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: leadEmail.trim(), airport: detectAirport(messages), serviceType: "meet-greet" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.success) {
+        setLeadStatus("sent");
+        try { (window as any).gtag?.("event", "generate_lead", { source: "chatbot" }); } catch {}
+      } else {
+        setLeadStatus("error");
+      }
+    } catch { setLeadStatus("error"); }
+  };
+
+  // Show quick replies only at the very start of a conversation.
+  const showQuickReplies = messages.length <= 1 && !isLoading;
 
   return (
     <>
@@ -171,9 +325,24 @@ export default function Chatbot() {
         .chat-scroll { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent }
       `}</style>
 
+      {/* ── PROACTIVE NUDGE ───────────────────────────────────────────────── */}
+      {showNudge && !isOpen && (
+        <button
+          onClick={openChat}
+          aria-label="Open Aero — get a quote"
+          className="fixed bottom-24 right-6 z-50 max-w-[260px] bg-white border border-slate-200 rounded-2xl rounded-br-none shadow-[0_15px_40px_-10px_rgba(0,0,0,0.25)] px-4 py-3 text-left animate-in slide-in-from-bottom-2 fade-in"
+        >
+          <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1 flex items-center gap-1.5">
+            <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" /><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" /></span>
+            Aero
+          </p>
+          <p className="text-xs font-bold text-slate-700 leading-snug">👋 Need a price for Luton or Heathrow? I can check live rates in seconds.</p>
+        </button>
+      )}
+
       {/* ── FLOATING TRIGGER ──────────────────────────────────────────────── */}
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={openChat}
         aria-hidden={isOpen}
         tabIndex={isOpen ? -1 : 0}
         aria-label="Open AERO parking assistant"
@@ -240,7 +409,15 @@ export default function Chatbot() {
 
           <div className="flex items-center gap-2 relative z-10">
             <button
-              onClick={() => setIsOpen(false)}
+              onClick={toggleTts}
+              aria-label={ttsOn ? "Mute Aero voice" : "Enable Aero voice"}
+              aria-pressed={ttsOn}
+              className={`p-2.5 rounded-xl transition-all ${ttsOn ? "text-blue-400 bg-blue-500/10" : "text-slate-400 hover:text-white hover:bg-white/10"}`}
+            >
+              {ttsOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+            </button>
+            <button
+              onClick={closeChat}
               aria-label="Minimise chat"
               className="p-2.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-all"
             >
@@ -260,6 +437,20 @@ export default function Chatbot() {
 
           {isLoading && <TypingIndicator />}
 
+          {showQuickReplies && (
+            <div className="flex flex-wrap gap-2 mt-1">
+              {QUICK_REPLIES.map((q) => (
+                <button
+                  key={q}
+                  onClick={() => sendQuickReply(q)}
+                  className="bg-white border border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600 text-[11px] font-bold px-3.5 py-2 rounded-full transition-all active:scale-95 shadow-sm"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
+
           {error && (
             <div className="bg-red-50 border border-red-100 p-4 rounded-2xl text-red-600 text-[11px] font-bold uppercase tracking-wider text-center">
               AERO Connection Offline. Refreshing neural link...
@@ -267,8 +458,46 @@ export default function Chatbot() {
           )}
         </div>
 
+        {/* ── EMAIL QUOTE CAPTURE ─────────────────────────────────────────── */}
+        <div className="px-6 pt-3 bg-white shrink-0">
+          {leadStatus === "sent" ? (
+            <p className="flex items-center justify-center gap-2 text-[11px] font-bold text-emerald-600 py-1">
+              <CheckCircle2 className="w-4 h-4" /> Quote on its way — check your inbox.
+            </p>
+          ) : showEmailForm ? (
+            <form onSubmit={submitLead} className="flex items-center gap-2">
+              <input
+                type="email"
+                value={leadEmail}
+                onChange={(e) => { setLeadEmail(e.target.value); if (leadStatus === "error") setLeadStatus("idle"); }}
+                placeholder="your@email.com"
+                autoComplete="email"
+                aria-label="Email for your quote"
+                className="flex-1 bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-700 outline-none focus:border-blue-500 transition-all"
+              />
+              <button
+                type="submit"
+                disabled={leadStatus === "sending"}
+                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-[11px] font-black uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1.5"
+              >
+                {leadStatus === "sending" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send"}
+              </button>
+            </form>
+          ) : (
+            <button
+              onClick={() => setShowEmailForm(true)}
+              className="w-full flex items-center justify-center gap-2 text-[11px] font-bold text-slate-500 hover:text-blue-600 transition-colors py-1"
+            >
+              <Mail className="w-3.5 h-3.5" /> Email me this quote
+            </button>
+          )}
+          {leadStatus === "error" && (
+            <p className="text-rose-500 text-[10px] font-semibold text-center mt-1">Couldn't send — please try again.</p>
+          )}
+        </div>
+
         {/* ── INPUT ───────────────────────────────────────────────────────── */}
-        <div className="p-6 bg-white border-t border-slate-100 shrink-0">
+        <div className="p-6 pt-3 bg-white border-t border-slate-100 shrink-0">
           <form onSubmit={handleSubmit} className="flex items-center gap-3 relative">
             <div className="relative w-full">
               <input

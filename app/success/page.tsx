@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useState, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "../lib/supabase";
 import {
   CheckCircle2, Printer, Mail, MapPin, ArrowRight, Download,
   Loader2, Phone, Clock, CreditCard, AlertCircle, ShieldCheck, Plane,
@@ -188,82 +187,26 @@ function SuccessContent() {
         throw new Error(data.error || `Payment verification failed (${verifyRes.status}).`);
       }
 
-      const m      = data.metadata || {};
-      const amount = Number(data.amount) || 0;
-
-      // 2. Already written by webhook?
-      const { data: existing } = await supabase
-        .from("bookings")
-        .select("*")
-        .eq("stripe_session_id", sessionId)
-        .maybeSingle();
-
+      // 2–4. Ensure the booking row exists and fetch it — entirely server-side
+      // (service role). The bookings table needs no public access.
+      const syncRes = await fetch("/api/success/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+        signal,
+      });
       if (signal.aborted) return;
 
-      if (existing) {
-        setBooking(existing);
-        setStatus("success");
-        if (!conversionFiredRef.current) {
-          conversionFiredRef.current = true;
-          fireGoogleAdsConversion(Number(existing.total_price) || 0, sessionId, {
-            email: existing.email,
-            phone: existing.phone_number,
-          });
-        }
-        return;
+      const syncData = await syncRes.json().catch(() => ({}));
+      if (!syncRes.ok || !syncData.booking) {
+        throw new Error(syncData.error === "row-not-ready" ? "row-not-ready" : (syncData.error || "Could not load your booking."));
       }
 
-      // 3. Upsert — unique constraint on stripe_session_id prevents duplicates
-      const shortId = "APD-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+      const finalRow = syncData.booking;
+      const created  = Boolean(syncData.created);
 
-      // FIX: normalise all metadata field names here once so newRow is clean
-      const newRow = {
-        booking_ref:      shortId,
-        stripe_session_id: sessionId,
-        full_name:        m.full_name   || "Valued Customer",
-        email:            (data.customerEmail || m.email || "").trim().toLowerCase() || null,
-        phone_number:     data.customerPhone  || m.phone  || "N/A",
-        license_plate:    m.license_plate     || null,
-        car_make:         m.car_make          || "N/A",
-        car_color:        m.car_color         || "N/A",
-        service_type:     m.service_type      || "Premium Meet & Greet",
-        dropoff_date:     m.dropoff_date      || null,
-        dropoff_time:     m.dropoff_time      || null,
-        pickup_date:      m.pickup_date       || null,
-        pickup_time:      m.pickup_time       || null,
-        total_price:      amount,
-        flight_number:    m.flight_number     || "TBC",
-        airport:          m.airport           || "Luton (LTN)",
-        terminal:         m.terminal          || "Main Terminal",
-        company_id:       m.company_id        || null,
-        fast_track_count: Number(m.fast_track_count) || 0,
-        promo_code:       (m.promo_used && m.promo_used !== "None") ? m.promo_used : null,
-        status:           "confirmed",
-      };
-
-      const { error: upsertError } = await supabase
-        .from("bookings")
-        .upsert([newRow], { onConflict: "stripe_session_id", ignoreDuplicates: true });
-
-      if (upsertError) console.error("Supabase upsert error:", upsertError);
-      if (signal.aborted) return;
-
-      // 4. Read back the authoritative row
-      const { data: finalRow } = await supabase
-        .from("bookings")
-        .select("*")
-        .eq("stripe_session_id", sessionId)
-        .maybeSingle();
-
-      if (signal.aborted) return;
-
-      if (!finalRow) {
-        // Payment confirmed but row not yet readable — soft fail
-        throw new Error("row-not-ready");
-      }
-
-      // 5. Send confirmation email only if this client created the row
-      if (finalRow.booking_ref === shortId) {
+      // 5. Send confirmation email only if this request created the row
+      if (created) {
         try {
           await fetch("/api/send", {
             method: "POST",

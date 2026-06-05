@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { rateLimit, getClientIp } from "@/app/lib/rateLimit";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -31,6 +32,13 @@ function serviceLabel(type?: string) {
 }
 
 export async function POST(req: Request) {
+  const rl = rateLimit(`email-quote:${getClientIp(req)}`, 8, 60_000);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { success: false, error: "Too many requests. Please wait a moment." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } }
+    );
+  }
   try {
     const body = await req.json().catch(() => ({}));
     const {

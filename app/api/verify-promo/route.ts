@@ -11,7 +11,9 @@ const supabaseAdmin = createClient(
 );
 
 const GATEWAY_URL = "https://luton247airportparking.co.uk/agent/get_parking_price";
-const FALLBACK_TOKEN = "6a0b8fa913e0463e9ad0247";
+// Moved out of source code — set LUTON247_FALLBACK_TOKEN in your environment
+// (and rotate the old hardcoded token, which was previously committed).
+const FALLBACK_TOKEN = process.env.LUTON247_FALLBACK_TOKEN || process.env.LUTON247_API_TOKEN || "";
 
 export async function POST(req: Request) {
   try {

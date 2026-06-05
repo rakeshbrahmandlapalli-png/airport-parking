@@ -29,8 +29,20 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { drop_date, drop_time, return_date, return_time } = body;
 
-    // The token identifies which provider's rates come back.
-    const token = body.token_no || process.env.LUTON247_API_TOKEN;
+    // Resolve the gateway token SERVER-SIDE from the company id where possible,
+    // so we don't blindly trust a token supplied by the browser. Falls back to a
+    // client-supplied token / env for backward compatibility.
+    let token = body.token_no || process.env.LUTON247_API_TOKEN;
+    if (body.companyId) {
+      try {
+        const { data: c } = await supabaseAdmin
+          .from("companies")
+          .select("api_token")
+          .eq("id", body.companyId)
+          .maybeSingle();
+        if (c?.api_token) token = c.api_token;
+      } catch { /* fall back to supplied/env token */ }
+    }
 
     if (!token) {
       return NextResponse.json({ error: "Missing API token", rates: [] }, { status: 200 });

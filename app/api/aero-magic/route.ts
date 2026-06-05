@@ -2,10 +2,15 @@ import { openai } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { NextRequest } from 'next/server';
+import { rateLimit, getClientIp } from '@/app/lib/rateLimit';
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const MAX_PROMPT_LENGTH = 1000;
 const MODEL = 'gpt-4o-mini';
+const FALLBACK_MODEL = 'gpt-4o';
+// Generous enough for a real person refining a search, tight enough to stop abuse.
+const RATE_LIMIT = 15;
+const RATE_WINDOW_MS = 60_000;
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const formatDateForSystem = (isoStr: string): string => {
@@ -82,6 +87,16 @@ export type AeroResponse = z.infer<typeof AeroSchema>;
 
 // ─── POST HANDLER ─────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
+
+  // 0. Rate limit — best-effort per-IP guard against runaway OpenAI cost.
+  const ip = getClientIp(req);
+  const rl = rateLimit(`aero-magic:${ip}`, RATE_LIMIT, RATE_WINDOW_MS);
+  if (!rl.ok) {
+    return Response.json(
+      { error: "You're searching very fast. Please wait a few seconds and try again." },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSec) } }
+    );
+  }
 
   // 1. Parse body
   let body: any;
@@ -188,16 +203,40 @@ LAST MINUTE THRESHOLD: Any travel on or before ${in48hrs} counts as last-minute.
   2. dropoffDate is a real YYYY-MM-DD
   3. pickupDate is a real YYYY-MM-DD
   4. servicePreference is 'meet-greet' or 'park-ride'
-  If ANY is vague, assumed, or missing → FALSE.`;
+  If ANY is vague, assumed, or missing → FALSE.
 
-  // 4. Call AI
+[13] SCOPE GUARDRAIL
+  - You ONLY handle airport parking searches for Luton (LTN) and Heathrow (LHR).
+  - If the prompt is off-topic (jokes, general questions, other airports, anything
+    unrelated to parking), still return valid JSON: default airport "Luton (LTN)",
+    set confidence ≤ 0.2, isReadyToBook=false, and put a polite redirect in aeroTip
+    like "I'm Aero — I help with Luton & Heathrow parking. Tell me your dates and I'll find you a price." Do not invent dates for off-topic prompts; use today + 7 days as neutral placeholders.`;
+
+  // 4. Call AI — with one fallback to a stronger model if the mini model
+  //    rate-limits or fails to produce schema-valid output.
   try {
-    const { object, usage } = await generateObject({
-      model:  openai(MODEL),
-      system: systemPrompt,
-      schema: AeroSchema,
-      prompt: trimmedPrompt,
-    });
+    let object: AeroResponse;
+    let usage: any;
+    try {
+      const r = await generateObject({
+        model:  openai(MODEL),
+        system: systemPrompt,
+        schema: AeroSchema,
+        prompt: trimmedPrompt,
+      });
+      object = r.object;
+      usage  = r.usage;
+    } catch (primaryErr: any) {
+      console.warn('[Aero Magic] Primary model failed, retrying with fallback:', primaryErr?.message);
+      const r = await generateObject({
+        model:  openai(FALLBACK_MODEL),
+        system: systemPrompt,
+        schema: AeroSchema,
+        prompt: trimmedPrompt,
+      });
+      object = r.object;
+      usage  = r.usage;
+    }
 
     // Dev logging
     if (process.env.NODE_ENV === 'development') {

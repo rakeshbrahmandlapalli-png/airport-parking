@@ -17,6 +17,7 @@ import Link from "next/link";
 import { Suspense, useState, useMemo, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { computePrice, calculateDays, loadPricingSettings, DEFAULT_SETTINGS, type PricingSettings } from "../lib/pricing";
+import { sanitizeHtml } from "../lib/sanitizeHtml";
 
 // ─── LIVE ACTIVITY TICKER ─────────────────────────────────────────────────────
 function LiveActivity() {
@@ -156,9 +157,9 @@ function DetailPanel({ option, isHeathrow }: any) {
           ))}
         </div>
         <div className="p-4 sm:p-6 min-h-[80px]">
-          {activeTab === "overview" && <div className="text-xs leading-relaxed text-slate-300" dangerouslySetInnerHTML={{ __html: option.overview || "Professional secure parking service with 24/7 patrols." }} />}
-          {activeTab === "arrival"  && <div className="text-xs leading-relaxed text-slate-300" dangerouslySetInnerHTML={{ __html: arrivalInstructions || "Drive directly to the terminal and call 20 mins before arrival." }} />}
-          {activeTab === "return"   && <div className="text-xs leading-relaxed text-slate-300" dangerouslySetInnerHTML={{ __html: returnInstructions  || "Call the dispatch team after clearing customs." }} />}
+          {activeTab === "overview" && <div className="text-xs leading-relaxed text-slate-300" dangerouslySetInnerHTML={{ __html: sanitizeHtml(option.overview) || "Professional secure parking service with 24/7 patrols." }} />}
+          {activeTab === "arrival"  && <div className="text-xs leading-relaxed text-slate-300" dangerouslySetInnerHTML={{ __html: sanitizeHtml(arrivalInstructions) || "Drive directly to the terminal and call 20 mins before arrival." }} />}
+          {activeTab === "return"   && <div className="text-xs leading-relaxed text-slate-300" dangerouslySetInnerHTML={{ __html: sanitizeHtml(returnInstructions)  || "Call the dispatch team after clearing customs." }} />}
           {activeTab === "map" && (
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
@@ -612,7 +613,9 @@ function ResultsContent() {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({
-                        token_no:    c.api_token,
+                        // Server resolves the token from the company id — the
+                        // browser no longer needs to send the secret token.
+                        companyId:   c.id,
                         drop_date:   dropoff,
                         drop_time:   dropTime,
                         return_date: pickup,

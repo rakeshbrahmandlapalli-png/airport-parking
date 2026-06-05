@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { rateLimit, getClientIp } from '@/app/lib/rateLimit';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: Request) {
+  const rl = rateLimit(`notify-admin:${getClientIp(request)}`, 8, 60_000);
+  if (!rl.ok) {
+    return NextResponse.json({ success: false, error: 'Too many requests.' }, { status: 429, headers: { 'Retry-After': String(rl.retryAfterSec) } });
+  }
   try {
     const body = await request.json();
     const { type, ref, oldDate, newDate, addedCost, oldFlight, newFlight } = body;

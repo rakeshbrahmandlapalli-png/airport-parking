@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "../lib/supabase";
 import {
   Ticket, Calendar, Loader2, ArrowRight, Printer, User, MapPin,
   CheckCircle2, Car, PlaneTakeoff, CalendarPlus, CreditCard, Lock,
@@ -9,6 +8,7 @@ import {
   XCircle, Phone, Info
 } from "lucide-react";
 import Link from "next/link";
+import { sanitizeHtml } from "../lib/sanitizeHtml";
 
 // Parse YYYY-MM-DD as a LOCAL date (avoids the UTC midnight day-shift bug).
 function parseLocalDate(dateStr: string): Date {
@@ -65,44 +65,25 @@ export default function ManageBooking() {
     setNewPickupDate("");
 
     try {
-      let query = supabase.from("bookings").select("*");
+      // Looked up server-side (service role) so the bookings table is never
+      // exposed to the public key. Both ref AND name are required as proof.
+      const res = await fetch("/api/manage/lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ref: ref.trim(), fullName: fullName.trim() }),
+      });
+      const result = await res.json();
 
-      if (ref.trim() && fullName.trim()) {
-        query = query.eq("booking_ref", ref.toUpperCase().trim()).ilike("full_name", `%${fullName.trim()}%`);
-      } else if (ref.trim()) {
-        query = query.eq("booking_ref", ref.toUpperCase().trim());
-      } else if (fullName.trim()) {
-        query = query.ilike("full_name", `%${fullName.trim()}%`);
-      }
-
-      // FIX: limit(1) + ordered, so a shared name returns ONE row instead of
-      // throwing the "multiple (or no) rows returned" error that maybeSingle gives.
-      const { data: rows, error: dbError } = await query
-        .order("created_at", { ascending: false })
-        .limit(1);
-
-      if (dbError) throw dbError;
-
-      const data = rows && rows.length ? rows[0] : null;
-
-      if (!data) {
-        setError("Reservation not found. Please try again with different details.");
+      if (!res.ok || !result.booking) {
+        setError(result.error || "Reservation not found. Please try again with different details.");
       } else {
-        setBooking(data);
-        setNewFlightNum(data.flight_number || "");
-
-        if (data.company_id) {
-          const { data: companyData } = await supabase
-            .from("companies")
-            .select("*")
-            .eq("id", data.company_id)
-            .maybeSingle();
-          if (companyData) setCompany(companyData);
-        }
+        setBooking(result.booking);
+        setNewFlightNum(result.booking.flight_number || "");
+        if (result.company) setCompany(result.company);
       }
     } catch (err: any) {
       console.error("Search Error:", err);
-      setError("An error occurred while connecting to the database.");
+      setError("An error occurred while connecting to the booking service.");
     } finally {
       setLoading(false);
     }
@@ -192,11 +173,16 @@ export default function ManageBooking() {
     }
     setFlightUpdateLoading(true);
     try {
-      const { error: updateError } = await supabase
-        .from("bookings")
-        .update({ flight_number: newFlightNum.toUpperCase() })
-        .eq("booking_ref", booking.booking_ref);
-      if (updateError) throw updateError;
+      const upd = await fetch("/api/manage/update-flight", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ref: booking.booking_ref,
+          fullName: booking.full_name,
+          flightNumber: newFlightNum.toUpperCase(),
+        }),
+      });
+      if (!upd.ok) { const e = await upd.json().catch(() => ({})); throw new Error(e.error || "Update failed"); }
 
       await fetch("/api/notify-admin", {
         method: "POST",
@@ -428,9 +414,9 @@ export default function ManageBooking() {
                           <div
                             className="text-sm text-slate-700 whitespace-pre-wrap"
                             dangerouslySetInnerHTML={{
-                              __html: booking.airport?.toLowerCase().includes("luton")
+                              __html: sanitizeHtml(booking.airport?.toLowerCase().includes("luton")
                                 ? (company.on_arrival_ltn || company.on_arrival || "Refer to confirmation email")
-                                : (company.on_arrival_lhr || company.on_arrival || "Refer to confirmation email")
+                                : (company.on_arrival_lhr || company.on_arrival || "Refer to confirmation email"))
                             }}
                           />
                         </div>
@@ -439,9 +425,9 @@ export default function ManageBooking() {
                           <div
                             className="text-sm text-slate-700 whitespace-pre-wrap"
                             dangerouslySetInnerHTML={{
-                              __html: booking.airport?.toLowerCase().includes("luton")
+                              __html: sanitizeHtml(booking.airport?.toLowerCase().includes("luton")
                                 ? (company.on_return_ltn || company.on_return || "Refer to confirmation email")
-                                : (company.on_return_lhr || company.on_return || "Refer to confirmation email")
+                                : (company.on_return_lhr || company.on_return || "Refer to confirmation email"))
                             }}
                           />
                         </div>

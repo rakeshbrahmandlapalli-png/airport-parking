@@ -29,7 +29,8 @@ const supabaseAdmin = createClient(
 
 // ─── CONSTANTS (kept in sync with /api/checkout) ──────────────────────────────
 const GATEWAY_URL = "https://luton247airportparking.co.uk/agent/get_parking_price";
-const FALLBACK_TOKEN = "6a0b8fa913e0463e9ad0247";
+// Moved out of source — set LUTON247_FALLBACK_TOKEN in your environment.
+const FALLBACK_TOKEN = process.env.LUTON247_FALLBACK_TOKEN || process.env.LUTON247_API_TOKEN || "";
 const AMENDMENT_FEE = 10.0;            // £10 flat amendment charge
 const MIN_EXTRA_CHARGE = 0.5;          // don't create a Stripe session for trivially small diffs
 

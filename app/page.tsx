@@ -35,6 +35,23 @@ function QuickTimes({ value, onChange, currentHour }: { value: string; onChange:
   );
 }
 
+// Reveals text character-by-character for a subtle "AI is thinking" effect.
+function Typewriter({ text, speed = 22 }: { text: string; speed?: number }) {
+  const [shown, setShown] = useState("");
+  useEffect(() => {
+    setShown("");
+    if (!text) return;
+    let i = 0;
+    const id = setInterval(() => {
+      i += 1;
+      setShown(text.slice(0, i));
+      if (i >= text.length) clearInterval(id);
+    }, speed);
+    return () => clearInterval(id);
+  }, [text, speed]);
+  return <>{shown}</>;
+}
+
 const TRUST = [
   { Icon: BadgeCheck,   label: "Fully Insured"       },
   { Icon: CheckCircle2, label: "Free Cancellation"   },
@@ -71,6 +88,8 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
   const [isListening,     setIsListening]     = useState(false);
   const [isThinking,      setIsThinking]      = useState(false);
   const [fastTrackStatus, setFastTrackStatus] = useState("");
+  const [magicError,      setMagicError]      = useState("");
+  const [magicParsed,     setMagicParsed]     = useState<{ data: any; p: any } | null>(null);
   const [formError,       setFormError]       = useState("");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [liveBookingCount, setLiveBookingCount] = useState(0);
@@ -84,10 +103,12 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
     setIsLoaded(true);
     getLaunchSlots().then(({ claimed, total }) => { setSlotsClaimed(claimed); setSlotsTotal(total); }).catch(() => {});
     
-    // 🟢 NEW: Poll for live booking count every 30s
+    // 🟢 Poll for live booking count every 30s — via a server route so the
+    // bookings table stays locked from the public anon key.
     const pollBookings = async () => {
       try {
-        const { count } = await supabase.from("bookings").select("*", { count: "exact", head: true }).neq("status", "cancelled");
+        const res = await fetch("/api/booking-count");
+        const { count } = await res.json();
         if (count) setLiveBookingCount(count);
       } catch (e) { console.error("Booking count poll failed:", e); }
     };
@@ -116,6 +137,8 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
 
   const handleMagicChange = (val: string) => {
     setMagicText(val);
+    if (magicError) setMagicError("");
+    if (magicParsed) setMagicParsed(null);
     const v = val.toLowerCase();
     if (!val) setMagicHint("");
     else if (v.includes("luton") || v.includes("ltn")) setMagicHint("📍 Luton Airport detected");
@@ -161,28 +184,62 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
 
   const handleMagicSubmit = async () => {
     if (!magicText.trim()) return;
-    setIsThinking(true); setFastTrackStatus("Aero is parsing your request...");
+    setIsThinking(true); setMagicError(""); setMagicParsed(null); setFastTrackStatus("Aero is parsing your request...");
     try {
       const res = await fetch("/api/aero-magic", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: magicText, currentDate: new Date().toISOString() }) });
       const data = await res.json();
+      if (!res.ok) {
+        setMagicError(data?.error || "Aero is busy right now — please use the manual form below.");
+        setIsThinking(false); return;
+      }
       if (data.airport && data.dropoffDate) {
         const p: any = { airport: data.airport, dropoffDate: data.dropoffDate, dropoffTime: data.dropoffTime, pickupDate: data.pickupDate, pickupTime: data.pickupTime, terminal: data.terminal || "", travelGroupType: data.travelGroupType, hasOversizedLuggage: String(data.hasOversizedLuggage || false), isRedEye: String(data.isRedEye || false), isLastMinute: String(data.isLastMinute || false), isBudgetFocused: String(data.isBudgetFocused || false), isFrequentFlyer: String(data.isFrequentFlyer || false), ulezRisk: String(data.ulezRisk || false), hasPet: String(data.hasPet || false), isWinter: String(data.isWinter || false), requiresCoveredParking: String(data.requiresCoveredParking || false), aeroTip: data.aeroTip || "", upsells: data.suggestedAncillaries?.join(",") || "", isCorporate: String(data.travelGroupType === "corporate") };
         if (data.servicePreference) p.type = data.servicePreference;
         if (data.flightNumber) p.flightNumber = data.flightNumber.toUpperCase();
-        if (data.isReadyToBook && data.servicePreference) {
-          setFastTrackStatus("Fast-Track Activated. Finding best operator...");
-          const isH = data.airport.includes("Heathrow");
-          const { data: cos } = await supabase.from("companies").select("*");
-          if (cos) {
-            const avail = cos.filter(c => { const cat = c.category?.toLowerCase().replace(/ & /g, "-").replace(/\s+/g, "-").trim(); return cat === data.servicePreference && (isH ? c.operates_at_heathrow : c.operates_at_luton) && c.is_active && !(isH ? c.lhr_sold_out : c.ltn_sold_out); }).sort((a, b) => { const af = isH ? a.lhr_featured : a.ltn_featured; const bf = isH ? b.lhr_featured : b.ltn_featured; if (af && !bf) return -1; if (!af && bf) return 1; return Number(isH ? a.heathrow_price : a.luton_price || 0) - Number(isH ? b.heathrow_price : b.luton_price || 0); });
-            if (avail.length > 0) { const best = avail[0]; setFastTrackStatus(`Secured ${best.name}. Teleporting to Checkout...`); router.push(`/checkout?${new URLSearchParams({ ...p, type: best.name, companyId: best.id }).toString()}`); return; }
-          }
+
+        // Analytics — a successful parse is a qualified lead signal.
+        try { (window as any).gtag?.("event", "generate_lead", { source: "aero_magic", currency: "GBP", value: 0 }); } catch { /* best-effort */ }
+
+        // Low confidence → ask one clarifying question instead of guessing.
+        if (typeof data.confidence === "number" && data.confidence < 0.55) {
+          setMagicError(data.aeroTip || "I need a little more detail — which airport, and your drop-off and pick-up dates?");
+          setIsThinking(false); return;
         }
-        setFastTrackStatus("Loading available operators...");
-        router.push(`/results?${new URLSearchParams(p).toString()}`);
-      } else { alert("Aero couldn't understand that. Please try again."); setIsThinking(false); }
-    } catch { alert("AI is resting. Please use the manual form below."); setIsThinking(false); }
+
+        // Show a confirmation card so the user can verify before we proceed.
+        setMagicParsed({ data, p });
+        setIsThinking(false);
+      } else {
+        setMagicError("I couldn't quite get that. Try e.g. “Meet & Greet at Heathrow next Friday for a week”.");
+        setIsThinking(false);
+      }
+    } catch { setMagicError("Aero is resting. Please use the manual form below."); setIsThinking(false); }
   };
+
+  const proceedFromMagic = async () => {
+    if (!magicParsed) return;
+    const { data, p } = magicParsed;
+    setIsThinking(true);
+    try {
+      if (data.isReadyToBook && data.servicePreference) {
+        setFastTrackStatus("Fast-Track Activated. Finding best operator...");
+        const isH = data.airport.includes("Heathrow");
+        const { data: cos } = await supabase.from("companies").select("*");
+        if (cos) {
+          const avail = cos.filter((c: any) => { const cat = c.category?.toLowerCase().replace(/ & /g, "-").replace(/\s+/g, "-").trim(); return cat === data.servicePreference && (isH ? c.operates_at_heathrow : c.operates_at_luton) && c.is_active && !(isH ? c.lhr_sold_out : c.ltn_sold_out); }).sort((a: any, b: any) => { const af = isH ? a.lhr_featured : a.ltn_featured; const bf = isH ? b.lhr_featured : b.ltn_featured; if (af && !bf) return -1; if (!af && bf) return 1; return Number(isH ? a.heathrow_price : a.luton_price || 0) - Number(isH ? b.heathrow_price : b.luton_price || 0); });
+          if (avail.length > 0) { const best = avail[0]; setFastTrackStatus(`Secured ${best.name}. Teleporting to Checkout...`); router.push(`/checkout?${new URLSearchParams({ ...p, type: best.name, companyId: best.id }).toString()}`); return; }
+        }
+      }
+      setFastTrackStatus("Loading available operators...");
+      router.push(`/results?${new URLSearchParams(p).toString()}`);
+    } catch { setMagicError("Something went wrong loading operators. Please try the manual form."); setIsThinking(false); }
+  };
+
+  const MAGIC_EXAMPLES = [
+    "Meet & Greet at Heathrow next Friday for a week",
+    "Cheap Luton parking, 2 weeks in August",
+    "BA123 from T5, back Sunday night",
+  ];
 
   const faqs = [
     { q: "How much does Meet & Greet parking cost at Luton Airport?",  a: "Our Luton Meet & Greet parking starts from around £44 for short stays, depending on your dates and chosen operator. Use the search form above for an exact price — it takes under 10 seconds." },
@@ -284,6 +341,51 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
                       </div>
                     </div>
                     <p className="text-center text-[8px] md:text-[9px] text-blue-300/70 uppercase tracking-widest mt-2 h-4" aria-live="polite">{isThinking ? fastTrackStatus : magicHint || "✨ Powered by Aero Intelligence"}</p>
+
+                    {/* Example prompt chips — only before any input/result */}
+                    {!magicText && !isThinking && !magicParsed && !magicError && (
+                      <div className="flex flex-wrap justify-center gap-1.5 mt-3">
+                        {MAGIC_EXAMPLES.map((ex) => (
+                          <button key={ex} type="button" onClick={() => { setMagicText(ex); handleMagicChange(ex); }}
+                            className="bg-white/5 hover:bg-white/15 border border-white/15 text-slate-300 hover:text-white text-[10px] font-semibold px-3 py-1.5 rounded-full transition-all active:scale-95">
+                            {ex}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Inline error / clarification (replaces the old browser alert) */}
+                    {magicError && !magicParsed && (
+                      <div className="mt-3 flex items-start gap-2 bg-amber-500/10 border border-amber-400/30 rounded-xl px-3 py-2.5 text-left animate-in fade-in">
+                        <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                        <p className="text-amber-100/90 text-xs font-medium leading-snug">{magicError}</p>
+                      </div>
+                    )}
+
+                    {/* Confirmation card — verify what Aero understood before proceeding */}
+                    {magicParsed && (
+                      <div className="mt-3 bg-[#0B1121]/80 border border-blue-500/40 rounded-2xl p-4 text-left shadow-xl animate-in fade-in slide-in-from-bottom-2">
+                        <p className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-blue-400 mb-2">
+                          <Sparkles className="w-3 h-3" /> Aero understood
+                        </p>
+                        <p className="text-white text-sm font-semibold leading-snug min-h-[2.5rem]">
+                          <Typewriter text={magicParsed.data.parsedSummary || magicParsed.data.aeroTip || "Your parking search is ready."} />
+                        </p>
+                        {magicParsed.data.aeroTip && magicParsed.data.parsedSummary && (
+                          <p className="text-blue-200/70 text-xs font-medium mt-2 leading-relaxed">{magicParsed.data.aeroTip}</p>
+                        )}
+                        <div className="flex items-center gap-2 mt-3">
+                          <button type="button" onClick={proceedFromMagic} disabled={isThinking}
+                            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white font-black uppercase tracking-widest text-[11px] rounded-xl transition-all active:scale-95">
+                            {isThinking ? <Loader2 className="w-4 h-4 animate-spin" /> : <>View Live Prices <ArrowRight className="w-4 h-4" /></>}
+                          </button>
+                          <button type="button" onClick={() => { setMagicParsed(null); setMagicText(""); setFastTrackStatus(""); }} disabled={isThinking}
+                            className="px-4 py-3 bg-white/5 hover:bg-white/15 text-slate-300 font-bold text-[11px] rounded-xl transition-all active:scale-95">
+                            Edit
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-4 mb-5 opacity-60" aria-hidden="true"><div className="h-px bg-white/20 flex-1" /><span className="text-[9px] uppercase tracking-[0.2em] text-slate-300 font-black whitespace-nowrap">Or select manually</span><div className="h-px bg-white/20 flex-1" /></div>

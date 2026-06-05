@@ -127,6 +127,10 @@ function CheckoutContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [liveApiRates, setLiveApiRates] = useState<any[]>([]);
+  // Tracks which company+dates the current liveApiRates belong to. Used to know
+  // when the live quote is still being confirmed, so the price doesn't visibly
+  // jump from the carried-over estimate to the live figure.
+  const [ratesKey, setRatesKey] = useState("");
   const [settings, setSettings] = useState<PricingSettings>(DEFAULT_SETTINGS);
 
   // NEW: price mismatch state
@@ -180,13 +184,18 @@ function CheckoutContent() {
   // ── Fetch live API rates ─────────────────────────────────────────────────────
   // FIX: use AbortController so stale in-flight requests don't overwrite newer ones
   useEffect(() => {
+    const key = `${company?.id || ""}|${dropDate}|${dropTime}|${pickDate}|${pickTime}`;
+
     if (!company?.api_token || !airport.toLowerCase().includes("luton") || !dropDate || !pickDate) {
       setLiveApiRates([]);
+      setRatesKey(key); // settled — no live quote needed for this provider
       return;
     }
 
-    let apiPickTime = pickTime || "09:00";
-    if (dropDate === pickDate && dropTime >= apiPickTime) apiPickTime = "23:59";
+    // FIX: same-day return-time logic now MATCHES the results page exactly, so
+    // both pages query the gateway identically and return the same price.
+    const isSameDay = dropDate === pickDate;
+    const apiPickTime = isSameDay ? "23:59" : (pickTime || "09:00");
 
     const controller = new AbortController();
 
@@ -195,7 +204,8 @@ function CheckoutContent() {
       headers: { "Content-Type": "application/json" },
       signal: controller.signal,
       body: JSON.stringify({
-        token_no:    company.api_token,
+        // Token resolved server-side from the company id.
+        companyId:   company.id,
         drop_date:   dropDate,
         drop_time:   dropTime || "09:00",
         return_date: pickDate,
@@ -210,12 +220,14 @@ function CheckoutContent() {
         // Support both { rates: [...] } envelope and raw array
         const rates = Array.isArray(data) ? data : (Array.isArray(data?.rates) ? data.rates : []);
         setLiveApiRates(rates);
+        setRatesKey(key);
       })
       .catch(err => {
         if (err.name !== "AbortError") {
           console.error("Live API Error:", err);
+          setLiveApiRates([]);
+          setRatesKey(key); // settled (failed) — fall back to estimate
         }
-        setLiveApiRates([]);
       });
 
     return () => controller.abort();
@@ -377,6 +389,16 @@ function CheckoutContent() {
   // FIX: clamp finalTotal to >= 0 so a huge promo can't produce a negative total
   const finalTotal        = Math.max(0, priceData.final - discountAmount + addOnsTotal);
   const isDiscounted      = priceData.modifier < 1.0;
+
+  // ── Live-price resolution gate ────────────────────────────────────────────
+  // True while we're still confirming the live gateway quote, so the UI shows a
+  // "Confirming live price…" state instead of flashing the estimate then the
+  // live figure. Covers: company still loading, and (for live-API Luton
+  // providers) the live quote for the CURRENT dates not yet returned.
+  const expectsLiveQuote = !!(company?.api_token && airport.toLowerCase().includes("luton") && dropDate && pickDate);
+  const currentRatesKey  = `${company?.id || ""}|${dropDate}|${dropTime}|${pickDate}|${pickTime}`;
+  const companyPending   = !!(urlId || urlName) && !company;
+  const priceResolving   = companyPending || (expectsLiveQuote && ratesKey !== currentRatesKey);
 
   // ── Modify search ────────────────────────────────────────────────────────────
   const handleSearchUpdate = (newQueryString: string) => {
@@ -835,11 +857,13 @@ function CheckoutContent() {
             {/* MOBILE PAY BUTTON */}
             <div className="block lg:hidden mt-6 pb-8">
               <button
-                type="submit" form="checkout-form" disabled={isProcessing || !!hasDateIssue}
+                type="submit" form="checkout-form" disabled={isProcessing || !!hasDateIssue || priceResolving}
                 className="w-full h-16 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white font-black text-base rounded-2xl flex items-center justify-center gap-3 shadow-[0_15px_30px_-5px_rgba(37,99,235,0.4)] active:scale-95 transition-all uppercase tracking-widest touch-manipulation"
               >
                 {isProcessing
                   ? <><Loader2 className="w-5 h-5 animate-spin" /> Preparing...</>
+                  : priceResolving
+                  ? <><Loader2 className="w-5 h-5 animate-spin" /> Confirming price…</>
                   : <><Lock className="w-5 h-5" /> Pay £{finalTotal.toFixed(2)}</>}
               </button>
               <p className="text-center text-[10px] text-slate-400 mt-4 font-bold px-2 leading-relaxed">
@@ -1002,12 +1026,18 @@ function CheckoutContent() {
                 <div className="flex justify-between text-sm text-slate-400 font-bold">
                   <span>Parking Rate ({bookingDays} {bookingDays === 1 ? "day" : "days"})</span>
                   <div className="text-right">
-                    {isDiscounted && (
-                      <span className="text-xs text-slate-500 line-through block mb-0.5">£{priceData.original.toFixed(2)}</span>
+                    {priceResolving ? (
+                      <span className="inline-block h-4 w-16 rounded bg-slate-700/60 animate-pulse align-middle" />
+                    ) : (
+                      <>
+                        {isDiscounted && (
+                          <span className="text-xs text-slate-500 line-through block mb-0.5">£{priceData.original.toFixed(2)}</span>
+                        )}
+                        <span className={`font-black ${discount.active ? "text-slate-500 line-through" : isDiscounted ? "text-emerald-400" : "text-white"}`}>
+                          £{priceData.final.toFixed(2)}
+                        </span>
+                      </>
                     )}
-                    <span className={`font-black ${discount.active ? "text-slate-500 line-through" : isDiscounted ? "text-emerald-400" : "text-white"}`}>
-                      £{priceData.final.toFixed(2)}
-                    </span>
                   </div>
                 </div>
                 {discount.active && (
@@ -1036,19 +1066,27 @@ function CheckoutContent() {
 
               <div className="flex flex-col items-end mb-8">
                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Total Due Today</span>
-                <span className="text-5xl font-black tracking-tighter text-blue-400 drop-shadow-lg">
-                  £{finalTotal.toFixed(2)}
-                </span>
+                {priceResolving ? (
+                  <span className="flex items-center gap-2 text-blue-400 text-lg font-black tracking-tight">
+                    <Loader2 className="w-5 h-5 animate-spin" /> Confirming live price…
+                  </span>
+                ) : (
+                  <span className="text-5xl font-black tracking-tighter text-blue-400 drop-shadow-lg">
+                    £{finalTotal.toFixed(2)}
+                  </span>
+                )}
               </div>
 
               <div className="hidden lg:block">
                 <button
                   type="submit" form="checkout-form"
-                  disabled={isProcessing || !!hasDateIssue}
+                  disabled={isProcessing || !!hasDateIssue || priceResolving}
                   className="w-full h-16 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:border disabled:border-slate-700 disabled:text-slate-500 text-white font-black text-lg rounded-2xl flex items-center justify-center gap-3 shadow-[0_15px_30px_-5px_rgba(37,99,235,0.4)] active:scale-95 transition-all uppercase tracking-widest touch-manipulation"
                 >
                   {isProcessing
                     ? <><Loader2 className="w-6 h-6 animate-spin" /> Processing...</>
+                    : priceResolving
+                    ? <><Loader2 className="w-6 h-6 animate-spin" /> Confirming price…</>
                     : <><Lock className="w-5 h-5" /> Proceed to Payment</>}
                 </button>
                 <p className="text-center text-[10px] text-slate-500 mt-4 font-bold px-2 leading-relaxed">

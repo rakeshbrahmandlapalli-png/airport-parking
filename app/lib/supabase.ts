@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -10,16 +10,13 @@ if (!supabaseUrl || !supabaseKey) {
 }
 
 /**
- * 2. OPS CENTER OPTIMIZED CLIENT
- * We enable 'realtime' configuration here so your Live Dispatch 
- * board updates the second a customer pays via Stripe.
+ * 2. COOKIE-BASED BROWSER CLIENT (@supabase/ssr)
+ * The admin session is now stored in cookies (not localStorage) so the Next.js
+ * middleware can verify it on the server and truly gate /admin — not just hide
+ * the UI. Realtime is enabled so the Live Dispatch board updates the moment a
+ * customer pays via Stripe.
  */
-export const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-  },
+export const supabase = createBrowserClient(supabaseUrl, supabaseKey, {
   realtime: {
     params: {
       eventsPerSecond: 10, // Optimized for busy booking days
