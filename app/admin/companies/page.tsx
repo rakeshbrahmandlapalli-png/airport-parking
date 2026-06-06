@@ -54,6 +54,7 @@ const defaultCompany = {
   ltn_featured: false,
   lhr_featured: false,
   overview: "",
+  email: "",
   phone_number: "",
   phone_number_2: "",
   map_location: "Terminal Forecourt",
@@ -1353,6 +1354,14 @@ export default function AdminCompaniesPage() {
                             <label className={labelCls}><Zap className="w-3 h-3 inline mr-1 text-amber-500" /> Dynamic Surcharge (%)</label>
                             <input type="number" step="0.5" min="0" value={getField(editingCompany, newCompany, "dynamic_surcharge_percent") || 0} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "dynamic_surcharge_percent", parseFloat(e.target.value) || 0)} className={`${inputCls} !text-xl !text-amber-400 [-webkit-text-fill-color:#fbbf24]`} />
                             <p className="text-[10px] text-slate-500 font-bold mt-1 leading-relaxed">Adds a % on top of the API base price to separate providers with same token. e.g. APD = 4% above base.</p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-6 pt-4 border-t border-slate-800/80">
+                          <div className="space-y-2">
+                            <label className={labelCls}><Phone className="w-3.5 h-3.5 inline mr-1 text-emerald-500" /> Operator Email (receives booking jobs)</label>
+                            <input type="email" autoComplete="off" placeholder="bookings@provider.co.uk" value={getField(editingCompany, newCompany, "email") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "email", e.target.value)} className={inputCls} />
+                            <p className="text-[10px] text-slate-500 font-bold leading-relaxed">New booking notifications for this provider are sent here. If left blank, they fall back to info@aeroparkdirect.co.uk.</p>
                           </div>
                         </div>
 

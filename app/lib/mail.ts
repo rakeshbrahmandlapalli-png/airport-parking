@@ -9,11 +9,12 @@ if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) throw new Error("NEXT_PUBLIC_SUP
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// NOTE: uses anon key — only for fallback company look-ups (public read).
-// If your RLS is strict, swap for SUPABASE_SERVICE_ROLE_KEY here.
+// Server-side mailer — prefer the service role so company look-ups keep working
+// regardless of how strict the RLS policies are. Falls back to the anon key if
+// the service role isn't configured (companies are public-read anyway).
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
 // Fast-track price kept in sync with the checkout route constant
@@ -27,11 +28,14 @@ const FAST_TRACK_PRICE = 8.00;
  */
 function formatEmailDate(dateStr: string | null | undefined): string {
   if (!dateStr) return "TBC";
-  const parts = dateStr.split("-").map(Number);
-  if (parts.length !== 3 || parts.some(isNaN)) return dateStr;
+  // FIX: handle full ISO timestamps ("2026-06-05T00:00:00Z") as well as plain
+  // "YYYY-MM-DD" — splitting on "T" first prevents printing a raw ISO string.
+  const datePart = String(dateStr).split("T")[0];
+  const parts = datePart.split("-").map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) return String(dateStr);
   const [y, m, d] = parts;
   return new Date(y, m - 1, d).toLocaleDateString("en-GB", {
-    weekday: "short", day: "numeric", month: "short",
+    weekday: "short", day: "numeric", month: "short", year: "numeric",
   });
 }
 
@@ -145,6 +149,12 @@ export async function sendBookingReceipt(
 
     const licencePlate = str(booking.license_plate);
 
+    // Receipt summary fields — the email previously showed no amount paid.
+    const totalPaidNum = Number(booking.total_price || 0);
+    const totalPaidStr = totalPaidNum > 0 ? `£${totalPaidNum.toFixed(2)}` : "Paid";
+    const serviceType  = str(booking.service_type, "Meet & Greet");
+    const flightNumber = str(booking.flight_number, "");
+
     const statusText  = isAmendment ? "Updated"   : "Confirmed";
     const statusColor = isAmendment ? "#3b82f6"   : "#059669";
     const statusBg    = isAmendment ? "#eff6ff"   : "#ecfdf5";
@@ -158,7 +168,9 @@ export async function sendBookingReceipt(
     const { data, error } = await resend.emails.send({
       from:    "AeroPark Direct <info@aeroparkdirect.co.uk>",
       to:      [recipientEmail],
-      bcc:     ["aeroparkdirect.co.uk+c6f8c1b490@invite.trustpilot.com"],
+      // FIX: only BCC the Trustpilot review-invite address for NEW bookings —
+      // an amendment shouldn't trigger a fresh review request.
+      ...(isAmendment ? {} : { bcc: ["aeroparkdirect.co.uk+c6f8c1b490@invite.trustpilot.com"] }),
       // FIX: subject used booking.licensePlate (camelCase) — swapped to canonical
       subject: `✈️ Booking ${statusText}: ${booking.booking_ref} [${licencePlate}]`,
       html: buildReceiptHtml({
@@ -168,6 +180,7 @@ export async function sendBookingReceipt(
         arrivalInstructions, returnInstructions,
         dropDate, pickDate, dropTime, pickTime,
         licencePlate, statusText, statusColor, statusBg,
+        totalPaidStr, serviceType, flightNumber,
       }),
     });
 
@@ -186,7 +199,7 @@ export async function sendBookingReceipt(
 // FIX: extracted from the function body so the main logic isn't buried in a
 //      template literal. Easier to diff and maintain.
 
-interface ReceiptHtmlParams {
+export interface ReceiptHtmlParams {
   booking: any;
   company: any;
   isAmendment: boolean;
@@ -208,105 +221,183 @@ interface ReceiptHtmlParams {
   statusText: string;
   statusColor: string;
   statusBg: string;
+  totalPaidStr: string;
+  serviceType: string;
+  flightNumber: string;
 }
 
-function buildReceiptHtml(p: ReceiptHtmlParams): string {
+export function buildReceiptHtml(p: ReceiptHtmlParams): string {
   const phone2Button = p.phone2
-    ? `<a href="tel:${p.phone2Link}" style="display:inline-block;background-color:#334155;color:#fff;text-decoration:none;padding:8px 15px;border-radius:6px;font-weight:800;font-size:12px;">📞 ${p.phone2}</a>`
+    ? `<a href="tel:${p.phone2Link}" style="display:inline-block;background-color:#334155;color:#ffffff;text-decoration:none;padding:9px 16px;border-radius:8px;font-weight:800;font-size:12px;margin-left:6px;">📞 ${p.phone2}</a>`
     : "";
 
+  const firstName = String(p.booking.full_name || "").trim().split(" ")[0];
+  const greeting  = firstName ? `You're all set, ${firstName}! ✈️` : "You're all set! ✈️";
+  const provider  = str(p.company?.name, "AeroPark Direct");
+
   return `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta name="x-apple-disable-message-reformatting">
+  <title>Booking ${p.statusText}</title>
 </head>
-<body style="font-family:-apple-system,system-ui,sans-serif;background-color:#f8fafc;margin:0;padding:0;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc;">
+<body style="margin:0;padding:0;background-color:#eef2f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<!-- Preheader -->
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">Booking ${p.booking.booking_ref} ${p.statusText.toLowerCase()} — ${p.totalPaidStr} paid. Your itinerary &amp; arrival steps are inside.</div>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#eef2f7;">
   <tr>
-    <td align="center" style="padding:40px 20px;">
-      <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color:#fff;border-radius:24px;border:1px solid #e2e8f0;overflow:hidden;box-shadow:0 4px 6px -1px rgba(0,0,0,.1);">
+    <td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%;background-color:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 10px 30px rgba(15,23,42,0.10);">
+
+        <!-- Accent bar -->
+        <tr><td style="height:5px;background-color:#2563eb;background-image:linear-gradient(90deg,#2563eb,#3b82f6,#10b981);font-size:0;line-height:0;">&nbsp;</td></tr>
 
         <!-- Header -->
         <tr>
-          <td style="background-color:#0f172a;padding:40px 30px;text-align:center;border-bottom:4px solid #2563eb;">
-            <h1 style="color:#fff;margin:0;font-size:28px;letter-spacing:-1px;font-weight:900;">AEROPARK<span style="color:#3b82f6;">DIRECT</span></h1>
+          <td style="background-color:#0b1220;padding:34px 32px 30px;text-align:center;">
+            <p style="margin:0;font-size:24px;font-weight:900;letter-spacing:-0.5px;color:#ffffff;">AEROPARK<span style="color:#3b82f6;">DIRECT</span></p>
+            <p style="margin:7px 0 0;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#64748b;font-weight:700;">Premium Airport Parking</p>
           </td>
         </tr>
 
-        <!-- Body -->
+        <!-- Status + greeting -->
         <tr>
-          <td style="padding:40px 30px;">
+          <td style="padding:32px 32px 0;text-align:center;">
+            <span style="display:inline-block;background-color:${p.statusBg};color:${p.statusColor};padding:7px 18px;border-radius:999px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;">● Booking ${p.statusText}</span>
+            <h1 style="margin:18px 0 6px;font-size:23px;font-weight:900;color:#0f172a;">${greeting}</h1>
+            <p style="margin:0;font-size:14px;color:#64748b;line-height:1.55;">Your premium parking space is reserved. Save this email — your itinerary and arrival steps are below.</p>
+          </td>
+        </tr>
 
-            <!-- Status & Ref -->
-            <div style="text-align:center;margin-bottom:30px;">
-              <span style="background-color:${p.statusBg};color:${p.statusColor};padding:6px 16px;border-radius:20px;font-size:11px;font-weight:900;text-transform:uppercase;">✓ ${p.statusText}</span>
-              <h2 style="margin:20px 0;font-size:42px;color:#0f172a;font-family:monospace;letter-spacing:4px;font-weight:900;">${p.booking.booking_ref}</h2>
-            </div>
+        <!-- Ticket: reference + total -->
+        <tr>
+          <td style="padding:24px 32px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#0f172a;background-image:linear-gradient(135deg,#0f172a 0%,#1e3a8a 100%);border-radius:16px;">
+              <tr>
+                <td style="padding:22px 24px;">
+                  <p style="margin:0;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#93c5fd;font-weight:800;">Booking Reference</p>
+                  <p style="margin:7px 0 0;font-size:28px;font-weight:900;letter-spacing:4px;color:#ffffff;font-family:'Courier New',Courier,monospace;">${p.booking.booking_ref}</p>
+                </td>
+                <td align="right" style="padding:22px 24px;">
+                  <p style="margin:0;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#93c5fd;font-weight:800;">Total Paid</p>
+                  <p style="margin:7px 0 0;font-size:26px;font-weight:900;color:#34d399;">${p.totalPaidStr}</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
 
-            <!-- Info card -->
-            <div style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:20px;padding:25px;margin-bottom:30px;">
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td style="padding-bottom:20px;">
-                    <p style="margin:0;font-size:10px;color:#64748b;text-transform:uppercase;font-weight:900;">Airport &amp; Terminal</p>
-                    <p style="margin:4px 0 0 0;font-size:18px;font-weight:900;color:#0f172a;">${p.booking.airport} • ${p.terminalKey}</p>
+        <!-- Trust row -->
+        <tr>
+          <td align="center" style="padding:18px 24px 0;font-size:11px;font-weight:700;color:#475569;">
+            🛡️ Fully Insured&nbsp;&nbsp;·&nbsp;&nbsp;✅ Free Cancellation&nbsp;&nbsp;·&nbsp;&nbsp;⭐ 4.8 Rated
+          </td>
+        </tr>
+
+        <!-- Summary card -->
+        <tr>
+          <td style="padding:22px 32px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;">
+              <tr>
+                <td style="padding:20px 22px 0;">
+                  <p style="margin:0;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:800;">Airport &amp; Terminal</p>
+                  <p style="margin:6px 0 0;font-size:17px;font-weight:900;color:#0f172a;">📍 ${p.booking.airport} • ${p.terminalKey}</p>
+                </td>
+              </tr>
+              <tr><td style="padding:16px 22px 0;"><div style="border-top:1px solid #e2e8f0;font-size:0;line-height:0;">&nbsp;</div></td></tr>
+              <tr>
+                <td style="padding:14px 22px 0;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+                    <td width="50%" valign="top">
+                      <p style="margin:0;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:800;">Drop-off</p>
+                      <p style="margin:6px 0 0;font-size:14px;font-weight:800;color:#0f172a;">${p.dropDate}</p>
+                      <p style="margin:2px 0 0;font-size:13px;color:#475569;">${p.dropTime}</p>
+                    </td>
+                    <td width="50%" valign="top">
+                      <p style="margin:0;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:800;">Pick-up</p>
+                      <p style="margin:6px 0 0;font-size:14px;font-weight:800;color:#0f172a;">${p.pickDate}</p>
+                      <p style="margin:2px 0 0;font-size:13px;color:#475569;">${p.pickTime}</p>
+                    </td>
+                  </tr></table>
+                </td>
+              </tr>
+              <tr><td style="padding:16px 22px 0;"><div style="border-top:1px solid #e2e8f0;font-size:0;line-height:0;">&nbsp;</div></td></tr>
+              <tr>
+                <td style="padding:14px 22px 20px;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+                    <td width="50%" valign="top">
+                      <p style="margin:0;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:800;">Vehicle</p>
+                      <p style="margin:6px 0 0;font-size:14px;font-weight:800;color:#0f172a;">🚗 ${p.licencePlate}</p>
+                    </td>
+                    <td width="50%" valign="top">
+                      <p style="margin:0;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:800;">Service</p>
+                      <p style="margin:6px 0 0;font-size:14px;font-weight:800;color:#0f172a;">${p.serviceType}</p>
+                      <p style="margin:2px 0 0;font-size:12px;color:#475569;">by ${provider}${p.flightNumber ? ` • Flight ${p.flightNumber}` : ""}</p>
+                    </td>
+                  </tr></table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Concierge block -->
+        <tr>
+          <td style="padding:22px 32px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#0f172a;border-radius:16px;">
+              <tr><td style="padding:24px 22px;">
+                <p style="margin:0 0 18px;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:1.5px;color:#ffffff;border-bottom:1px solid #334155;padding-bottom:14px;">🛎️ Aero Concierge — Your Arrival Plan</p>
+
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#1e293b;border-radius:10px;margin-bottom:14px;"><tr>
+                  <td style="padding:16px;border-left:4px solid #3b82f6;border-radius:10px;">
+                    <p style="margin:0 0 6px;font-size:11px;font-weight:900;color:#60a5fa;text-transform:uppercase;letter-spacing:0.5px;">✈️ On Arrival • ${p.dropDate} @ ${p.dropTime}</p>
+                    <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#ffffff;">${p.displayAddress}${p.displayPostcode ? `, ${p.displayPostcode}` : ""}</p>
+                    <p style="margin:0 0 12px;font-size:13px;color:#cbd5e1;line-height:1.55;">${p.arrivalInstructions}</p>
+                    <a href="tel:${p.phone1Link}" style="display:inline-block;background-color:#2563eb;color:#ffffff;text-decoration:none;padding:9px 16px;border-radius:8px;font-weight:800;font-size:12px;">📞 ${p.phone1}</a>${phone2Button}
                   </td>
-                </tr>
-                <tr>
-                  <td width="50%">
-                    <p style="margin:0;font-size:10px;color:#64748b;text-transform:uppercase;font-weight:900;">Registration</p>
-                    <p style="margin:4px 0 0 0;font-size:16px;font-weight:900;color:#0f172a;">${p.licencePlate}</p>
+                </tr></table>
+
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#1e293b;border-radius:10px;margin-bottom:18px;"><tr>
+                  <td style="padding:16px;border-left:4px solid #10b981;border-radius:10px;">
+                    <p style="margin:0 0 6px;font-size:11px;font-weight:900;color:#34d399;text-transform:uppercase;letter-spacing:0.5px;">🛬 On Return • ${p.pickDate} @ ${p.pickTime}</p>
+                    <p style="margin:0 0 12px;font-size:13px;color:#cbd5e1;line-height:1.55;">${p.returnInstructions}</p>
+                    <a href="tel:${p.phone1Link}" style="display:inline-block;background-color:#10b981;color:#ffffff;text-decoration:none;padding:9px 16px;border-radius:8px;font-weight:800;font-size:12px;">📞 ${p.phone1}</a>${phone2Button}
                   </td>
-                  <td width="50%">
-                    <p style="margin:0;font-size:10px;color:#64748b;text-transform:uppercase;font-weight:900;">Service Provider</p>
-                    <p style="margin:4px 0 0 0;font-size:14px;font-weight:700;color:#334155;">${str(p.company?.name, "AeroPark Direct")}</p>
-                  </td>
-                </tr>
-              </table>
-            </div>
+                </tr></table>
 
-            <!-- Concierge block -->
-            <div style="background-color:#0f172a;border-radius:20px;padding:24px;color:#fff;">
-              <h3 style="font-size:14px;font-weight:900;margin:0 0 20px 0;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #334155;padding-bottom:15px;">Aero Concierge System</h3>
+                <a href="${p.mapsLink}" style="display:block;text-align:center;background-color:#334155;color:#ffffff;text-decoration:none;padding:14px;border-radius:10px;font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:1px;">📍 View Airport Directions</a>
+              </td></tr>
+            </table>
+          </td>
+        </tr>
 
-              <!-- Inbound -->
-              <div style="background-color:#1e293b;border-left:4px solid #3b82f6;border-radius:8px;padding:15px;margin-bottom:15px;">
-                <p style="margin:0 0 5px 0;font-size:11px;font-weight:900;color:#3b82f6;text-transform:uppercase;">Inbound • ${p.terminalKey} • ${p.dropDate} @ ${p.dropTime}</p>
-                <p style="margin:0 0 10px 0;font-size:13px;font-weight:700;color:#fff;">${p.displayAddress}${p.displayPostcode ? `, ${p.displayPostcode}` : ""}</p>
-                <p style="margin:0 0 10px 0;font-size:13px;color:#f8fafc;line-height:1.5;">${p.arrivalInstructions}</p>
-                <a href="tel:${p.phone1Link}" style="display:inline-block;background-color:#2563eb;color:#fff;text-decoration:none;padding:8px 15px;border-radius:6px;font-weight:800;font-size:12px;margin-right:5px;">📞 ${p.phone1}</a>
-                ${phone2Button}
-              </div>
+        <!-- Manage CTA -->
+        <tr>
+          <td style="padding:22px 32px 0;">
+            <a href="https://www.aeroparkdirect.co.uk/manage" style="display:block;text-align:center;background-color:#2563eb;background-image:linear-gradient(90deg,#2563eb,#3b82f6);color:#ffffff;text-decoration:none;padding:16px;border-radius:12px;font-weight:900;font-size:14px;letter-spacing:0.3px;">Manage My Booking →</a>
+          </td>
+        </tr>
 
-              <!-- Return -->
-              <div style="background-color:#1e293b;border-left:4px solid #10b981;border-radius:8px;padding:15px;margin-bottom:20px;">
-                <p style="margin:0 0 5px 0;font-size:11px;font-weight:900;color:#10b981;text-transform:uppercase;">Return • ${p.terminalKey} • ${p.pickDate} @ ${p.pickTime}</p>
-                <p style="margin:0 0 10px 0;font-size:13px;color:#f8fafc;line-height:1.5;">${p.returnInstructions}</p>
-                <a href="tel:${p.phone1Link}" style="display:inline-block;background-color:#10b981;color:#fff;text-decoration:none;padding:8px 15px;border-radius:6px;font-weight:800;font-size:12px;margin-right:5px;">📞 ${p.phone1}</a>
-                ${phone2Button}
-              </div>
-
-              <!-- Directions -->
-              <a href="${p.mapsLink}" style="background-color:#334155;color:#fff;text-decoration:none;padding:15px 0;border-radius:12px;font-weight:900;font-size:12px;display:block;text-align:center;text-transform:uppercase;letter-spacing:1px;">📍 View Airport Directions</a>
-
-              <div style="margin-top:25px;padding-top:20px;border-top:1px solid #334155;text-align:center;">
-                <a href="https://www.aeroparkdirect.co.uk/manage" style="display:inline-block;color:#3b82f6;text-decoration:underline;font-weight:800;font-size:14px;">Manage Your Trip Online →</a>
-              </div>
-            </div>
-
-            <!-- Support -->
-            <div style="margin-top:30px;padding:20px;border:1px dashed #cbd5e1;border-radius:15px;text-align:center;">
-              <p style="margin:0;font-size:13px;color:#475569;font-weight:600;">Need assistance or have a question?</p>
-              <p style="margin:5px 0 0 0;font-size:13px;color:#64748b;">Reply to this email or contact us at <a href="mailto:info@aeroparkdirect.co.uk" style="color:#2563eb;font-weight:700;text-decoration:none;">info@aeroparkdirect.co.uk</a></p>
-            </div>
+        <!-- Support -->
+        <tr>
+          <td style="padding:22px 32px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px dashed #cbd5e1;border-radius:12px;"><tr>
+              <td style="padding:18px;text-align:center;">
+                <p style="margin:0;font-size:13px;color:#475569;font-weight:700;">Need a hand?</p>
+                <p style="margin:6px 0 0;font-size:13px;color:#64748b;">Reply to this email or contact <a href="mailto:info@aeroparkdirect.co.uk" style="color:#2563eb;font-weight:700;text-decoration:none;">info@aeroparkdirect.co.uk</a></p>
+              </td>
+            </tr></table>
           </td>
         </tr>
 
         <!-- Footer -->
         <tr>
-          <td style="background-color:#f8fafc;border-top:1px solid #e2e8f0;padding:30px;text-align:center;">
-            <p style="margin:0;font-size:11px;color:#94a3b8;font-weight:800;">© ${new Date().getFullYear()} AeroPark Direct Ltd.</p>
+          <td style="padding:26px 32px 30px;text-align:center;">
+            <p style="margin:0 0 6px;font-size:11px;color:#94a3b8;font-weight:700;">Free cancellation up to 24h before drop-off · Encrypted by Stripe</p>
+            <p style="margin:0;font-size:11px;color:#cbd5e1;">© ${new Date().getFullYear()} AeroPark Direct Ltd · Luton &amp; Heathrow</p>
           </td>
         </tr>
 

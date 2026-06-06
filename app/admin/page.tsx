@@ -48,6 +48,7 @@ function DashboardContent() {
   // --- 3a. DOSSIER + SORT STATE (new design) ---
   const [viewBooking, setViewBooking] = useState<any>(null); // booking shown in the dossier modal
   const [sortKey, setSortKey] = useState<string>("NEWEST"); // NEW FEATURE 1: sortable grid
+  const [assignSel, setAssignSel] = useState<Record<string, string>>({}); // per-booking provider pick for manual transfer
 
   const defaultNewBooking = {
     full_name: "", 
@@ -302,6 +303,39 @@ function DashboardContent() {
         } catch (error) {
           console.error("Manual Email Error:", error);
           notify("error", "Critical routing error while sending email.");
+        }
+      },
+    });
+  };
+
+  // Manually transfer a booking to a chosen provider and email them the job in
+  // one action — used for AeroPark Direct bookings you assign after payment.
+  const assignAndNotify = (booking: any, companyId: string) => {
+    if (!companyId) { notify("error", "Pick a provider first."); return; }
+    const comp = companies.find((c) => c.id === companyId);
+    if (!comp) { notify("error", "Provider not found."); return; }
+    askConfirm({
+      title: "Assign & Notify Provider",
+      body: `Assign ${booking.booking_ref} to ${comp.name} and email them the job${comp.email ? ` at ${comp.email}` : " (no operator email set — will go to info@)"}?`,
+      confirmLabel: "Assign & Email",
+      onConfirm: async () => {
+        try {
+          const { error } = await supabase.from("bookings").update({ company_id: companyId }).eq("id", booking.id);
+          if (error) { notify("error", `Assign failed: ${error.message}`); return; }
+
+          const res = await fetch("/api/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ booking: { ...booking, company_id: companyId }, manual_provider_notify: true }),
+          });
+
+          if (res.ok) notify("success", `Assigned to ${comp.name} & emailed${comp.email ? "" : " (to info@ — set their email!)"}.`);
+          else notify("error", "Assigned, but the email failed. Check server logs.");
+
+          fetchDashboardData();
+        } catch (e: any) {
+          notify("error", "Critical error during assignment.");
+          console.error("assignAndNotify error:", e);
         }
       },
     });
@@ -622,6 +656,29 @@ function DashboardContent() {
             <div className="bg-[#1A2235]/60 border border-slate-800 rounded-2xl px-5 py-2">
               {detailRow("Partner", getCompanyName(b.company_id))}
               {detailRow("Service", b.service_type || "Meet & Greet")}
+            </div>
+
+            {/* Manual transfer — assign to the best provider & email them */}
+            <div className="mt-3 bg-[#1A2235]/60 border border-slate-800 rounded-2xl px-4 py-3">
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">Transfer to Provider</p>
+              <div className="flex items-center gap-2">
+                <select
+                  value={assignSel[b.id] ?? (b.company_id || "")}
+                  onChange={(e) => setAssignSel((s) => ({ ...s, [b.id]: e.target.value }))}
+                  className="flex-1 bg-[#0F1523] border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-bold text-white outline-none focus:border-blue-500"
+                >
+                  <option value="">— Select provider —</option>
+                  {companies.filter((c) => c.is_active).map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}{c.email ? "" : " (no email)"}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => assignAndNotify(b, assignSel[b.id] ?? (b.company_id || ""))}
+                  className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-xl border border-emerald-500/20 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest"
+                >
+                  <Briefcase className="w-3.5 h-3.5" /> Assign &amp; Email
+                </button>
+              </div>
             </div>
           </div>
         </div>
