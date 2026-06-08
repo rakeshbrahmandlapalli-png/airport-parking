@@ -153,6 +153,7 @@ export async function POST(req: Request) {
         company_id: resolvedCompany ? resolvedCompany.id : null,
         promo_code: m.promo_used || "None",
         fast_track_count: Number(m.fast_track_count || 0),
+        gclid: m.gclid || null,
       };
 
       const { error: upsertError } = await supabase

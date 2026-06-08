@@ -51,12 +51,9 @@ export default function RootLayout({
         {/* CRITICAL FIX: Updated to match your actual Google Analytics Dashboard ID */}
         <GoogleAnalytics gaId="G-D897179F7E" />
 
-        {/* Google Ads Base Tracking Tag */}
-        <Script
-          id="google-ads-js"
-          strategy="afterInteractive"
-          src={`https://www.googletagmanager.com/gtag/js?id=AW-18163936640`}
-        />
+        {/* Google Ads — piggybacks on the GA4 gtag.js already loaded above.
+            Do NOT add a second gtag.js src here; just configure the Ads property
+            on the shared dataLayer that @next/third-parties/google initialised. */}
         <Script
           id="google-ads-config"
           strategy="afterInteractive"
@@ -64,7 +61,6 @@ export default function RootLayout({
             __html: `
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
               gtag('config', 'AW-18163936640');
             `,
           }}
