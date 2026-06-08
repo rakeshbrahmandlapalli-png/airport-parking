@@ -1,13 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-/**
- * Server-side gate for the admin area. Because the Supabase session now lives in
- * cookies (see app/lib/supabase.ts), the edge middleware can verify it and block
- * unauthenticated access to /admin BEFORE any admin code or data loads — real
- * protection, not just a client-side redirect that hides the UI.
- */
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const res = NextResponse.next({ request: req });
 
   const supabase = createServerClient(
@@ -41,7 +35,6 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // If already authenticated, keep users off the login page.
   if (isLoginPage && user) {
     const url = req.nextUrl.clone();
     url.pathname = "/admin";

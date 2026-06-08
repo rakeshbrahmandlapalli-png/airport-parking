@@ -158,9 +158,11 @@ export async function POST(req: Request) {
       const { error: upsertError } = await supabase
         .from("bookings")
         .upsert([bookingData], { onConflict: "stripe_session_id", ignoreDuplicates: true });
-      
+
       if (upsertError) {
-        console.error("[WEBHOOK] Booking upsert failed:", upsertError);
+        console.error(`❌ [WEBHOOK] BOOKING WRITE FAILED for ${session.id} (RLS / service-role issue):`, upsertError);
+      } else {
+        console.log(`✅ [WEBHOOK] Booking written to DB — service role bypassed RLS for session ${session.id}`);
       }
 
       const { data: newBooking } = await supabase
