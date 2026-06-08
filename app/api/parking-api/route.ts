@@ -23,6 +23,9 @@ const GATEWAY_URL = "https://luton247airportparking.co.uk/agent/get_parking_pric
 const CACHE_TTL_MS = 60_000;
 type CacheEntry = { rates: any[]; expires: number };
 const rateCache = new Map<string, CacheEntry>();
+// Collapses concurrent identical requests (same token+dates) into ONE upstream
+// call so parallel bursts never bill the operator multiple times.
+const inFlight = new Map<string, Promise<any[]>>();
 
 export async function POST(req: Request) {
   try {
@@ -84,68 +87,80 @@ export async function POST(req: Request) {
       console.warn("Cache read failed, proceeding to live fetch:", cacheErr);
     }
 
-    // ── 2. LIVE FETCH FROM SLOW GATEWAY ───────────────────────────────────────
-    console.log(`🐌 CACHE MISS. Fetching live for ${token}...`);
-
-    // 🟢 TIMEOUT: If Luton 247 hangs, abort after 9 seconds and fail soft
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 9000);
-
-    let res: Response;
-    try {
-      res = await fetch(GATEWAY_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        cache: "no-store",
-        signal: controller.signal,
-        body: JSON.stringify({
-          token_no: token,
-          drop_date,            // YYYY-MM-DD
-          drop_time: dt,        // HH:MM
-          return_date,          // YYYY-MM-DD
-          return_time: rt,
-        }),
-      });
-    } finally {
-      clearTimeout(timeout);
+    // ── 2. LIVE FETCH (coalesced) ─────────────────────────────────────────────
+    // If an identical request is already in flight, await it instead of firing a
+    // second upstream call — so parallel bursts cost the operator just one hit.
+    const existing = inFlight.get(cacheKey);
+    if (existing) {
+      const rates = await existing;
+      return NextResponse.json({ rates, coalesced: true }, { status: 200 });
     }
 
-    // The provider returns Content-Type: text/html even though the body is JSON,
-    // so parse defensively.
-    const text = await res.text();
-    let data: any = [];
-    try {
-      data = JSON.parse(text);
-    } catch {
-      console.error("parking-api: provider returned non-JSON:", text.slice(0, 200));
-      return NextResponse.json({ error: "Bad gateway response", rates: [] }, { status: 200 });
-    }
+    const fetchPromise = (async (): Promise<any[]> => {
+      console.log(`🐌 CACHE MISS. Fetching live for ${token}...`);
 
-    // Always return an array under `rates`
-    const rates = Array.isArray(data) ? data : [data];
+      // 🟢 TIMEOUT: If Luton 247 hangs, abort after 9 seconds and fail soft
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 9000);
 
-    // ── 3. STORE RESULT IN CACHE (Non-blocking) ───────────────────────────────
-    // Only cache genuine, priced responses so we never pin an empty/failed result.
-    const validRate = rates.find((r: any) => r && r.parking_price != null);
-    if (validRate) {
-      // In-memory cache (instant for subsequent same-instance loads)
-      rateCache.set(cacheKey, { rates, expires: Date.now() + CACHE_TTL_MS });
-
-      // Supabase persistent cache (fire-and-forget)
-      const fetchedPrice = Number(validRate.parking_price);
-      if (fetchedPrice > 0) {
-        supabaseAdmin.from('api_price_cache').insert([{
-          token_no: token,
-          drop_date,
-          return_date,
-          price: fetchedPrice
-        }]).then(({ error }) => {
-          if (error) console.error("Cache insert error:", error.message);
+      let res: Response;
+      try {
+        res = await fetch(GATEWAY_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          cache: "no-store",
+          signal: controller.signal,
+          body: JSON.stringify({
+            token_no: token,
+            drop_date,
+            drop_time: dt,
+            return_date,
+            return_time: rt,
+          }),
         });
+      } finally {
+        clearTimeout(timeout);
       }
-    }
 
-    return NextResponse.json({ rates }, { status: 200 });
+      // The provider returns Content-Type: text/html even though the body is JSON.
+      const text = await res.text();
+      let data: any = [];
+      try {
+        data = JSON.parse(text);
+      } catch {
+        console.error("parking-api: provider returned non-JSON:", text.slice(0, 200));
+        return [];
+      }
+
+      const rates = Array.isArray(data) ? data : [data];
+
+      // Cache only genuine, priced responses so we never pin an empty/failed result.
+      const validRate = rates.find((r: any) => r && r.parking_price != null);
+      if (validRate) {
+        rateCache.set(cacheKey, { rates, expires: Date.now() + CACHE_TTL_MS });
+        const fetchedPrice = Number(validRate.parking_price);
+        if (fetchedPrice > 0) {
+          supabaseAdmin.from('api_price_cache').insert([{
+            token_no: token,
+            drop_date,
+            return_date,
+            price: fetchedPrice,
+          }]).then(({ error }) => {
+            if (error) console.error("Cache insert error:", error.message);
+          });
+        }
+      }
+
+      return rates;
+    })();
+
+    inFlight.set(cacheKey, fetchPromise);
+    try {
+      const rates = await fetchPromise;
+      return NextResponse.json({ rates }, { status: 200 });
+    } finally {
+      inFlight.delete(cacheKey);
+    }
 
   } catch (err: any) {
     console.error("parking-api proxy error:", err?.message);

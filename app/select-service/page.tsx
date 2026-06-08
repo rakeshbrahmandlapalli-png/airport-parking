@@ -97,20 +97,24 @@ function ServiceSelectionContent() {
       tag: "Most Convenient",
       tagColor: "bg-blue-100 text-blue-700 border-blue-200",
       description: "Compare top-rated providers. Drive straight to the terminal, hand your keys to a vetted professional, and head straight to check-in.",
-      icon: <Car className="w-8 h-8 text-blue-600" />,
+      icon: <Car className="w-7 h-7 text-blue-600" />,
+      iconBg: "bg-blue-50",
       features: ["Compare trusted operators", "Drop off at terminal", "Perfect for families"],
       time: "5 mins walk to terminal",
+      recommended: true,
       disabled: false
     },
     {
       id: "park-ride",
       title: "Park & Ride",
       tag: "Best Value",
-      tagColor: "bg-emerald-100 text-emerald-700 border-emerald-200",
+      tagColor: "bg-slate-100 text-slate-600 border-slate-200",
       description: "Find the best deals on secure off-site parking. Park your vehicle and take a quick, comfortable shuttle bus to the terminal door.",
-      icon: <Bus className="w-8 h-8 text-emerald-600" />,
+      icon: <Bus className="w-7 h-7 text-slate-500" />,
+      iconBg: "bg-slate-50",
       features: ["Vetted parking facilities", "Regular shuttle services", "Budget-friendly deals"],
       time: "5-10 min shuttle",
+      recommended: false,
       disabled: false
     },
     {
@@ -119,9 +123,11 @@ function ServiceSelectionContent() {
       tag: "Coming Soon", // Changed
       tagColor: "bg-slate-100 text-slate-500 border-slate-200", // Changed
       description: "We are currently onboarding top-rated hotel partners. Soon you will be able to book a restful night's sleep with secure parking.", // Changed
-      icon: <Hotel className="w-8 h-8 text-slate-400" />, // Changed
+      icon: <Hotel className="w-7 h-7 text-slate-400" />, // Changed
+      iconBg: "bg-slate-50",
       features: ["Top hotel brands", "Up to 15 days parking", "Wake up at the airport"],
       time: "Available Shortly", // Changed
+      recommended: false,
       disabled: true // 🟢 NEW FLAG
     }
   ];
@@ -170,35 +176,39 @@ function ServiceSelectionContent() {
             <div 
               key={service.id}
               onClick={() => handleSelect(service.id, service.disabled)}
-              className={`touch-manipulation bg-white rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 border shadow-sm transition-all duration-300 flex flex-col items-center text-center md:items-start md:text-left group relative overflow-hidden [-webkit-tap-highlight-color:transparent] ${
-                service.disabled 
-                  ? 'border-slate-100 opacity-70 grayscale-[30%] cursor-not-allowed' 
-                  : 'border-slate-200 hover:shadow-xl hover:border-blue-500 active:scale-[0.98] lg:hover:-translate-y-1 cursor-pointer'
+              className={`touch-manipulation bg-white rounded-2xl p-5 md:p-6 border shadow-sm transition-all duration-200 flex flex-col items-center text-center md:items-start md:text-left group relative [-webkit-tap-highlight-color:transparent] ${
+                service.disabled
+                  ? 'border-slate-100 opacity-70 grayscale-[30%] cursor-not-allowed'
+                  : service.recommended
+                    ? 'border-blue-600 hover:shadow-md cursor-pointer'
+                    : 'border-slate-200 hover:border-blue-600 hover:shadow-md cursor-pointer'
               }`}
             >
-              {/* Highlight Tag */}
-              <div className={`absolute top-5 right-5 md:top-6 md:right-6 px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest ${service.tagColor}`}>
-                {service.tag}
-              </div>
-
-              {/* Icon */}
-              <div className={`w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-slate-50 flex items-center justify-center mb-6 md:mb-8 shrink-0 ${service.disabled ? '' : 'lg:group-hover:scale-110 transition-transform duration-300'}`}>
+              {/* Icon — grounded, colour-matched to the card accent */}
+              <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center shrink-0 mb-4 md:mb-5 ${service.iconBg}`}>
                 {service.icon}
               </div>
 
-              {/* Content */}
-              <h3 className="text-xl md:text-2xl font-black text-slate-900 mb-2 md:mb-3 tracking-tight">
-                {service.title}
-              </h3>
-              <p className="text-slate-500 text-xs sm:text-sm leading-relaxed mb-6 md:mb-8 flex-grow">
+              {/* Title + integrated badge (inline, not a floating sticker) */}
+              <div className="flex items-center flex-wrap justify-center md:justify-start gap-x-2.5 gap-y-1.5 mb-2">
+                <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">
+                  {service.title}
+                </h3>
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest ${service.tagColor}`}>
+                  {service.tag}
+                </span>
+              </div>
+
+              {/* Description + features grouped tightly (no hollow middle) */}
+              <p className="text-slate-500 text-xs sm:text-sm leading-snug mb-3">
                 {service.description}
               </p>
 
               {/* Features List */}
-              <ul className={`space-y-3 mb-6 md:mb-8 w-full ${service.disabled ? 'opacity-60' : ''}`}>
+              <ul className={`space-y-2 mb-5 md:mb-6 w-full ${service.disabled ? 'opacity-60' : ''}`}>
                 {service.features.map((feature, idx) => (
-                  <li key={idx} className="flex items-start md:items-center justify-start gap-3 text-xs font-bold text-slate-700 text-left">
-                    <ShieldCheck className={`w-4 h-4 shrink-0 mt-0.5 md:mt-0 ${service.disabled ? 'text-slate-400' : 'text-blue-500 opacity-70'}`} /> 
+                  <li key={idx} className="flex items-center justify-start gap-2.5 text-xs font-bold text-slate-700 text-left">
+                    <ShieldCheck className={`w-4 h-4 shrink-0 ${service.disabled ? 'text-slate-400' : 'text-blue-500 opacity-70'}`} />
                     <span>{feature}</span>
                   </li>
                 ))}
@@ -225,7 +235,7 @@ function ServiceSelectionContent() {
       {/* 🟢 THE NEW "EDIT SEARCH" MODAL */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-[200] bg-slate-950/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4">
-          <div className="bg-white w-full max-w-lg rounded-t-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 shadow-2xl animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-8 duration-300 relative">
+          <div className="bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-6 sm:p-8 shadow-2xl animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-8 duration-300 relative">
             
             <div className="flex justify-between items-center mb-6">
               <div>

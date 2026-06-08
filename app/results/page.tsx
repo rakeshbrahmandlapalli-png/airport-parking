@@ -14,10 +14,64 @@ import {
   Mail, Send
 } from "lucide-react";
 import Link from "next/link";
-import { Suspense, useState, useMemo, useEffect, useCallback } from "react";
+import { Suspense, useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { computePrice, calculateDays, loadPricingSettings, DEFAULT_SETTINGS, type PricingSettings } from "../lib/pricing";
 import { sanitizeHtml } from "../lib/sanitizeHtml";
+
+// ─── RESULTS SESSION CACHE ─────────────────────────────────────────────────────
+// Snapshots the loaded results per search so returning from Checkout is instant —
+// no "Aero is Scanning" loader, no re-fetch.
+type ResultsCache = {
+  companies: any[];
+  settings: PricingSettings;
+  pinnedOrder: string[];
+  livePrices: Record<string, number | null>;
+};
+function resultsCacheKey(sp: URLSearchParams): string {
+  return `apd_results_v1|${sp.get("airport") || ""}|${sp.get("dropoffDate") || ""}|${sp.get("pickupDate") || ""}|${sp.get("dropoffTime") || ""}|${sp.get("pickupTime") || ""}|${sp.get("type") || ""}`;
+}
+function readResultsCache(sp: URLSearchParams): ResultsCache | null {
+  if (typeof window === "undefined") return null;
+  try { const raw = sessionStorage.getItem(resultsCacheKey(sp)); return raw ? (JSON.parse(raw) as ResultsCache) : null; }
+  catch { return null; }
+}
+function writeResultsCache(sp: URLSearchParams, data: ResultsCache): void {
+  if (typeof window === "undefined") return;
+  try { sessionStorage.setItem(resultsCacheKey(sp), JSON.stringify(data)); } catch { /* quota — ignore */ }
+}
+// Map the URL ?step= value to the BookingStepper index (1 Select · 2 Details · 3 Payment).
+function stepToIndex(step: string | null): 1 | 2 | 3 {
+  if (step === "details") return 2;
+  if (step === "payment") return 3;
+  return 1;
+}
+
+// MODULE-LEVEL cache (persists across client navigation while the SPA is alive).
+// Back-navigation hits this Map and renders instantly — never re-fetches.
+const apiCache = new Map<string, ResultsCache>();
+
+// Fixed-size skeleton card — reserves the same footprint as a real result card so
+// the layout never shifts ("jumps") between loading and loaded states.
+function ResultsCardSkeleton() {
+  return (
+    <div className="bg-[#0F1523] border border-slate-800 rounded-2xl p-5 md:p-6 animate-pulse" aria-hidden="true">
+      <div className="flex items-center gap-4">
+        <div className="w-16 h-16 rounded-2xl bg-slate-800 shrink-0" />
+        <div className="flex-1 space-y-2.5">
+          <div className="h-4 w-2/5 bg-slate-800 rounded" />
+          <div className="h-3 w-1/4 bg-slate-800 rounded" />
+        </div>
+        <div className="h-10 w-24 bg-slate-800 rounded-xl shrink-0" />
+      </div>
+      <div className="mt-5 space-y-2.5">
+        <div className="h-3 w-full bg-slate-800 rounded" />
+        <div className="h-3 w-3/4 bg-slate-800 rounded" />
+      </div>
+      <div className="mt-5 h-12 w-full bg-slate-800 rounded-xl" />
+    </div>
+  );
+}
 
 // ─── LIVE ACTIVITY TICKER ─────────────────────────────────────────────────────
 function LiveActivity() {
@@ -512,14 +566,20 @@ function ResultsContent() {
   const searchParams = useSearchParams();
   const router       = useRouter();
 
-  const [companies,     setCompanies]     = useState<any[]>([]);
-  const [settings,      setSettings]      = useState<PricingSettings>(DEFAULT_SETTINGS);
-  const [timerConfig,   setTimerConfig]   = useState<LaunchTimerConfig | null>(null);
-  const [loading,       setLoading]       = useState(true);
+  // Read any cached snapshot for this exact search ONCE, so the first paint can
+  // render instantly on back-navigation (skips the scanning loader entirely).
+  const initialCacheRef = useRef<ResultsCache | null | undefined>(undefined);
+  if (initialCacheRef.current === undefined) initialCacheRef.current = readResultsCache(searchParams);
+  const initialCache = initialCacheRef.current;
 
-  const [livePrices,     setLivePrices]     = useState<Record<string, number | null>>({});
+  const [companies,     setCompanies]     = useState<any[]>(initialCache?.companies ?? []);
+  const [settings,      setSettings]      = useState<PricingSettings>(initialCache?.settings ?? DEFAULT_SETTINGS);
+  const [timerConfig,   setTimerConfig]   = useState<LaunchTimerConfig | null>(null);
+  const [loading,       setLoading]       = useState(!initialCache);
+
+  const [livePrices,     setLivePrices]     = useState<Record<string, number | null>>(initialCache?.livePrices ?? {});
   const [liveLoadingIds, setLiveLoadingIds] = useState<Set<string>>(new Set());
-  const [pinnedOrder, setPinnedOrder] = useState<string[]>([]);
+  const [pinnedOrder, setPinnedOrder] = useState<string[]>(initialCache?.pinnedOrder ?? []);
 
   const airport     = searchParams.get("airport")      || "Luton (LTN)";
   const dropoff     = searchParams.get("dropoffDate")  || "";
@@ -533,15 +593,48 @@ function ResultsContent() {
   const duration = useMemo(() => calculateDays(dropoff, pickup), [dropoff, pickup]);
 
   const handleBooking = useCallback((option: any, finalPrice: number) => {
+    // Snapshot the fully-loaded results so returning here is instant.
+    writeResultsCache(searchParams, { companies, settings, pinnedOrder, livePrices });
     const query = new URLSearchParams(searchParams.toString());
     query.set("type",      option.name);
     query.set("price",     finalPrice.toString());
     query.set("companyId", option.id);
+    query.set("step",      "details");
     router.push(`/checkout?${query.toString()}`);
-  }, [searchParams, router]);
+  }, [searchParams, router, companies, settings, pinnedOrder, livePrices]);
 
-  useEffect(() => {
-    let cancelled = false;
+  const isFetching = useRef(false);
+  const abortRef   = useRef<AbortController | null>(null);
+
+  // Triggered ONLY when the URL search params change (deps locked below). Checks
+  // the module cache first; only fetches on a genuine miss → no re-render loop.
+  const loadResults = useCallback(() => {
+    const cacheKey = resultsCacheKey(searchParams);
+
+    // 1. MODULE CACHE (in-session) → then sessionStorage (survives a reload).
+    const cached = apiCache.get(cacheKey) || readResultsCache(searchParams);
+    if (cached) {
+      apiCache.set(cacheKey, cached);
+      setCompanies(cached.companies);
+      setSettings(cached.settings);
+      setPinnedOrder(cached.pinnedOrder);
+      setLivePrices(cached.livePrices || {});
+      setLiveLoadingIds(new Set());
+      setLoading(false);
+      getLaunchTimerConfig().then(setTimerConfig).catch(() => {});
+      return; // cache hit → render instantly, NO fetch, NO loop
+    }
+
+    // 2. FETCH LOCK — never run two fetches concurrently.
+    if (isFetching.current) return;
+    isFetching.current = true;
+
+    // 5. ABORT CONTROLLER — cancel any request still in flight from a prior key.
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const signal = controller.signal;
+    const liveAccum: Record<string, number | null> = {};
 
     async function loadData() {
       setLoading(true);
@@ -552,10 +645,10 @@ function ResultsContent() {
       try {
         // STEP 1 — Fetch companies + settings (fast, blocks only the skeleton)
         const [compRes, resolvedSettings] = await Promise.all([
-          supabase.from("companies").select("*"),
+          supabase.from("companies").select("*").abortSignal(signal),
           loadPricingSettings(supabase),
         ]);
-        if (cancelled) return;
+        if (signal.aborted) return;
 
         const allCompanies: any[] = compRes.data || [];
         setCompanies(allCompanies);
@@ -584,8 +677,15 @@ function ResultsContent() {
           return aP - bP;
         });
 
-        setPinnedOrder(initialSorted.map((c) => c.id));
+        const order = initialSorted.map((c) => c.id);
+        setPinnedOrder(order);
         setLoading(false);
+
+        // Cache the base snapshot now; live prices merge in below.
+        const snapshot: ResultsCache = { companies: allCompanies, settings: resolvedSettings, pinnedOrder: order, livePrices: {} };
+        apiCache.set(cacheKey, snapshot);
+        writeResultsCache(searchParams, snapshot);
+        const persist = () => { snapshot.livePrices = { ...liveAccum }; apiCache.set(cacheKey, snapshot); writeResultsCache(searchParams, snapshot); };
 
         if (dropoff && pickup) {
           const isSameDay   = dropoff === pickup;
@@ -605,7 +705,7 @@ function ResultsContent() {
 
             const fetchRawPrice = async (c: any): Promise<number | null> => {
               for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-                if (cancelled) return null;
+                if (signal.aborted) return null;
                 try {
                   const res = await fetchWithTimeout(
                     "/api/parking-api",
@@ -624,7 +724,7 @@ function ResultsContent() {
                     },
                     9000
                   );
-                  if (cancelled) return null;
+                  if (signal.aborted) return null;
                   if (res.ok) {
                     const json = await res.json();
                     const rawPrice = extractApiPrice(json);
@@ -637,26 +737,46 @@ function ResultsContent() {
                   else console.warn(`API error for ${c.name} (attempt ${attempt}):`, e?.message);
                 }
                 // No price yet — back off briefly, then retry (upstream is warmer now)
-                if (attempt < MAX_ATTEMPTS && !cancelled) {
+                if (attempt < MAX_ATTEMPTS && !signal.aborted) {
                   await new Promise((r) => setTimeout(r, 700 * attempt));
                 }
               }
               return null;
             };
 
-            apiCompanies.forEach(async (c) => {
+            // COST FIX: all providers can share ONE upstream token. Group them by
+            // token and fetch the raw rate ONCE per unique token, then reuse that
+            // single result for every provider on it — so we never bill the
+            // operator for 4 identical gateway calls per search.
+            const tokenGroups = new Map<string, any[]>();
+            for (const c of apiCompanies) {
+              const key = String(c.api_token);
+              const arr = tokenGroups.get(key);
+              if (arr) arr.push(c); else tokenGroups.set(key, [c]);
+            }
+
+            tokenGroups.forEach(async (group) => {
+              const rep = group[0]; // one representative gateway call per token
+              let rawPrice: number | null = null;
               try {
-                const rawPrice = await fetchRawPrice(c);
-                const surcharge = Number(c.dynamic_surcharge_percent || 0);
-                const adjusted  = rawPrice != null && rawPrice > 0 ? rawPrice * (1 + surcharge / 100) : null;
-                if (!cancelled) setLivePrices(prev => ({ ...prev, [c.id]: adjusted }));
+                rawPrice = await fetchRawPrice(rep);
               } finally {
-                if (!cancelled) {
-                  setLiveLoadingIds(prev => {
-                    const next = new Set(prev);
-                    next.delete(c.id);
-                    return next;
+                if (!signal.aborted) {
+                  // Apply the single raw rate to every provider on this token,
+                  // each with its own dynamic surcharge.
+                  const updates: Record<string, number | null> = {};
+                  for (const c of group) {
+                    const surcharge = Number(c.dynamic_surcharge_percent || 0);
+                    updates[c.id] = rawPrice != null && rawPrice > 0 ? rawPrice * (1 + surcharge / 100) : null;
+                  }
+                  Object.assign(liveAccum, updates);
+                  setLivePrices((prev) => ({ ...prev, ...updates }));
+                  setLiveLoadingIds((prev) => {
+                    const nextSet = new Set(prev);
+                    for (const c of group) nextSet.delete(c.id);
+                    return nextSet;
                   });
+                  persist(); // keep the cache snapshot in sync with live prices
                 }
               }
             });
@@ -664,17 +784,24 @@ function ResultsContent() {
         }
 
         checkAvailability(airport, dropoff, pickup).catch(() => {});
-        getLaunchTimerConfig().then((cfg) => { if (!cancelled) setTimerConfig(cfg); }).catch(() => {});
+        getLaunchTimerConfig().then((cfg) => { if (!signal.aborted) setTimerConfig(cfg); }).catch(() => {});
 
       } catch (e) {
-        console.error("loadData error:", e);
-        if (!cancelled) setLoading(false);
+        if (!signal.aborted) { console.error("loadResults error:", e); setLoading(false); }
+      } finally {
+        isFetching.current = false;
       }
     }
 
     loadData();
-    return () => { cancelled = true; };
-  }, [airport, dropoff, pickup, dropTime, pickTime, isHeathrow, serviceType]);
+  }, [searchParams, airport, dropoff, pickup, dropTime, pickTime, isHeathrow, serviceType]);
+
+  // 3. Fire ONLY when the memoized loader changes (i.e. the URL params changed).
+  //    AbortController cancels any in-flight request on unmount / param change.
+  useEffect(() => {
+    loadResults();
+    return () => { abortRef.current?.abort(); isFetching.current = false; };
+  }, [loadResults]);
 
   const processedCompanies = useMemo(() => {
     if (!pinnedOrder.length || !companies.length) return [];
@@ -730,20 +857,10 @@ function ResultsContent() {
     }).filter(Boolean) as any[];
   }, [pinnedOrder, companies, livePrices, settings, airport, duration, dropoff]);
 
-  if (loading) {
-    return (
-      <div className="max-w-4xl mx-auto py-32 text-center flex flex-col items-center px-4">
-        <AeroAvatar thinking size="lg" />
-        <h2 className="text-xl font-black uppercase tracking-[0.3em] text-white mt-8 animate-pulse">Aero is Scanning</h2>
-        <p className="text-slate-400 mt-3 font-medium">Securing live compound availability for {airport}...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-[1000px] mx-auto px-4 py-6 md:py-8">
       <div className="mb-10 mt-4">
-        <BookingStepper currentStep={1} />
+        <BookingStepper currentStep={stepToIndex(searchParams.get("step"))} />
       </div>
 
       {/* Aero concierge bar + launch timer */}
@@ -786,8 +903,14 @@ function ResultsContent() {
         )}
       </div>
 
-      {processedCompanies.length === 0 ? (
-        <div className="text-center py-16 md:py-24 bg-[#0F1523] rounded-[2.5rem] border border-dashed border-slate-700 px-6">
+      {loading ? (
+        <div className="space-y-5" aria-busy="true">
+          <ResultsCardSkeleton />
+          <ResultsCardSkeleton />
+          <ResultsCardSkeleton />
+        </div>
+      ) : processedCompanies.length === 0 ? (
+        <div className="text-center py-16 md:py-24 bg-[#0F1523] rounded-2xl border border-dashed border-slate-700 px-6">
           {!serviceType.toLowerCase().includes("meet") ? (
             <>
               <div className="w-16 h-16 bg-[#1A2235] border border-slate-700 rounded-3xl flex items-center justify-center mx-auto mb-6">

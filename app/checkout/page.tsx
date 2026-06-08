@@ -48,7 +48,7 @@ function AeroAvatar({
   state?: "idle" | "scanning" | "success";
   onClick?: () => void;
 }) {
-  const sizeClasses = { sm: "w-8 h-8 rounded-lg", md: "w-14 h-14 rounded-2xl", lg: "w-20 h-20 rounded-3xl", xl: "w-32 h-32 rounded-[2.5rem]" };
+  const sizeClasses = { sm: "w-8 h-8 rounded-lg", md: "w-14 h-14 rounded-2xl", lg: "w-20 h-20 rounded-3xl", xl: "w-32 h-32 rounded-2xl" };
   const gap = { sm: "gap-1", md: "gap-1.5", lg: "gap-2", xl: "gap-3" };
   const eyeSize = { sm: "w-1 h-2.5", md: "w-1.5 h-4", lg: "w-2 h-6", xl: "w-3.5 h-10" };
   return (
@@ -605,7 +605,7 @@ function CheckoutContent() {
 
       <div className="mb-10">
         <BookingStepper
-          currentStep={2}
+          currentStep={searchParams.get("step") === "payment" ? 3 : 2}
           clickableSteps={true}
           onStepClick={(step) => {
             if (step === 1) router.push(`/results?${searchParams.toString()}`);
@@ -617,8 +617,11 @@ function CheckoutContent() {
         <div className="flex-1 w-full">
           <form id="checkout-form" onSubmit={handlePayment} noValidate className="space-y-6 md:space-y-8">
 
-            {/* 1. CONTACT INFO */}
-            <div className="bg-white p-6 md:p-10 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/50 relative overflow-hidden">
+            {/* Unified details card — Contact + Vehicle & Flight (one container) */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+
+            {/* 1. Contact Information */}
+            <div className="p-6 md:p-8">
               <div className="flex items-center gap-4 mb-8 pb-6 border-b border-slate-100">
                 <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center shrink-0">
                   <User className="w-6 h-6 text-blue-600" />
@@ -662,8 +665,11 @@ function CheckoutContent() {
               </div>
             </div>
 
-            {/* 2. VEHICLE & FLIGHT */}
-            <div className="bg-white p-6 md:p-10 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/50 relative overflow-hidden">
+            {/* divider between the two grouped sections */}
+            <div className="border-t border-slate-100" />
+
+            {/* 2. Vehicle & Flight Details */}
+            <div className="p-6 md:p-8">
               <div className="flex items-center gap-4 mb-8 pb-6 border-b border-slate-100">
                 <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center shrink-0">
                   <CarFront className="w-6 h-6 text-blue-600" />
@@ -742,10 +748,11 @@ function CheckoutContent() {
                 </div>
               </div>
             </div>
+            </div>
 
             {/* UPSELLS */}
             {suggestedAncillaries.length > 0 && (
-              <div className="bg-gradient-to-br from-[#FAFAFF] to-[#F3F4FB] p-6 md:p-10 rounded-[2.5rem] border border-indigo-100 shadow-[0_15px_40px_-15px_rgba(79,70,229,0.15)] relative overflow-hidden">
+              <div className="bg-gradient-to-br from-[#FAFAFF] to-[#F3F4FB] p-6 md:p-10 rounded-2xl border border-indigo-100 shadow-[0_15px_40px_-15px_rgba(79,70,229,0.15)] relative overflow-hidden">
                 <div className="flex items-center gap-4 mb-8 pb-6 border-b border-indigo-200/40">
                   <div className="w-12 h-12 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/30">
                     <Sparkles className="w-6 h-6 text-white" />
@@ -829,7 +836,7 @@ function CheckoutContent() {
             )}
 
             {/* 3. SECURE PAYMENT */}
-            <div className="bg-white p-6 md:p-10 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/50 relative overflow-hidden">
+            <div className="bg-white p-6 md:p-10 rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/50 relative overflow-hidden">
               <div className="flex items-center justify-between mb-8 pb-6 border-b border-slate-100">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center shrink-0">
@@ -876,8 +883,8 @@ function CheckoutContent() {
 
         {/* SIDEBAR */}
         <aside className="w-full lg:w-[400px] xl:w-[420px] lg:sticky lg:top-28">
-          <div className="bg-[#0B1120] rounded-[2.5rem] border border-slate-800 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.6)] overflow-hidden text-white relative">
-            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-500" />
+          <div className="bg-[#0B1120] rounded-2xl border border-slate-800 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.6)] overflow-hidden text-white relative">
+            <div className="absolute top-0 left-0 w-full h-1 bg-blue-500" />
             <div className="p-8 md:p-10">
               <div className="flex justify-between items-center mb-8">
                 <h3 className="text-2xl font-black tracking-tight">Order Summary</h3>
@@ -1130,7 +1137,7 @@ function CheckoutSkeleton() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 relative z-10 w-full">
       <div className="flex flex-col-reverse lg:flex-row gap-10 items-start">
         <div className="flex-1 w-full space-y-8">
-          <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-xl opacity-60">
+          <div className="bg-white p-10 rounded-2xl border border-slate-200 shadow-xl opacity-60">
             <div className="h-8 w-48 bg-slate-200 rounded animate-pulse mb-8" />
             <div className="grid grid-cols-2 gap-6">
               <div className="h-14 bg-slate-100 rounded-xl animate-pulse col-span-2" />
@@ -1138,7 +1145,7 @@ function CheckoutSkeleton() {
               <div className="h-14 bg-slate-100 rounded-xl animate-pulse" />
             </div>
           </div>
-          <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-xl opacity-60">
+          <div className="bg-white p-10 rounded-2xl border border-slate-200 shadow-xl opacity-60">
             <div className="h-8 w-64 bg-slate-200 rounded animate-pulse mb-8" />
             <div className="grid grid-cols-2 gap-6">
               <div className="h-14 bg-slate-100 rounded-xl animate-pulse" />
@@ -1147,7 +1154,7 @@ function CheckoutSkeleton() {
             </div>
           </div>
         </div>
-        <aside className="w-full lg:w-[420px] bg-[#0B1120] rounded-[2.5rem] border border-slate-800 p-10 shadow-2xl">
+        <aside className="w-full lg:w-[420px] bg-[#0B1120] rounded-2xl border border-slate-800 p-10 shadow-2xl">
           <div className="h-8 w-40 bg-slate-800 rounded animate-pulse mb-10" />
           <div className="space-y-4 mb-10">
             <div className="h-4 w-full bg-slate-800 rounded animate-pulse" />

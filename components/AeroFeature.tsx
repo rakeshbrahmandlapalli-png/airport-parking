@@ -55,71 +55,75 @@ export default function AeroFeature() {
           </div>
         </div>
 
-        {/* ANIMATION SIDE */}
-        <div 
+        {/* ANIMATION SIDE — radar sits directly on the white page (no card) */}
+        <div
           ref={containerRef}
-          className="lg:col-span-7 relative h-[500px] w-full rounded-[4rem] bg-slate-950 shadow-3xl overflow-hidden flex items-center justify-center border border-white/5"
+          className="lg:col-span-7 relative h-[400px] md:h-[500px] w-full overflow-hidden flex items-center justify-center"
         >
-          {/* Cyber Grid Background */}
-          <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/grid-me.png')] pointer-events-none"></div>
-          
+          {/* 0. GROUNDING — soft radial depth + faint concentric rings (no box) */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
+            <div className="absolute w-[480px] h-[480px] rounded-full bg-[radial-gradient(circle,rgba(15,23,42,0.08)_0%,rgba(15,23,42,0.03)_45%,transparent_72%)]"></div>
+            <div className="absolute w-[300px] h-[300px] rounded-full border border-slate-200"></div>
+            <div className="absolute w-[440px] h-[440px] rounded-full border border-slate-100"></div>
+          </div>
+
           {/* 1. THE MASCOT: AERO */}
           <div className="relative z-30 flex flex-col items-center animate-float pointer-events-none">
             {/* Aero's Body */}
-            <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] bg-gradient-to-br from-blue-600 to-blue-800 border-4 border-white/10 shadow-[0_0_50px_rgba(37,99,235,0.4)] flex items-center justify-center relative">
-              
+            <div className="w-28 h-28 md:w-40 md:h-40 rounded-2xl bg-blue-600 border border-blue-500/20 shadow-[0_0_60px_rgba(37,99,235,0.35)] flex items-center justify-center relative">
+
               {/* Aero's Digital Face (The Eyes that move) */}
               <div className="flex gap-4">
                 <div ref={eyeLRef} className="w-3 h-7 bg-white rounded-full shadow-[0_0_15px_white] transition-none"></div>
                 <div ref={eyeRRef} className="w-3 h-7 bg-white rounded-full shadow-[0_0_15px_white] transition-none"></div>
               </div>
 
-              {/* Scanning Beams */}
+              {/* Scanning Beams — stronger so the radar reads on white */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px]">
-                 <div className="absolute inset-0 border border-blue-500/20 rounded-full animate-ping"></div>
-                 <div className="absolute inset-0 border border-dashed border-blue-400/10 rounded-full animate-spin [animation-duration:10s]"></div>
+                 <div className="absolute inset-0 border-2 border-blue-500/50 rounded-full animate-ping"></div>
+                 <div className="absolute inset-0 border border-dashed border-blue-400/50 rounded-full animate-spin [animation-duration:10s]"></div>
               </div>
             </div>
 
             <div className="mt-8 w-20 h-2 bg-blue-500/20 blur-md rounded-full animate-pulse"></div>
           </div>
 
-          {/* 2. THE VETTED PROVIDERS & FEATURES (Orbiting) */}
+          {/* 2. THE VETTED PROVIDERS & FEATURES (Orbiting) — clean light chips */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="absolute animate-orbit [animation-duration:12s]">
-              <div className="p-4 bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex flex-col items-center gap-1 group">
-                <CarFront className="w-6 h-6 text-blue-400" />
+              <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-md flex flex-col items-center gap-1">
+                <CarFront className="w-6 h-6 text-blue-600" />
                 <CheckCircle2 className="w-3 h-3 text-emerald-500" />
               </div>
             </div>
 
             <div className="absolute animate-orbit [animation-duration:15s] [animation-delay:-5s]">
-              <div className="p-4 bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex flex-col items-center gap-1">
-                <Building2 className="w-6 h-6 text-purple-400" />
+              <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-md flex flex-col items-center gap-1">
+                <Building2 className="w-6 h-6 text-indigo-600" />
                 <CheckCircle2 className="w-3 h-3 text-emerald-500" />
               </div>
             </div>
 
             <div className="absolute animate-orbit [animation-duration:18s] [animation-delay:-10s]">
-              <div className="p-4 bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex flex-col items-center gap-1">
-                <ShieldCheck className="w-6 h-6 text-emerald-400" />
+              <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-md flex flex-col items-center gap-1">
+                <ShieldCheck className="w-6 h-6 text-emerald-600" />
                 <CheckCircle2 className="w-3 h-3 text-emerald-500" />
               </div>
             </div>
 
-            {/* 🟢 NEW: The VIP Loyalty Orbit Icon */}
+            {/* VIP Loyalty Orbit Icon */}
             <div className="absolute animate-orbit [animation-duration:20s] [animation-delay:-7s]">
-              <div className="p-4 bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex flex-col items-center gap-1">
-                <Star className="w-6 h-6 text-amber-400" />
+              <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-md flex flex-col items-center gap-1">
+                <Star className="w-6 h-6 text-amber-500" />
                 <CheckCircle2 className="w-3 h-3 text-emerald-500" />
               </div>
             </div>
           </div>
 
-          {/* Bottom HUD */}
-          <div className="absolute bottom-10 px-8 py-3 bg-black/40 backdrop-blur-xl border border-white/5 rounded-2xl pointer-events-none">
-             <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-3">
-               <span className="w-2 h-2 rounded-full bg-blue-500"></span> 
+          {/* Bottom HUD — solid dark chip (high contrast on white) */}
+          <div className="absolute bottom-6 md:bottom-10 px-6 py-3 bg-slate-900 rounded-2xl pointer-events-none">
+             <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em] flex items-center gap-3">
+               <span className="w-2 h-2 rounded-full bg-blue-500"></span>
                Aero Search Engine: Active
              </span>
           </div>
