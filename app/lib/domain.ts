@@ -188,3 +188,26 @@ export function sortCompanies(
   }
   return copy;
 }
+
+// ─── ADMIN AUDIT LEDGER ────────────────────────────────────────────────────────
+// Mirrors public.admin_audit_logs (see supabase/admin_audit_logs.sql).
+
+/** Structured context stored on each audit row; before/after enable diffs. */
+export interface AuditMetadata {
+  /** Human label for the affected field, e.g. "Promo Badge text". */
+  label?: string;
+  before?: unknown;
+  after?: unknown;
+  [key: string]: unknown;
+}
+
+export interface AdminAuditLog {
+  id: string;
+  user_id: string | null;
+  user_email: string | null;
+  action_type: string;        // e.g. "promo.badge.update"
+  entity_type: string | null; // e.g. "company" | "promotion" | "setting"
+  entity_id: string | null;
+  metadata: AuditMetadata;
+  created_at: string;         // ISO timestamp
+}
