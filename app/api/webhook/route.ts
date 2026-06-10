@@ -190,7 +190,7 @@ export async function POST(req: Request) {
                   <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;">
                     <h3 style="margin-top: 0;">What happens next?</h3>
                     <p>Our concierge team is currently matching your vehicle with one of our top-rated, fully-vetted parking partners for your dates.</p>
-                    <p>We will email and text you your dedicated VIP driver's contact number and exact terminal meeting point <strong>24 hours before your flight</strong>.</p>
+                    <p>We will email and text you your dedicated VIP driver's contact number and exact terminal meeting point <strong>very soon</strong>, well ahead of your travel date.</p>
                     <p>Rest assured, your airport barrier and drop-off fees are fully covered by us!</p>
                   </div>
                   <p><strong>Booking Reference:</strong> ${newBooking.booking_ref}</p>
