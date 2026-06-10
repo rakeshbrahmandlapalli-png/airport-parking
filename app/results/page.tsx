@@ -10,7 +10,7 @@ import {
   Mail, Send,
 } from "lucide-react";
 import Link from "next/link";
-import { Suspense, useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { Suspense, useState, useMemo, useEffect, useCallback, useRef, useLayoutEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { computePrice, calculateDays, loadPricingSettings, DEFAULT_SETTINGS, type PricingSettings } from "../lib/pricing";
 import { type PricedCompany, type SortKey, sortCompanies } from "../lib/domain";
@@ -49,6 +49,11 @@ function stepToIndex(step: string | null): 1 | 2 | 3 {
 // MODULE-LEVEL cache (persists across client navigation while the SPA is alive).
 // Back-navigation hits this Map and renders instantly — never re-fetches.
 const apiCache = new Map<string, ResultsCache>();
+
+// useLayoutEffect emits an SSR warning because it can't run on the server. Alias
+// to useEffect on the server so our client-only cache-hydration effect stays
+// warning-free while still running before paint in the browser.
+const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 // Fixed-size skeleton card — reserves the same footprint as a real result card so
 // the layout never shifts ("jumps") between loading and loaded states.
@@ -267,21 +272,38 @@ function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
   const searchParams = useSearchParams();
   const router       = useRouter();
 
-  // Read any cached snapshot for this exact search ONCE, so the first paint can
-  // render instantly on back-navigation (skips the scanning loader entirely).
-  const initialCacheRef = useRef<ResultsCache | null | undefined>(undefined);
-  if (initialCacheRef.current === undefined) initialCacheRef.current = readResultsCache(searchParams);
-  const initialCache = initialCacheRef.current;
-
-  const [companies,     setCompanies]     = useState<any[]>(initialCache?.companies ?? []);
-  const [settings,      setSettings]      = useState<PricingSettings>(initialCache?.settings ?? DEFAULT_SETTINGS);
+  // IMPORTANT: never read sessionStorage during render. The server has no
+  // sessionStorage, so a render-time read makes the client's first render differ
+  // from the server's HTML on a hard refresh → hydration mismatch. We initialise with
+  // the SAME defaults the server uses, then re-apply any cached snapshot in a
+  // layout effect below (post-hydration, pre-paint) so back-nav stays flash-free.
+  const [companies,     setCompanies]     = useState<any[]>([]);
+  const [settings,      setSettings]      = useState<PricingSettings>(DEFAULT_SETTINGS);
   const [timerConfig,   setTimerConfig]   = useState<LaunchTimerConfig | null>(null);
-  const [loading,       setLoading]       = useState(!initialCache);
+  const [loading,       setLoading]       = useState(true);
 
-  const [livePrices,     setLivePrices]     = useState<Record<string, number | null>>(initialCache?.livePrices ?? {});
+  const [livePrices,     setLivePrices]     = useState<Record<string, number | null>>({});
   const [liveLoadingIds, setLiveLoadingIds] = useState<Set<string>>(new Set());
-  const [pinnedOrder, setPinnedOrder] = useState<string[]>(initialCache?.pinnedOrder ?? []);
+  const [pinnedOrder, setPinnedOrder] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<SortKey>("recommended");
+
+  // Hydrate from the cached snapshot before the browser paints — so a refresh or
+  // back-navigation with a warm cache shows results instantly (no skeleton flash)
+  // — and crucially AFTER hydration, so it can never cause a server/client diff.
+  const didHydrateCache = useRef(false);
+  useIsomorphicLayoutEffect(() => {
+    if (didHydrateCache.current) return;
+    didHydrateCache.current = true;
+    const cached = readResultsCache(searchParams);
+    if (cached) {
+      setCompanies(cached.companies);
+      setSettings(cached.settings);
+      setPinnedOrder(cached.pinnedOrder);
+      setLivePrices(cached.livePrices || {});
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const airport     = searchParams.get("airport")      || "Luton (LTN)";
   const dropoff     = searchParams.get("dropoffDate")  || "";
