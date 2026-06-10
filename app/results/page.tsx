@@ -695,21 +695,16 @@ function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
 }
 
 // ─── AIRPORT TITLE ────────────────────────────────────────────────────────────
+// Compact, persistent airport-code badge for the sticky header. The full search
+// context (dates · nights · service) + Edit now live in <SearchSummaryHeader/>,
+// so this no longer repeats the dates — it just keeps the airport visible while
+// the user scrolls the operator list.
 function AirportTitle() {
   const searchParams = useSearchParams();
-  const airport  = searchParams.get("airport")     || "Luton (LTN)";
-  const dropDate = searchParams.get("dropoffDate") || "";
-  const pickDate = searchParams.get("pickupDate")  || "";
-  const fmt = (d: string) =>
-    d ? new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+  const airport = searchParams.get("airport") || "Luton (LTN)";
   const code = airport.includes("Heathrow") ? "LHR" : "LTN";
   return (
-    <div className="flex flex-col items-end">
-      <span className="text-sm md:text-base font-black text-white tracking-widest leading-none mb-1">{code}</span>
-      <span className="text-[7px] md:text-[8px] font-black text-blue-500 uppercase tracking-[0.2em] leading-none">
-        {dropDate && pickDate ? `${fmt(dropDate)} – ${fmt(pickDate)}` : "Selected"}
-      </span>
-    </div>
+    <span className="text-sm md:text-base font-black text-white tracking-widest leading-none">{code}</span>
   );
 }
 

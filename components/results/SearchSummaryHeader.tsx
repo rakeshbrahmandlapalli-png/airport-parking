@@ -16,7 +16,15 @@ export function SearchSummaryHeader({
 }: SearchSummaryHeaderProps) {
   const fmt = (d: string) =>
     d ? new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "—";
-  const service = serviceType.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  // Map known service slugs to their proper labels (the slug drops the "&", so a
+  // naive title-case renders "Meet Greet"). Fall back to title-case for anything new.
+  const SERVICE_LABELS: Record<string, string> = {
+    "meet-greet": "Meet & Greet",
+    "park-ride": "Park & Ride",
+    "hotel": "Hotel & Parking",
+  };
+  const service = SERVICE_LABELS[serviceType.toLowerCase()]
+    ?? serviceType.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
   return (
     <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-[#0F1523] p-4">
