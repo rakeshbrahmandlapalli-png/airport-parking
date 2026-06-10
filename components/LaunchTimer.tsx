@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { Zap, CheckCircle2, AlertTriangle } from "lucide-react";
 
 interface TimerProps {
   hours?: number;
@@ -21,9 +22,9 @@ export default function LaunchTimer({
   onTimerEnd,
   badge = "Live Launch Event",
   title = "Founding Member Launch",
-  subtitle = "Secure your spot · 5% lifetime discount",
+  subtitle = "Secure your spot · lifetime perks",
   benefitTitle = "Founding Members Get",
-  benefitValue = "5% Lifetime Discount",
+  benefitValue = "20% Off + 5% Lifetime Discount",
   benefitNote = "Plus priority access to new features",
 }: TimerProps) {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
@@ -40,18 +41,20 @@ export default function LaunchTimer({
   const h = timeLeft ? Math.floor((timeLeft % 86400000) / 3600000) : 0;
   const m = timeLeft ? Math.floor((timeLeft % 3600000) / 60000) : 0;
   const s = timeLeft ? Math.floor((timeLeft % 60000) / 1000) : 0;
-  const timePct = timeLeft ? Math.round((timeLeft / (validHours * 3600000)) * 100) : 100;
 
   useEffect(() => { setMounted(true); }, []);
 
+  // Timer logic preserved verbatim from the previous implementation — it works,
+  // so it stays. (Persisted countdown via localStorage; see P0.3 audit note about
+  // moving this to a real server-sourced campaign end-date.)
   useEffect(() => {
     if (!mounted) return;
     const KEY = `ap_lct_v1_${validHours}`;
     let end: number | null = null;
     try {
-      const s = localStorage.getItem(KEY);
-      if (s) {
-        end = parseInt(s, 10);
+      const stored = localStorage.getItem(KEY);
+      if (stored) {
+        end = parseInt(stored, 10);
         if (isNaN(end) || end <= Date.now()) { localStorage.removeItem(KEY); end = null; }
       }
       if (!end) { end = Date.now() + validHours * 3600000; localStorage.setItem(KEY, String(end)); }
@@ -68,143 +71,77 @@ export default function LaunchTimer({
 
   const pad = (n: number) => String(n).padStart(2, "0");
 
+  // CLS-safe skeleton — reserves the same footprint as the live card.
   if (!mounted || timeLeft === null) {
     return (
-      <div style={S.card}>
-        <span style={{ fontSize: 11, color: "#2a3a5c" }}>Loading...</span>
-      </div>
+      <div className="mx-auto h-[340px] max-w-[420px] animate-pulse rounded-2xl border border-slate-800 bg-[#0B1120]" />
     );
   }
 
+  const units = [
+    { v: d, l: "Days" },
+    { v: h, l: "Hrs" },
+    { v: m, l: "Min" },
+    { v: s, l: "Sec" },
+  ];
+
   return (
-    <div style={S.card}>
-      {/* Top glow */}
-      <div style={S.topGlow} />
+    <div className="relative mx-auto max-w-[420px] overflow-hidden rounded-2xl border border-slate-800 bg-[#0B1120] p-5 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.7)]">
+      {/* Hairline top glow — the single premium flourish */}
+      <div className="pointer-events-none absolute inset-x-[15%] top-0 h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent" />
 
-      {/* Badge */}
-      <div style={S.badge}>
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-        {badge}
-      </div>
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/20 bg-blue-500/[0.08] px-3 py-1 text-[9px] font-black uppercase tracking-[0.15em] text-blue-400">
+        <Zap className="h-3 w-3 fill-current" /> {badge}
+      </span>
 
-      <p style={S.title}>{title}</p>
-      <p style={S.sub}>{subtitle}</p>
+      <h3 className="mt-3 text-base font-black tracking-tight text-white">{title}</h3>
+      <p className="mt-0.5 text-[11px] font-medium text-slate-500">{subtitle}</p>
 
-      {/* Timer digits */}
-      <div style={S.timerRow}>
-        {[
-          { v: d, l: "Days" },
-          { v: h, l: "Hours" },
-          { v: m, l: "Mins" },
-          { v: s, l: "Secs" },
-        ].map((item, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            {i > 0 && <span style={S.colon}>:</span>}
-            <div style={S.unit}>
-              <span style={S.num}>{pad(item.v)}</span>
-              <span style={S.lbl}>{item.l}</span>
-            </div>
+      {/* COUNTDOWN — even 4-cell grid, single typeface, tabular-nums prevents width jitter */}
+      <div className="mt-4 grid grid-cols-4 gap-2">
+        {units.map((u) => (
+          <div key={u.l} className="rounded-xl border border-slate-800 bg-[#070D18] py-2.5">
+            <span className="block text-center font-mono text-2xl font-black leading-none tabular-nums text-white">
+              {pad(u.v)}
+            </span>
+            <span className="mt-1.5 block text-center text-[9px] font-black uppercase tracking-widest text-slate-600">
+              {u.l}
+            </span>
           </div>
         ))}
       </div>
 
-      {/* Time bar */}
-      <div style={S.barLabel}>
-        <span>Time remaining</span>
-        <span style={{ color: "#3b82f6", fontWeight: 700 }}>{timePct}%</span>
-      </div>
-      <div style={S.barTrack}>
-        <div style={{ ...S.barFill, width: `${timePct}%`, background: "linear-gradient(90deg, #1d4ed8, #3b82f6)" }} />
-      </div>
-
-      <div style={S.divider} />
-
-      {/* Benefit */}
-      <div style={S.benefit}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
-          <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
-        </svg>
-        <div>
-          <p style={S.benefitTitle}>{benefitTitle}</p>
-          <p style={S.benefitVal}>{benefitValue}</p>
-          <p style={S.benefitNote}>{benefitNote}</p>
+      {/* VALUE PROPOSITION — the focal point */}
+      <div className="mt-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] px-4 py-4 text-center">
+        <p className="text-[10px] font-black uppercase tracking-[0.15em] text-emerald-400/70">
+          {benefitTitle}
+        </p>
+        <div className="mt-1.5 flex items-center justify-center gap-2">
+          <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
+          <p className="text-lg font-black leading-tight tracking-tight text-white">{benefitValue}</p>
         </div>
+        <p className="mt-1.5 text-[11px] font-medium text-slate-500">{benefitNote}</p>
       </div>
 
-      {/* Availability */}
-      <div style={S.availRow}>
-        <span style={{ color: isCritical ? "#f59e0b" : "#94a3b8", fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>
-          {isCritical ? `⚠ Only ${slotsLeft} left` : "Availability"}
-        </span>
-        <span style={{ color: "#475569", fontSize: 11, fontWeight: 600 }}>{validClaimed} / {validTotal} slots</span>
-      </div>
-      <div style={S.barTrack}>
-        <div style={{
-          ...S.barFill,
-          width: `${slotPct}%`,
-          background: isCritical ? "#f59e0b" : "#4ade80",
-          boxShadow: isCritical ? "0 0 8px rgba(245,158,11,0.4)" : "0 0 8px rgba(74,222,128,0.3)",
-        }} />
-      </div>
-      <div style={{ textAlign: "right" as const, fontSize: 10, color: isCritical ? "#f59e0b" : "#334155", marginTop: 3, fontWeight: 600 }}>
-        {slotPct}% filled{isCritical ? ` · Only ${slotsLeft} spots left!` : ""}
+      {/* SCARCITY — one bar, no redundant "% filled" line */}
+      <div className="mt-4">
+        <div className="mb-2 flex items-center justify-between">
+          <span className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-widest ${isCritical ? "text-amber-400" : "text-slate-500"}`}>
+            {isCritical && <AlertTriangle className="h-3 w-3" />}
+            {isCritical ? `Only ${slotsLeft} spots left` : "Founding spots"}
+          </span>
+          <span className="tabular-nums text-[11px] font-bold text-slate-400">
+            {validClaimed}/{validTotal}
+          </span>
+        </div>
+        <div className="h-1.5 overflow-hidden rounded-full bg-slate-800">
+          {/* The ONLY inline style: a runtime-computed width Tailwind can't express statically. */}
+          <div
+            className={`h-full rounded-full transition-[width] duration-700 ${isCritical ? "bg-amber-400" : "bg-emerald-400"}`}
+            style={{ width: `${slotPct}%` }}
+          />
+        </div>
       </div>
     </div>
   );
 }
-
-const S: Record<string, React.CSSProperties> = {
-  card: {
-    background: "linear-gradient(160deg, #0d1526 0%, #0a1020 100%)",
-    border: "1px solid #1a2844",
-    borderRadius: 20,
-    padding: "18px 20px 16px",
-    maxWidth: 420,
-    margin: "0 auto",
-    fontFamily: "'Inter', sans-serif",
-    position: "relative",
-    overflow: "hidden",
-    boxShadow: "0 24px 48px -12px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.04)",
-  },
-  topGlow: {
-    position: "absolute", top: 0, left: "10%", right: "10%", height: 1,
-    background: "linear-gradient(90deg, transparent, rgba(59,130,246,0.5), transparent)",
-  },
-  badge: {
-    display: "inline-flex", alignItems: "center", gap: 5,
-    fontSize: 9, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" as const,
-    color: "#60a5fa",
-    background: "rgba(59,130,246,0.08)",
-    border: "1px solid rgba(59,130,246,0.18)",
-    borderRadius: 100, padding: "3px 10px", marginBottom: 8,
-  },
-  title: { fontSize: 15, fontWeight: 800, color: "#fff", margin: "0 0 2px", letterSpacing: "-0.01em" },
-  sub: { fontSize: 11, color: "#334155", margin: "0 0 14px", fontWeight: 500 },
-  timerRow: { display: "flex", alignItems: "center", gap: 4, marginBottom: 10 },
-  unit: { textAlign: "center" as const },
-  num: {
-    fontFamily: "'Courier New', monospace",
-    fontSize: 26, fontWeight: 800, color: "#f1f5f9",
-    background: "#080f1c",
-    border: "1px solid #1a2844",
-    borderRadius: 8, padding: "7px 10px",
-    display: "block", lineHeight: 1, minWidth: 48,
-    letterSpacing: "0.05em",
-    boxShadow: "inset 0 2px 4px rgba(0,0,0,0.4)",
-  },
-  lbl: { fontSize: 9, color: "#1e2d45", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginTop: 4, display: "block", fontWeight: 700 },
-  colon: { fontSize: 20, fontWeight: 800, color: "#1e3a6e", paddingBottom: 14 },
-  barLabel: { display: "flex", justifyContent: "space-between", fontSize: 10, color: "#334155", fontWeight: 600, marginBottom: 4 },
-  barTrack: { height: 3, background: "#0d1a2e", borderRadius: 2, overflow: "hidden", marginBottom: 12 },
-  barFill: { height: "100%", borderRadius: 2, transition: "width 0.6s ease" },
-  divider: { borderTop: "1px solid #0d1a2e", margin: "10px 0" },
-  benefit: {
-    display: "flex", alignItems: "flex-start", gap: 8,
-    background: "#080f1c", border: "1px solid #0d1a2e",
-    borderRadius: 10, padding: "8px 10px", marginBottom: 10,
-  },
-  benefitTitle: { fontSize: 10, fontWeight: 700, color: "#94a3b8", margin: "0 0 1px", letterSpacing: "0.04em" },
-  benefitVal: { fontSize: 13, fontWeight: 800, color: "#4ade80", margin: "0 0 1px", letterSpacing: "-0.01em" },
-  benefitNote: { fontSize: 10, color: "#1e2d45", margin: 0, fontWeight: 500 },
-  availRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
-};
