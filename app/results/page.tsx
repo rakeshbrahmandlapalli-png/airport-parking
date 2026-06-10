@@ -6,18 +6,17 @@ import ModifySearchModal from "@/components/ModifySearchModal";
 import { checkAvailability, getLaunchTimerConfig, type LaunchTimerConfig } from "../actions";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-  MapPin, Clock, ShieldCheck, ChevronRight, ThumbsUp, ArrowLeft,
-  ChevronDown, Plane, Footprints, User, Star, Ban, Bus, BedDouble,
-  Info, PlaneTakeoff, PlaneLanding, MapIcon, Navigation,
-  AlertCircle, Sparkles, MessageSquare, Zap, Tag, CarFront,
-  BatteryCharging, Briefcase, Percent, CheckCircle2, Lock, Loader2, Gift,
-  Mail, Send
+  Clock, ArrowLeft, Plane, AlertCircle, Zap, CarFront, CheckCircle2, Loader2,
+  Mail, Send,
 } from "lucide-react";
 import Link from "next/link";
 import { Suspense, useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { computePrice, calculateDays, loadPricingSettings, DEFAULT_SETTINGS, type PricingSettings } from "../lib/pricing";
-import { sanitizeHtml } from "../lib/sanitizeHtml";
+import { type PricedCompany, type SortKey, sortCompanies } from "../lib/domain";
+import { OperatorCard } from "@/components/results/OperatorCard";
+import { FilterBar } from "@/components/results/FilterBar";
+import { SearchSummaryHeader } from "@/components/results/SearchSummaryHeader";
 
 // ─── RESULTS SESSION CACHE ─────────────────────────────────────────────────────
 // Snapshots the loaded results per search so returning from Checkout is instant —
@@ -126,308 +125,10 @@ function AeroAvatar({ size = "md", thinking = false }: { size?: "sm" | "md" | "l
   );
 }
 
-// ─── BADGE ICON MAP ───────────────────────────────────────────────────────────
-const getBadgeIcon = (label: string) => {
-  const l = label.toUpperCase();
-  if (l.includes("WALK"))                              return Footprints;
-  if (l.includes("BUS"))                               return Bus;
-  if (l.includes("VALET"))                             return CarFront;
-  if (l.includes("HOUR"))                              return Clock;
-  if (l.includes("TERMINAL"))                          return Navigation;
-  if (l.includes("FEE"))                               return Tag;
-  if (l.includes("AERO"))                              return Sparkles;
-  if (l.includes("FAST"))                              return Zap;
-  if (l.includes("PET"))                               return Footprints;
-  if (l.includes("SECURITY") || l.includes("SECURE"))  return ShieldCheck;
-  if (l.includes("MEET"))                              return User;
-  if (l.includes("HOTEL"))                             return BedDouble;
-  if (l.includes("CHARG"))                             return BatteryCharging;
-  if (l.includes("LUGGAGE"))                           return Briefcase;
-  if (l.includes("FREE") || l.includes("CANCEL") || l.includes("INCLUDED")) return CheckCircle2;
-  if (l.includes("DISCOUNT") || l.includes("OFFER"))  return Percent;
-  if (l.includes("VIP") || l.includes("STAR"))        return Star;
-  if (l.includes("LOYALTY") || l.includes("BONUS"))   return Gift;
-  if (l.includes("HIDDEN") || l.includes("NO "))      return CheckCircle2;
-  return Info;
-};
+// NOTE: getBadgeIcon / getAvgRating moved to @/app/lib/domain; CompanyLogo,
+// DetailPanel and ParkingCard were extracted to @/components/results/* as part
+// of the senior-audit component split. ParkingCard → OperatorCard.
 
-const getAvgRating = (reviews: any[]) => {
-  if (!reviews?.length) return null;
-  return (reviews.reduce((s: number, r: any) => s + Number(r.rating || 0), 0) / reviews.length).toFixed(1);
-};
-
-// ─── COMPANY LOGO ─────────────────────────────────────────────────────────────
-function CompanyLogo({ logoUrl, name, size = "md" }: { logoUrl?: string; name: string; size?: "sm" | "md" | "lg" }) {
-  const [imgError, setImgError] = useState(false);
-  useEffect(() => { setImgError(false); }, [logoUrl]);
-  const sizes = {
-    sm: "w-10 h-10 rounded-xl text-base",
-    md: "w-[72px] h-[72px] rounded-[1rem] text-xl",
-    lg: "w-20 h-20 rounded-2xl text-2xl",
-  };
-  if (logoUrl && !imgError) {
-    return (
-      <img
-        src={logoUrl}
-        alt={name}
-        className={`${sizes[size]} object-contain bg-white shrink-0`}
-        onError={() => setImgError(true)}
-      />
-    );
-  }
-  return (
-    <div className={`${sizes[size]} bg-[#1A2235] border border-slate-700/50 flex items-center justify-center font-black text-slate-400 shrink-0`}>
-      {name.charAt(0).toUpperCase()}
-    </div>
-  );
-}
-
-// ─── DETAIL PANEL ─────────────────────────────────────────────────────────────
-function DetailPanel({ option, isHeathrow }: any) {
-  const [activeTab, setActiveTab] = useState("overview");
-  const arrivalInstructions = isHeathrow ? option.on_arrival_lhr : option.on_arrival_ltn;
-  const returnInstructions  = isHeathrow ? option.on_return_lhr  : option.on_return_ltn;
-  const currentReviews      = isHeathrow ? option.lhr_reviews || [] : option.ltn_reviews || [];
-  const safeMapLink = `http://googleusercontent.com/maps.google.com/maps?q=${encodeURIComponent((option.address || "") + " " + (option.postcode || ""))}`;
-  return (
-    <details className="group/details mt-4">
-      <summary className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest cursor-pointer list-none select-none text-blue-400 hover:text-blue-300 transition-colors touch-manipulation [-webkit-tap-highlight-color:transparent] [&::-webkit-details-marker]:hidden">
-        <span>View Details, Instructions &amp; Reviews</span>
-        <ChevronDown className="w-4 h-4 transition-transform duration-300 group-open/details:rotate-180" />
-      </summary>
-      <div className="mt-4 rounded-2xl border border-slate-800 bg-[#060A14] overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
-        <div className="flex flex-wrap items-center gap-1.5 p-2 border-b border-slate-800 overflow-x-auto no-scrollbar">
-          {[
-            { id: "overview", label: "Overview",                           Icon: Info },
-            { id: "arrival",  label: "Arrival",                            Icon: PlaneTakeoff },
-            { id: "return",   label: "Return",                             Icon: PlaneLanding },
-            { id: "map",      label: "Location",                           Icon: MapIcon },
-            { id: "reviews",  label: `Reviews (${currentReviews.length})`, Icon: MessageSquare },
-          ].map((tab) => (
-            <button key={tab.id} onClick={(e) => { e.preventDefault(); setActiveTab(tab.id); }}
-              className={`flex items-center gap-1.5 px-3 py-2 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all whitespace-nowrap touch-manipulation ${activeTab === tab.id ? "bg-blue-600 text-white" : "text-slate-400 hover:text-slate-200 hover:bg-white/5"}`}>
-              <tab.Icon className="w-3 h-3" /> {tab.label}
-            </button>
-          ))}
-        </div>
-        <div className="p-4 sm:p-6 min-h-[80px]">
-          {activeTab === "overview" && <div className="text-xs leading-relaxed text-slate-300" dangerouslySetInnerHTML={{ __html: sanitizeHtml(option.overview) || "Professional secure parking service with 24/7 patrols." }} />}
-          {activeTab === "arrival"  && <div className="text-xs leading-relaxed text-slate-300" dangerouslySetInnerHTML={{ __html: sanitizeHtml(arrivalInstructions) || "Drive directly to the terminal and call 20 mins before arrival." }} />}
-          {activeTab === "return"   && <div className="text-xs leading-relaxed text-slate-300" dangerouslySetInnerHTML={{ __html: sanitizeHtml(returnInstructions)  || "Call the dispatch team after clearing customs." }} />}
-          {activeTab === "map" && (
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">Arrival Location</p>
-                <p className="text-sm font-bold text-white">{option.address || "Details provided at terminal"}</p>
-                <p className="text-xs mt-1 text-slate-400">Postcode: {option.postcode || (isHeathrow ? "TW6 1EW" : "LU2 9LY")}</p>
-                {option.address && (
-                  <a href={safeMapLink} target="_blank" rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 mt-3 text-[10px] font-black uppercase text-blue-400 hover:text-blue-300 touch-manipulation">
-                    <Navigation className="w-3 h-3" /> Get Directions
-                  </a>
-                )}
-              </div>
-              <div className="flex-1 h-32 sm:h-40 bg-[#0A101D] rounded-xl overflow-hidden relative border border-slate-800 flex items-center justify-center group cursor-pointer">
-                {option.map_url
-                  ? <iframe src={option.map_url} width="100%" height="100%" style={{ border: 0 }} loading="lazy" referrerPolicy="no-referrer-when-downgrade" className="grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500" />
-                  : <div className="text-slate-500 text-[10px] font-black uppercase flex flex-col items-center gap-2"><MapPin className="w-5 h-5" /> Map Preview</div>}
-              </div>
-            </div>
-          )}
-          {activeTab === "reviews" && (
-            <div className="space-y-4 max-h-60 overflow-y-auto pr-2">
-              {currentReviews.length > 0 ? currentReviews.map((r: any) => (
-                <div key={r.id} className="border-b border-slate-800 pb-4 last:border-0">
-                  <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
-                    <div className="flex items-center gap-2 font-bold text-xs text-blue-400">
-                      {r.author}<span className="text-slate-600">•</span>
-                      <span className="flex items-center gap-0.5 text-amber-400"><Star className="w-2.5 h-2.5 fill-current" /> {r.rating}/5</span>
-                    </div>
-                    {r.date && <span className="text-[10px] font-bold text-slate-500">{new Date(r.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>}
-                  </div>
-                  <div className="flex items-center gap-2 mb-1">
-                    {r.verified && <span className="text-[9px] font-black uppercase text-emerald-500 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Verified</span>}
-                    {r.source   && <span className="text-[9px] font-black uppercase text-slate-400 bg-slate-800/50 px-1.5 py-0.5 rounded">{r.source}</span>}
-                  </div>
-                  <p className="text-xs italic text-slate-300">"{r.comment}"</p>
-                </div>
-              )) : <p className="text-xs text-slate-500">No reviews yet.</p>}
-            </div>
-          )}
-        </div>
-      </div>
-    </details>
-  );
-}
-
-// ─── PARKING CARD ─────────────────────────────────────────────────────────────
-function ParkingCard({
-  option, duration, isHeathrow, handleBooking, featured = false, liveRateLoading = false,
-}: {
-  option: any; duration: number; isHeathrow: boolean;
-  handleBooking: (o: any, price: number) => void;
-  featured?: boolean; liveRateLoading?: boolean;
-}) {
-  const priceObj   = option.calculatedPriceObj;
-  const isSoldOut  = isHeathrow ? option.lhr_sold_out  : option.ltn_sold_out;
-  const isFeatured = isHeathrow ? option.lhr_featured  : option.ltn_featured;
-  const reviews    = isHeathrow ? option.lhr_reviews || [] : option.ltn_reviews || [];
-  const rating     = getAvgRating(reviews);
-  const { original, final, source } = priceObj;
-  const isDiscounted = original > final && !isSoldOut;
-  const perDay = duration > 0 ? (final / duration) : final;
-
-  const pricingMode: "api" | "pivot" = option.pricing_mode === "pivot" ? "pivot" : "api";
-  const isApiMode = pricingMode === "api";
-
-  const promoBadges: { label: string; color: string; icon: any }[] = [];
-  if (isFeatured) promoBadges.push({ label: "Best Weekend Value", color: "bg-[#064E3B] text-emerald-400", icon: Sparkles });
-  else if (isDiscounted) {
-    const savePct = Math.round(((original - final) / original) * 100);
-    if (savePct > 0) promoBadges.push({ label: `${savePct}% Launch Special`, color: "bg-[#1E3A8A] text-blue-400", icon: Percent });
-  }
-
-  const categoryLabel = option.category?.replace(/-/g, " ")?.replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Meet Greet";
-  const featureBadges = (option.badges || []).filter((b: any) => b.category === "General" || b.category === option.category);
-
-  const showSpinner  = isApiMode && liveRateLoading;
-  const showPrice    = !showSpinner && final > 0 && !isSoldOut;
-  const showNA       = !showSpinner && !isSoldOut && final <= 0;
-  const canSelect    = !isSoldOut && !showSpinner && final > 0;
-
-  return (
-    <div
-      className={`rounded-[1.25rem] overflow-hidden border transition-all ${featured ? "border-blue-500/40 shadow-[0_0_40px_-10px_rgba(37,99,235,0.2)]" : "border-slate-800 hover:border-slate-700"} ${isSoldOut ? "opacity-60 grayscale-[30%]" : ""}`}
-      style={{ background: "#0B1120" }}
-    >
-      {featured && <div className="h-[2px] bg-gradient-to-r from-blue-600 via-indigo-500 to-emerald-500" />}
-      <div className="flex flex-col md:flex-row">
-
-        {/* LEFT SECTION (Logo, Name, Badges) */}
-        <div className="flex-1 p-6 md:p-8 flex flex-col items-start justify-center">
-
-          {/* Top Promo Badge */}
-          {promoBadges.length > 0 && (
-            <div className="mb-4">
-              {promoBadges.map((b, i) => (
-                <span key={i} className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${b.color}`}>
-                  <b.icon className="w-3 h-3" /> {b.label}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Logo & Name Row */}
-          <div className="flex items-center gap-5 w-full">
-            <CompanyLogo logoUrl={option.logo_url} name={option.name} size="md" />
-            <div className="min-w-0">
-              <h2 className="text-2xl md:text-[2rem] font-black uppercase tracking-tight text-white leading-none truncate pb-1">
-                {option.name}
-              </h2>
-            </div>
-          </div>
-
-          {/* Feature Badges (Green Tags) */}
-          <div className="flex flex-wrap gap-2 mt-5">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-slate-800 text-slate-300 border border-slate-700">
-              <ThumbsUp className="w-3 h-3" /> {categoryLabel}
-            </span>
-            {source === "api" && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest text-emerald-400 border border-emerald-500/20" style={{ background: "rgba(16, 185, 129, 0.05)" }}>
-                <Zap className="w-3 h-3" /> Live Rate
-              </span>
-            )}
-            {source === "pivot" && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-slate-700/50 text-slate-400 border border-slate-600/30">
-                <Clock className="w-3 h-3" /> Fixed Rate
-              </span>
-            )}
-            {featureBadges.map((badge: any, i: number) => {
-              const BadgeIcon = getBadgeIcon(badge.label);
-              return (
-                <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest text-emerald-400 border border-emerald-500/20" style={{ background: "rgba(16, 185, 129, 0.05)" }}>
-                  <BadgeIcon className="w-3 h-3" /> {badge.label}
-                </span>
-              );
-            })}
-          </div>
-
-          {/* Details & Reviews Dropdown */}
-          <DetailPanel option={option} isHeathrow={isHeathrow} />
-        </div>
-
-        {/* RIGHT SECTION (Pricing & CTA) */}
-        <div className="md:w-[300px] shrink-0 border-t md:border-t-0 md:border-l border-slate-800/80 flex flex-col justify-center items-center py-8 px-6 relative" style={{ background: "#060B14" }}>
-          
-          <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500 mb-1.5 text-center">Total Stay Cost</p>
-
-          {showSpinner && (
-            <div className="flex flex-col items-center gap-2 py-4">
-              <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
-              <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest animate-pulse">
-                Fetching Rate...
-              </p>
-            </div>
-          )}
-
-          {showNA && (
-            <div className="flex flex-col items-center gap-1 py-4 text-center">
-              <AlertCircle className="w-6 h-6 text-slate-600 mb-1" />
-              <p className="text-slate-400 text-lg font-black tracking-tight">Unavailable</p>
-              <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest">
-                {isApiMode ? "API Offline" : "No Manual Data"}
-              </p>
-            </div>
-          )}
-
-          {isSoldOut && (
-            <p className="font-black tracking-tighter leading-none text-slate-500 line-through text-4xl mb-4">
-              £{final > 0 ? final.toFixed(2) : "—"}
-            </p>
-          )}
-
-          {showPrice && (
-            <div className="flex flex-col items-center text-center">
-              <p className="font-black tracking-tighter leading-none text-emerald-400 text-[2.75rem] mb-2">
-                £{final.toFixed(2)}
-              </p>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] mb-1">
-                Averaging £{perDay.toFixed(2)} / day
-              </p>
-              {source === "api" && (
-                <p className="text-[9px] font-black uppercase tracking-widest text-emerald-600 flex items-center gap-1 mb-4">
-                  <Zap className="w-3 h-3" /> Live Price
-                </p>
-              )}
-              {source === "pivot" && <div className="h-4 mb-4"></div>}
-            </div>
-          )}
-
-          <button
-            disabled={!canSelect}
-            onClick={() => canSelect && handleBooking(option, final)}
-            className={`w-full h-12 rounded-xl font-black flex items-center justify-center gap-2 uppercase tracking-[0.15em] text-xs transition-all ${
-              canSelect
-                ? "bg-[#2563EB] hover:bg-blue-500 text-white active:scale-95 shadow-[0_0_15px_rgba(37,99,235,0.3)]"
-                : "bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700"
-            }`}
-          >
-            {isSoldOut   ? <><Ban className="w-4 h-4" /> Sold Out</>
-            : showSpinner ? <><Loader2 className="w-4 h-4 animate-spin" /> Loading...</>
-            : showNA      ? <><AlertCircle className="w-4 h-4" /> Unavailable</>
-            :               <>Select <ChevronRight className="w-4 h-4" /></>}
-          </button>
-
-          {canSelect && (
-            <p className="flex items-center justify-center gap-1.5 text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-4">
-              <Lock className="w-3 h-3" /> Payments secured by Stripe
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─── FETCH WITH TIMEOUT ───────────────────────────────────────────────────────
 // 🟢 TIMEOUT COMPRESSED: Lowered to 3500ms to immediately unblock UI performance
@@ -562,7 +263,7 @@ function EmailQuoteCard({
 }
 
 // ─── MAIN RESULTS CONTENT ─────────────────────────────────────────────────────
-function ResultsContent() {
+function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
   const searchParams = useSearchParams();
   const router       = useRouter();
 
@@ -580,6 +281,7 @@ function ResultsContent() {
   const [livePrices,     setLivePrices]     = useState<Record<string, number | null>>(initialCache?.livePrices ?? {});
   const [liveLoadingIds, setLiveLoadingIds] = useState<Set<string>>(new Set());
   const [pinnedOrder, setPinnedOrder] = useState<string[]>(initialCache?.pinnedOrder ?? []);
+  const [sortKey, setSortKey] = useState<SortKey>("recommended");
 
   const airport     = searchParams.get("airport")      || "Luton (LTN)";
   const dropoff     = searchParams.get("dropoffDate")  || "";
@@ -859,11 +561,27 @@ function ResultsContent() {
     }).filter(Boolean) as any[];
   }, [pinnedOrder, companies, livePrices, settings, airport, duration, dropoff]);
 
+  // Pure client-side view transform over the engine's authoritative output.
+  // "recommended" keeps the engine's pinned order; price/rating only re-sort.
+  const visibleOperators = useMemo<PricedCompany[]>(
+    () => sortCompanies(processedCompanies as PricedCompany[], sortKey, isHeathrow),
+    [processedCompanies, sortKey, isHeathrow],
+  );
+
   return (
     <div className="max-w-[1000px] mx-auto px-4 py-6 md:py-8">
       <div className="mb-10 mt-4">
         <BookingStepper currentStep={stepToIndex(searchParams.get("step"))} />
       </div>
+
+      <SearchSummaryHeader
+        airport={airport}
+        dropoff={dropoff}
+        pickup={pickup}
+        nights={duration}
+        serviceType={serviceType}
+        onEdit={onEditSearch}
+      />
 
       {/* Aero concierge bar + launch timer */}
       <div className="flex flex-col lg:flex-row gap-3 mb-8">
@@ -872,10 +590,10 @@ function ResultsContent() {
           <AeroAvatar size="md" />
           <div className="relative z-10 min-w-0">
             <p className="text-[9px] font-black uppercase tracking-[0.18em] text-blue-400 flex items-center gap-1.5">
-              <Zap className="w-3 h-3 fill-current" /> Aero concierge · {processedCompanies.length} verified
+              <Zap className="w-3 h-3 fill-current" /> Aero concierge · {visibleOperators.length} verified
             </p>
             <p className="text-white text-sm font-bold leading-snug mt-0.5">
-              {processedCompanies.length > 0
+              {visibleOperators.length > 0
                 ? `All approved & secured for your dates at ${isHeathrow ? "Heathrow" : "Luton"}.`
                 : "Scanning approved compounds..."}
             </p>
@@ -911,7 +629,7 @@ function ResultsContent() {
           <ResultsCardSkeleton />
           <ResultsCardSkeleton />
         </div>
-      ) : processedCompanies.length === 0 ? (
+      ) : visibleOperators.length === 0 ? (
         <div className="text-center py-16 md:py-24 bg-[#0F1523] rounded-2xl border border-dashed border-slate-700 px-6">
           {!serviceType.toLowerCase().includes("meet") ? (
             <>
@@ -941,22 +659,27 @@ function ResultsContent() {
           )}
         </div>
       ) : (
-        <div className="space-y-5">
-          {processedCompanies.map((option, idx) => (
-            <ParkingCard
-              key={option.id}
-              option={option}
-              duration={duration}
-              isHeathrow={isHeathrow}
-              handleBooking={handleBooking}
-              featured={idx === 0}
-              liveRateLoading={liveLoadingIds.has(option.id)}
-            />
-          ))}
-        </div>
+        <>
+          {visibleOperators.length > 1 && (
+            <FilterBar value={sortKey} onChange={setSortKey} count={visibleOperators.length} />
+          )}
+          <div className="space-y-5">
+            {visibleOperators.map((operator, idx) => (
+              <OperatorCard
+                key={operator.id}
+                operator={operator}
+                duration={duration}
+                isHeathrow={isHeathrow}
+                onSelect={handleBooking}
+                featured={sortKey === "recommended" && idx === 0}
+                liveRateLoading={liveLoadingIds.has(operator.id)}
+              />
+            ))}
+          </div>
+        </>
       )}
 
-      {processedCompanies.length > 0 && (
+      {visibleOperators.length > 0 && (
         <EmailQuoteCard
           airport={airport}
           dropoffDate={dropoff}
@@ -964,7 +687,7 @@ function ResultsContent() {
           dropoffTime={dropTime}
           pickupTime={pickTime}
           serviceType={serviceType}
-          fromPrice={Number(processedCompanies[0]?.calculatedPriceObj?.final) || undefined}
+          fromPrice={Number(visibleOperators[0]?.calculatedPriceObj?.final) || undefined}
         />
       )}
     </div>
@@ -1022,7 +745,7 @@ function ResultsLayout() {
           <AirportTitle />
         </button>
       </header>
-      <div className="relative z-10"><ResultsContent /></div>
+      <div className="relative z-10"><ResultsContent onEditSearch={() => setIsEditModalOpen(true)} /></div>
       <ModifySearchModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
