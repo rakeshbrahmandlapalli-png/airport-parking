@@ -74,7 +74,7 @@ export default function LaunchTimer({
   // CLS-safe skeleton — reserves the same footprint as the live card.
   if (!mounted || timeLeft === null) {
     return (
-      <div className="mx-auto h-[340px] max-w-[420px] animate-pulse rounded-2xl border border-slate-800 bg-[#0B1120]" />
+      <div className="h-[340px] w-full animate-pulse rounded-2xl border border-slate-800 bg-[#0B1120]" />
     );
   }
 
@@ -86,7 +86,7 @@ export default function LaunchTimer({
   ];
 
   return (
-    <div className="relative mx-auto max-w-[420px] overflow-hidden rounded-2xl border border-slate-800 bg-[#0B1120] p-5 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.7)]">
+    <div className="relative w-full overflow-hidden rounded-2xl border border-slate-800 bg-[#0B1120] p-5 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.7)]">
       {/* Hairline top glow — the single premium flourish */}
       <div className="pointer-events-none absolute inset-x-[15%] top-0 h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent" />
 
