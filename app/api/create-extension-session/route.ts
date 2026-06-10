@@ -192,18 +192,12 @@ export async function POST(req: Request) {
       );
     }
 
-    let rawNewFinal = priceResult.final;
-
-    // 🟢 EXACT FIX: Apply the Dynamic Surcharge to the server calculation
-    // Ensures they pay the correct margin on the extended days
-    if (company && company.dynamic_surcharge_percent) {
-      const surcharge = Number(company.dynamic_surcharge_percent || 0);
-      if (surcharge > 0) {
-        rawNewFinal = rawNewFinal * (1 + (surcharge / 100));
-      }
-    }
-
-    const newFullTotal = roundPennies(rawNewFinal);
+    // Surcharge is applied ONCE inside computePrice (pricing.ts) for both API
+    // and pivot companies, so priceResult.final is already surcharge-inclusive.
+    // Removed the duplicate re-multiplication that double-charged pivot
+    // companies on extensions. Fixed 2026-06: computePrice is the single source
+    // of truth.
+    const newFullTotal = roundPennies(priceResult.final);
     const alreadyPaid = roundPennies(Number(booking.total_price) || 0);
 
     // ── 9. Difference + £10 amendment fee ────────────────────────────────────

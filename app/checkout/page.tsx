@@ -361,25 +361,14 @@ function CheckoutContent() {
       fallbackPrice: fallbackUrlPrice,
     });
 
-    // 🟢 EXACT FIX: Apply the Dynamic Surcharge multiplier to the final checkout price
-    const isApiMode = company && company.pricing_mode !== "pivot" && !!company.api_token;
-    
-    let finalTotal = pr.final;
-    let originalTotal = pr.original;
-
-    if (!isApiMode && company) {
-      // If we are in manual pivot mode, apply the surcharge percent
-      const surcharge = Number(company.dynamic_surcharge_percent || 0);
-      const surchargeMultiplier = 1 + (surcharge / 100);
-
-      finalTotal = finalTotal * surchargeMultiplier;
-      originalTotal = originalTotal * surchargeMultiplier;
-    }
-
-    return { 
-      original: originalTotal, 
-      final: finalTotal, 
-      modifier: pr.modifier 
+    // Surcharge is applied ONCE inside computePrice (pricing.ts) for both API
+    // and pivot companies. This block previously re-multiplied pivot prices by
+    // (1 + surcharge) AGAIN — double-charging. Fixed 2026-06: trust the engine
+    // as the single source of truth, matching results + the server route.
+    return {
+      original: pr.original,
+      final:    pr.final,
+      modifier: pr.modifier,
     };
   }, [company, urlName, type, bookingDays, liveApiRates, dropDate, airport, fallbackUrlPrice, settings]);
 

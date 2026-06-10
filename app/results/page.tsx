@@ -842,12 +842,14 @@ function ResultsContent() {
           fallbackPrice: 0,
         });
 
-        const surcharge = Number(c.dynamic_surcharge_percent || 0);
-        const surchargeMultiplier = 1 + (surcharge / 100);
-
+        // Surcharge is applied ONCE inside computePrice (pricing.ts) for both
+        // API and pivot companies. This branch previously multiplied by
+        // (1 + surcharge) AGAIN — double-charging pivot companies ((1+s)²
+        // instead of (1+s)). Fixed 2026-06: computePrice is the single source
+        // of truth, matching checkout/page.tsx and api/checkout/route.ts.
         priceObj = {
-          original: pr.original * surchargeMultiplier,
-          final:    pr.final * surchargeMultiplier,
+          original: pr.original,
+          final:    pr.final,
           modifier: pr.modifier,
           source:   pr.ok ? "pivot" : "none",
         };

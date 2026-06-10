@@ -221,16 +221,13 @@ export async function POST(req: Request) {
       );
     }
 
+    // Surcharge is applied ONCE inside computePrice (pricing.ts) for both API
+    // and pivot companies — so priceResult.final is already surcharge-inclusive.
+    // This block previously re-multiplied by (1 + surcharge), which double-
+    // charged pivot companies AND broke parity with the client on API companies
+    // (client applies once, server was applying twice → 409 mismatch modal).
+    // Fixed 2026-06: computePrice is the single source of truth.
     let serverTotal = priceResult.final;
-
-    // 🟢 EXACT FIX: Apply the Dynamic Surcharge to the server calculation
-    // This correctly matches the math on the results and checkout frontend pages
-    if (company && company.dynamic_surcharge_percent) {
-      const surcharge = Number(company.dynamic_surcharge_percent || 0);
-      if (surcharge > 0) {
-        serverTotal = serverTotal * (1 + (surcharge / 100));
-      }
-    }
 
     // ── 8. Re-validate promo code server-side (never trust client discount) ────
     let appliedPromo = "None";
