@@ -63,6 +63,120 @@ function resolveEmail(booking: any): string {
   return (booking.email || booking.customerEmail || "").trim().toLowerCase();
 }
 
+// ─── MAP / DIRECTIONS ENGINE ──────────────────────────────────────────────────
+// A broken map link = a missed flight. Google Maps EMBED urls (…/maps/embed?pb=)
+// are for <iframe> only — putting one in an <a href> opens a blank/broken page.
+// This engine NEVER emits an embed url. It resolves the correct destination by
+// SERVICE TYPE (Meet & Greet → terminal forecourt; Park & Ride → the off-airport
+// compound) and returns a turn-by-turn directions link, with a bulletproof
+// fallback chain that ignores junk data (e.g. an email pasted in `address`).
+
+type ServiceKind = "park-ride" | "meet-greet";
+
+function classifyService(serviceType?: string): ServiceKind {
+  const s = (serviceType || "").toLowerCase();
+  return /park\s*&?\s*ride|park.?and.?ride/.test(s) ? "park-ride" : "meet-greet";
+}
+
+/** First non-empty, trimmed string from the candidates. */
+function firstClean(...vals: Array<unknown>): string {
+  for (const v of vals) {
+    const s = String(v ?? "").trim();
+    if (s) return s;
+  }
+  return "";
+}
+
+/** Drop junk addresses (empty, too short, or a stray email in the address field). */
+function sanitizeAddress(addr: string): string {
+  const s = addr.trim();
+  if (!s || s.includes("@") || s.length < 4) return "";
+  return s;
+}
+
+/** Validate + normalise a UK postcode ("ub70jh" → "UB7 0JH"); "" if invalid. */
+function sanitizePostcode(pc: string): string {
+  const raw = pc.toUpperCase().replace(/\s+/g, "");
+  const m = raw.match(/^([A-Z]{1,2}\d[A-Z\d]?)(\d[A-Z]{2})$/);
+  return m ? `${m[1]} ${m[2]}` : "";
+}
+
+const isEmbedUrl = (url?: string): boolean => !!url && /\/maps\/embed/i.test(url);
+
+/** A clickable maps link safe for an href (i.e. NOT an embed). */
+function isNavigableMapsUrl(url?: string): boolean {
+  return !!url && /^https?:\/\//i.test(url) && !isEmbedUrl(url) &&
+    /(google\.[a-z.]+\/maps|maps\.app\.goo\.gl|goo\.gl\/maps)/i.test(url);
+}
+
+/** Pull "lat,lng" out of a Google embed pb string (…!2d<lng>…!3d<lat>…). */
+function coordsFromEmbed(url?: string): string | null {
+  if (!url) return null;
+  const lng = url.match(/!2d(-?\d+(?:\.\d+)?)/);
+  const lat = url.match(/!3d(-?\d+(?:\.\d+)?)/);
+  return lat && lng ? `${lat[1]},${lng[1]}` : null;
+}
+
+export interface Destination {
+  kind: ServiceKind;
+  address: string;   // sanitised (junk removed)
+  postcode: string;  // validated UK postcode or ""
+  mapUrl: string;    // may be an embed — handled downstream, never href'd
+}
+
+/**
+ * Resolve WHERE the customer should drive, by service type:
+ *  - Meet & Greet → the terminal forecourt (terminal_data[terminal]), then company.
+ *  - Park & Ride  → the off-airport compound (company.address) — never the terminal.
+ */
+export function resolveDestination(serviceType: string | undefined, company: any, terminalInfo: any): Destination {
+  const kind = classifyService(serviceType);
+  if (kind === "park-ride") {
+    return {
+      kind,
+      address:  sanitizeAddress(firstClean(company?.address)),
+      postcode: sanitizePostcode(firstClean(company?.postcode)),
+      mapUrl:   firstClean(company?.map_url),
+    };
+  }
+  return {
+    kind,
+    address:  sanitizeAddress(firstClean(terminalInfo?.address, company?.address)),
+    postcode: sanitizePostcode(firstClean(terminalInfo?.postcode, company?.postcode)),
+    mapUrl:   firstClean(terminalInfo?.map_url, company?.map_url),
+  };
+}
+
+/**
+ * Build a guaranteed-navigable Google Maps directions URL. Priority:
+ *  1. An explicit, non-embed maps link on the destination.
+ *  2. address + validated UK postcode (postcodes pin precisely; Meet & Greet
+ *     also appends the airport name to disambiguate the terminal).
+ *  3. exact coordinates parsed from an embed pb string.
+ *  4. company name + airport (last resort).
+ * Always returns a /maps/dir link — NEVER a /maps/embed url.
+ */
+export function buildDirectionsUrl(dest: Destination, companyName: string, airportName: string): string {
+  const DIR = "https://www.google.com/maps/dir/?api=1&destination=";
+
+  if (isNavigableMapsUrl(dest.mapUrl)) return dest.mapUrl;
+
+  const hasPin = !!dest.postcode || dest.address.length > 4;
+  if (hasPin) {
+    // A Park & Ride compound is OFF-airport — don't muddy the query with the
+    // airport name; its own postcode is the precise pin.
+    const parts = dest.kind === "park-ride"
+      ? [dest.address, dest.postcode]
+      : [dest.address, dest.postcode, airportName];
+    return DIR + encodeURIComponent(parts.filter(Boolean).join(", "));
+  }
+
+  const coords = coordsFromEmbed(dest.mapUrl);
+  if (coords) return DIR + encodeURIComponent(coords);
+
+  return DIR + encodeURIComponent(`${firstClean(companyName, "Airport Parking")} ${airportName}`.trim());
+}
+
 // ─── COMPANY RESOLVER ─────────────────────────────────────────────────────────
 
 /**
@@ -125,15 +239,18 @@ export async function sendBookingReceipt(
       ? (company?.on_return_ltn || company?.on_return || "Call dispatch after collecting your luggage.")
       : (company?.on_return_lhr || company?.on_return || "Call dispatch after collecting your luggage.");
 
-    // Address & map
-    const displayAddress  = terminalInfo?.address  || company?.address  || "Terminal Location";
-    const displayPostcode = terminalInfo?.postcode  || company?.postcode || "";
-
-    // FIX: if there is a specific terminal map_url use it; otherwise build a generic Google Maps link
-    const mapsLink = terminalInfo?.map_url
-      || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-           `${str(company?.name, "Airport Parking")} ${displayAddress} ${displayPostcode}`.trim()
-         )}`;
+    // Address & map — SERVICE-AWARE + embed-safe (see MAP / DIRECTIONS ENGINE).
+    // Meet & Greet pins the terminal; Park & Ride pins the off-airport compound.
+    // buildDirectionsUrl NEVER returns an iframe embed url, so the button always
+    // opens real turn-by-turn directions.
+    const destination = resolveDestination(str(booking.service_type, "Meet & Greet"), company, terminalInfo);
+    const displayAddress  = destination.address || (isLuton ? "London Luton Airport" : "London Heathrow Airport");
+    const displayPostcode = destination.postcode;
+    const mapsLink = buildDirectionsUrl(
+      destination,
+      str(company?.name, "Airport Parking"),
+      str(booking.airport, isLuton ? "Luton Airport" : "Heathrow Airport"),
+    );
 
     // Phones — FIX: use canonical db field names (phone_number / phone_number_2)
     const phone1     = str(company?.phone_number,   "07397705005");
@@ -228,7 +345,7 @@ export interface ReceiptHtmlParams {
 
 export function buildReceiptHtml(p: ReceiptHtmlParams): string {
   const phone2Button = p.phone2
-    ? `<a href="tel:${p.phone2Link}" style="display:inline-block;background-color:#334155;color:#ffffff;text-decoration:none;padding:9px 16px;border-radius:8px;font-weight:800;font-size:12px;margin-left:6px;">📞 ${p.phone2}</a>`
+    ? `<a href="tel:${p.phone2Link}" style="display:inline-block;background-color:#334155;color:#ffffff;text-decoration:none;padding:13px 18px;border-radius:8px;font-weight:800;font-size:14px;margin-left:6px;">📞 ${p.phone2}</a>`
     : "";
 
   const firstName = String(p.booking.full_name || "").trim().split(" ")[0];
@@ -268,7 +385,7 @@ export function buildReceiptHtml(p: ReceiptHtmlParams): string {
           <td style="padding:32px 32px 0;text-align:center;">
             <span style="display:inline-block;background-color:${p.statusBg};color:${p.statusColor};padding:7px 18px;border-radius:999px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;">● Booking ${p.statusText}</span>
             <h1 style="margin:18px 0 6px;font-size:23px;font-weight:900;color:#0f172a;">${greeting}</h1>
-            <p style="margin:0;font-size:14px;color:#64748b;line-height:1.55;">Your premium parking space is reserved. Save this email — your itinerary and arrival steps are below.</p>
+            <p style="margin:0;font-size:14px;color:#64748b;line-height:1.55;">Your space is secured and your booking is confirmed. Save this email — everything you need for a seamless arrival is below.</p>
           </td>
         </tr>
 
@@ -356,7 +473,7 @@ export function buildReceiptHtml(p: ReceiptHtmlParams): string {
                     <p style="margin:0 0 6px;font-size:11px;font-weight:900;color:#60a5fa;text-transform:uppercase;letter-spacing:0.5px;">✈️ On Arrival • ${p.dropDate} @ ${p.dropTime}</p>
                     <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#ffffff;">${p.displayAddress}${p.displayPostcode ? `, ${p.displayPostcode}` : ""}</p>
                     <p style="margin:0 0 12px;font-size:13px;color:#cbd5e1;line-height:1.55;">${p.arrivalInstructions}</p>
-                    <a href="tel:${p.phone1Link}" style="display:inline-block;background-color:#2563eb;color:#ffffff;text-decoration:none;padding:9px 16px;border-radius:8px;font-weight:800;font-size:12px;">📞 ${p.phone1}</a>${phone2Button}
+                    <a href="tel:${p.phone1Link}" style="display:inline-block;background-color:#2563eb;color:#ffffff;text-decoration:none;padding:13px 18px;border-radius:8px;font-weight:800;font-size:14px;">📞 ${p.phone1}</a>${phone2Button}
                   </td>
                 </tr></table>
 
@@ -364,11 +481,11 @@ export function buildReceiptHtml(p: ReceiptHtmlParams): string {
                   <td style="padding:16px;border-left:4px solid #10b981;border-radius:10px;">
                     <p style="margin:0 0 6px;font-size:11px;font-weight:900;color:#34d399;text-transform:uppercase;letter-spacing:0.5px;">🛬 On Return • ${p.pickDate} @ ${p.pickTime}</p>
                     <p style="margin:0 0 12px;font-size:13px;color:#cbd5e1;line-height:1.55;">${p.returnInstructions}</p>
-                    <a href="tel:${p.phone1Link}" style="display:inline-block;background-color:#10b981;color:#ffffff;text-decoration:none;padding:9px 16px;border-radius:8px;font-weight:800;font-size:12px;">📞 ${p.phone1}</a>${phone2Button}
+                    <a href="tel:${p.phone1Link}" style="display:inline-block;background-color:#10b981;color:#ffffff;text-decoration:none;padding:13px 18px;border-radius:8px;font-weight:800;font-size:14px;">📞 ${p.phone1}</a>${phone2Button}
                   </td>
                 </tr></table>
 
-                <a href="${p.mapsLink}" style="display:block;text-align:center;background-color:#334155;color:#ffffff;text-decoration:none;padding:14px;border-radius:10px;font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:1px;">📍 View Airport Directions</a>
+                <a href="${p.mapsLink}" style="display:block;text-align:center;background-color:#2563eb;background-image:linear-gradient(90deg,#2563eb,#3b82f6);color:#ffffff;text-decoration:none;padding:18px 20px;border-radius:12px;font-weight:900;font-size:16px;letter-spacing:0.3px;">📍 Get Directions</a>
               </td></tr>
             </table>
           </td>
@@ -449,40 +566,130 @@ export async function sendAmendmentAlerts(booking: any, company: any): Promise<v
 /**
  * Sends an automated post-trip review request.
  */
+const TRUSTPILOT_REVIEW_URL = "https://www.trustpilot.com/evaluate/aeroparkdirect.co.uk";
+
 export async function sendReviewRequest(
   customerEmail: string,
   customerName: string,
   bookingRef: string
 ): Promise<{ success: boolean; error?: any }> {
   try {
-    // FIX: .split(" ")[0] on an empty string returns "" — guard it
-    const firstName = customerName.split(" ")[0] || "Traveller";
+    const recipient = (customerEmail || "").trim().toLowerCase();
+    if (!recipient) {
+      console.error("sendReviewRequest: no recipient email");
+      return { success: false, error: "No recipient email" };
+    }
+    // .split(" ")[0] on an empty string returns "" — guard it.
+    const firstName = (customerName || "").trim().split(" ")[0] || "there";
 
     await resend.emails.send({
       from:    "AeroPark Direct <info@aeroparkdirect.co.uk>",
-      to:      customerEmail,
-      subject: `Welcome back! How was your experience? (${bookingRef})`,
-      html: `
-        <div style="font-family:-apple-system,system-ui,sans-serif;max-width:600px;margin:auto;padding:30px;background-color:#f8fafc;border-radius:16px;border:1px solid #e2e8f0;text-align:center;">
-          <h1 style="color:#0f172a;margin:0;font-size:24px;font-weight:900;">AEROPARK<span style="color:#3b82f6;">DIRECT</span></h1>
-          <div style="background-color:#fff;padding:40px 30px;border-radius:20px;margin-top:20px;">
-            <h2 style="color:#0f172a;margin-top:0;">Welcome Home, ${firstName}! ✈️</h2>
-            <p style="color:#475569;line-height:1.6;">We hope you had a fantastic trip. Would you mind taking 60 seconds to review our service?</p>
-            <div style="margin:30px 0;">
-              <a href="https://uk.trustpilot.com/evaluate/aeroparkdirect.co.uk"
-                 style="background-color:#059669;color:white;padding:18px 32px;text-decoration:none;border-radius:16px;font-weight:900;text-transform:uppercase;display:inline-block;">
-                Leave a 5-Star Review
-              </a>
-            </div>
-          </div>
-        </div>
-      `,
+      to:      recipient,
+      replyTo: "info@aeroparkdirect.co.uk",
+      subject: `${firstName}, how did we do? — ${bookingRef}`,
+      html: buildReviewHtml(firstName, bookingRef),
     });
     return { success: true };
   } catch (err) {
     console.error("sendReviewRequest failed:", err);
     return { success: false, error: err };
   }
+}
+
+// ─── REVIEW EMAIL HTML ────────────────────────────────────────────────────────
+// Table-based + inline styles for broad email-client support. One job: get the
+// customer to Trustpilot. The CTA is a single, full-width, unmissable button.
+
+export function buildReviewHtml(firstName: string, bookingRef: string): string {
+  const stars = "★★★★★";
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta name="x-apple-disable-message-reformatting">
+  <title>How was your experience?</title>
+</head>
+<body style="margin:0;padding:0;background-color:#eef2f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">Your car's home safe — a 30-second review helps another traveller park with confidence.</div>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#eef2f7;">
+  <tr>
+    <td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%;background-color:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 10px 30px rgba(15,23,42,0.10);">
+
+        <!-- Accent bar -->
+        <tr><td style="height:5px;background-color:#2563eb;background-image:linear-gradient(90deg,#2563eb,#3b82f6,#10b981);font-size:0;line-height:0;">&nbsp;</td></tr>
+
+        <!-- Header -->
+        <tr>
+          <td style="background-color:#0b1220;padding:34px 32px 30px;text-align:center;">
+            <p style="margin:0;font-size:24px;font-weight:900;letter-spacing:-0.5px;color:#ffffff;">AEROPARK<span style="color:#3b82f6;">DIRECT</span></p>
+            <p style="margin:7px 0 0;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#64748b;font-weight:700;">Premium Airport Parking</p>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:38px 32px 8px;text-align:center;">
+            <p style="margin:0 0 14px;font-size:30px;">🚗 ✈️</p>
+            <h1 style="margin:0 0 12px;font-size:24px;font-weight:900;color:#0f172a;">Welcome back, ${firstName}.</h1>
+            <p style="margin:0;font-size:15px;line-height:1.6;color:#475569;">
+              Your car is home safe and your trip is complete. It would mean a great deal if you'd share how we did —
+              your feedback helps the next traveller park with total confidence.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Stars -->
+        <tr>
+          <td align="center" style="padding:22px 32px 0;">
+            <div style="font-size:34px;letter-spacing:6px;color:#00b67a;line-height:1;">${stars}</div>
+            <p style="margin:10px 0 0;font-size:12px;font-weight:700;color:#64748b;">Takes about 30 seconds · verified on Trustpilot</p>
+          </td>
+        </tr>
+
+        <!-- CTA -->
+        <tr>
+          <td style="padding:24px 32px 8px;">
+            <a href="${TRUSTPILOT_REVIEW_URL}" style="display:block;text-align:center;background-color:#00b67a;color:#ffffff;text-decoration:none;padding:20px 24px;border-radius:14px;font-weight:900;font-size:17px;letter-spacing:0.3px;box-shadow:0 8px 20px rgba(0,182,122,0.35);">
+              ★ Leave a Review on Trustpilot
+            </a>
+            <p style="margin:14px 0 0;text-align:center;font-size:12px;color:#94a3b8;">
+              Or paste this link into your browser:<br>
+              <a href="${TRUSTPILOT_REVIEW_URL}" style="color:#2563eb;text-decoration:none;word-break:break-all;">${TRUSTPILOT_REVIEW_URL}</a>
+            </p>
+          </td>
+        </tr>
+
+        <!-- Soft service-recovery line -->
+        <tr>
+          <td style="padding:22px 32px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;"><tr>
+              <td style="padding:18px;text-align:center;">
+                <p style="margin:0;font-size:13px;color:#475569;line-height:1.55;">
+                  Something not perfect? <a href="mailto:info@aeroparkdirect.co.uk?subject=Booking%20${encodeURIComponent(bookingRef)}" style="color:#2563eb;font-weight:700;text-decoration:none;">Tell us first</a> —
+                  we'll always try to put it right before you leave a review.
+                </p>
+              </td>
+            </tr></table>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding:26px 32px 30px;text-align:center;">
+            <p style="margin:0 0 6px;font-size:11px;color:#94a3b8;font-weight:700;">Booking ${bookingRef} · Thank you for travelling with us</p>
+            <p style="margin:0;font-size:11px;color:#cbd5e1;">© ${new Date().getFullYear()} AeroPark Direct Ltd · Luton &amp; Heathrow</p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>`;
 }
 
 // ─── SEND PROVIDER NOTIFICATION ───────────────────────────────────────────────

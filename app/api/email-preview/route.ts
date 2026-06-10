@@ -1,4 +1,4 @@
-import { buildReceiptHtml, type ReceiptHtmlParams } from "@/app/lib/mail";
+import { buildReceiptHtml, buildReviewHtml, type ReceiptHtmlParams } from "@/app/lib/mail";
 
 // Renders the booking-confirmation email with SAMPLE data so you can preview the
 // design in a browser without making a test booking.
@@ -19,7 +19,16 @@ export async function GET(req: Request) {
     return new Response("Not found", { status: 404 });
   }
 
-  const isAmendment = searchParams.get("type") === "amendment";
+  const type = searchParams.get("type");
+
+  // Post-stay review email preview:  /api/email-preview?type=review
+  if (type === "review") {
+    return new Response(buildReviewHtml("Jordan", "APD-H29XTM"), {
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
+  }
+
+  const isAmendment = type === "amendment";
 
   const sample: ReceiptHtmlParams = {
     booking: {
