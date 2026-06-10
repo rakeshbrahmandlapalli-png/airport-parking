@@ -617,6 +617,32 @@ function CheckoutContent() {
         <div className="flex-1 w-full">
           <form id="checkout-form" onSubmit={handlePayment} noValidate className="space-y-6 md:space-y-8">
 
+            {/*
+              ── Live price confirmation status ────────────────────────────────
+              Always rendered at constant height to prevent Cumulative Layout
+              Shift. Only opacity and background transition — the surrounding
+              form fields never move. aria-live="polite" announces the change
+              to assistive technology without interrupting screen-reader flow.
+            */}
+            <div
+              role="status"
+              aria-live="polite"
+              className={[
+                "flex items-center gap-3 rounded-xl px-4 py-3.5 border",
+                "transition-[opacity,background-color,border-color] duration-300",
+                priceResolving
+                  ? "bg-blue-500/10 border-blue-500/20 opacity-100"
+                  : "bg-transparent border-transparent opacity-0 pointer-events-none select-none",
+              ].join(" ")}
+            >
+              <Loader2
+                className={`w-4 h-4 text-blue-400 shrink-0 ${priceResolving ? "animate-spin" : ""}`}
+              />
+              <p className="text-blue-400 text-xs font-bold leading-snug">
+                Confirming your live rate — the Pay button will unlock in a moment.
+              </p>
+            </div>
+
             {/* Unified details card — Contact + Vehicle & Flight (one container) */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
 
@@ -712,8 +738,11 @@ function CheckoutContent() {
                     id="flightNumber" type="text"
                     value={flightNumber} onChange={e => setFlightNumber(e.target.value.toUpperCase())}
                     className={`${lightInputCls} uppercase placeholder:normal-case`}
-                    placeholder="Enter flight number"
+                    placeholder="e.g. EZY123"
                   />
+                  <p className="text-[10px] text-slate-400 font-bold mt-1.5 ml-1">
+                    Helps us track your inbound flight for timely collection.
+                  </p>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
@@ -844,7 +873,7 @@ function CheckoutContent() {
                   </div>
                   <div>
                     <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">3. Secure Payment</h2>
-                    <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">PCI Compliant Redirect</p>
+                    <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Bank-Level SSL via Stripe</p>
                   </div>
                 </div>
                 <div className="hidden sm:flex items-center gap-1.5 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-emerald-100 shadow-sm">
@@ -862,7 +891,35 @@ function CheckoutContent() {
             </div>
 
             {/* MOBILE PAY BUTTON */}
-            <div className="block lg:hidden mt-6 pb-8">
+            <div className="block lg:hidden mt-6 pb-8 space-y-4">
+              {/* ── Mobile trust strip ──────────────────────────────────────
+                  Placed immediately above the pay button — the point of highest
+                  hesitation — to reduce abandonment from uncertainty.          */}
+              <div className="flex items-center justify-center gap-2 text-emerald-600">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <p className="text-xs font-black leading-snug">
+                  Free cancellation up to 24h before drop-off
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                  We accept:
+                </span>
+                {/* Visa */}
+                <span className="inline-flex items-center justify-center bg-[#1a1f71] px-2.5 py-1 rounded text-white font-black text-[10px] tracking-wider italic h-6 leading-none">
+                  VISA
+                </span>
+                {/* Mastercard — overlapping red/amber circles on white card */}
+                <span className="inline-flex items-center justify-center bg-white border border-slate-200 px-2 rounded h-6">
+                  <span className="block w-3.5 h-3.5 rounded-full bg-[#eb001b]" />
+                  <span className="block w-3.5 h-3.5 rounded-full bg-[#f79e1b] -ml-1.5 opacity-90" />
+                </span>
+                {/* Amex */}
+                <span className="inline-flex items-center justify-center bg-[#007bc1] px-2.5 py-1 rounded text-white font-black text-[10px] tracking-wider h-6 leading-none">
+                  AMEX
+                </span>
+              </div>
+              {/* ── Pay button ─────────────────────────────────────────────── */}
               <button
                 type="submit" form="checkout-form" disabled={isProcessing || !!hasDateIssue || priceResolving}
                 className="w-full h-16 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white font-black text-base rounded-2xl flex items-center justify-center gap-3 shadow-[0_15px_30px_-5px_rgba(37,99,235,0.4)] active:scale-95 transition-all uppercase tracking-widest touch-manipulation"
@@ -873,7 +930,7 @@ function CheckoutContent() {
                   ? <><Loader2 className="w-5 h-5 animate-spin" /> Confirming price…</>
                   : <><Lock className="w-5 h-5" /> Pay £{finalTotal.toFixed(2)}</>}
               </button>
-              <p className="text-center text-[10px] text-slate-400 mt-4 font-bold px-2 leading-relaxed">
+              <p className="text-center text-[10px] text-slate-400 font-bold px-2 leading-relaxed">
                 By clicking &ldquo;Pay&rdquo;, you accept our{" "}
                 <Link href="/terms" target="_blank" className="text-blue-400 underline hover:text-blue-500">Terms &amp; Conditions</Link>.
               </p>
@@ -886,6 +943,48 @@ function CheckoutContent() {
           <div className="bg-[#0B1120] rounded-2xl border border-slate-800 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.6)] overflow-hidden text-white relative">
             <div className="absolute top-0 left-0 w-full h-1 bg-blue-500" />
             <div className="p-8 md:p-10">
+              {/*
+                ── Mobile-only compact price header ───────────────────────────
+                flex-col-reverse renders the sidebar ABOVE the form on mobile,
+                but the £XX.XX total is item 8 within the sidebar content.
+                This block surfaces the price as the FIRST thing a mobile user
+                sees — hidden on lg+ where the full breakdown is always visible.
+              */}
+              <div className="lg:hidden mb-6 pb-6 border-b border-slate-800">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-3">
+                  Your Booking Summary
+                </p>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-0.5">
+                      {airport}
+                    </p>
+                    <p className="font-black text-white text-base leading-tight truncate">
+                      {company ? company.name : (urlName || type)}
+                    </p>
+                    <p className="text-slate-500 text-xs font-bold mt-1">
+                      {bookingDays}&nbsp;{bookingDays === 1 ? "day" : "days"}&nbsp;&middot;&nbsp;
+                      {formatDate(dropDate)}&nbsp;&rarr;&nbsp;{formatDate(pickDate)}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                      Total Due
+                    </p>
+                    {priceResolving ? (
+                      <span className="flex items-center justify-end gap-1.5 text-blue-400 font-black text-lg">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Checking…</span>
+                      </span>
+                    ) : (
+                      <p className="text-3xl font-black text-blue-400 tracking-tighter leading-none">
+                        £{finalTotal.toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="flex justify-between items-center mb-8">
                 <h3 className="text-2xl font-black tracking-tight">Order Summary</h3>
                 <button
@@ -1084,6 +1183,40 @@ function CheckoutContent() {
                 )}
               </div>
 
+              {/*
+                ── Desktop trust strip ─────────────────────────────────────────
+                Placed immediately above the Pay button — the point of highest
+                hesitation on desktop — to close the trust gap before commit.
+                Uses Mastercard overlapping-circle motif on white background
+                (recognisable without the wordmark; works on the dark sidebar).
+              */}
+              <div className="hidden lg:flex flex-col gap-3 mb-6">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <p className="text-[11px] font-black text-emerald-400 leading-snug">
+                    Free cancellation up to 24h before drop-off
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    We accept:
+                  </span>
+                  {/* Visa */}
+                  <span className="inline-flex items-center justify-center bg-[#1a1f71] px-2.5 py-1 rounded text-white font-black text-[10px] tracking-wider italic h-6 leading-none">
+                    VISA
+                  </span>
+                  {/* Mastercard — white card keeps circles legible on dark sidebar */}
+                  <span className="inline-flex items-center justify-center bg-white border border-slate-200 px-2 rounded h-6">
+                    <span className="block w-3.5 h-3.5 rounded-full bg-[#eb001b]" />
+                    <span className="block w-3.5 h-3.5 rounded-full bg-[#f79e1b] -ml-1.5 opacity-90" />
+                  </span>
+                  {/* Amex */}
+                  <span className="inline-flex items-center justify-center bg-[#007bc1] px-2.5 py-1 rounded text-white font-black text-[10px] tracking-wider h-6 leading-none">
+                    AMEX
+                  </span>
+                </div>
+              </div>
+
               <div className="hidden lg:block">
                 <button
                   type="submit" form="checkout-form"
@@ -1094,10 +1227,10 @@ function CheckoutContent() {
                     ? <><Loader2 className="w-6 h-6 animate-spin" /> Processing...</>
                     : priceResolving
                     ? <><Loader2 className="w-6 h-6 animate-spin" /> Confirming price…</>
-                    : <><Lock className="w-5 h-5" /> Proceed to Payment</>}
+                    : <><Lock className="w-5 h-5" /> Pay Securely — £{finalTotal.toFixed(2)}</>}
                 </button>
                 <p className="text-center text-[10px] text-slate-500 mt-4 font-bold px-2 leading-relaxed">
-                  By clicking &ldquo;Proceed to Payment&rdquo;, you accept our{" "}
+                  By clicking &ldquo;Pay Securely&rdquo;, you accept our{" "}
                   <Link href="/terms" target="_blank" className="text-blue-400 underline hover:text-blue-300">Terms &amp; Conditions</Link>.
                 </p>
               </div>
