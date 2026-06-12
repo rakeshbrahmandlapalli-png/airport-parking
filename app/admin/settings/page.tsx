@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/app/lib/supabase";
+import { recordAdminAction } from "@/app/lib/audit-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -206,6 +207,10 @@ export default function SettingsPage() {
     setSaved(false);
     setSaveError(null);
 
+    // Snapshot the previous values before we overwrite initialRef on success,
+    // so the audit ledger can show a before → after diff.
+    const prevSnapshot: any = initialRef.current;
+
     const rows = [
       { key: "markup_enabled",   value: markupEnabled.toString()   },
       { key: "markup_percent",   value: markupPercent.toString()   },
@@ -257,6 +262,42 @@ export default function SettingsPage() {
       setSaved(true);
       setLastSaved(new Date());
       setTimeout(() => setSaved(false), 3000);
+
+      // Audit: log only the pricing-relevant fields that actually changed.
+      const auditFields: Record<string, unknown> = {
+        markup_enabled: markupEnabled,
+        markup_percent: markupPercent,
+        auto_surge_enabled: autoSurgeEnabled,
+        auto_surge_max_percent: autoSurgeMax,
+        fast_track_price: fastTrackPrice,
+        lounge_price: loungePrice,
+      };
+      const changes: Record<string, { before: unknown; after: unknown }> = {};
+      for (const [k, after] of Object.entries(auditFields)) {
+        const before = prevSnapshot?.[
+          k === "markup_percent" ? "markupPercent"
+          : k === "markup_enabled" ? "markupEnabled"
+          : k === "auto_surge_enabled" ? "autoSurgeEnabled"
+          : k === "auto_surge_max_percent" ? "autoSurgeMax"
+          : k === "fast_track_price" ? "fastTrackPrice"
+          : "loungePrice"
+        ];
+        if (before !== after) changes[k] = { before, after };
+      }
+      if (Object.keys(changes).length > 0) {
+        // Surface the headline pricing change (markup / surge) as the diff chip.
+        const headline = changes.auto_surge_max_percent ?? changes.markup_percent;
+        recordAdminAction({
+          actionType: "pricing.settings.update",
+          entityType: "setting",
+          metadata: {
+            label: "Platform pricing",
+            before: headline?.before,
+            after: headline?.after,
+            changes,
+          },
+        });
+      }
 
     } catch (err: any) {
       setSaveError("Save failed: " + err.message);

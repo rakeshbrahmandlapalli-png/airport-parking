@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/app/lib/supabase";
+import { recordAdminAction } from "@/app/lib/audit-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -50,8 +51,21 @@ export default function PromoManager() {
   };
 
   const savePromo = async (promoData: any) => {
+    const wasEditing = !!editingId;
+    const prev = wasEditing ? promos.find((p) => p.id === editingId) : null;
     const { error } = await supabase.from("promotions").upsert([promoData], { onConflict: "code" });
     if (!error) {
+      // Audit: record the create/update (fire-and-forget).
+      recordAdminAction({
+        actionType: wasEditing ? "promo.update" : "promo.create",
+        entityType: "promotion",
+        entityId: promoData.id ?? promoData.code,
+        metadata: {
+          label: `Promo ${promoData.code}`,
+          before: prev ? `${prev.discount_percent}% off` : undefined,
+          after: `${promoData.discount_percent}% off`,
+        },
+      });
       setEditingId(null);
       setNewCode("");
       setNewPercent("");
@@ -63,8 +77,18 @@ export default function PromoManager() {
 
   const deletePromo = async (id: string) => {
     if (!confirm("Delete this promo? This cannot be undone.")) return;
+    const target = promos.find((p) => p.id === id);
     const { error } = await supabase.from("promotions").delete().eq("id", id);
-    if (error) alert("Delete failed: " + error.message);
+    if (error) {
+      alert("Delete failed: " + error.message);
+    } else {
+      recordAdminAction({
+        actionType: "promo.delete",
+        entityType: "promotion",
+        entityId: id,
+        metadata: { label: `Promo ${target?.code ?? id}`, before: target ? `${target.discount_percent}% off` : undefined, after: "deleted" },
+      });
+    }
     fetchPromos();
   };
 
