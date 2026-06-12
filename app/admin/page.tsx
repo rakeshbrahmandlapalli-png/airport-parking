@@ -10,7 +10,8 @@
  */
 
 import { useEffect, useState, useMemo, Suspense } from "react";
-import { supabase } from "@/app/lib/supabase"; 
+import { supabase } from "@/app/lib/supabase";
+import { recordAdminAction } from "@/app/lib/audit-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -221,9 +222,23 @@ function DashboardContent() {
         service_type: editingBooking?.service_type || "Meet & Greet",
         fast_track_count: Number(editingBooking?.fast_track_count || 0)
       }).eq('id', editingBooking.id);
-      
+
       if (error) throw error;
-      
+
+      // Audit: flag a status change distinctly, else a generic booking edit.
+      const prevB: any = bookings.find((x: any) => x.id === editingBooking.id);
+      const statusChanged = !!prevB && (prevB.status || "pending") !== (editingBooking?.status || "pending");
+      recordAdminAction({
+        actionType: statusChanged ? "booking.status.update" : "booking.update",
+        entityType: "booking",
+        entityId: editingBooking.id,
+        metadata: {
+          label: `Booking ${editingBooking.booking_ref ?? editingBooking.id}${editingBooking.full_name ? ` · ${editingBooking.full_name}` : ""}`,
+          before: statusChanged ? (prevB.status || "pending") : undefined,
+          after: statusChanged ? (editingBooking?.status || "pending") : undefined,
+        },
+      });
+
       setEditingBooking(null);
       await fetchDashboardData();
       notify("success", "Booking updated.");
@@ -394,6 +409,7 @@ function DashboardContent() {
   // NEW FEATURE 2: inline quick-status change (no full edit modal needed)
   const quickStatus = async (b: any, newStatus: string) => {
     if (!b || (b.status?.toLowerCase() || "pending") === newStatus.toLowerCase()) return;
+    const prevStatus = b.status || "pending";
     // optimistic local update
     setBookings((prev) => prev.map((x) => (x.id === b.id ? { ...x, status: newStatus } : x)));
     if (viewBooking?.id === b.id) setViewBooking({ ...viewBooking, status: newStatus });
@@ -403,6 +419,16 @@ function DashboardContent() {
       await fetchDashboardData();
     } else {
       notify("success", `${b.booking_ref} → ${newStatus}`);
+      recordAdminAction({
+        actionType: "booking.status.update",
+        entityType: "booking",
+        entityId: b.id,
+        metadata: {
+          label: `Booking ${b.booking_ref}${b.full_name ? ` · ${b.full_name}` : ""}`,
+          before: prevStatus,
+          after: newStatus,
+        },
+      });
     }
   };
 
