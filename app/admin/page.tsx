@@ -189,6 +189,12 @@ function DashboardContent() {
         if (error) {
           notify("error", `Delete failed: ${error.message}`);
         } else {
+          recordAdminAction({
+            actionType: "booking.delete",
+            entityType: "booking",
+            entityId: id,
+            metadata: { label: `Booking ${ref || id}`, before: "on record", after: "permanently deleted" },
+          });
           setBookings(bookings.filter((b) => b.id !== id));
           notify("success", "Booking deleted.");
         }
@@ -281,6 +287,14 @@ function DashboardContent() {
         }).catch(err => console.error("Twilio API failed:", err));
       }
       
+      recordAdminAction({
+        actionType: "booking.create",
+        entityType: "booking",
+        metadata: {
+          label: `Booking ${booking_ref}${payload.full_name ? ` · ${payload.full_name}` : ""}`,
+          after: `manual booking · £${Number(payload.total_price || 0).toFixed(2)}`,
+        },
+      });
       setShowManualModal(false);
       setNewBooking(defaultNewBooking);
       await fetchDashboardData();
@@ -312,6 +326,12 @@ function DashboardContent() {
           });
           if (response.ok) {
             notify("success", `${label} email dispatched.`);
+            recordAdminAction({
+              actionType: `booking.email.${type}`,
+              entityType: "booking",
+              entityId: booking.id,
+              metadata: { label: `Booking ${booking.booking_ref}`, after: `${type} email dispatched` },
+            });
           } else {
             notify("error", `Failed to send ${type} email. Check server logs.`);
           }
@@ -337,6 +357,18 @@ function DashboardContent() {
         try {
           const { error } = await supabase.from("bookings").update({ company_id: companyId }).eq("id", booking.id);
           if (error) { notify("error", `Assign failed: ${error.message}`); return; }
+
+          const prevComp = companies.find((c) => c.id === booking.company_id);
+          recordAdminAction({
+            actionType: "booking.assign",
+            entityType: "booking",
+            entityId: booking.id,
+            metadata: {
+              label: `Booking ${booking.booking_ref}`,
+              before: prevComp?.name ?? "unassigned",
+              after: comp.name,
+            },
+          });
 
           const res = await fetch("/api/send", {
             method: "POST",

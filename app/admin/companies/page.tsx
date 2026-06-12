@@ -653,6 +653,11 @@ export default function AdminCompaniesPage() {
     try {
       const { error } = await supabase.from("companies").insert([newCompany]);
       if (error) throw error;
+      recordAdminAction({
+        actionType: "company.create",
+        entityType: "company",
+        metadata: { label: newCompany.name, after: "onboarded" },
+      });
       closeModal(); setNewCompany({ ...defaultCompany });
       await fetchCompanies();
       showToast(`${newCompany.name} onboarded successfully!`, "success");
@@ -714,6 +719,11 @@ export default function AdminCompaniesPage() {
         try {
           const { error } = await supabase.from("companies").update({ price_modifier: val }).neq("id", "00000000-0000-0000-0000-000000000000");
           if (error) throw error;
+          recordAdminAction({
+            actionType: "pricing.master_modifier.update",
+            entityType: "company",
+            metadata: { label: "ALL operators", after: `${val}x modifier` },
+          });
           await fetchCompanies();
           showToast(`All operators updated to ${val}x modifier`, "success");
         } catch (error: any) { showToast("Error: " + error.message, "error"); } finally { setIsSaving(false); }
@@ -752,7 +762,15 @@ export default function AdminCompaniesPage() {
     if (error) {
       setCompanies(prev => prev.map(c => c.id === company.id ? { ...c, pricing_mode: company.pricing_mode } : c));
       showToast("Pricing mode toggle failed", "error");
-    } else { showToast(`${company.name} → ${newMode === "api" ? "Live API" : "Pivot"} pricing`, "success"); }
+    } else {
+      showToast(`${company.name} → ${newMode === "api" ? "Live API" : "Pivot"} pricing`, "success");
+      recordAdminAction({
+        actionType: "company.pricing_mode.toggle",
+        entityType: "company",
+        entityId: company.id,
+        metadata: { label: company.name, before: current, after: newMode },
+      });
+    }
   };
 
   const handleAddBadge = (label: string, category: string) => {
@@ -776,6 +794,12 @@ export default function AdminCompaniesPage() {
         try {
           const { error } = await supabase.from("companies").delete().eq("id", id);
           if (error) throw error;
+          recordAdminAction({
+            actionType: "company.delete",
+            entityType: "company",
+            entityId: id,
+            metadata: { label: name, before: "active partner", after: "deleted" },
+          });
           setCompanies(companies.filter((c) => c.id !== id));
           showToast(`${name} deleted`, "error");
         } catch (error: any) { showToast("Error deleting partner: " + error.message, "error"); }
@@ -794,6 +818,12 @@ export default function AdminCompaniesPage() {
     try {
       const { error } = await supabase.from("companies").insert([clone]);
       if (error) throw error;
+      recordAdminAction({
+        actionType: "company.duplicate",
+        entityType: "company",
+        entityId: company.id,
+        metadata: { label: company.name, after: `${company.name} (Copy) created (inactive)` },
+      });
       await fetchCompanies();
       showToast(`Duplicated "${company.name}"`, "success");
     } catch (err: any) { showToast("Duplicate failed: " + err.message, "error"); }

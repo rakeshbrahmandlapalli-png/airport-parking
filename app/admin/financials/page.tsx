@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, Suspense } from "react";
 import { supabase } from "@/app/lib/supabase";
+import { recordAdminAction } from "@/app/lib/audit-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -112,6 +113,14 @@ function FinancialsContent() {
     try {
       const { error } = await supabase.from('expenses').insert([newExpense]);
       if (error) throw error;
+      recordAdminAction({
+        actionType: "expense.create",
+        entityType: "expense",
+        metadata: {
+          label: `Expense · ${(newExpense as any).description || (newExpense as any).category || "untitled"}`,
+          after: `£${Number((newExpense as any).amount || 0).toFixed(2)}`,
+        },
+      });
       setShowExpenseModal(false);
       setNewExpense(defaultExpense);
       await fetchData(); // Refresh to show new expense
@@ -131,8 +140,21 @@ function FinancialsContent() {
       return;
     }
     setPendingDeleteId(null);
+    const target = expenses.find((e) => e.id === id);
     const { error } = await supabase.from("expenses").delete().eq("id", id);
-    if (!error) setExpenses(expenses.filter(e => e.id !== id));
+    if (!error) {
+      setExpenses(expenses.filter(e => e.id !== id));
+      recordAdminAction({
+        actionType: "expense.delete",
+        entityType: "expense",
+        entityId: id,
+        metadata: {
+          label: `Expense · ${(target as any)?.description || (target as any)?.category || id}`,
+          before: target ? `£${Number((target as any).amount || 0).toFixed(2)}` : undefined,
+          after: "deleted",
+        },
+      });
+    }
   };
 
   const commissionFor = (companyId: string | null) => {

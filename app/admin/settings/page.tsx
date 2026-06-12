@@ -263,35 +263,30 @@ export default function SettingsPage() {
       setLastSaved(new Date());
       setTimeout(() => setSaved(false), 3000);
 
-      // Audit: log only the pricing-relevant fields that actually changed.
-      const auditFields: Record<string, unknown> = {
-        markup_enabled: markupEnabled,
-        markup_percent: markupPercent,
-        auto_surge_enabled: autoSurgeEnabled,
-        auto_surge_max_percent: autoSurgeMax,
-        fast_track_price: fastTrackPrice,
-        lounge_price: loungePrice,
+      // Audit: diff EVERY settings field (pricing, timer, slots, copy) so any
+      // change — minor or major — lands in the activity ledger.
+      const currentSnapshot: Record<string, unknown> = {
+        markupEnabled, markupPercent, fastTrackPrice, loungePrice, priceTolerance,
+        slotsClaimed, slotsTotal, timerEnabled, timerHours, timerBadge, timerTitle,
+        timerSubtitle, timerBenefitTitle, timerBenefitValue, timerBenefitNote,
+        autoSurgeEnabled, autoSurgeMax, surgeExcludedKey: JSON.stringify([...surgeExcluded].sort()),
       };
       const changes: Record<string, { before: unknown; after: unknown }> = {};
-      for (const [k, after] of Object.entries(auditFields)) {
-        const before = prevSnapshot?.[
-          k === "markup_percent" ? "markupPercent"
-          : k === "markup_enabled" ? "markupEnabled"
-          : k === "auto_surge_enabled" ? "autoSurgeEnabled"
-          : k === "auto_surge_max_percent" ? "autoSurgeMax"
-          : k === "fast_track_price" ? "fastTrackPrice"
-          : "loungePrice"
-        ];
+      for (const [k, after] of Object.entries(currentSnapshot)) {
+        const before = (prevSnapshot as Record<string, unknown> | null)?.[k];
         if (before !== after) changes[k] = { before, after };
       }
       if (Object.keys(changes).length > 0) {
-        // Surface the headline pricing change (markup / surge) as the diff chip.
-        const headline = changes.auto_surge_max_percent ?? changes.markup_percent;
+        const changedKeys = Object.keys(changes);
+        const PRICING_KEYS = ["markupEnabled", "markupPercent", "autoSurgeEnabled", "autoSurgeMax", "fastTrackPrice", "loungePrice", "priceTolerance"];
+        const isPricing = changedKeys.some((k) => PRICING_KEYS.includes(k));
+        // Headline chip = the first changed field's before→after.
+        const headline = changes[changedKeys[0]];
         recordAdminAction({
-          actionType: "pricing.settings.update",
+          actionType: isPricing ? "pricing.settings.update" : "settings.update",
           entityType: "setting",
           metadata: {
-            label: "Platform pricing",
+            label: changedKeys.length === 1 ? `Setting · ${changedKeys[0]}` : `Platform settings · ${changedKeys.length} fields`,
             before: headline?.before,
             after: headline?.after,
             changes,
@@ -311,7 +306,15 @@ export default function SettingsPage() {
     setTogglingPromo(promo.id);
     const newVal = !promo.is_active;
     const { error } = await supabase.from("promotions").update({ is_active: newVal }).eq("id", promo.id);
-    if (!error) setPromos(prev => prev.map(p => p.id === promo.id ? { ...p, is_active: newVal } : p));
+    if (!error) {
+      setPromos(prev => prev.map(p => p.id === promo.id ? { ...p, is_active: newVal } : p));
+      recordAdminAction({
+        actionType: newVal ? "promo.enable" : "promo.disable",
+        entityType: "promotion",
+        entityId: String(promo.id),
+        metadata: { label: `Promo ${promo.code}`, before: promo.is_active ? "active" : "disabled", after: newVal ? "active" : "disabled" },
+      });
+    }
     setTogglingPromo(null);
   };
 
@@ -356,6 +359,11 @@ export default function SettingsPage() {
   const resetAllModifiers = async () => {
     if (!confirm("⚠️ Reset ALL company price_modifiers to 1.0 (BASE)? This affects all operators.")) return;
     await supabase.from("companies").update({ price_modifier: 1.0 }).neq("id", "00000000-0000-0000-0000-000000000000");
+    recordAdminAction({
+      actionType: "pricing.master_modifier.reset",
+      entityType: "company",
+      metadata: { label: "ALL operators", after: "modifiers reset to 1.0x (BASE)" },
+    });
     alert("✅ All modifiers reset to BASE.");
   };
 
