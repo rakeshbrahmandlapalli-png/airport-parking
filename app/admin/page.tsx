@@ -22,8 +22,8 @@ import {
   LayoutDashboard, Plus, Building2, X, Save, Clock, 
   CheckCircle2, AlertCircle, PlaneLanding, PlaneTakeoff, 
   XCircle, ChevronDown, Download, Briefcase, Receipt, Star, 
-  Database, Smartphone, Wallet, Settings2, Activity, Tags, 
-  Zap, PiggyBank
+  Database, Smartphone, Wallet, Settings2, Activity, Tags,
+  Zap, PiggyBank, Link2, Copy, Mail, Send
 } from "lucide-react";
 
 function DashboardContent() {
@@ -74,6 +74,21 @@ function DashboardContent() {
   };
   
   const [newBooking, setNewBooking] = useState<any>(defaultNewBooking);
+
+  // --- 3a-bis. PAYMENT LINK GENERATOR STATE ---
+  const defaultPayLink = {
+    full_name: "", email: "", phone_number: "", license_plate: "",
+    car_make: "", car_color: "", flight_number: "",
+    dropoff_date: "", dropoff_time: "10:00", pickup_date: "", pickup_time: "10:00",
+    total_price: "", airport: "Luton Airport (LTN)", terminal: "Main Terminal",
+    company_id: "ALL", service_type: "Premium Meet & Greet", fast_track_count: 0,
+  };
+  const [showPayLinkModal, setShowPayLinkModal] = useState(false);
+  const [payLink, setPayLink] = useState<any>(defaultPayLink);
+  const [payLinkSendEmail, setPayLinkSendEmail] = useState(true);
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+  const [payLinkResult, setPayLinkResult] = useState<{ url: string; ref: string; emailSent: boolean } | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // --- 3b. TOAST + CONFIRM STATE ---
   const [toasts, setToasts] = useState<{ id: number; type: "success" | "error" | "info"; msg: string }[]>([]);
@@ -305,6 +320,61 @@ function DashboardContent() {
     } finally {
       setIsSaving(false); 
     }
+  };
+
+  // --- PAYMENT LINK GENERATOR ---
+  // Mints a Stripe Checkout link via the admin-only API route. Every field is
+  // operator-editable; when the customer pays, the existing webhook fulfils it
+  // exactly like a normal booking (DB row, emails, conversion).
+  const handleGeneratePayLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsGeneratingLink(true);
+    try {
+      const comp = companies.find((c) => c.id === payLink.company_id);
+      const res = await fetch("/api/admin/payment-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...payLink,
+          total_price: Number(payLink.total_price),
+          provider_name: comp?.name || "AeroPark Direct",
+          sendEmail: payLinkSendEmail,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || `Server error ${res.status}`);
+      setPayLinkResult({ url: data.url, ref: data.bookingRef, emailSent: !!data.emailSent });
+      setLinkCopied(false);
+      notify("success", `Payment link ${data.bookingRef} created${data.emailSent ? " & emailed to customer" : ""}.`);
+    } catch (err: any) {
+      notify("error", err.message || "Failed to create payment link.");
+    } finally {
+      setIsGeneratingLink(false);
+    }
+  };
+
+  const copyPayLink = async () => {
+    if (!payLinkResult) return;
+    try {
+      await navigator.clipboard.writeText(payLinkResult.url);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2500);
+    } catch {
+      notify("error", "Copy failed — select the link text manually.");
+    }
+  };
+
+  const sharePayLinkWhatsApp = () => {
+    if (!payLinkResult) return;
+    const msg = `*AeroPark Direct — Secure Payment Link*\nRef: ${payLinkResult.ref}\nAmount: £${Number(payLink.total_price).toFixed(2)}\n${payLink.airport} · ${payLink.service_type}\n${payLink.dropoff_date} → ${payLink.pickup_date}\n\nPay securely here (valid 24h):\n${payLinkResult.url}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+
+  const openPayLinkModal = () => {
+    setPayLink(defaultPayLink);
+    setPayLinkResult(null);
+    setPayLinkSendEmail(true);
+    setShowPayLinkModal(true);
   };
 
   const sendManualEmail = (booking: any, type: 'provider' | 'customer') => {
@@ -862,6 +932,10 @@ function DashboardContent() {
               <button onClick={exportToCSV} className="px-6 py-3.5 bg-[#1A2235]/80 backdrop-blur-sm hover:bg-[#1A2235] border border-slate-700 hover:border-slate-600 text-slate-300 rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-3 shadow-md">
                 <Download className="w-4 h-4" /> Export
               </button>
+              <button onClick={openPayLinkModal} className="px-6 py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-3 shadow-[0_10px_30px_-5px_rgba(16,185,129,0.5)] hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                <Link2 className="w-5 h-5" /> Payment Link
+              </button>
               <button onClick={() => setShowManualModal(true)} className="px-6 py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-3 shadow-[0_10px_30px_-5px_rgba(37,99,235,0.5)] hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group">
                 <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                 <Plus className="w-5 h-5" /> New Booking
@@ -1094,6 +1168,211 @@ function DashboardContent() {
       </main>
 
       {/* --- 🟢 MODAL: MANUAL BOOKING ENTRY --- */}
+      {/* ── PAYMENT LINK GENERATOR MODAL ───────────────────────────────────── */}
+      {showPayLinkModal && (
+        <div className="fixed inset-0 bg-[#0B1120]/95 backdrop-blur-md z-[300] flex items-center justify-center p-4 sm:p-8 overflow-hidden">
+          <div className="bg-[#0F1523]/95 backdrop-blur-2xl border border-slate-800 w-full max-w-5xl rounded-[2rem] max-h-[95vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 relative">
+            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent z-20"></div>
+            <div className="p-8 border-b border-slate-800 flex justify-between items-center bg-[#131A2B] relative">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-600 to-emerald-400"></div>
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Payment Link</h2>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-1.5"><Link2 className="w-3.5 h-3.5 text-emerald-500" /> Stripe Checkout · valid 24h · fulfils like a normal booking</p>
+              </div>
+              <button onClick={() => setShowPayLinkModal(false)} className="p-3 bg-[#1A2235] rounded-xl text-slate-400 hover:text-white hover:bg-red-500/20 transition-colors border border-slate-700/50"><X className="w-5 h-5"/></button>
+            </div>
+
+            {payLinkResult ? (
+              /* ── RESULT PANEL ── */
+              <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar text-white">
+                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-6 flex items-center gap-4">
+                  <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                  </div>
+                  <div>
+                    <p className="font-black text-lg text-white">Link ready — {payLinkResult.ref}</p>
+                    <p className="text-xs font-bold text-slate-400 mt-0.5">
+                      £{Number(payLink.total_price).toFixed(2)} · {payLink.airport} · {payLink.service_type}
+                      {payLinkResult.emailSent
+                        ? <span className="text-emerald-400"> · ✓ Emailed to {payLink.email}</span>
+                        : payLinkSendEmail ? <span className="text-amber-400"> · ⚠ Email failed — share manually</span> : null}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Secure Stripe Link</label>
+                  <input readOnly value={payLinkResult.url} onFocus={(e) => e.target.select()} className={`${inputStyle} font-mono text-xs`} />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <button onClick={copyPayLink} className="h-14 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95">
+                    {linkCopied ? <><CheckCircle2 className="w-4 h-4" /> Copied!</> : <><Copy className="w-4 h-4" /> Copy Link</>}
+                  </button>
+                  <button onClick={sharePayLinkWhatsApp} className="h-14 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95">
+                    <Send className="w-4 h-4" /> WhatsApp
+                  </button>
+                  <button onClick={() => { setPayLinkResult(null); }} className="h-14 rounded-xl bg-[#1A2235] border border-slate-700 hover:border-emerald-500/50 text-slate-300 hover:text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95">
+                    <Link2 className="w-4 h-4" /> Edit &amp; Regenerate
+                  </button>
+                </div>
+
+                <p className="text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  When the customer pays, the booking auto-creates on the Live Board with confirmation emails.
+                </p>
+              </div>
+            ) : (
+              /* ── EDITABLE FORM — every field ── */
+              <form onSubmit={handleGeneratePayLink} autoComplete="off" className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar text-white">
+                <section className="space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center border border-blue-500/20"><Users className="w-4 h-4 text-blue-400"/></div>
+                    <h3 className="text-xs font-black uppercase text-slate-300 tracking-widest">1. Customer</h3>
+                    <div className="flex-1 h-px bg-slate-800"></div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Full Name</label>
+                      <input required type="text" value={payLink.full_name} onChange={(e) => setPayLink({ ...payLink, full_name: e.target.value })} className={inputStyle} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Email Address</label>
+                      <input type="email" required={payLinkSendEmail} value={payLink.email} onChange={(e) => setPayLink({ ...payLink, email: e.target.value })} className={inputStyle} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Mobile Number</label>
+                      <input type="text" value={payLink.phone_number} onChange={(e) => setPayLink({ ...payLink, phone_number: e.target.value })} className={inputStyle} />
+                    </div>
+                  </div>
+                </section>
+
+                <section className="space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center border border-amber-500/20"><Car className="w-4 h-4 text-amber-400"/></div>
+                    <h3 className="text-xs font-black uppercase text-slate-300 tracking-widest">2. Vehicle &amp; Flight</h3>
+                    <div className="flex-1 h-px bg-slate-800"></div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-amber-500 block ml-1 tracking-widest">Registration Plate</label>
+                      <input type="text" value={payLink.license_plate} onChange={(e) => setPayLink({ ...payLink, license_plate: e.target.value.toUpperCase() })} className={inputStyle} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Make / Model</label>
+                      <input type="text" value={payLink.car_make} onChange={(e) => setPayLink({ ...payLink, car_make: e.target.value })} className={inputStyle} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Colour</label>
+                      <input type="text" value={payLink.car_color} onChange={(e) => setPayLink({ ...payLink, car_color: e.target.value })} className={inputStyle} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Return Flight</label>
+                      <input type="text" value={payLink.flight_number} onChange={(e) => setPayLink({ ...payLink, flight_number: e.target.value.toUpperCase() })} className={inputStyle} />
+                    </div>
+                  </div>
+                </section>
+
+                <section className="space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-indigo-500/10 rounded-lg flex items-center justify-center border border-indigo-500/20"><Clock className="w-4 h-4 text-indigo-400"/></div>
+                    <h3 className="text-xs font-black uppercase text-slate-300 tracking-widest">3. Trip</h3>
+                    <div className="flex-1 h-px bg-slate-800"></div>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 tabular-nums">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Drop-off Date</label>
+                      <input required type="date" value={payLink.dropoff_date} onChange={(e) => setPayLink({ ...payLink, dropoff_date: e.target.value })} className={`${inputStyle} [color-scheme:dark]`} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Time</label>
+                      <input type="time" value={payLink.dropoff_time} onChange={(e) => setPayLink({ ...payLink, dropoff_time: e.target.value })} className={`${inputStyle} [color-scheme:dark]`} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Return Date</label>
+                      <input required type="date" value={payLink.pickup_date} onChange={(e) => setPayLink({ ...payLink, pickup_date: e.target.value })} className={`${inputStyle} [color-scheme:dark]`} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Time</label>
+                      <input type="time" value={payLink.pickup_time} onChange={(e) => setPayLink({ ...payLink, pickup_time: e.target.value })} className={`${inputStyle} [color-scheme:dark]`} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Airport</label>
+                      <div className="relative">
+                        <select value={payLink.airport} onChange={(e) => setPayLink({ ...payLink, airport: e.target.value, terminal: e.target.value.includes("Luton") ? "Main Terminal" : "Terminal 2" })} className={`${inputStyle} appearance-none cursor-pointer pr-10`}>
+                          <option value="Luton Airport (LTN)">Luton (LTN)</option>
+                          <option value="Heathrow (LHR)">Heathrow (LHR)</option>
+                        </select>
+                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Terminal</label>
+                      <input type="text" value={payLink.terminal} onChange={(e) => setPayLink({ ...payLink, terminal: e.target.value })} className={inputStyle} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Service Type</label>
+                      <div className="relative">
+                        <select value={payLink.service_type} onChange={(e) => setPayLink({ ...payLink, service_type: e.target.value })} className={`${inputStyle} appearance-none cursor-pointer pr-10`}>
+                          <option value="Premium Meet & Greet">Premium Meet &amp; Greet</option>
+                          <option value="Park & Ride">Park &amp; Ride</option>
+                          <option value="AeroPark Exclusive">AeroPark Exclusive (VIP)</option>
+                          <option value="Hotel & Parking">Hotel &amp; Parking</option>
+                        </select>
+                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-emerald-500/10 rounded-lg flex items-center justify-center border border-emerald-500/20"><Wallet className="w-4 h-4 text-emerald-400"/></div>
+                    <h3 className="text-xs font-black uppercase text-slate-300 tracking-widest">4. Price &amp; Assignment</h3>
+                    <div className="flex-1 h-px bg-slate-800"></div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-emerald-500 block ml-1 tracking-widest">Charge Amount (£)</label>
+                      <input required type="number" min="1" max="3000" step="0.01" value={payLink.total_price} onChange={(e) => setPayLink({ ...payLink, total_price: e.target.value })} className={`${inputStyle} text-lg`} placeholder="0.00" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Assign Provider</label>
+                      <div className="relative">
+                        <select value={payLink.company_id} onChange={(e) => setPayLink({ ...payLink, company_id: e.target.value })} className={`${inputStyle} appearance-none cursor-pointer pr-10`}>
+                          <option value="ALL">Unassigned (AeroPark Direct)</option>
+                          {companies.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Fast Track (qty)</label>
+                      <input type="number" min="0" max="9" value={payLink.fast_track_count} onChange={(e) => setPayLink({ ...payLink, fast_track_count: Number(e.target.value) || 0 })} className={inputStyle} />
+                    </div>
+                  </div>
+
+                  <label className="flex items-center gap-3 bg-[#1A2235] border border-slate-700/50 rounded-xl px-5 py-4 cursor-pointer hover:border-emerald-500/40 transition-colors">
+                    <input type="checkbox" checked={payLinkSendEmail} onChange={(e) => setPayLinkSendEmail(e.target.checked)} className="w-4 h-4 accent-emerald-500" />
+                    <Mail className="w-4 h-4 text-emerald-400" />
+                    <span className="text-xs font-bold text-slate-300">Email the payment link to the customer automatically</span>
+                  </label>
+                </section>
+
+                <div className="pt-2 pb-4">
+                  <button type="submit" disabled={isGeneratingLink} className="w-full h-16 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 disabled:from-slate-700 disabled:to-slate-700 disabled:text-slate-500 text-white font-black text-sm uppercase tracking-[0.15em] flex items-center justify-center gap-3 shadow-[0_15px_30px_-5px_rgba(16,185,129,0.4)] transition-all active:scale-[0.98]">
+                    {isGeneratingLink
+                      ? <><Loader2 className="w-5 h-5 animate-spin" /> Creating secure link…</>
+                      : <><Link2 className="w-5 h-5" /> Generate Payment Link{payLink.total_price ? ` — £${Number(payLink.total_price).toFixed(2)}` : ""}</>}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
       {showManualModal && (
         <div className="fixed inset-0 bg-[#0B1120]/95 backdrop-blur-md z-[300] flex items-center justify-center p-4 sm:p-8 overflow-hidden">
           <div className="bg-[#0F1523]/95 backdrop-blur-2xl border border-slate-800 w-full max-w-5xl rounded-[2rem] max-h-[95vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 relative">
