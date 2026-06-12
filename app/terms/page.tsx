@@ -1,6 +1,18 @@
 import Link from "next/link";
 import { ArrowLeft, Plane } from "lucide-react";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Company details — keep in sync with app/privacy/page.tsx
+// ─────────────────────────────────────────────────────────────────────────────
+const COMPANY = {
+  name: "AeroPark Direct Ltd",
+  number: "17211973",
+  office: "66 Paul Street, London, England, United Kingdom, EC2A 4NA",
+  email: "info@aeroparkdirect.co.uk",
+};
+
+const EFFECTIVE_FROM = "12 June 2026";
+
 export default function TermsPage() {
   return (
     <main className="min-h-screen bg-[#F8FAFC] selection:bg-blue-600 selection:text-white">
@@ -16,23 +28,35 @@ export default function TermsPage() {
       </nav>
 
       <div className="max-w-3xl mx-auto px-6 py-12 md:py-20">
-        <h1 className="text-3xl md:text-5xl font-black text-slate-900 mb-4 uppercase tracking-tight">Terms & Conditions.</h1>
-        <p className="text-slate-500 font-medium mb-12">Effective from: January 1, {new Date().getFullYear()}</p>
+        <h1 className="text-3xl md:text-5xl font-black text-slate-900 mb-4 uppercase tracking-tight">Terms &amp; Conditions.</h1>
+        <p className="text-slate-500 font-medium mb-12">Effective from: {EFFECTIVE_FROM}</p>
 
         <div className="prose prose-slate max-w-none prose-headings:font-black prose-headings:uppercase prose-headings:tracking-tight space-y-10 text-slate-600 text-sm md:text-base leading-relaxed">
-          
+
+          {/* WHO WE ARE */}
+          <div className="bg-slate-100 p-6 md:p-8 rounded-2xl border border-slate-200">
+            <h2 className="text-xl text-slate-900 mb-4 mt-0">Who We Are</h2>
+            <p className="m-0">This website is operated by {COMPANY.name}, a company registered in England and Wales.</p>
+            <ul className="list-none pl-0 mt-4 space-y-1.5">
+              <li><strong className="text-slate-900">Company:</strong> {COMPANY.name}</li>
+              <li><strong className="text-slate-900">Company number:</strong> {COMPANY.number}</li>
+              <li><strong className="text-slate-900">Registered office:</strong> {COMPANY.office}</li>
+              <li><strong className="text-slate-900">Contact:</strong> <a href={`mailto:${COMPANY.email}`} className="text-blue-600 font-semibold no-underline">{COMPANY.email}</a></li>
+            </ul>
+          </div>
+
           {/* SECTION A: OVERVIEW */}
           <div className="bg-slate-100 p-6 md:p-8 rounded-2xl border border-slate-200 space-y-6">
             <h2 className="text-xl text-slate-900 m-0">Terms and Conditions of Booking</h2>
-            
+
             <div>
               <h3 className="text-sm font-bold text-slate-900 mt-0 mb-2">1. Acceptance of Terms</h3>
               <p className="m-0">These terms apply to all bookings for Products made through the Website. Please read them carefully before making a booking, as they explain how you can make, amend, or cancel a booking. By making a booking, you confirm that you accept these terms.</p>
             </div>
-            
+
             <div>
               <h3 className="text-sm font-bold text-slate-900 mt-0 mb-2">2. Our Role as Booking Agent</h3>
-              <p className="m-0">We act as an intermediary booking agent on behalf of third-party Product Providers who supply the Products advertised on the Website. This means that a contract for the supply of the Product is formed between you and the relevant Product Provider.</p>
+              <p className="m-0">We act as an intermediary booking agent on behalf of third-party Product Providers (parking operators) who supply the Products advertised on the Website. This means that a contract for the supply of the Product is formed between you and the relevant Product Provider.</p>
             </div>
 
             <div>
@@ -46,8 +70,8 @@ export default function TermsPage() {
             </div>
 
             <div>
-              <h3 className="text-sm font-bold text-slate-900 mt-0 mb-2">5. Privacy and Cookies Policies</h3>
-              <p className="m-0">When you make a booking through the Website, your personal data will be handled in accordance with our privacy policy and cookies policy.</p>
+              <h3 className="text-sm font-bold text-slate-900 mt-0 mb-2">5. Privacy and Cookies</h3>
+              <p className="m-0">When you make a booking through the Website, your personal data will be handled in accordance with our <Link href="/privacy" className="text-blue-600 font-semibold">privacy policy</Link>, which also explains how we use cookies.</p>
             </div>
 
             <div>
@@ -66,21 +90,21 @@ export default function TermsPage() {
           {/* SECTION B: DETAILED TERMS */}
           <section>
             <h2 className="text-xl text-slate-900 mb-4 border-l-4 border-blue-600 pl-4">1. Status of the Website and Agency Capacity</h2>
-            <p>1.1 The Website operates strictly in the capacity of a booking agent acting on behalf of independent third-party suppliers (“Product Providers”) in respect of the Products made available for booking.</p>
+            <p>1.1 The Website operates strictly in the capacity of a booking agent acting on behalf of independent third-party suppliers (&ldquo;Product Providers&rdquo;) in respect of the Products made available for booking.</p>
             <p>1.2 By making a booking through the Website, you acknowledge and agree that:</p>
             <ul className="list-disc pl-5 space-y-2">
               <li>The Company does not itself supply, perform, or deliver the Products;</li>
               <li>The contractual obligation for the provision of the Products rests solely with the relevant Product Provider; and</li>
               <li>The Company shall bear no responsibility or liability for the performance, suitability, or fulfilment of the Products.</li>
             </ul>
-            <p>1.3 The Company’s obligations are strictly limited to the facilitation and administrative processing of bookings.</p>
+            <p>1.3 The Company&rsquo;s obligations are strictly limited to the facilitation and administrative processing of bookings.</p>
           </section>
 
           <section>
             <h2 className="text-xl text-slate-900 mb-4 border-l-4 border-blue-600 pl-4">2. Formation of Contract and Role of Product Providers</h2>
             <p>2.1 All Products advertised via the Website are supplied by independent third-party Product Providers.</p>
-            <p>2.2 Upon confirmation of a booking, a legally binding contract is formed directly between the customer and the relevant Product Provider, governed by the Product Provider’s own terms and conditions (“Product Provider Terms”).</p>
-            <p>2.3 The customer acknowledges and agree that:</p>
+            <p>2.2 Upon confirmation of a booking, a legally binding contract is formed directly between the customer and the relevant Product Provider, governed by the Product Provider&rsquo;s own terms and conditions (&ldquo;Product Provider Terms&rdquo;).</p>
+            <p>2.3 The customer acknowledges and agrees that:</p>
             <ul className="list-disc pl-5 space-y-2">
               <li>The Company is not a party to the contract for the supply of the Products;</li>
               <li>The Product Provider Terms govern the provision, performance, and fulfilment of the Products; and</li>
@@ -89,60 +113,69 @@ export default function TermsPage() {
             <p>2.4 The Company may retain a portion of the booking price as a service fee, remitting the balance to the Product Provider.</p>
           </section>
 
+          {/* NEW — AEROPARK EXCLUSIVE */}
           <section>
-            <h2 className="text-xl text-slate-900 mb-4 border-l-4 border-blue-600 pl-4">3. Pricing and Payment</h2>
-            <p>3.1 Full payment is required at the time of booking via the payment methods made available on the Website.</p>
-            <p>3.2 All prices are displayed in the relevant currency and include applicable taxes unless otherwise stated.</p>
-            <p>3.3 The Company reserves the right to decline any booking where payment is unsuccessful, suspected to be fraudulent, or made without proper authorisation.</p>
-            <p>3.4 Additional charges, including foreign exchange fees or conversion costs, may be applied by financial institutions and are outside the control of the Company.</p>
-            <p>3.5 VAT invoices may only be issued where the relevant Product Provider supplies sufficient VAT registration information.</p>
+            <h2 className="text-xl text-slate-900 mb-4 border-l-4 border-blue-600 pl-4">3. AeroPark Exclusive (Curated Service)</h2>
+            <p>3.1 &ldquo;AeroPark Exclusive&rdquo; is a premium booking option in which you are not required to choose a parking operator yourself.</p>
+            <p>3.2 Where you book an AeroPark Exclusive Product, the Company will select and assign the Product Provider it considers most suitable for your booking, and will include the additional benefits described for that Product at the time of booking.</p>
+            <p>3.3 AeroPark Exclusive does not change the Company&rsquo;s status as a booking agent. The selected Product Provider remains responsible for performing the physical parking service, and the contract for the supply of that service is formed between you and that Product Provider as set out in sections 1 and 2.</p>
+            <p>3.4 The Company will confirm the assigned Product Provider and applicable handover instructions to you ahead of your travel date.</p>
           </section>
 
           <section>
-            <h2 className="text-xl text-slate-900 mb-4 border-l-4 border-blue-600 pl-4">4. Amendments to Bookings</h2>
-            <p>4.1 Certain booking types, including but not limited to “NON-FLEX”, “SUPERSAVER”, and “EARLY” products, are strictly non-amendable.</p>
-            <p>4.2 Where amendments are permitted, they shall be subject to:</p>
+            <h2 className="text-xl text-slate-900 mb-4 border-l-4 border-blue-600 pl-4">4. Pricing and Payment</h2>
+            <p>4.1 Full payment is required at the time of booking via the payment methods made available on the Website.</p>
+            <p>4.2 All prices are displayed in the relevant currency and include applicable taxes unless otherwise stated.</p>
+            <p>4.3 The Company reserves the right to decline any booking where payment is unsuccessful, suspected to be fraudulent, or made without proper authorisation.</p>
+            <p>4.4 Additional charges, including foreign exchange fees or conversion costs, may be applied by financial institutions and are outside the control of the Company.</p>
+            <p>4.5 VAT invoices may only be issued where the relevant Product Provider supplies sufficient VAT registration information.</p>
+          </section>
+
+          <section>
+            <h2 className="text-xl text-slate-900 mb-4 border-l-4 border-blue-600 pl-4">5. Amendments to Bookings</h2>
+            <p>5.1 Certain booking types, including but not limited to &ldquo;NON-FLEX&rdquo;, &ldquo;SUPERSAVER&rdquo;, and &ldquo;EARLY&rdquo; products, are strictly non-amendable.</p>
+            <p>5.2 Where amendments are permitted, they shall be subject to:</p>
             <ul className="list-disc pl-5 space-y-2">
               <li>A minimum notice period of forty-eight (48) hours prior to the scheduled use of the Product; and</li>
               <li>Availability and acceptance by the relevant Product Provider.</li>
             </ul>
-            <p>4.3 Amendments shall only take effect upon written confirmation issued by the Company or the Product Provider.</p>
-            <p>4.4 The Company shall not be liable where an amendment request cannot be fulfilled by the Product Provider.</p>
+            <p>5.3 Amendments shall only take effect upon written confirmation issued by the Company or the Product Provider.</p>
+            <p>5.4 The Company shall not be liable where an amendment request cannot be fulfilled by the Product Provider.</p>
           </section>
 
           <section>
-            <h2 className="text-xl text-slate-900 mb-4 border-l-4 border-blue-600 pl-4">5. Cancellations and Refunds</h2>
-            <p>5.1 Certain Products are non-cancellable and non-refundable, as specified at the time of booking.</p>
-            <p>5.2 Where cancellation is permitted, it must be requested no less than forty-eight (48) hours prior to the scheduled Product usage date.</p>
-            <p>5.3 Refunds, where applicable, shall be processed as follows:</p>
+            <h2 className="text-xl text-slate-900 mb-4 border-l-4 border-blue-600 pl-4">6. Cancellations and Refunds</h2>
+            <p>6.1 Certain Products are non-cancellable and non-refundable, as specified at the time of booking.</p>
+            <p>6.2 Where cancellation is permitted, it must be requested no less than forty-eight (48) hours prior to the scheduled Product usage date.</p>
+            <p>6.3 Refunds, where applicable, shall be processed as follows:</p>
             <ul className="list-disc pl-5 space-y-2">
               <li>Bookings with cancellation cover: refund less booking fee and cancellation cover cost;</li>
               <li>Bookings without cancellation cover: refund less applicable cancellation fee and booking fee.</li>
             </ul>
-            <p>5.4 No refunds shall be issued in respect of:</p>
+            <p>6.4 No refunds shall be issued in respect of:</p>
             <ul className="list-disc pl-5 space-y-2">
               <li>Expired bookings;</li>
               <li>Partially used Products; or</li>
               <li>Non-compliance with booking conditions.</li>
             </ul>
-            <p>5.5 Cancellation requests must be submitted via authorised communication channels only and shall not be valid if made directly to the Product Provider.</p>
+            <p>6.5 Cancellation requests must be submitted via authorised communication channels only and shall not be valid if made directly to the Product Provider.</p>
           </section>
 
           <section>
-            <h2 className="text-xl text-slate-900 mb-4 border-l-4 border-blue-600 pl-4">6. Complaints and Dispute Resolution</h2>
-            <p>6.1 Any issues relating to Website functionality must be raised directly with the Company.</p>
-            <p>6.2 Any issues relating to the Product must initially be raised with the Product Provider at the time of or immediately following use.</p>
-            <p>6.3 Where a complaint remains unresolved, it must be escalated to the Company within seven (7) days.</p>
-            <p>6.4 The Company reserves the right to deem any complaint closed if not notified within fourteen (14) days of Product use.</p>
+            <h2 className="text-xl text-slate-900 mb-4 border-l-4 border-blue-600 pl-4">7. Complaints and Dispute Resolution</h2>
+            <p>7.1 Any issues relating to Website functionality must be raised directly with the Company.</p>
+            <p>7.2 Any issues relating to the Product must initially be raised with the Product Provider at the time of or immediately following use.</p>
+            <p>7.3 Where a complaint remains unresolved, it must be escalated to the Company within seven (7) days.</p>
+            <p>7.4 The Company reserves the right to deem any complaint closed if not notified within fourteen (14) days of Product use.</p>
           </section>
 
           <section>
-            <h2 className="text-xl text-slate-900 mb-4 border-l-4 border-blue-600 pl-4">7. General Provisions</h2>
-            <p>7.1 If any provision of these Terms is held to be invalid or unenforceable, such provision shall be severed and the remaining provisions shall remain in full force and effect.</p>
-            <p>7.2 These Terms, together with the Privacy Policy and Cookies Policy, constitute the entire agreement between the parties.</p>
-            <p>7.3 No waiver of any right or remedy shall be effective unless made in writing.</p>
-            <p>7.4 These Terms shall be governed by and construed in accordance with the laws of England and Wales.</p>
-            <p>7.5 The courts of England and Wales shall have jurisdiction, without prejudice to any statutory rights applicable to consumers in other UK jurisdictions.</p>
+            <h2 className="text-xl text-slate-900 mb-4 border-l-4 border-blue-600 pl-4">8. General Provisions</h2>
+            <p>8.1 If any provision of these Terms is held to be invalid or unenforceable, such provision shall be severed and the remaining provisions shall remain in full force and effect.</p>
+            <p>8.2 These Terms, together with the <Link href="/privacy" className="text-blue-600 font-semibold">Privacy Policy</Link>, constitute the entire agreement between the parties.</p>
+            <p>8.3 No waiver of any right or remedy shall be effective unless made in writing.</p>
+            <p>8.4 These Terms shall be governed by and construed in accordance with the laws of England and Wales.</p>
+            <p>8.5 The courts of England and Wales shall have jurisdiction, without prejudice to any statutory rights applicable to consumers in other UK jurisdictions.</p>
           </section>
 
           <hr className="border-slate-200" />
@@ -150,7 +183,7 @@ export default function TermsPage() {
           {/* SECTION C: REVIEW POLICY */}
           <div className="bg-slate-900 text-slate-300 p-6 md:p-8 rounded-2xl shadow-xl mt-12 space-y-6">
             <h2 className="text-2xl text-white m-0">Review and Rating Policy</h2>
-            <p className="text-sm text-slate-400">Last update: 27 April 2026</p>
+            <p className="text-sm text-slate-400">Last update: {EFFECTIVE_FROM}</p>
 
             <div>
               <h3 className="text-base font-bold text-white mt-0 mb-2">1. Introduction</h3>
@@ -169,7 +202,7 @@ export default function TermsPage() {
               <h3 className="text-base font-bold text-white mt-0 mb-2">3. Authenticity and Prohibited Conduct</h3>
               <p className="text-sm">3.1 The Company encourages all customers to submit honest, accurate, and genuine reviews based solely on their personal experience of the relevant service.<br/>
               3.2 The submission of false, misleading, fraudulent, or otherwise non-genuine reviews is strictly prohibited.<br/>
-              3.3 For the purposes of this Policy, a “fake review” shall mean any review purporting to represent a genuine consumer experience which is not, in fact, based on a bona fide experience of the reviewer.<br/>
+              3.3 For the purposes of this Policy, a &ldquo;fake review&rdquo; shall mean any review purporting to represent a genuine consumer experience which is not, in fact, based on a bona fide experience of the reviewer.<br/>
               3.4 Where the Company reasonably believes or is notified that a review is fake or otherwise in breach of applicable platform rules, it reserves the right to:</p>
               <ul className="list-disc pl-5 mt-2 text-sm">
                 <li>Report the review to the relevant third-party platform; and/or</li>
@@ -190,7 +223,7 @@ export default function TermsPage() {
               <p className="text-sm">5.1 While reasonable efforts are made to ensure the authenticity of reviews, concerns regarding potential breaches of this Policy may be reported by users.<br/>
               5.2 If you wish to report a review, you may do so by:</p>
               <ul className="list-disc pl-5 mt-2 text-sm">
-                <li>Using the reporting tools provided by the relevant platform (e.g., Trustpilot via the “Flag review” function on the relevant review page).</li>
+                <li>Using the reporting tools provided by the relevant platform (e.g., Trustpilot via the &ldquo;Flag review&rdquo; function on the relevant review page).</li>
                 <li>Contacting the Company via the designated contact form available on the Website.</li>
               </ul>
               <p className="mt-2 text-sm">5.3 All reports submitted to third-party platforms are assessed and determined solely by the relevant platform in accordance with its internal policies and procedures. The Company does not exercise control over such determinations.</p>
@@ -202,7 +235,7 @@ export default function TermsPage() {
               6.2 The most current version of this Policy shall be published on the Website and shall supersede all prior versions.</p>
             </div>
           </div>
-          
+
         </div>
       </div>
     </main>
