@@ -147,7 +147,7 @@ export async function POST(req: Request) {
         dropoff_time: m.dropoff_time || "09:00",
         pickup_time: m.pickup_time || "09:00",
         flight_number: m.flight_number || "",
-        service_type: m.service_type || "Premium Meet & Greet",
+        service_type: m.service_type || "Meet & Greet",
         total_price: session.amount_total ? session.amount_total / 100 : 0,
         status: "confirmed",
         stripe_session_id: session.id,

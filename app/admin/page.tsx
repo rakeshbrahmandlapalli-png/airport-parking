@@ -16,14 +16,14 @@ import { recordAdminAction } from "@/app/lib/audit-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-import { 
-  Users, Trash2, LogOut, Phone, Car, Plane, MessageCircle, 
-  Search, TrendingUp, MapPin, Loader2, Filter, 
-  LayoutDashboard, Plus, Building2, X, Save, Clock, 
-  CheckCircle2, AlertCircle, PlaneLanding, PlaneTakeoff, 
-  XCircle, ChevronDown, Download, Briefcase, Receipt, Star, 
+import {
+  Users, Trash2, LogOut, Phone, Car, Plane, MessageCircle,
+  Search, TrendingUp, MapPin, Loader2, Filter,
+  LayoutDashboard, Plus, Building2, X, Save, Clock,
+  CheckCircle2, AlertCircle, PlaneLanding, PlaneTakeoff,
+  XCircle, ChevronDown, Download, Briefcase, Receipt, Star,
   Database, Smartphone, Wallet, Settings2, Activity, Tags,
-  Zap, PiggyBank, Link2, Copy, Mail, Send
+  Zap, PiggyBank, Link2, Copy, Mail, Send, RefreshCw
 } from "lucide-react";
 
 function DashboardContent() {
@@ -81,7 +81,7 @@ function DashboardContent() {
     car_make: "", car_color: "", flight_number: "",
     dropoff_date: "", dropoff_time: "10:00", pickup_date: "", pickup_time: "10:00",
     total_price: "", airport: "Luton Airport (LTN)", terminal: "Main Terminal",
-    company_id: "ALL", service_type: "Premium Meet & Greet", fast_track_count: 0,
+    company_id: "ALL", service_type: "Meet & Greet", fast_track_count: 0,
   };
   const [showPayLinkModal, setShowPayLinkModal] = useState(false);
   const [payLink, setPayLink] = useState<any>(defaultPayLink);
@@ -493,6 +493,55 @@ function DashboardContent() {
     });
   };
 
+  // Process Refund: marks booking as cancelled (refund must be issued manually in Stripe)
+  const processRefund = (b: any) => {
+    askConfirm({
+      title: "Process Refund",
+      body: `Mark booking ${b.booking_ref} as voided and issue a refund of £${Number(b.total_price || 0).toFixed(2)}? You will need to complete the refund manually in the Stripe Dashboard.`,
+      confirmLabel: "Void & Flag for Refund",
+      danger: true,
+      onConfirm: async () => {
+        await quickStatus(b, "cancelled");
+        recordAdminAction({
+          actionType: "booking.refund.initiated",
+          entityType: "booking",
+          entityId: b.id,
+          metadata: { label: `Booking ${b.booking_ref}`, after: `refund initiated · £${Number(b.total_price || 0).toFixed(2)}` },
+        });
+        notify("info", `${b.booking_ref} voided. Process the £${Number(b.total_price || 0).toFixed(2)} refund in Stripe.`);
+      },
+    });
+  };
+
+  // Force API Sync: re-dispatches provider notification email as a sync proxy
+  const forceApiSync = async (b: any) => {
+    if (!b.company_id) {
+      notify("error", "No partner assigned — assign a provider before syncing.");
+      return;
+    }
+    notify("info", `Re-syncing ${b.booking_ref} to partner API…`);
+    try {
+      const res = await fetch("/api/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ booking: b, manual_provider_notify: true }),
+      });
+      if (res.ok) {
+        recordAdminAction({
+          actionType: "booking.api.sync",
+          entityType: "booking",
+          entityId: b.id,
+          metadata: { label: `Booking ${b.booking_ref}`, after: "force API sync dispatched" },
+        });
+        notify("success", `${b.booking_ref} re-dispatched to provider.`);
+      } else {
+        notify("error", "Sync failed — check server logs.");
+      }
+    } catch {
+      notify("error", "Sync request error.");
+    }
+  };
+
   const exportToCSV = () => {
     let csv = "Reference,Customer,Email,Phone,Plate,Make,Airport,Terminal,Flight,Inbound Date,Inbound Time,Outbound Date,Outbound Time,Total Paid,Status,Service Type,Partner,Fast Track\n";
     
@@ -586,6 +635,40 @@ function DashboardContent() {
     if (s === "completed") return "#10b981"; // emerald
     if (s === "cancelled") return "#ef4444"; // red
     return "#f59e0b";                          // amber (pending)
+  };
+
+  // Real aggregator commission. Each partner stores its own commission_rate
+  // (set on the Partner Network page; same field the Partner Statement export
+  // uses). Direct / in-house bookings (no partner) are 100% ours.
+  const getCommission = (b: any): { amount: number; label: string } => {
+    const price = Number(b.total_price || 0);
+    if (!b.company_id) return { amount: price, label: "100% direct" };
+    const comp = companies.find((c) => c.id === b.company_id);
+    const rate = Number(comp?.commission_rate ?? 15);
+    return { amount: price * (rate / 100), label: `${rate}% fee` };
+  };
+
+  // Compact table status pill — no glow, no backdrop blur; pure semantic colour.
+  const getTableStatusPill = (status: string) => {
+    const s = status?.toLowerCase() || "pending";
+    const base = "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap";
+    if (s === "confirmed") return <span className={`${base} bg-blue-500/10 text-blue-400`}><CheckCircle2 className="w-2.5 h-2.5" />Confirmed</span>;
+    if (s === "parked")    return <span className={`${base} bg-violet-500/10 text-violet-400`}><Car className="w-2.5 h-2.5" />Parked</span>;
+    if (s === "completed") return <span className={`${base} bg-emerald-500/10 text-emerald-400`}><CheckCircle2 className="w-2.5 h-2.5" />Completed</span>;
+    if (s === "cancelled") return <span className={`${base} bg-red-500/10 text-red-400`}><XCircle className="w-2.5 h-2.5" />Voided</span>;
+    return <span className={`${base} bg-amber-500/10 text-amber-400`}><Clock className="w-2.5 h-2.5" />Pending</span>;
+  };
+
+  // API sync status chip — reflects whether this booking has been routed to a partner.
+  const getApiSyncBadge = (b: any) => {
+    const s = b.status?.toLowerCase() || "pending";
+    const base = "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap";
+    if (s === "cancelled") return <span className="text-[10px] text-zinc-600 font-medium">N/A</span>;
+    if (!b.company_id)
+      return <span className={`${base} bg-amber-500/10 text-amber-500`}><AlertCircle className="w-2.5 h-2.5" />Unrouted</span>;
+    if (s === "confirmed" || s === "parked" || s === "completed")
+      return <span className={`${base} bg-emerald-500/10 text-emerald-400`}><CheckCircle2 className="w-2.5 h-2.5" />Synced</span>;
+    return <span className={`${base} bg-white/5 text-zinc-400`}><Clock className="w-2.5 h-2.5" />Queued</span>;
   };
 
   // --- 8. FILTER ENGINE ---
@@ -1042,107 +1125,242 @@ function DashboardContent() {
           </div>
         </div>
 
-        {/* 🟢 BOOKING CARD GRID */}
-        {displayBookings.length === 0 ? (
-          <div className="bg-[#131A2B]/70 backdrop-blur-xl rounded-3xl border border-slate-800 py-32 flex flex-col items-center justify-center opacity-50 px-6 text-center mb-24">
-            <div className="w-20 h-20 rounded-full border-4 border-dashed border-slate-600 flex items-center justify-center mb-5 bg-slate-900/50">
-              <Search className="w-8 h-8 text-slate-500" />
-            </div>
-            <p className="text-lg font-black uppercase tracking-[0.25em] text-white">No Records</p>
-            <p className="text-xs font-bold text-slate-400 mt-2">Adjust filters to retrieve bookings.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-5 mb-24">
-            {displayBookings.map((b) => (
-              <div
-                key={b.id}
-                onClick={() => setViewBooking(b)}
-                className="group bg-gradient-to-br from-[#131A2B] to-[#0F1523] rounded-3xl border border-slate-800/80 hover:border-blue-500/40 shadow-xl hover:shadow-[0_20px_50px_-15px_rgba(59,130,246,0.25)] transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col hover:-translate-y-1"
-                style={{ boxShadow: `inset 4px 0 0 0 ${statusAccentColor(b.status)}` }}
-              >
-                <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
+        {/* ── ENTERPRISE DATA TABLE ─────────────────────────────────────────────── */}
+        <div className="mb-24 rounded-xl border border-white/[0.06] overflow-hidden bg-zinc-950/60 ring-1 ring-inset ring-white/[0.04]">
 
-                {/* CARD HEAD */}
-                <div className="p-5 pb-4 flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[9px] font-black font-mono text-blue-400 tracking-widest uppercase bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">{b.booking_ref}</span>
-                      {b.fast_track_count > 0 && (
-                        <span className="text-[8px] font-black text-amber-400 uppercase tracking-widest bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 flex items-center gap-1">
-                          <Zap className="w-2.5 h-2.5" /> {b.fast_track_count}×
-                        </span>
-                      )}
-                    </div>
-                    <h3 className="text-lg font-black text-white tracking-tight mt-2 truncate">{b.full_name || "Unnamed Client"}</h3>
-                  </div>
-                  {getStatusBadge(b.status)}
-                </div>
+          {/* Sticky column header */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[1240px] border-collapse">
+              <thead>
+                <tr className="border-b border-white/[0.08] bg-zinc-900/80">
+                  {[
+                    { label: "Booking Ref",    cls: "w-[130px] pl-5" },
+                    { label: "Customer",        cls: "w-[200px]" },
+                    { label: "Vehicle / Reg",   cls: "w-[120px]" },
+                    { label: "Drop-off / Return", cls: "w-[170px]" },
+                    { label: "Partner",         cls: "w-[140px]" },
+                    { label: "Revenue",         cls: "w-[90px] text-right" },
+                    { label: "Commission",      cls: "w-[100px] text-right" },
+                    { label: "Status",          cls: "w-[110px] text-center" },
+                    { label: "API Sync",        cls: "w-[90px] text-center" },
+                    { label: "",                cls: "w-[150px] pr-4" },
+                  ].map((h) => (
+                    <th key={h.label} className={`py-2.5 px-3 text-[10px] font-semibold text-zinc-500 uppercase tracking-widest text-left ${h.cls}`}>
+                      {h.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
 
-                {/* CARD BODY */}
-                <div className="px-5 pb-4 space-y-3.5 flex-1">
-                  {/* vehicle */}
-                  <div className="flex items-center gap-3">
-                    <div className="px-2.5 py-1.5 bg-[#FACC15] text-black font-black font-mono text-xs rounded border-b-2 border-yellow-600 tracking-[0.08em] shrink-0">{b.license_plate || "—"}</div>
-                    <div className="flex items-center gap-2 text-[11px] font-bold text-slate-300 uppercase tracking-wider truncate">
-                      <span className="w-2.5 h-2.5 rounded-full border border-white/20 shrink-0" style={{ background: b.car_color || "#334155" }}></span>
-                      <span className="truncate">{b.car_make || "Standard Fleet"}</span>
-                    </div>
-                  </div>
-                  {/* schedule */}
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div className="bg-[#1A2235]/60 border border-slate-800 rounded-xl px-3 py-2.5">
-                      <p className="text-[8px] font-black uppercase tracking-widest text-blue-400 flex items-center gap-1"><PlaneLanding className="w-3 h-3" /> Inbound</p>
-                      <p className="text-xs font-bold text-white tabular-nums mt-1">{formatDate(b.dropoff_date)} {b.dropoff_time || ""}</p>
-                    </div>
-                    <div className="bg-[#1A2235]/60 border border-slate-800 rounded-xl px-3 py-2.5">
-                      <p className="text-[8px] font-black uppercase tracking-widest text-amber-400 flex items-center gap-1"><PlaneTakeoff className="w-3 h-3" /> Return</p>
-                      <p className="text-xs font-bold text-white tabular-nums mt-1">{formatDate(b.pickup_date)} {b.pickup_time || ""}</p>
-                    </div>
-                  </div>
-                  {/* price + partner */}
-                  <div className="flex items-center justify-between pt-1">
-                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate">
-                      <Building2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                      <span className="truncate">{getCompanyName(b.company_id)}</span>
-                    </div>
-                    <span className="text-xl font-black text-white tabular-nums shrink-0">£{Number(b.total_price || 0).toFixed(2)}</span>
-                  </div>
-                </div>
-
-                {/* CARD FOOTER — quick-status (NEW FEATURE 2) + ALL actions */}
-                <div className="px-4 py-3.5 border-t border-slate-800 bg-[#0F1523]/60 space-y-2.5" onClick={(e) => e.stopPropagation()}>
-                  {/* quick status */}
-                  <div className="relative">
-                    <select
-                      value={b.status?.toLowerCase() || "pending"}
-                      onChange={(e) => quickStatus(b, e.target.value)}
-                      className="w-full appearance-none bg-[#1A2235] border rounded-lg py-2 pl-3 pr-7 text-[9px] font-black uppercase tracking-widest text-white outline-none cursor-pointer transition-all focus:ring-2 focus:ring-blue-500/40"
-                      style={{ borderColor: `${statusAccentColor(b.status)}66` }}
+              <tbody>
+                {displayBookings.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="py-24 text-center">
+                      <div className="flex flex-col items-center gap-3 opacity-40">
+                        <Search className="w-7 h-7 text-zinc-500" />
+                        <p className="text-xs font-semibold uppercase tracking-widest text-zinc-400">No records match</p>
+                        <p className="text-[11px] text-zinc-600">Adjust your filters to retrieve bookings.</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  displayBookings.map((b, idx) => (
+                    <tr
+                      key={b.id}
+                      onClick={() => setViewBooking(b)}
+                      className={[
+                        "group/row cursor-pointer transition-colors duration-75",
+                        "hover:bg-white/[0.025]",
+                        idx !== displayBookings.length - 1 ? "border-b border-white/[0.05]" : "",
+                      ].join(" ")}
                     >
-                      <option value="pending" className="bg-[#1A2235]">Set Status: Pending</option>
-                      <option value="confirmed" className="bg-[#1A2235]">Set Status: Confirmed</option>
-                      <option value="parked" className="bg-[#1A2235]">Set Status: Parked</option>
-                      <option value="completed" className="bg-[#1A2235]">Set Status: Completed</option>
-                      <option value="cancelled" className="bg-[#1A2235]">Set Status: Voided</option>
-                    </select>
-                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-500 pointer-events-none" />
-                  </div>
-                  {/* full action row */}
-                  <div className="flex items-center gap-1.5">
-                    <button title="Email customer" onClick={() => sendManualEmail(b, "customer")} className="flex-1 flex items-center justify-center p-2 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white rounded-lg border border-blue-500/20 transition-all active:scale-95"><Receipt className="w-4 h-4" /></button>
-                    <button title="Email provider" onClick={() => sendManualEmail(b, "provider")} className="flex-1 flex items-center justify-center p-2 bg-purple-500/10 text-purple-400 hover:bg-purple-500 hover:text-white rounded-lg border border-purple-500/20 transition-all active:scale-95"><Briefcase className="w-4 h-4" /></button>
-                    <button title="WhatsApp dispatch" onClick={() => sendToWhatsApp(b)} className="flex-1 flex items-center justify-center p-2 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-lg border border-emerald-500/20 transition-all active:scale-95"><MessageCircle className="w-4 h-4" /></button>
-                    {b.status?.toLowerCase() === "completed" && (
-                      <button title="Request review" onClick={() => handleRequestReview(b)} className="flex-1 flex items-center justify-center p-2 bg-amber-500/10 text-amber-400 hover:bg-amber-500 hover:text-white rounded-lg border border-amber-500/20 transition-all active:scale-95"><Star className="w-4 h-4 fill-current" /></button>
-                    )}
-                    <button title="Edit record" onClick={() => setEditingBooking(b)} className="flex-1 flex items-center justify-center p-2 bg-[#1A2235] text-slate-300 hover:bg-blue-600 hover:text-white rounded-lg border border-slate-700 transition-all active:scale-95"><Settings2 className="w-4 h-4" /></button>
-                    <button title="Delete record" onClick={() => deleteBooking(b.id, b.booking_ref)} className="flex-1 flex items-center justify-center p-2 bg-[#1A2235] text-slate-500 hover:bg-red-500 hover:text-white rounded-lg border border-slate-700 transition-all active:scale-95"><Trash2 className="w-4 h-4" /></button>
-                  </div>
-                </div>
-              </div>
-            ))}
+                      {/* ── REF ── */}
+                      <td className="py-3 px-3 pl-5 align-middle">
+                        <div className="flex flex-col gap-0.5">
+                          <span
+                            className="font-mono text-[11px] font-semibold text-blue-400 tracking-wider"
+                            style={{ borderLeft: `2px solid ${statusAccentColor(b.status)}`, paddingLeft: "6px" }}
+                          >
+                            {b.booking_ref || "—"}
+                          </span>
+                          {b.fast_track_count > 0 && (
+                            <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-amber-500 pl-[8px]">
+                              <Zap className="w-2 h-2" />{b.fast_track_count}× Fast Track
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* ── CUSTOMER ── */}
+                      <td className="py-3 px-3 align-middle max-w-[200px]">
+                        <div className="text-[13px] font-semibold text-white truncate leading-snug">
+                          {b.full_name || <span className="text-zinc-600 italic">Unnamed</span>}
+                        </div>
+                        <div className="text-[11px] text-zinc-500 truncate tabular-nums mt-0.5">
+                          {b.email || b.phone_number || "—"}
+                        </div>
+                      </td>
+
+                      {/* ── VEHICLE / REG ── */}
+                      <td className="py-3 px-3 align-middle">
+                        <span className="inline-block font-mono text-[11px] font-bold text-zinc-900 bg-amber-400 px-1.5 py-0.5 rounded tracking-wider whitespace-nowrap">
+                          {b.license_plate || "—"}
+                        </span>
+                        <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 mt-1 max-w-[110px]">
+                          <span className="w-2 h-2 rounded-full border border-white/20 shrink-0" style={{ background: b.car_color || "#3f3f46" }} />
+                          <span className="truncate">{b.car_make || "—"}</span>
+                        </div>
+                      </td>
+
+                      {/* ── DATES ── */}
+                      <td className="py-3 px-3 align-middle">
+                        <div className="flex items-start gap-1.5 tabular-nums">
+                          <div>
+                            <div className="text-[12px] font-semibold text-zinc-200 leading-snug">{formatDate(b.dropoff_date)}</div>
+                            <div className="text-[10px] text-zinc-600">{b.dropoff_time || "—"}</div>
+                          </div>
+                          <span className="text-zinc-700 text-[10px] mt-1 font-bold">→</span>
+                          <div>
+                            <div className="text-[12px] font-semibold text-zinc-200 leading-snug">{formatDate(b.pickup_date)}</div>
+                            <div className="text-[10px] text-zinc-600">{b.pickup_time || "—"}</div>
+                          </div>
+                        </div>
+                        <div className="text-[10px] text-zinc-600 mt-1 tabular-nums">
+                          {b.airport?.includes("Luton") ? "LTN" : b.airport?.includes("Heathrow") ? "LHR" : "—"}
+                          {b.service_type ? ` · ${b.service_type.length > 15 ? b.service_type.slice(0, 14) + "…" : b.service_type}` : ""}
+                        </div>
+                      </td>
+
+                      {/* ── PARTNER ── */}
+                      <td className="py-3 px-3 align-middle max-w-[150px]">
+                        <div className="text-[12px] font-semibold text-zinc-300 truncate leading-snug">
+                          {getCompanyName(b.company_id)}
+                        </div>
+                        {!b.company_id && (
+                          <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-amber-500 mt-0.5">
+                            <AlertCircle className="w-2.5 h-2.5" />needs routing
+                          </span>
+                        )}
+                      </td>
+
+                      {/* ── REVENUE ── */}
+                      <td className="py-3 px-3 align-middle text-right">
+                        <span className="text-[13px] font-bold text-white tabular-nums">
+                          £{Number(b.total_price || 0).toFixed(2)}
+                        </span>
+                      </td>
+
+                      {/* ── COMMISSION ── */}
+                      <td className="py-3 px-3 align-middle text-right">
+                        <span className="text-[12px] font-semibold text-emerald-400 tabular-nums">
+                          £{getCommission(b).amount.toFixed(2)}
+                        </span>
+                        <div className="text-[9px] text-zinc-600 mt-0.5 tabular-nums">
+                          {getCommission(b).label}
+                        </div>
+                      </td>
+
+                      {/* ── STATUS (inline quick-change select) ── */}
+                      <td className="py-3 px-3 align-middle" onClick={(e) => e.stopPropagation()}>
+                        <div className="relative flex justify-center">
+                          <select
+                            value={b.status?.toLowerCase() || "pending"}
+                            onChange={(e) => quickStatus(b, e.target.value)}
+                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                            title="Change status"
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="parked">Parked</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Voided</option>
+                          </select>
+                          <div className="pointer-events-none flex items-center gap-1">
+                            {getTableStatusPill(b.status)}
+                            <ChevronDown className="w-2.5 h-2.5 text-zinc-600 shrink-0" />
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* ── API SYNC ── */}
+                      <td className="py-3 px-3 align-middle">
+                        <div className="flex justify-center">
+                          {getApiSyncBadge(b)}
+                        </div>
+                      </td>
+
+                      {/* ── ACTIONS (visible on row hover) ── */}
+                      <td className="py-3 px-3 pr-4 align-middle" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-0.5 opacity-60 group-hover/row:opacity-100 transition-opacity duration-100">
+                          <button
+                            title="Process Refund"
+                            onClick={() => processRefund(b)}
+                            className="h-7 w-7 rounded-md flex items-center justify-center text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            title="Resend Confirmation"
+                            onClick={() => sendManualEmail(b, "customer")}
+                            className="h-7 w-7 rounded-md flex items-center justify-center text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+                          >
+                            <Mail className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            title="Force API Sync"
+                            onClick={() => forceApiSync(b)}
+                            className="h-7 w-7 rounded-md flex items-center justify-center text-zinc-600 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+                          >
+                            <Database className="w-3.5 h-3.5" />
+                          </button>
+                          {b.status?.toLowerCase() === "completed" && (
+                            <button
+                              title="Request Review"
+                              onClick={() => handleRequestReview(b)}
+                              className="h-7 w-7 rounded-md flex items-center justify-center text-zinc-600 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
+                            >
+                              <Star className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          <div className="w-px h-4 bg-white/10 mx-1" />
+                          <button
+                            title="Edit / amend booking"
+                            onClick={() => setEditingBooking(b)}
+                            className="h-7 w-7 rounded-md flex items-center justify-center text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+                          >
+                            <Settings2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            title="Delete record"
+                            onClick={() => deleteBooking(b.id, b.booking_ref)}
+                            className="h-7 w-7 rounded-md flex items-center justify-center text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
+
+          {/* Table footer — record count + revenue summary */}
+          {displayBookings.length > 0 && (
+            <div className="flex items-center justify-between px-5 py-3 border-t border-white/[0.06] bg-zinc-900/40">
+              <span className="text-[11px] text-zinc-500 tabular-nums">
+                <span className="font-semibold text-zinc-300">{displayBookings.length}</span> record{displayBookings.length === 1 ? "" : "s"}
+                {activeFilterCount > 0 && <span className="text-blue-500 ml-2">({activeFilterCount} filter{activeFilterCount === 1 ? "" : "s"} active)</span>}
+              </span>
+              <span className="text-[11px] text-zinc-500 tabular-nums flex items-center gap-3">
+                <span>Revenue <span className="font-semibold text-white">£{totalRevenue.toFixed(2)}</span></span>
+                <span className="w-px h-3 bg-white/10" />
+                <span>Commission <span className="font-semibold text-emerald-400">£{displayBookings.filter(b => ['confirmed','completed','parked'].includes(b.status?.toLowerCase())).reduce((s, b) => s + getCommission(b).amount, 0).toFixed(2)}</span></span>
+              </span>
+            </div>
+          )}
+        </div>
 
         {/* 🟢 DOSSIER MODAL — full record + all dispatch actions */}
         {viewBooking && (
@@ -1315,7 +1533,7 @@ function DashboardContent() {
                       <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Service Type</label>
                       <div className="relative">
                         <select value={payLink.service_type} onChange={(e) => setPayLink({ ...payLink, service_type: e.target.value })} className={`${inputStyle} appearance-none cursor-pointer pr-10`}>
-                          <option value="Premium Meet & Greet">Premium Meet &amp; Greet</option>
+                          <option value="Meet & Greet">Meet &amp; Greet</option>
                           <option value="Park & Ride">Park &amp; Ride</option>
                           <option value="AeroPark Exclusive">AeroPark Exclusive (VIP)</option>
                           <option value="Hotel & Parking">Hotel &amp; Parking</option>

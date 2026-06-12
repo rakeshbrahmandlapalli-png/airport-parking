@@ -52,7 +52,7 @@ export async function POST(req: Request) {
       license_plate:     m.license_plate || null,
       car_make:          m.car_make      || "N/A",
       car_color:         m.car_color     || "N/A",
-      service_type:      m.service_type  || "Premium Meet & Greet",
+      service_type:      m.service_type  || "Meet & Greet",
       dropoff_date:      m.dropoff_date  || null,
       dropoff_time:      m.dropoff_time  || null,
       pickup_date:       m.pickup_date   || null,

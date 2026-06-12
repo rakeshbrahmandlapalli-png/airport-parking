@@ -49,7 +49,7 @@ export default function ServicesPage() {
             <MapPin className="w-3 h-3" /> London Luton Airport (LTN)
           </div>
           <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter mb-8 leading-[1.1]">
-            Premium Meet & Greet <br />
+            Meet & Greet <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-400">at the Terminal.</span>
           </h1>
           <p className="text-lg md:text-xl text-slate-500 font-medium leading-relaxed max-w-2xl mx-auto">

@@ -127,7 +127,7 @@ async function createSession({ price, airport, provider, metadata, isAmendment }
       airport: String(airport || ""), terminal: String(metadata.terminal || "Main Terminal"),
       dropoff_date: String(metadata.dropoff_date || ""), pickup_date: String(metadata.pickup_date || ""), dropoff_time: String(metadata.dropTime || metadata.dropoff_time || "09:00"), pickup_time: String(metadata.pickTime || metadata.pickup_time || "09:00"),
       flight_number: String(metadata.flightNumber || metadata.flight_number || ""), provider_name: String(provider || ""), company_id: String(metadata.company_id || ""),
-      service_type: String(metadata.service_type || "Premium Meet & Greet"), booking_ref: String(metadata.booking_ref || ""),
+      service_type: String(metadata.service_type || "Meet & Greet"), booking_ref: String(metadata.booking_ref || ""),
       is_amendment: isAmendment ? "true" : "false", promo_used: String(metadata.promo_used || "None"), fast_track_count: String(metadata.fast_track_count || "0"),
     },
     mode: "payment",

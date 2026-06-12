@@ -88,7 +88,7 @@ export async function POST(req: Request) {
 
   const airport      = metaStr(body.airport, "Luton Airport (LTN)");
   const fullName     = metaStr(body.full_name);
-  const serviceType  = metaStr(body.service_type, "Premium Meet & Greet");
+  const serviceType  = metaStr(body.service_type, "Meet & Greet");
   const providerName = metaStr(body.provider_name, "AeroPark Direct");
   const bookingRef   = generateRef();
 

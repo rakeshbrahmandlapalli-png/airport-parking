@@ -384,7 +384,7 @@ async function createSession({
     flight_number:  metaStr(metadata.flightNumber || metadata.flight_number),
     provider_name:  metaStr(provider),
     company_id:     metaStr(metadata.company_id),
-    service_type:   metaStr(metadata.service_type, "Premium Meet & Greet"),
+    service_type:   metaStr(metadata.service_type, "Meet & Greet"),
     booking_ref:    metaStr(metadata.booking_ref),
     is_amendment:   isAmendment ? "true" : "false",
     promo_used:     metaStr(metadata.promo_used, "None"),

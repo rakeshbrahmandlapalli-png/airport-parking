@@ -664,7 +664,7 @@ function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
               </h3>
               <p className="text-slate-400 text-sm max-w-lg mx-auto mb-8">
                 We're onboarding top operators. In the meantime, our{" "}
-                <strong className="text-white">Premium Meet & Greet</strong> service is often the same price.
+                <strong className="text-white">Meet & Greet</strong> service is often the same price.
               </p>
               <button
                 onClick={() => { const q = new URLSearchParams(searchParams.toString()); q.set("type", "meet-greet"); router.push(`/results?${q.toString()}`); }}

@@ -23,7 +23,7 @@ export default function HeathrowAirportParkingPage() {
         h1Top: "Heathrow Airport Parking",
         h1Highlight: "Made Simple.",
         intro:
-          "Premium Meet & Greet and Park & Ride at Heathrow Airport (LHR) across Terminals 2, 3, 4 and 5. Drive to departures, hand over your keys, and fly stress-free. Fully insured operators, free cancellation, 4.8★ rated.",
+          "Meet & Greet and Park & Ride at Heathrow Airport (LHR) across Terminals 2, 3, 4 and 5. Drive to departures, hand over your keys, and fly stress-free. Fully insured operators, free cancellation, 4.8★ rated.",
       }}
     />
   );

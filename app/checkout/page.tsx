@@ -140,7 +140,7 @@ function CheckoutContent() {
   const urlId   = searchParams.get("companyId") || searchParams.get("id") || searchParams.get("providerId") || "";
   const urlName = searchParams.get("company") || searchParams.get("provider") || searchParams.get("name") || "";
   const airport = searchParams.get("airport") || "Luton (LTN)";
-  const type    = searchParams.get("type") || "Premium Meet & Greet";
+  const type    = searchParams.get("type") || "Meet & Greet";
   const urlFlightNumber = searchParams.get("flightNumber") || "";
 
   const [dropDate, setDropDate] = useState(searchParams.get("dropoffDate") || "");
@@ -441,7 +441,7 @@ function CheckoutContent() {
     const chargeTotal = overrideTotal ?? finalTotal;
     const providerName = company ? company.name : (urlName || type || "AeroPark Direct");
 
-    let finalServiceType = "Premium Meet & Greet";
+    let finalServiceType = "Meet & Greet";
     if (type.toLowerCase().includes("park & ride") || type.toLowerCase().includes("park and ride")) finalServiceType = "Park & Ride";
     if (type.toLowerCase().includes("hotel")) finalServiceType = "Hotel & Parking";
 

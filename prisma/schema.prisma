@@ -14,7 +14,7 @@ model bookings {
   full_name         String
   
   // 🟢 FIXED: Made optional with a default. This permanently prevents the "not-null constraint" crash.
-  service_type      String?    @default("Premium Meet & Greet")
+  service_type      String?    @default("Meet & Greet")
   
   dropoff_date      DateTime   @db.Date
   pickup_date       DateTime   @db.Date
