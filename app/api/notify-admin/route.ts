@@ -1,3 +1,4 @@
+import { logger } from "@/app/lib/logger";
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { rateLimit, getClientIp } from '@/app/lib/rateLimit';
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, data }, { status: 200 });
 
   } catch (error) {
-    console.error("Resend Error:", error);
+    logger.error("Resend Error:", error);
     return NextResponse.json({ success: false, error: "Failed to send email via Resend" }, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/app/lib/logger";
 import { useState, useEffect, useMemo, Suspense } from "react";
 import { supabase } from "@/app/lib/supabase";
 import { recordAdminAction } from "@/app/lib/audit-client";
@@ -94,10 +95,10 @@ function FinancialsContent() {
     if (cRes.data) setCompanies(cRes.data);
     if (eRes.data) setExpenses(eRes.data);
     
-    if (bRes.error) console.error("financials bookings:", bRes.error);
-    if (cRes.error) console.error("financials companies:", cRes.error);
+    if (bRes.error) logger.error("financials bookings:", bRes.error);
+    if (cRes.error) logger.error("financials companies:", cRes.error);
     // Suppress expense error if table doesn't exist yet
-    if (eRes.error && eRes.error.code !== '42P01') console.error("financials expenses:", eRes.error); 
+    if (eRes.error && eRes.error.code !== '42P01') logger.error("financials expenses:", eRes.error); 
     setLoading(false);
   };
 

@@ -1,3 +1,4 @@
+import { logger } from "@/app/lib/logger";
 import twilio from "twilio";
 
 export async function triggerMissingFlightAlert(booking: {
@@ -22,7 +23,7 @@ export async function triggerMissingFlightAlert(booking: {
 
   // 3. Validate and Initialize
   if (!accountSid.startsWith("AC") || !authToken) {
-    console.error("Twilio disabled: Account SID is missing or invalid in environment variables.");
+    logger.error("Twilio disabled: Account SID is missing or invalid in environment variables.");
     return { success: false, error: "Twilio uninitialized" };
   }
 
@@ -45,11 +46,11 @@ export async function triggerMissingFlightAlert(booking: {
       body: `Hi ${booking.full_name}, this is AeroPark Direct. ✈️\n\nWe are organizing your travel itinerary, but noticed your return flight number is missing. \n\nPlease reply directly to this message with your flight number so the operators can track your landing and ensure your vehicle is ready on time! \n\nRef: ${booking.booking_ref}`
     });
 
-    console.log(`[TWILIO SUCCESS] Dispatched message SID: ${response.sid}`);
+    logger.info(`[TWILIO SUCCESS] Dispatched message SID: ${response.sid}`);
     return { success: true, sid: response.sid };
 
   } catch (error: any) {
-    console.error("[TWILIO ERROR] Failed to send WhatsApp message:", error);
+    logger.error("[TWILIO ERROR] Failed to send WhatsApp message:", error);
     return { success: false, error: error.message };
   }
 }

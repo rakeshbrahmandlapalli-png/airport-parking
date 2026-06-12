@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/app/lib/logger";
 import { Suspense, useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -224,7 +225,7 @@ function CheckoutContent() {
       })
       .catch(err => {
         if (err.name !== "AbortError") {
-          console.error("Live API Error:", err);
+          logger.error("Live API Error:", err);
           setLiveApiRates([]);
           setRatesKey(key); // settled (failed) — fall back to estimate
         }
@@ -509,7 +510,7 @@ function CheckoutContent() {
         throw new Error("No redirect URL received from payment provider.");
       }
     } catch (error: any) {
-      console.error("Payment failed:", error);
+      logger.error("Payment failed:", error);
       // FIX: use inline error state instead of alert()
       setFieldErrors(prev => ({ ...prev, _payment: error.message || "Payment failed. Please try again." }));
       setIsProcessing(false);

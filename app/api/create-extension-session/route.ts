@@ -5,6 +5,7 @@
 // The server recomputes the new-duration price with the SAME engine as /api/checkout.
 // The client-sent amount is IGNORED — never trust a price from the browser.
 
+import { logger } from "@/app/lib/logger";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
@@ -73,7 +74,7 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (bookingErr) {
-      console.error("Extension: booking fetch error:", bookingErr);
+      logger.error("Extension: booking fetch error:", bookingErr);
       return NextResponse.json({ error: "Could not load your booking." }, { status: 500 });
     }
     if (!booking) {
@@ -117,7 +118,7 @@ export async function POST(req: Request) {
         .select("*")
         .eq("id", booking.company_id)
         .maybeSingle();
-      if (error) console.error("Extension: company fetch error:", error);
+      if (error) logger.error("Extension: company fetch error:", error);
       company = data ?? null;
     }
 
@@ -158,10 +159,10 @@ export async function POST(req: Request) {
           else if (parsed?.rates && Array.isArray(parsed.rates)) liveApiRates = parsed.rates;
           else if (parsed?.parking_price != null) liveApiRates = [parsed];
         } else {
-          console.error(`Extension: API gateway HTTP ${apiRes.status}`);
+          logger.error(`Extension: API gateway HTTP ${apiRes.status}`);
         }
       } catch (e: any) {
-        console.error("Extension: live API fetch failed:", e?.name === "AbortError" ? "timeout" : e);
+        logger.error("Extension: live API fetch failed:", e?.name === "AbortError" ? "timeout" : e);
       } finally {
         clearTimeout(timeout);
       }
@@ -185,7 +186,7 @@ export async function POST(req: Request) {
     });
 
     if (!priceResult.ok || priceResult.final <= 0) {
-      console.error("Extension: price engine failed:", { bookingRef, newDuration, priceResult });
+      logger.error("Extension: price engine failed:", { bookingRef, newDuration, priceResult });
       return NextResponse.json(
         { error: "We couldn't confirm the new price right now. Please try again in a moment." },
         { status: 409 }
@@ -279,7 +280,7 @@ export async function POST(req: Request) {
     // Return the server-computed breakdown so the client can show an accurate summary.
     return NextResponse.json({ url: session.url, breakdown });
   } catch (error: any) {
-    console.error("Stripe Extension Error:", error);
+    logger.error("Stripe Extension Error:", error);
     return NextResponse.json(
       { error: "An unexpected error occurred. Please try again." },
       { status: 500 }

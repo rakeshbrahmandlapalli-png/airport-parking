@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
+import { logger } from "@/app/lib/logger";
 
 // ─── SUPABASE CLIENTS ────────────────────────────────────────────────────────
 // 🟢 PUBLIC client — for safe reads (slots, availability checks)
@@ -182,7 +183,7 @@ export async function checkAvailability(
 
     return { isAvailable: overlapping < MAX_CAPACITY, spotsLeft };
   } catch (err) {
-    console.error("Availability check failed — failing open:", err);
+    logger.error("Availability check failed — failing open:", err);
     return FAIL_OPEN; // 🟢 FIXED: was failing CLOSED (blocking real bookings)
   }
 }
@@ -290,11 +291,11 @@ export async function createCheckoutSession(formData: FormData) {
 
     if (insertError) {
       // Log but don't block — Stripe session exists, webhook will still fire
-      console.error("Booking DB insert failed (session still valid):", insertError.message);
+      logger.error("Booking DB insert failed (session still valid):", insertError.message);
     }
 
   } catch (err) {
-    console.error("createCheckoutSession failed:", err);
+    logger.error("createCheckoutSession failed:", err);
     return; // Returns undefined — caller should handle gracefully
   }
 

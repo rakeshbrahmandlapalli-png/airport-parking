@@ -1,3 +1,4 @@
+import { logger } from "@/app/lib/logger";
 import { openai } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 import { z } from 'zod';
@@ -227,7 +228,7 @@ LAST MINUTE THRESHOLD: Any travel on or before ${in48hrs} counts as last-minute.
       object = r.object;
       usage  = r.usage;
     } catch (primaryErr: any) {
-      console.warn('[Aero Magic] Primary model failed, retrying with fallback:', primaryErr?.message);
+      logger.warn('[Aero Magic] Primary model failed, retrying with fallback:', primaryErr?.message);
       const r = await generateObject({
         model:  openai(FALLBACK_MODEL),
         system: systemPrompt,
@@ -240,7 +241,7 @@ LAST MINUTE THRESHOLD: Any travel on or before ${in48hrs} counts as last-minute.
 
     // Dev logging
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[Aero Magic] Prompt: "${trimmedPrompt.slice(0, 80)}..." | Confidence: ${object.confidence} | Tokens: ${JSON.stringify(usage)} | Summary: ${object.parsedSummary}`);
+      logger.info(`[Aero Magic] Prompt: "${trimmedPrompt.slice(0, 80)}..." | Confidence: ${object.confidence} | Tokens: ${JSON.stringify(usage)} | Summary: ${object.parsedSummary}`);
     }
 
     // 5. Validate dropoffDate is not in the past
@@ -256,7 +257,7 @@ LAST MINUTE THRESHOLD: Any travel on or before ${in48hrs} counts as last-minute.
 
   } catch (err: any) {
     const msg = err?.message || '';
-    console.error('[Aero Magic] Error:', msg);
+    logger.error('[Aero Magic] Error:', msg);
 
     if (err?.status === 429 || msg.includes('rate limit')) {
       return Response.json({ error: "Aero is at capacity. Please try the manual search form or retry in a moment." }, { status: 429 });

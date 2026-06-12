@@ -3,6 +3,7 @@
 // Results-segment error boundary. A thrown error while fetching/rendering
 // operators no longer white-screens the page — the user gets a recoverable state.
 
+import { logger } from "@/app/lib/logger";
 import { useEffect } from "react";
 import Link from "next/link";
 import { SearchX, RotateCcw, ArrowLeft } from "lucide-react";
@@ -15,7 +16,7 @@ export default function ResultsError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[ResultsError]", error);
+    logger.error("[ResultsError]", error);
   }, [error]);
 
   return (

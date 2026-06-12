@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/app/lib/logger";
 import LaunchTimer from "@/components/LaunchTimer";
 import BookingStepper from "@/components/BookingStepper";
 import ModifySearchModal from "@/components/ModifySearchModal";
@@ -454,11 +455,11 @@ function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
                     const rawPrice = extractApiPrice(json);
                     if (rawPrice != null) return rawPrice; // success
                   } else {
-                    console.warn(`API non-OK for ${c.name}: HTTP ${res.status} (attempt ${attempt})`);
+                    logger.warn(`API non-OK for ${c.name}: HTTP ${res.status} (attempt ${attempt})`);
                   }
                 } catch (e: any) {
-                  if (e?.name === "AbortError") console.warn(`API timed out for ${c.name} (attempt ${attempt})`);
-                  else console.warn(`API error for ${c.name} (attempt ${attempt}):`, e?.message);
+                  if (e?.name === "AbortError") logger.warn(`API timed out for ${c.name} (attempt ${attempt})`);
+                  else logger.warn(`API error for ${c.name} (attempt ${attempt}):`, e?.message);
                 }
                 // No price yet — back off briefly, then retry (upstream is warmer now)
                 if (attempt < MAX_ATTEMPTS && !signal.aborted) {
@@ -511,7 +512,7 @@ function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
         getLaunchTimerConfig().then((cfg) => { if (!signal.aborted) setTimerConfig(cfg); }).catch(() => {});
 
       } catch (e) {
-        if (!signal.aborted) { console.error("loadResults error:", e); setLoading(false); }
+        if (!signal.aborted) { logger.error("loadResults error:", e); setLoading(false); }
       } finally {
         isFetching.current = false;
       }

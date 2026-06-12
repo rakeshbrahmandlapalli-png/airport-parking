@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { logger } from "@/app/lib/logger";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
@@ -120,12 +121,12 @@ export async function POST(req: Request) {
         .select("*")
         .eq("id", companyId)
         .maybeSingle();
-      if (error) console.error("Company fetch error:", error);
+      if (error) logger.error("Company fetch error:", error);
       company = data ?? null;
     }
 
     if (!company) {
-      console.warn(`No company found for id="${companyId}". Proceeding with null company (pivot fallback).`);
+      logger.warn(`No company found for id="${companyId}". Proceeding with null company (pivot fallback).`);
     }
 
     // ── 5. Load markup + auto-surge settings ───────────────────────────────────
@@ -155,7 +156,7 @@ export async function POST(req: Request) {
         });
 
         if (!apiRes.ok) {
-          console.error(`API gateway returned HTTP ${apiRes.status}`);
+          logger.error(`API gateway returned HTTP ${apiRes.status}`);
         } else {
           const text = await apiRes.text();
           let parsed: any;
@@ -172,9 +173,9 @@ export async function POST(req: Request) {
         }
       } catch (e: any) {
         if (e?.name === "AbortError") {
-          console.error("Server Checkout: live API fetch timed out after 7s");
+          logger.error("Server Checkout: live API fetch timed out after 7s");
         } else {
-          console.error("Server Checkout: live API fetch failed:", e);
+          logger.error("Server Checkout: live API fetch failed:", e);
         }
         // liveApiRates stays [] — engine will fall back to pivot pricing
       } finally {
@@ -205,7 +206,7 @@ export async function POST(req: Request) {
 
     // If the price engine couldn't resolve a price, fail closed
     if (!priceResult.ok || priceResult.final <= 0) {
-      console.error("Price engine failed:", {
+      logger.error("Price engine failed:", {
         companyId,
         airport,
         duration,
@@ -240,7 +241,7 @@ export async function POST(req: Request) {
           .maybeSingle();
 
         if (promoErr) {
-          console.error("Promo fetch error:", promoErr);
+          logger.error("Promo fetch error:", promoErr);
         }
 
         const now = new Date();
@@ -256,12 +257,12 @@ export async function POST(req: Request) {
             serverTotal = serverTotal * (1 - pct);
             appliedPromo = promo.code;
           } else {
-            console.warn(`Promo "${promoCode}" has invalid discount_percent: ${promo.discount_percent}`);
+            logger.warn(`Promo "${promoCode}" has invalid discount_percent: ${promo.discount_percent}`);
           }
         }
         // Unknown / expired / future codes are silently ignored (AERO3, AERO VIP, etc.)
       } catch (e) {
-        console.error("Promo validation error:", e);
+        logger.error("Promo validation error:", e);
         // Don't apply discount if validation threw
       }
     }
@@ -290,7 +291,7 @@ export async function POST(req: Request) {
     const clientTotal = roundPennies(Number(price) || 0);
 
     if (Math.abs(clientTotal - serverTotal) > PRICE_TOLERANCE) {
-      console.warn("Price mismatch rejected", {
+      logger.warn("Price mismatch rejected", {
         clientTotal,
         serverTotal,
         diff: Math.abs(clientTotal - serverTotal),
@@ -321,7 +322,7 @@ export async function POST(req: Request) {
       isAmendment: false,
     });
   } catch (err: any) {
-    console.error("Stripe Checkout unhandled error:", err);
+    logger.error("Stripe Checkout unhandled error:", err);
     return NextResponse.json(
       { error: "An unexpected error occurred. Please try again." },
       { status: 500 }
@@ -395,7 +396,7 @@ async function createSession({
   // Guard: Stripe allows max 50 metadata keys
   const keyCount = Object.keys(stripeMetadata).length;
   if (keyCount > 50) {
-    console.error(`Stripe metadata has ${keyCount} keys — max is 50. Trim before production.`);
+    logger.error(`Stripe metadata has ${keyCount} keys — max is 50. Trim before production.`);
   }
 
   const unitAmount = Math.round(price * 100);
@@ -433,7 +434,7 @@ async function createSession({
 
     return NextResponse.json({ url: session.url });
   } catch (err: any) {
-    console.error("Stripe session creation failed:", err);
+    logger.error("Stripe session creation failed:", err);
     // Surface Stripe-specific errors as 502 (upstream failure), not 500
     return NextResponse.json(
       { error: "Payment provider error. Please try again." },

@@ -1,3 +1,4 @@
+import { logger } from "@/app/lib/logger";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
@@ -85,7 +86,7 @@ export async function POST(req: Request) {
     // whether to fire the fallback confirmation email).
     return NextResponse.json({ booking: finalRow, created: finalRow.booking_ref === shortId });
   } catch (err: any) {
-    console.error("success/sync error:", err?.message);
+    logger.error("success/sync error:", err?.message);
     return NextResponse.json({ error: "Verification failed." }, { status: 500 });
   }
 }

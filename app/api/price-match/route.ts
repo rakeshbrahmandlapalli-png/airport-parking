@@ -1,3 +1,4 @@
+import { logger } from "@/app/lib/logger";
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { rateLimit, getClientIp } from '@/app/lib/rateLimit';
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Price Match Email Error:", error);
+    logger.error("Price Match Email Error:", error);
     return NextResponse.json({ error: 'Failed to send' }, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/app/lib/logger";
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { supabase } from "@/app/lib/supabase";
 import { recordAdminAction } from "@/app/lib/audit-client";
@@ -615,7 +616,7 @@ export default function AdminCompaniesPage() {
     setLoading(true);
     const { data, error } = await supabase.from("companies").select("*").order("name", { ascending: true });
     if (data) setCompanies(data);
-    if (error) { console.error("fetchCompanies:", error); showToast("Failed to load partners", "error"); }
+    if (error) { logger.error("fetchCompanies:", error); showToast("Failed to load partners", "error"); }
     setLoading(false);
   }
 
@@ -623,7 +624,7 @@ export default function AdminCompaniesPage() {
     setFetchingFinancials(true); setCompanyBookings([]);
     const { data, error } = await supabase.from("bookings").select("*").eq("company_id", companyId).neq("status", "cancelled").order("created_at", { ascending: false });
     if (data) setCompanyBookings(data);
-    if (error) console.error("fetchFinancials:", error);
+    if (error) logger.error("fetchFinancials:", error);
     setFetchingFinancials(false);
   }
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/app/lib/logger";
 import { useState, useEffect } from "react";
 import {
   Ticket, Calendar, Loader2, ArrowRight, Printer, User, MapPin,
@@ -82,7 +83,7 @@ export default function ManageBooking() {
         if (result.company) setCompany(result.company);
       }
     } catch (err: any) {
-      console.error("Search Error:", err);
+      logger.error("Search Error:", err);
       setError("An error occurred while connecting to the booking service.");
     } finally {
       setLoading(false);

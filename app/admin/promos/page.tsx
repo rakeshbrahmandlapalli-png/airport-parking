@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/app/lib/logger";
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/app/lib/supabase";
 import { recordAdminAction } from "@/app/lib/audit-client";
@@ -43,7 +44,7 @@ export default function PromoManager() {
       .order("id", { ascending: false });
 
     if (error) {
-      console.error("Promo fetch error:", error.message);
+      logger.error("Promo fetch error:", error.message);
       setErrorMsg("Could not load promotions: " + error.message);
     }
     setPromos(data ?? []);

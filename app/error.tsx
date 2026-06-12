@@ -7,6 +7,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { AlertTriangle, RotateCcw, Home } from "lucide-react";
+import { logger } from "@/app/lib/logger";
 
 export default function GlobalRouteError({
   error,
@@ -16,8 +17,9 @@ export default function GlobalRouteError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Surface to the console in dev; a real logger/Sentry hook belongs here.
-    console.error("[ErrorBoundary]", error);
+    // Sanitised + silent-in-prod via the logger; register a Sentry transport
+    // on the logger to forward these to an error backend.
+    logger.error("[ErrorBoundary]", { err: error });
   }, [error]);
 
   return (

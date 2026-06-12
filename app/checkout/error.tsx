@@ -4,6 +4,7 @@
 // copy explicitly reassures the customer that no payment was taken — an error
 // here happens BEFORE the Stripe redirect, so no card has been charged.
 
+import { logger } from "@/app/lib/logger";
 import { useEffect } from "react";
 import Link from "next/link";
 import { ShieldCheck, RotateCcw, ArrowLeft } from "lucide-react";
@@ -16,7 +17,7 @@ export default function CheckoutError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[CheckoutError]", error);
+    logger.error("[CheckoutError]", error);
   }, [error]);
 
   return (

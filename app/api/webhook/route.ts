@@ -1,5 +1,6 @@
 // app/api/webhooks/stripe/route.ts - UPDATED with VIP Email Intercept
 
+import { logger } from "@/app/lib/logger";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { sendBookingReceipt, sendAmendmentAlerts, sendProviderNotification } from "@/app/lib/mail";
@@ -34,15 +35,15 @@ async function claimEvent(eventId: string, type: string): Promise<boolean> {
 
     // DUPLICATE (unique constraint)
     if ((error as any).code === "23505") {
-      console.log(`[WEBHOOK] Duplicate Stripe event ${eventId} — skipping.`);
+      logger.info(`[WEBHOOK] Duplicate Stripe event ${eventId} — skipping.`);
       return false;
     }
 
     // Other errors — fail OPEN (trust event)
-    console.error("[WEBHOOK] claimEvent insert error (failing open):", error);
+    logger.error("[WEBHOOK] claimEvent insert error (failing open):", error);
     return true;
   } catch (e) {
-    console.error("[WEBHOOK] claimEvent threw (failing open):", e);
+    logger.error("[WEBHOOK] claimEvent threw (failing open):", e);
     return true;
   }
 }
@@ -59,7 +60,7 @@ export async function POST(req: Request) {
   try {
     event = stripe.webhooks.constructEvent(body, signature, endpointSecret);
   } catch (err: any) {
-    console.error("[WEBHOOK] Signature verification failed:", err.message);
+    logger.error("[WEBHOOK] Signature verification failed:", err.message);
     return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 });
   }
 
@@ -71,7 +72,7 @@ export async function POST(req: Request) {
   // 🟢 IDEMPOTENCY: Gate before any processing
   const isFirstTime = await claimEvent(event.id, event.type);
   if (!isFirstTime) {
-    console.log(`[WEBHOOK] Idempotency: skipping duplicate event ${event.id}`);
+    logger.info(`[WEBHOOK] Idempotency: skipping duplicate event ${event.id}`);
     return new NextResponse(null, { status: 200 });
   }
 
@@ -81,7 +82,7 @@ export async function POST(req: Request) {
   try {
     if (m.is_amendment === "true") {
       // ─── AMENDMENT FLOW ───────────────────────────────────────────
-      console.log(`[WEBHOOK] Processing amendment for ${m.booking_ref}`);
+      logger.info(`[WEBHOOK] Processing amendment for ${m.booking_ref}`);
 
       const oldTotal = Number(m.old_total) || 0;
       const extraCharged = Number(m.extra_charged) || 0;
@@ -98,7 +99,7 @@ export async function POST(req: Request) {
         .maybeSingle();
 
       if (amendErr) {
-        console.error(`[WEBHOOK] Amendment update failed for ${m.booking_ref}:`, amendErr);
+        logger.error(`[WEBHOOK] Amendment update failed for ${m.booking_ref}:`, amendErr);
       }
 
       if (updatedBooking) {
@@ -106,15 +107,15 @@ export async function POST(req: Request) {
           .from("companies").select("*").eq("id", updatedBooking.company_id).maybeSingle();
         
         await sendAmendmentAlerts(updatedBooking, comp).catch((e) =>
-          console.error("[WEBHOOK] Amendment alerts failed:", e)
+          logger.error("[WEBHOOK] Amendment alerts failed:", e)
         );
-        console.log(`[WEBHOOK] Amendment processed for ${m.booking_ref}: £${newTotal}`);
+        logger.info(`[WEBHOOK] Amendment processed for ${m.booking_ref}: £${newTotal}`);
       } else {
-        console.warn(`[WEBHOOK] Amendment: no booking found for ref ${m.booking_ref}`);
+        logger.warn(`[WEBHOOK] Amendment: no booking found for ref ${m.booking_ref}`);
       }
     } else {
       // ─── NEW BOOKING FLOW ─────────────────────────────────────────
-      console.log(`[WEBHOOK] Processing new booking for session ${session.id}`);
+      logger.info(`[WEBHOOK] Processing new booking for session ${session.id}`);
 
       let resolvedCompany: any = null;
       if (m.company_id && m.company_id !== "null" && m.company_id !== "") {
@@ -161,9 +162,9 @@ export async function POST(req: Request) {
         .upsert([bookingData], { onConflict: "stripe_session_id", ignoreDuplicates: true });
 
       if (upsertError) {
-        console.error(`❌ [WEBHOOK] BOOKING WRITE FAILED for ${session.id} (RLS / service-role issue):`, upsertError);
+        logger.error(`❌ [WEBHOOK] BOOKING WRITE FAILED for ${session.id} (RLS / service-role issue):`, upsertError);
       } else {
-        console.log(`✅ [WEBHOOK] Booking written to DB — service role bypassed RLS for session ${session.id}`);
+        logger.info(`✅ [WEBHOOK] Booking written to DB — service role bypassed RLS for session ${session.id}`);
       }
 
       const { data: newBooking } = await supabase
@@ -196,12 +197,12 @@ export async function POST(req: Request) {
                   <p><strong>Booking Reference:</strong> ${newBooking.booking_ref}</p>
                 </div>
               `
-            }).catch((err) => console.error("[WEBHOOK] VIP Customer Email Failed:", err));
-            console.log(`[WEBHOOK] Sent VIP holding email to customer for ${newBooking.booking_ref}`);
+            }).catch((err) => logger.error("[WEBHOOK] VIP Customer Email Failed:", err));
+            logger.info(`[WEBHOOK] Sent VIP holding email to customer for ${newBooking.booking_ref}`);
           } else {
             // Send standard receipt with immediate instructions
             await sendBookingReceipt(newBooking, resolvedCompany).catch((err) =>
-              console.error("[WEBHOOK] Standard Customer Email Failed:", err)
+              logger.error("[WEBHOOK] Standard Customer Email Failed:", err)
             );
           }
         }
@@ -211,9 +212,9 @@ export async function POST(req: Request) {
         // we haven't manually assigned the job yet.
         if (resolvedCompany && !isExclusive && ALLOWED_PARTNERS.includes(resolvedCompany.name)) {
           await sendProviderNotification(newBooking, resolvedCompany).catch((err) =>
-            console.error("[WEBHOOK] Provider Email Failed:", err)
+            logger.error("[WEBHOOK] Provider Email Failed:", err)
           );
-          console.log(`[WEBHOOK] Provider notified: ${resolvedCompany.name}`);
+          logger.info(`[WEBHOOK] Provider notified: ${resolvedCompany.name}`);
         }
 
         // 🟢 Twilio gate (set to true in July when live)
@@ -225,7 +226,7 @@ export async function POST(req: Request) {
             booking_ref: newBooking.booking_ref,
             flight_number: newBooking.flight_number,
             car_make: newBooking.car_make,
-          }).catch((err) => console.error("[WEBHOOK] Twilio Trigger Failed:", err));
+          }).catch((err) => logger.error("[WEBHOOK] Twilio Trigger Failed:", err));
         }
 
         // 🟢 Server-side Google Ads conversion — fires for EVERY paid booking,
@@ -238,17 +239,17 @@ export async function POST(req: Request) {
             value: Number(newBooking.total_price) || 0,
             currency: "GBP",
             orderId: session.id,
-          }).catch((err) => console.error("[WEBHOOK] Google Ads conversion failed:", err));
+          }).catch((err) => logger.error("[WEBHOOK] Google Ads conversion failed:", err));
         }
 
-        console.log(`[WEBHOOK] Booking created: ${newBooking.booking_ref} (£${newBooking.total_price})`);
+        logger.info(`[WEBHOOK] Booking created: ${newBooking.booking_ref} (£${newBooking.total_price})`);
       } else {
-        console.error(`[WEBHOOK] Failed to read booking after upsert for session ${session.id}`);
+        logger.error(`[WEBHOOK] Failed to read booking after upsert for session ${session.id}`);
       }
     }
   } catch (dbError: any) {
     // 🟢 FATAL: Still return 200 so Stripe doesn't retry
-    console.error("[WEBHOOK] FATAL ERROR:", dbError?.message || dbError);
+    logger.error("[WEBHOOK] FATAL ERROR:", dbError?.message || dbError);
   }
 
   return new NextResponse(null, { status: 200 });

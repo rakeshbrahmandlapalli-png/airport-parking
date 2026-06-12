@@ -9,6 +9,7 @@
  * Visual layer only — no logic touched.
  */
 
+import { logger } from "@/app/lib/logger";
 import { useEffect, useState, useMemo, Suspense } from "react";
 import { supabase } from "@/app/lib/supabase";
 import { recordAdminAction } from "@/app/lib/audit-client";
@@ -126,7 +127,7 @@ function DashboardContent() {
       if (bookingsRes.data) setBookings(bookingsRes.data);
       if (companiesRes.data) setCompanies(companiesRes.data);
     } catch (err) {
-      console.error("Critical System Fetch Error:", err);
+      logger.error("Critical System Fetch Error:", err);
     } finally {
       setLoading(false);
     }
@@ -284,7 +285,7 @@ function DashboardContent() {
             flight_number: payload.flight_number,
             car_make: payload.car_make
           })
-        }).catch(err => console.error("Twilio API failed:", err));
+        }).catch(err => logger.error("Twilio API failed:", err));
       }
       
       recordAdminAction({
@@ -336,7 +337,7 @@ function DashboardContent() {
             notify("error", `Failed to send ${type} email. Check server logs.`);
           }
         } catch (error) {
-          console.error("Manual Email Error:", error);
+          logger.error("Manual Email Error:", error);
           notify("error", "Critical routing error while sending email.");
         }
       },
@@ -382,7 +383,7 @@ function DashboardContent() {
           fetchDashboardData();
         } catch (e: any) {
           notify("error", "Critical error during assignment.");
-          console.error("assignAndNotify error:", e);
+          logger.error("assignAndNotify error:", e);
         }
       },
     });
@@ -415,7 +416,7 @@ function DashboardContent() {
             notify("error", "Failed to send review request. Check server logs.");
           }
         } catch (error) {
-          console.error("Review Request Error:", error);
+          logger.error("Review Request Error:", error);
           notify("error", "Critical routing error while sending review request.");
         }
       },

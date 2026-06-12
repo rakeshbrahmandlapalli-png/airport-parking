@@ -1,3 +1,4 @@
+import { logger } from "@/app/lib/logger";
 import { Resend } from "resend";
 import { createClient } from "@supabase/supabase-js";
 
@@ -186,7 +187,7 @@ export function buildDirectionsUrl(dest: Destination, companyName: string, airpo
 async function resolveCompany(booking: any, passedCompany: any): Promise<any> {
   if (passedCompany) return passedCompany;
 
-  console.warn("⚠️ Mailer: company object missing — fetching from DB.");
+  logger.warn("⚠️ Mailer: company object missing — fetching from DB.");
 
   try {
     if (booking.company_id && String(booking.company_id) !== "null") {
@@ -206,7 +207,7 @@ async function resolveCompany(booking: any, passedCompany: any): Promise<any> {
       .maybeSingle();
     return data ?? null;
   } catch (e) {
-    console.error("Company self-repair failed:", e);
+    logger.error("Company self-repair failed:", e);
     return null;
   }
 }
@@ -278,7 +279,7 @@ export async function sendBookingReceipt(
 
     const recipientEmail = resolveEmail(booking);
     if (!recipientEmail) {
-      console.error("sendBookingReceipt: no recipient email on booking", booking.booking_ref);
+      logger.error("sendBookingReceipt: no recipient email on booking", booking.booking_ref);
       return { success: false, error: "No recipient email" };
     }
 
@@ -302,12 +303,12 @@ export async function sendBookingReceipt(
     });
 
     if (error) {
-      console.error("Resend error (sendBookingReceipt):", error);
+      logger.error("Resend error (sendBookingReceipt):", error);
       return { success: false, error };
     }
     return { success: true, data };
   } catch (err) {
-    console.error("sendBookingReceipt unhandled error:", err);
+    logger.error("sendBookingReceipt unhandled error:", err);
     return { success: false, error: err };
   }
 }
@@ -557,7 +558,7 @@ export async function sendAmendmentAlerts(booking: any, company: any): Promise<v
 
     await sendBookingReceipt(booking, company, true);
   } catch (err) {
-    console.error("sendAmendmentAlerts failed:", err);
+    logger.error("sendAmendmentAlerts failed:", err);
   }
 }
 
@@ -576,7 +577,7 @@ export async function sendReviewRequest(
   try {
     const recipient = (customerEmail || "").trim().toLowerCase();
     if (!recipient) {
-      console.error("sendReviewRequest: no recipient email");
+      logger.error("sendReviewRequest: no recipient email");
       return { success: false, error: "No recipient email" };
     }
     // .split(" ")[0] on an empty string returns "" — guard it.
@@ -591,7 +592,7 @@ export async function sendReviewRequest(
     });
     return { success: true };
   } catch (err) {
-    console.error("sendReviewRequest failed:", err);
+    logger.error("sendReviewRequest failed:", err);
     return { success: false, error: err };
   }
 }
@@ -706,7 +707,7 @@ export async function sendProviderNotification(
 ): Promise<{ success: boolean; data?: any; error?: any }> {
   try {
     if (!company?.name) {
-      console.warn("sendProviderNotification: missing company details.");
+      logger.warn("sendProviderNotification: missing company details.");
       return { success: false, error: "Missing company" };
     }
 
@@ -722,7 +723,7 @@ export async function sendProviderNotification(
     // FIX: don't fall back silently to info@ — log clearly when provider has no email
     const providerEmail = company.email?.trim();
     if (!providerEmail) {
-      console.warn(`sendProviderNotification: company "${company.name}" has no email — falling back to info@`);
+      logger.warn(`sendProviderNotification: company "${company.name}" has no email — falling back to info@`);
     }
     const recipientEmail = providerEmail || "info@aeroparkdirect.co.uk";
 
@@ -761,12 +762,12 @@ export async function sendProviderNotification(
     });
 
     if (error) {
-      console.error("Resend error (sendProviderNotification):", error);
+      logger.error("Resend error (sendProviderNotification):", error);
       return { success: false, error };
     }
     return { success: true, data };
   } catch (err) {
-    console.error("sendProviderNotification unhandled error:", err);
+    logger.error("sendProviderNotification unhandled error:", err);
     return { success: false, error: err };
   }
 }

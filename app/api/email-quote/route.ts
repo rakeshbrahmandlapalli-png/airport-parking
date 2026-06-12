@@ -1,3 +1,4 @@
+import { logger } from "@/app/lib/logger";
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { rateLimit, getClientIp } from "@/app/lib/rateLimit";
@@ -128,7 +129,7 @@ export async function POST(req: Request) {
         html: customerHtml,
       });
     } catch (err) {
-      console.error("email-quote: failed to send customer email", err);
+      logger.error("email-quote: failed to send customer email", err);
       return NextResponse.json(
         { success: false, error: "Could not send the quote right now." },
         { status: 502 }
@@ -153,12 +154,12 @@ export async function POST(req: Request) {
           </div>`,
       });
     } catch (err) {
-      console.error("email-quote: failed to send internal lead notification", err);
+      logger.error("email-quote: failed to send internal lead notification", err);
     }
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error("email-quote: unexpected error", err);
+    logger.error("email-quote: unexpected error", err);
     return NextResponse.json(
       { success: false, error: "Something went wrong." },
       { status: 500 }

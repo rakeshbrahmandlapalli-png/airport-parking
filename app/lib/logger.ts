@@ -86,7 +86,29 @@ function consoleFn(level: LogLevel): (...args: unknown[]) => void {
 }
 
 // ── Core ──────────────────────────────────────────────────────────────────────
-function write(level: LogLevel, message: string, meta?: Record<string, unknown>): void {
+
+/** Coerce any console-style first argument into a string message. */
+function toMessage(v: unknown): string {
+  if (typeof v === "string") return v;
+  if (v instanceof Error) return v.message;
+  if (v == null) return "";
+  try { return typeof v === "object" ? JSON.stringify(v) : String(v); }
+  catch { return String(v); }
+}
+
+/** Fold console-style trailing args into a single meta object for redaction. */
+function toMeta(rest: unknown[]): Record<string, unknown> | undefined {
+  if (rest.length === 0) return undefined;
+  if (rest.length === 1 && rest[0] && typeof rest[0] === "object" && !Array.isArray(rest[0])) {
+    return rest[0] as Record<string, unknown>;
+  }
+  return { args: rest };
+}
+
+function write(level: LogLevel, messageRaw: unknown, rest: unknown[] = []): void {
+  const message = toMessage(messageRaw);
+  const meta = toMeta(rest);
+
   if (isProd) {
     // Console stays quiet except for a single sanitized error line.
     if (level === "error") {
@@ -115,11 +137,14 @@ function write(level: LogLevel, message: string, meta?: Record<string, unknown>)
   emitToTransports(level, message, safeMeta);
 }
 
+// Methods accept console-style varargs — (message, ...rest) — so existing
+// console.* call sites migrate 1:1. A single trailing object becomes structured
+// meta (and is redacted); anything else is folded into { args }.
 export const logger = {
-  debug: (message: string, meta?: Record<string, unknown>) => write("debug", message, meta),
-  info:  (message: string, meta?: Record<string, unknown>) => write("info", message, meta),
-  warn:  (message: string, meta?: Record<string, unknown>) => write("warn", message, meta),
-  error: (message: string, meta?: Record<string, unknown>) => write("error", message, meta),
+  debug: (message?: unknown, ...rest: unknown[]) => write("debug", message, rest),
+  info:  (message?: unknown, ...rest: unknown[]) => write("info", message, rest),
+  warn:  (message?: unknown, ...rest: unknown[]) => write("warn", message, rest),
+  error: (message?: unknown, ...rest: unknown[]) => write("error", message, rest),
   registerTransport,
 };
 

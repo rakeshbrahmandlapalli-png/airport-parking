@@ -13,6 +13,7 @@
  * ✅ SUPABASE_SERVICE_ROLE_KEY — server-only, never NEXT_PUBLIC_ on a route
  */
 
+import { logger } from "@/app/lib/logger";
 import { openai } from '@ai-sdk/openai';
 import { streamText, tool } from 'ai';
 import { z } from 'zod';
@@ -171,7 +172,7 @@ ESCALATION:
           }),
           execute: async ({ airport, dropoffDate, pickupDate, dropoffTime, pickupTime }) => {
             const code = normaliseAirport(airport);
-            console.log(`🚀 AERO DB — ${airport} → ${code}`);
+            logger.info(`🚀 AERO DB — ${airport} → ${code}`);
 
             const { data, error } = await supabase
               .from('companies')
@@ -307,7 +308,7 @@ ESCALATION:
             });
 
             const url = `/results?${params.toString()}`;
-            console.log(`🔗 AERO BOOKING: ${url}`);
+            logger.info(`🔗 AERO BOOKING: ${url}`);
 
             return { success: true, url };
           },
@@ -318,7 +319,7 @@ ESCALATION:
     return result.toDataStreamResponse();
 
   } catch (error) {
-    console.error('AERO API Error:', error);
+    logger.error('AERO API Error:', error);
     return new Response(
       JSON.stringify({
         error:   'AERO is temporarily unavailable.',

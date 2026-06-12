@@ -1,3 +1,4 @@
+import { logger } from "@/app/lib/logger";
 import { createBrowserClient } from '@supabase/ssr';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -5,7 +6,7 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 // 1. SAFETY NET
 if (!supabaseUrl || !supabaseKey) {
-  console.error("🚨 Missing Supabase Environment Variables! Check your Vercel dashboard.");
+  logger.error("🚨 Missing Supabase Environment Variables! Check your Vercel dashboard.");
   throw new Error("Missing Supabase environment variables.");
 }
 

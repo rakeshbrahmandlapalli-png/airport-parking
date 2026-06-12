@@ -3,6 +3,7 @@
 // Server-side proxy to the Luton 247 parking-price gateway.
 // Keeps the API token secret (env var, never sent to the browser),
 // works around CORS, and aggressively caches responses to prevent gateway timeouts.
+import { logger } from "@/app/lib/logger";
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
@@ -79,12 +80,12 @@ export async function POST(req: Request) {
         .maybeSingle();
 
       if (cachedData && cachedData.price > 0) {
-        console.log(`⚡ CACHE HIT for ${token}: £${cachedData.price}`);
+        logger.info(`⚡ CACHE HIT for ${token}: £${cachedData.price}`);
         // Return exact format expected by frontend
         return NextResponse.json({ rates: [{ parking_price: cachedData.price }] }, { status: 200 });
       }
     } catch (cacheErr) {
-      console.warn("Cache read failed, proceeding to live fetch:", cacheErr);
+      logger.warn("Cache read failed, proceeding to live fetch:", cacheErr);
     }
 
     // ── 2. LIVE FETCH (coalesced) ─────────────────────────────────────────────
@@ -97,7 +98,7 @@ export async function POST(req: Request) {
     }
 
     const fetchPromise = (async (): Promise<any[]> => {
-      console.log(`🐌 CACHE MISS. Fetching live for ${token}...`);
+      logger.info(`🐌 CACHE MISS. Fetching live for ${token}...`);
 
       // 🟢 TIMEOUT: If Luton 247 hangs, abort after 9 seconds and fail soft
       const controller = new AbortController();
@@ -128,7 +129,7 @@ export async function POST(req: Request) {
       try {
         data = JSON.parse(text);
       } catch {
-        console.error("parking-api: provider returned non-JSON:", text.slice(0, 200));
+        logger.error("parking-api: provider returned non-JSON:", text.slice(0, 200));
         return [];
       }
 
@@ -146,7 +147,7 @@ export async function POST(req: Request) {
             return_date,
             price: fetchedPrice,
           }]).then(({ error }) => {
-            if (error) console.error("Cache insert error:", error.message);
+            if (error) logger.error("Cache insert error:", error.message);
           });
         }
       }
@@ -163,7 +164,7 @@ export async function POST(req: Request) {
     }
 
   } catch (err: any) {
-    console.error("parking-api proxy error:", err?.message);
+    logger.error("parking-api proxy error:", err?.message);
     // 🟢 Fail soft: empty rates → computePrice falls back to the company's manual pivots.
     return NextResponse.json({ error: err?.message || "proxy failed", rates: [] }, { status: 200 });
   }

@@ -1,3 +1,4 @@
+import { logger } from "@/app/lib/logger";
 import { NextResponse } from "next/server";
 import { sendBookingReceipt, sendProviderNotification, sendReviewRequest } from "@/app/lib/mail";
 import { Resend } from "resend";
@@ -83,7 +84,7 @@ export async function POST(req: Request) {
     // --- CASE 1: GENERAL CONTACT FORM INQUIRY ---
     if (body.message && body.name) {
       const { name, email, reference, message } = body;
-      console.log(`📩 New Contact Inquiry from: ${email}`);
+      logger.info(`📩 New Contact Inquiry from: ${email}`);
 
       const result = await resend.emails.send({
         from: 'AeroPark Direct <info@aeroparkdirect.co.uk>', 
@@ -105,7 +106,7 @@ export async function POST(req: Request) {
       if (!targetEmail) {
         return NextResponse.json({ error: "Booking has no email address" }, { status: 400 });
       }
-      console.log(`⭐ Sending review request to: ${targetEmail} | Ref: ${b.booking_ref}`);
+      logger.info(`⭐ Sending review request to: ${targetEmail} | Ref: ${b.booking_ref}`);
       const result = await sendReviewRequest(targetEmail, b.full_name || "", b.booking_ref || "");
       if (!result.success) {
         return NextResponse.json({ error: "Failed to send review request" }, { status: 500 });
@@ -115,7 +116,7 @@ export async function POST(req: Request) {
 
     // --- CASE 3: MANUAL PROVIDER TRIGGER (Dashboard "Briefcase" Button) ---
     if (body.manual_provider_notify && body.booking) {
-      console.log(`🚀 Manually triggering provider email for: ${body.booking.booking_ref}`);
+      logger.info(`🚀 Manually triggering provider email for: ${body.booking.booking_ref}`);
       const { data: company } = await supabase.from('companies').select('*').eq('id', body.booking.company_id).maybeSingle();
         
       const isExclusive = body.booking.service_type?.toLowerCase().includes('exclusive') || company?.name?.toLowerCase().includes('exclusive');
@@ -156,7 +157,7 @@ export async function POST(req: Request) {
 
     // --- CASE 4: MANUAL CUSTOMER TRIGGER (Dashboard "Receipt" Button) ---
     if (body.manual_customer_notify && body.booking) {
-      console.log(`🚀 Manually triggering customer dispatch for: ${body.booking.booking_ref}`);
+      logger.info(`🚀 Manually triggering customer dispatch for: ${body.booking.booking_ref}`);
       const { data: company } = await supabase.from('companies').select('*').eq('id', body.booking.company_id).maybeSingle();
         
       const isExclusive = body.booking.service_type?.toLowerCase().includes('exclusive') || company?.name?.toLowerCase().includes('exclusive');
@@ -211,7 +212,7 @@ export async function POST(req: Request) {
       const { booking, isAmendment } = body;
       
       const targetEmail = (booking.email || booking.customerEmail)?.trim().toLowerCase();
-      console.log(`📤 Sending Receipt to: "${targetEmail}" | Ref: ${booking.booking_ref}`);
+      logger.info(`📤 Sending Receipt to: "${targetEmail}" | Ref: ${booking.booking_ref}`);
 
       let company = null;
       
@@ -223,12 +224,12 @@ export async function POST(req: Request) {
         }
 
         if (!company) {
-           console.log("⚠️ Missing company_id. Falling back to AeroPark Direct profile.");
+           logger.info("⚠️ Missing company_id. Falling back to AeroPark Direct profile.");
            const { data } = await supabase.from('companies').select('*').eq('name', 'AeroPark Direct').maybeSingle();
            company = data;
         }
       } catch (dbError: any) {
-        console.error("⚠️ Supabase DB Error:", dbError.message);
+        logger.error("⚠️ Supabase DB Error:", dbError.message);
         company = null; 
       }
 
@@ -271,9 +272,9 @@ export async function POST(req: Request) {
           
           if (allowedPartners.includes(company.name)) {
             await sendProviderNotification(booking, company);
-            console.log(`✅ Provider Notification routed to ${company.name}`);
+            logger.info(`✅ Provider Notification routed to ${company.name}`);
           } else {
-            console.log(`ℹ️ No provider notification sent. ${company.name} is not in the allowed partners list.`);
+            logger.info(`ℹ️ No provider notification sent. ${company.name} is not in the allowed partners list.`);
           }
         }
         return NextResponse.json({ success: true, data: result.data });
@@ -286,7 +287,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid payload format" }, { status: 400 });
 
   } catch (error: any) {
-    console.error("🔥 API Route Crash:", error.message);
+    logger.error("🔥 API Route Crash:", error.message);
     return NextResponse.json({ error: "Server Error", msg: error.message }, { status: 500 });
   }
 }

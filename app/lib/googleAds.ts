@@ -1,3 +1,4 @@
+import { logger } from "@/app/lib/logger";
 // app/lib/googleAds.ts
 //
 // Server-side Google Ads offline conversion upload (Click Conversions).
@@ -96,11 +97,11 @@ function formatConversionDateTime(d: Date): string {
 export async function reportOfflineConversion(input: OfflineConversionInput): Promise<boolean> {
   const cfg = envConfig();
   if (!cfg) {
-    console.info("[GoogleAds] Offline conversion skipped — API env vars not configured.");
+    logger.info("[GoogleAds] Offline conversion skipped — API env vars not configured.");
     return false;
   }
   if (!input.gclid) {
-    console.info("[GoogleAds] Offline conversion skipped — no gclid on this booking.");
+    logger.info("[GoogleAds] Offline conversion skipped — no gclid on this booking.");
     return false;
   }
 
@@ -136,7 +137,7 @@ export async function reportOfflineConversion(input: OfflineConversionInput): Pr
     const text = await res.text();
 
     if (!res.ok) {
-      console.error(`[GoogleAds] uploadClickConversions HTTP ${res.status}: ${text}`);
+      logger.error(`[GoogleAds] uploadClickConversions HTTP ${res.status}: ${text}`);
       return false;
     }
 
@@ -144,14 +145,14 @@ export async function reportOfflineConversion(input: OfflineConversionInput): Pr
     let parsed: any;
     try { parsed = JSON.parse(text); } catch { parsed = null; }
     if (parsed?.partialFailureError) {
-      console.error("[GoogleAds] partial failure:", JSON.stringify(parsed.partialFailureError));
+      logger.error("[GoogleAds] partial failure:", JSON.stringify(parsed.partialFailureError));
       return false;
     }
 
-    console.log(`[GoogleAds] Offline conversion uploaded: order=${input.orderId} value=${input.value}`);
+    logger.info(`[GoogleAds] Offline conversion uploaded: order=${input.orderId} value=${input.value}`);
     return true;
   } catch (e: any) {
-    console.error("[GoogleAds] Offline conversion upload threw:", e?.message || e);
+    logger.error("[GoogleAds] Offline conversion upload threw:", e?.message || e);
     return false;
   }
 }

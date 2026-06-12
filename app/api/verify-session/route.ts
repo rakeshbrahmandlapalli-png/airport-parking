@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { logger } from "@/app/lib/logger";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { rateLimit, getClientIp } from "@/app/lib/rateLimit";
@@ -42,7 +43,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ status: "unpaid" }, { status: 400 });
     }
   } catch (err: any) {
-    console.error("Stripe Session Verification Error:", err);
+    logger.error("Stripe Session Verification Error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/app/lib/logger";
 import { Suspense, useEffect, useState, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -51,7 +52,7 @@ function fireGoogleAdsConversion(
       if (attempt < 20) {
         setTimeout(() => fireGoogleAdsConversion(value, transactionId, user, attempt + 1), 500);
       } else {
-        console.warn("Google Ads gtag never became available — conversion not sent.");
+        logger.warn("Google Ads gtag never became available — conversion not sent.");
       }
       return;
     }
@@ -86,9 +87,9 @@ function fireGoogleAdsConversion(
       currency: "GBP",
     });
 
-    console.log("Google Ads conversion + GA4 purchase fired:", value);
+    logger.info("Google Ads conversion + GA4 purchase fired:", value);
   } catch (e) {
-    console.error("Failed to fire Google Ads conversion:", e);
+    logger.error("Failed to fire Google Ads conversion:", e);
   }
 }
 
@@ -214,7 +215,7 @@ function SuccessContent() {
             body: JSON.stringify({ booking: finalRow, isAmendment: false }),
           });
         } catch (e) {
-          console.error("Confirmation email failed:", e);
+          logger.error("Confirmation email failed:", e);
           // Non-fatal — booking is still confirmed
         }
       }
@@ -232,7 +233,7 @@ function SuccessContent() {
       }
     } catch (err: any) {
       if (signal.aborted) return;
-      console.error("Finalization error:", err);
+      logger.error("Finalization error:", err);
 
       if (err?.name === "AbortError") return;
 
