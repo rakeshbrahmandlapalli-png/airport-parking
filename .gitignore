@@ -42,3 +42,8 @@ next-env.d.ts
 
 /app/generated/prisma
 HANDOFF.md
+
+# AI tooling (local only — installed via `npx skills add`, session config)
+.agents/
+.claude/
+skills-lock.json
