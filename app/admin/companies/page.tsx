@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { supabase } from "@/app/lib/supabase";
+import { recordAdminAction } from "@/app/lib/audit-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -12,7 +13,7 @@ import {
   Percent, Image as ImageIcon, ArrowUp, ArrowDown, PiggyBank,
   ChevronDown, AlertCircle, Filter, Phone, Code2, Tags, Zap,
   Eye, EyeOff, Copy, Check, CheckCircle2,
-  Calculator, RefreshCw, Info
+  Calculator, RefreshCw, Info, Activity
 } from "lucide-react";
 
 interface Review {
@@ -661,8 +662,38 @@ export default function AdminCompaniesPage() {
   const handleUpdateCompany = async (e: React.FormEvent) => {
     e.preventDefault(); setIsSaving(true);
     try {
+      const prevCompany: any = originalEditingRef.current;
       const { error } = await supabase.from("companies").update(editingCompany).eq("id", editingCompany.id);
       if (error) throw error;
+
+      // Audit: capture what changed on this company (surcharge / modifier /
+      // badges are the high-value pricing & display fields).
+      const surBefore = Number(prevCompany?.dynamic_surcharge_percent ?? 0);
+      const surAfter = Number(editingCompany.dynamic_surcharge_percent ?? 0);
+      const badgesChanged =
+        JSON.stringify(prevCompany?.badges ?? []) !== JSON.stringify(editingCompany.badges ?? []);
+      const surchargeChanged = surBefore !== surAfter;
+      if (surchargeChanged || badgesChanged) {
+        recordAdminAction({
+          actionType: surchargeChanged ? "pricing.surcharge.update" : "company.badges.update",
+          entityType: "company",
+          entityId: editingCompany.id,
+          metadata: {
+            label: editingCompany.name,
+            before: surchargeChanged ? `${surBefore}% surcharge` : `${(prevCompany?.badges ?? []).length} badges`,
+            after: surchargeChanged ? `${surAfter}% surcharge` : `${(editingCompany.badges ?? []).length} badges`,
+            badgesChanged,
+          },
+        });
+      } else {
+        recordAdminAction({
+          actionType: "company.update",
+          entityType: "company",
+          entityId: editingCompany.id,
+          metadata: { label: editingCompany.name },
+        });
+      }
+
       originalEditingRef.current = JSON.parse(JSON.stringify(editingCompany));
       setHasUnsavedChanges(false);
       await fetchCompanies();
@@ -700,6 +731,16 @@ export default function AdminCompaniesPage() {
     } else {
       const labels: Record<string, string> = { is_active: newVal ? "Activated" : "Deactivated", ltn_sold_out: newVal ? "LTN marked sold out" : "LTN marked available", lhr_sold_out: newVal ? "LHR marked sold out" : "LHR marked available" };
       showToast(labels[field] || "Updated", "success");
+      recordAdminAction({
+        actionType: `company.${field}.toggle`,
+        entityType: "company",
+        entityId: company.id,
+        metadata: {
+          label: `${company.name} · ${field.replace(/_/g, " ")}`,
+          before: company[field] ? "on" : "off",
+          after: newVal ? "on" : "off",
+        },
+      });
     }
   };
 
@@ -934,6 +975,7 @@ export default function AdminCompaniesPage() {
           <Link href="/admin/companies" className="flex items-center gap-4 px-5 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl shadow-[0_10px_30px_-5px_rgba(37,99,235,0.5)] transition-all hover:shadow-[0_10px_40px_-5px_rgba(37,99,235,0.7)] hover:-translate-y-0.5 relative overflow-hidden group"><div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div><Building2 className="w-5 h-5" /> Partner Network</Link>
           <Link href="/admin/promos" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50"><Tags className="w-5 h-5 text-slate-500" /> Promo Manager</Link>
           <Link href="/admin/financials" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50"><CalendarDays className="w-5 h-5 text-slate-500" /> Financials</Link>
+          <Link href="/admin/activity" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50"><Activity className="w-5 h-5 text-slate-500" /> Activity Ledger</Link>
           <Link href="/admin/settings" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all border-t border-slate-800/50 mt-4 pt-6 hover:border-l-2 hover:border-blue-500/50"><Settings2 className="w-5 h-5 text-slate-500" /> Platform Settings</Link>
         </nav>
         <div className="p-6">

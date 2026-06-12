@@ -742,6 +742,9 @@ function DashboardContent() {
           <Link href="/admin/financials" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50">
             <PiggyBank className="w-5 h-5 text-slate-500" /> Financials
           </Link>
+          <Link href="/admin/activity" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50">
+            <Activity className="w-5 h-5 text-slate-500" /> Activity Ledger
+          </Link>
           <Link href="/admin/settings" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all border-t border-slate-800/50 mt-4 pt-6 hover:border-l-2 hover:border-blue-500/50">
             <Settings2 className="w-5 h-5 text-slate-500" /> Platform Settings
           </Link>

@@ -8,7 +8,7 @@ import Link from "next/link";
 import {
   Tags, Plus, Trash2, Save, X, Power,
   Plane, LayoutDashboard, Building2, LogOut, Settings2,
-  PiggyBank, Percent, CheckCircle2
+  PiggyBank, Percent, CheckCircle2, Activity
 } from "lucide-react";
 
 export default function PromoManager() {
@@ -55,15 +55,23 @@ export default function PromoManager() {
     const prev = wasEditing ? promos.find((p) => p.id === editingId) : null;
     const { error } = await supabase.from("promotions").upsert([promoData], { onConflict: "code" });
     if (!error) {
-      // Audit: record the create/update (fire-and-forget).
+      // Audit: distinguish enable/disable from a value edit / create.
+      const activeChanged = !!prev && prev.is_active !== promoData.is_active;
+      const actionType = activeChanged
+        ? (promoData.is_active ? "promo.enable" : "promo.disable")
+        : (wasEditing ? "promo.update" : "promo.create");
       recordAdminAction({
-        actionType: wasEditing ? "promo.update" : "promo.create",
+        actionType,
         entityType: "promotion",
         entityId: promoData.id ?? promoData.code,
         metadata: {
           label: `Promo ${promoData.code}`,
-          before: prev ? `${prev.discount_percent}% off` : undefined,
-          after: `${promoData.discount_percent}% off`,
+          before: prev
+            ? (activeChanged ? (prev.is_active ? "active" : "disabled") : `${prev.discount_percent}% off`)
+            : undefined,
+          after: activeChanged
+            ? (promoData.is_active ? "active" : "disabled")
+            : `${promoData.discount_percent}% off`,
         },
       });
       setEditingId(null);
@@ -149,6 +157,9 @@ export default function PromoManager() {
           </Link>
           <Link href="/admin/financials" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50">
             <PiggyBank className="w-5 h-5 text-slate-500" /> Financials
+          </Link>
+          <Link href="/admin/activity" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50">
+            <Activity className="w-5 h-5 text-slate-500" /> Activity Ledger
           </Link>
           <Link href="/admin/settings" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all border-t border-slate-800/50 mt-4 pt-6 hover:border-l-2 hover:border-blue-500/50">
             <Settings2 className="w-5 h-5 text-slate-500" /> Platform Settings
