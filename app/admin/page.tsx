@@ -618,13 +618,13 @@ function DashboardContent() {
 
   const getStatusBadge = (status: string) => {
     const s = status?.toLowerCase() || "pending";
-    const classes = "px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 w-max transition-all backdrop-blur-sm";
-    
-    if (s === "confirmed") return <div className={`${classes} bg-blue-500/10 text-blue-400 border border-blue-500/30 shadow-[0_0_12px_-2px_rgba(59,130,246,0.4)]`}><CheckCircle2 className="w-3.5 h-3.5"/> Confirmed</div>;
-    if (s === "parked") return <div className={`${classes} bg-purple-500/10 text-purple-400 border border-purple-500/30 shadow-[0_0_12px_-2px_rgba(168,85,247,0.4)]`}><Car className="w-3.5 h-3.5"/> Parked</div>;
-    if (s === "completed") return <div className={`${classes} bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-[0_0_12px_-2px_rgba(16,185,129,0.4)]`}><CheckCircle2 className="w-3.5 h-3.5"/> Completed</div>;
-    if (s === "cancelled") return <div className={`${classes} bg-red-500/10 text-red-400 border border-red-500/30 shadow-[0_0_12px_-2px_rgba(239,68,68,0.4)]`}><XCircle className="w-3.5 h-3.5"/> Voided</div>;
-    return <div className={`${classes} bg-amber-500/10 text-amber-400 border border-amber-500/30 shadow-[0_0_12px_-2px_rgba(245,158,11,0.4)]`}><Clock className="w-3.5 h-3.5"/> Pending</div>;
+    const classes = "px-2.5 py-1 rounded-md text-[9px] font-semibold uppercase tracking-wider flex items-center gap-1.5 w-max";
+
+    if (s === "confirmed") return <div className={`${classes} bg-blue-500/10 text-blue-400`}><CheckCircle2 className="w-3 h-3"/> Confirmed</div>;
+    if (s === "parked") return <div className={`${classes} bg-violet-500/10 text-violet-400`}><Car className="w-3 h-3"/> Parked</div>;
+    if (s === "completed") return <div className={`${classes} bg-emerald-500/10 text-emerald-400`}><CheckCircle2 className="w-3 h-3"/> Completed</div>;
+    if (s === "cancelled") return <div className={`${classes} bg-red-500/10 text-red-400`}><XCircle className="w-3 h-3"/> Voided</div>;
+    return <div className={`${classes} bg-amber-500/10 text-amber-400`}><Clock className="w-3 h-3"/> Pending</div>;
   };
 
   // Status → row "spine" colour (lets operators scan status down the table at a glance)
@@ -757,20 +757,16 @@ function DashboardContent() {
   const todayPretty = todayDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   if (loading) return (
-    <div className="min-h-screen bg-[#0B1120] flex flex-col items-center justify-center text-white relative overflow-hidden">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px]"></div>
-      <div className="relative z-10">
-        <div className="absolute inset-0 border-t-2 border-blue-500 rounded-full animate-spin"></div>
-        <Plane className="w-10 h-10 text-blue-500 m-4 animate-pulse rotate-45" />
-      </div>
-      <p className="font-black text-slate-400 tracking-widest uppercase text-xs mt-6 relative z-10">Initializing Command Hub...</p>
+    <div className="min-h-screen bg-[#0B1120] flex flex-col items-center justify-center text-white">
+      <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+      <p className="font-semibold text-zinc-500 tracking-widest uppercase text-[11px] mt-5">Loading operations…</p>
     </div>
   );
 
-  // ADVANCED GLASS INPUT STYLES (same colors, cooler finish)
-  const inputStyle = "w-full bg-[#1A2235]/80 backdrop-blur-sm border border-slate-700/50 hover:border-blue-500/60 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/60 transition-all duration-300 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)] [-webkit-text-fill-color:white] placeholder:text-slate-500";
-  const selectStyle = "w-full appearance-none bg-[#1A2235]/80 backdrop-blur-sm border border-slate-700/50 hover:border-blue-500/60 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none cursor-pointer focus:ring-2 focus:ring-blue-500/50 transition-all duration-300 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)] [-webkit-text-fill-color:white]";
-  const yellowInputStyle = "w-full bg-[#FACC15] border-2 border-yellow-500 rounded-xl px-5 py-4 text-black text-xl text-center font-black uppercase outline-none focus:ring-4 focus:ring-yellow-500/30 transition-all shadow-[0_0_20px_-4px_rgba(250,204,21,0.5)] [-webkit-text-fill-color:black] placeholder:text-yellow-700/50";
+  // Flat enterprise input styles — solid deep colour, subtle 1px borders, no blur.
+  const inputStyle = "w-full bg-[#0B1120] border border-white/10 hover:border-white/20 rounded-lg px-4 py-3 text-sm text-white font-medium outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition-colors [-webkit-text-fill-color:white] placeholder:text-zinc-600";
+  const selectStyle = "w-full appearance-none bg-[#0B1120] border border-white/10 hover:border-white/20 rounded-lg px-4 py-3 text-sm text-white font-medium outline-none cursor-pointer focus:ring-1 focus:ring-blue-500/50 transition-colors [-webkit-text-fill-color:white]";
+  const yellowInputStyle = "w-full bg-amber-400 border border-amber-500 rounded-lg px-4 py-3 text-black text-lg text-center font-bold font-mono uppercase outline-none focus:ring-2 focus:ring-amber-500/40 transition-colors [-webkit-text-fill-color:black] placeholder:text-amber-700/50 tracking-wider";
 
   // ── MASTER–DETAIL: the right-hand detail panel for the selected booking ──────
   const detailRow = (label: string, value: any, accent = "text-white") => (
@@ -795,7 +791,7 @@ function DashboardContent() {
     return (
       <div className="flex flex-col h-full">
         {/* HEADER */}
-        <div className="p-6 border-b border-slate-800 bg-[#0F1523]/70 relative" style={{ boxShadow: `inset 4px 0 0 0 ${statusAccentColor(b.status)}` }}>
+        <div className="p-6 border-b border-slate-800 bg-[#131A2B] relative" style={{ boxShadow: `inset 4px 0 0 0 ${statusAccentColor(b.status)}` }}>
           <div className="flex items-start justify-between gap-4">
             <div className="flex flex-col gap-2">
               <span className="text-[11px] font-black font-mono text-blue-400 tracking-widest uppercase bg-blue-500/10 px-2.5 py-1 rounded border border-blue-500/20 w-max">{b.booking_ref}</span>
@@ -819,7 +815,7 @@ function DashboardContent() {
         {/* BODY */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
           {/* PRICE BANNER */}
-          <div className="bg-gradient-to-br from-emerald-900/30 to-[#131A2B] border border-emerald-500/30 rounded-2xl p-5 flex items-center justify-between">
+          <div className="bg-[#131A2B] border border-emerald-500/20 rounded-xl p-5 flex items-center justify-between" style={{ boxShadow: "inset 3px 0 0 0 #10b981" }}>
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Transaction Value</p>
               <p className="text-3xl font-black text-white tracking-tight tabular-nums mt-1">£{Number(b.total_price || 0).toFixed(2)}</p>
@@ -830,7 +826,7 @@ function DashboardContent() {
           {/* CONTACT */}
           <div>
             <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500 mb-2 flex items-center gap-2"><Users className="w-3.5 h-3.5" /> Customer</p>
-            <div className="bg-[#1A2235]/60 border border-slate-800 rounded-2xl px-5 py-2">
+            <div className="bg-[#131A2B] border border-white/[0.06] rounded-xl px-5 py-2">
               {detailRow("Phone", b.phone_number)}
               {detailRow("Email", b.email, "text-slate-300 break-all")}
             </div>
@@ -839,8 +835,8 @@ function DashboardContent() {
           {/* VEHICLE */}
           <div>
             <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500 mb-2 flex items-center gap-2"><Car className="w-3.5 h-3.5" /> Vehicle</p>
-            <div className="bg-[#1A2235]/60 border border-slate-800 rounded-2xl px-5 py-4 flex items-center gap-4">
-              <div className="px-3 py-2 bg-[#FACC15] text-black font-black font-mono text-sm rounded border-b-2 border-yellow-600 shadow-[0_0_15px_-4px_rgba(250,204,21,0.5)] tracking-[0.1em]">
+            <div className="bg-[#131A2B] border border-white/[0.06] rounded-xl px-5 py-4 flex items-center gap-4">
+              <div className="px-3 py-2 bg-amber-400 text-black font-bold font-mono text-sm rounded tracking-[0.1em]">
                 {b.license_plate || "—"}
               </div>
               <div className="flex items-center gap-2 text-xs font-bold text-slate-300 uppercase tracking-widest">
@@ -853,7 +849,7 @@ function DashboardContent() {
           {/* SCHEDULE */}
           <div>
             <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500 mb-2 flex items-center gap-2"><Clock className="w-3.5 h-3.5" /> Logistics</p>
-            <div className="bg-[#1A2235]/60 border border-slate-800 rounded-2xl px-5 py-2">
+            <div className="bg-[#131A2B] border border-white/[0.06] rounded-xl px-5 py-2">
               {detailRow("Inbound", <span className="tabular-nums">{formatDate(b.dropoff_date)} {b.dropoff_time || ""}</span>, "text-blue-300")}
               {detailRow("Return", <span className="tabular-nums">{formatDate(b.pickup_date)} {b.pickup_time || ""}</span>, "text-emerald-300")}
               {detailRow("Airport", b.airport)}
@@ -865,13 +861,13 @@ function DashboardContent() {
           {/* COMMERCIAL */}
           <div>
             <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500 mb-2 flex items-center gap-2"><Building2 className="w-3.5 h-3.5" /> Commercial</p>
-            <div className="bg-[#1A2235]/60 border border-slate-800 rounded-2xl px-5 py-2">
+            <div className="bg-[#131A2B] border border-white/[0.06] rounded-xl px-5 py-2">
               {detailRow("Partner", getCompanyName(b.company_id))}
               {detailRow("Service", b.service_type || "Meet & Greet")}
             </div>
 
             {/* Manual transfer — assign to the best provider & email them */}
-            <div className="mt-3 bg-[#1A2235]/60 border border-slate-800 rounded-2xl px-4 py-3">
+            <div className="mt-3 bg-[#131A2B] border border-white/[0.06] rounded-xl px-4 py-3">
               <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">Transfer to Provider</p>
               <div className="flex items-center gap-2">
                 <select
@@ -896,7 +892,7 @@ function DashboardContent() {
         </div>
 
         {/* ACTION BAR */}
-        <div className="p-5 border-t border-slate-800 bg-[#0F1523]/70 grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+        <div className="p-5 border-t border-slate-800 bg-[#131A2B] grid grid-cols-2 sm:grid-cols-3 gap-2.5">
           <button onClick={() => sendManualEmail(b, "customer")} className="flex items-center justify-center gap-2 px-3 py-3 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white rounded-xl border border-blue-500/20 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest">
             <Receipt className="w-4 h-4" /> Customer
           </button>
@@ -923,147 +919,131 @@ function DashboardContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0B1120] via-[#0A0E1A] to-[#0B1120] font-sans flex flex-col md:flex-row overflow-hidden text-slate-100 antialiased selection:bg-blue-600/30 relative">
-      
-      {/* 🌌 AMBIENT BACKGROUND GLOW LAYERS */}
-      <div className="fixed top-[-200px] left-[200px] w-[600px] h-[600px] bg-blue-600/8 rounded-full blur-[140px] pointer-events-none z-0"></div>
-      <div className="fixed bottom-[-200px] right-[100px] w-[500px] h-[500px] bg-indigo-600/8 rounded-full blur-[140px] pointer-events-none z-0"></div>
-      <div className="fixed top-[40%] right-[30%] w-[400px] h-[400px] bg-emerald-600/5 rounded-full blur-[120px] pointer-events-none z-0"></div>
+    <div className="min-h-screen bg-[#0B1120] font-sans flex flex-col md:flex-row text-slate-100 antialiased selection:bg-blue-600/30">
 
-      {/* 🟢 PREMIUM SIDEBAR */}
-      <aside className="w-full md:w-64 bg-[#0F1523]/90 backdrop-blur-xl text-slate-400 hidden md:flex flex-col sticky top-0 h-screen border-r border-slate-800/80 shadow-2xl z-50 shrink-0 relative">
-        <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-blue-500/20 to-transparent"></div>
-        <div className="p-8 flex items-center gap-4 text-white">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-600/30 to-blue-600/5 rounded-xl flex items-center justify-center border border-blue-500/30 shadow-[0_0_20px_rgba(37,99,235,0.25)]">
-            <Plane className="w-6 h-6 text-blue-400 rotate-45 drop-shadow-[0_0_6px_rgba(59,130,246,0.6)]" />
+      {/* SIDEBAR */}
+      <aside className="w-full md:w-60 bg-[#0F1523] text-zinc-400 hidden md:flex flex-col sticky top-0 h-screen border-r border-white/[0.06] z-50 shrink-0">
+        <div className="px-6 py-7 flex items-center gap-3 text-white">
+          <div className="w-9 h-9 bg-blue-600/15 rounded-lg flex items-center justify-center border border-blue-500/30">
+            <Plane className="w-5 h-5 text-blue-400 rotate-45" />
           </div>
-          <span className="font-black text-xl tracking-tighter uppercase">OPS <span className="text-blue-500 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]">CENTER</span></span>
+          <span className="font-black text-lg tracking-tight uppercase">OPS <span className="text-blue-500">CENTER</span></span>
         </div>
-        
-        <nav className="px-5 space-y-3 flex-grow mt-6 font-bold text-sm">
-          <Link href="/admin" className="flex items-center gap-4 px-5 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl shadow-[0_10px_30px_-5px_rgba(37,99,235,0.5)] transition-all hover:shadow-[0_10px_40px_-5px_rgba(37,99,235,0.7)] hover:-translate-y-0.5 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-            <LayoutDashboard className="w-5 h-5" /> Live Board
+
+        <nav className="px-3 space-y-1 flex-grow mt-2 font-semibold text-[13px]">
+          <Link href="/admin" className="flex items-center gap-3 px-4 py-2.5 bg-blue-600 text-white rounded-lg transition-colors">
+            <LayoutDashboard className="w-4 h-4" /> Live Board
           </Link>
-          <Link href="/admin/companies" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50">
-            <Building2 className="w-5 h-5 text-slate-500" /> Partner Network
+          <Link href="/admin/companies" className="flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:bg-white/[0.04] hover:text-white rounded-lg transition-colors">
+            <Building2 className="w-4 h-4 text-zinc-500" /> Partner Network
           </Link>
-          <Link href="/admin/promos" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50">
-            <Tags className="w-5 h-5 text-slate-500" /> Promo Manager
+          <Link href="/admin/promos" className="flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:bg-white/[0.04] hover:text-white rounded-lg transition-colors">
+            <Tags className="w-4 h-4 text-zinc-500" /> Promo Manager
           </Link>
-          <Link href="/admin/financials" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50">
-            <PiggyBank className="w-5 h-5 text-slate-500" /> Financials
+          <Link href="/admin/financials" className="flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:bg-white/[0.04] hover:text-white rounded-lg transition-colors">
+            <PiggyBank className="w-4 h-4 text-zinc-500" /> Financials
           </Link>
-          <Link href="/admin/activity" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50">
-            <Activity className="w-5 h-5 text-slate-500" /> Activity Ledger
+          <Link href="/admin/activity" className="flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:bg-white/[0.04] hover:text-white rounded-lg transition-colors">
+            <Activity className="w-4 h-4 text-zinc-500" /> Activity Ledger
           </Link>
-          <Link href="/admin/settings" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all border-t border-slate-800/50 mt-4 pt-6 hover:border-l-2 hover:border-blue-500/50">
-            <Settings2 className="w-5 h-5 text-slate-500" /> Platform Settings
+          <Link href="/admin/settings" className="flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:bg-white/[0.04] hover:text-white rounded-lg transition-colors border-t border-white/[0.06] mt-3 pt-4">
+            <Settings2 className="w-4 h-4 text-zinc-500" /> Platform Settings
           </Link>
         </nav>
-        
-        <div className="p-6">
-          <button onClick={() => supabase.auth.signOut().then(() => router.replace("/admin/login"))} className="flex items-center gap-4 text-sm font-bold hover:text-red-400 transition-colors w-full text-left px-5 py-4 group bg-slate-900/50 rounded-xl border border-slate-800/80 shadow-sm hover:border-red-500/30 hover:shadow-[0_0_20px_-8px_rgba(239,68,68,0.4)]">
-            <LogOut className="w-5 h-5 text-slate-500 group-hover:text-red-500 transition-colors" /> Secure Logout
+
+        <div className="p-4">
+          <button onClick={() => supabase.auth.signOut().then(() => router.replace("/admin/login"))} className="flex items-center gap-3 text-[13px] font-semibold text-zinc-400 hover:text-red-400 transition-colors w-full text-left px-4 py-2.5 group rounded-lg border border-white/[0.06] hover:border-red-500/30">
+            <LogOut className="w-4 h-4 text-zinc-500 group-hover:text-red-500 transition-colors" /> Secure Logout
           </button>
         </div>
       </aside>
 
       {/* PRIMARY WORKSPACE */}
-      <main className="flex-1 p-4 md:p-8 lg:p-12 w-full overflow-y-auto h-screen relative pb-32 md:pb-12 custom-scrollbar z-10">
-        
+      <main className="flex-1 p-4 md:p-8 w-full overflow-y-auto h-screen pb-32 md:pb-10 custom-scrollbar">
+
         {/* MOBILE HEADER */}
-        <div className="md:hidden flex items-center justify-between mb-8 bg-[#131A2B]/80 backdrop-blur-xl p-5 rounded-3xl border border-slate-800 shadow-2xl">
-          <div className="flex items-center gap-3 font-black text-xl uppercase tracking-tighter text-white">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-500 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(37,99,235,0.5)]">
-              <Plane className="w-6 h-6 text-white rotate-45" />
-            </div> 
+        <div className="md:hidden flex items-center justify-between mb-6 bg-[#0F1523] p-4 rounded-xl border border-white/[0.06]">
+          <div className="flex items-center gap-3 font-black text-lg uppercase tracking-tight text-white">
+            <div className="w-9 h-9 bg-blue-600/15 rounded-lg flex items-center justify-center border border-blue-500/30">
+              <Plane className="w-5 h-5 text-blue-400 rotate-45" />
+            </div>
             OPS<span className="text-blue-500">CENTER</span>
           </div>
-          <button onClick={() => router.replace("/admin/login")} className="p-3 bg-slate-800 rounded-xl text-slate-300 hover:text-red-400 transition-colors">
+          <button onClick={() => router.replace("/admin/login")} className="p-2.5 bg-white/[0.04] rounded-lg text-zinc-300 hover:text-red-400 transition-colors border border-white/[0.06]">
             <LogOut className="w-5 h-5" />
           </button>
         </div>
 
-        {/* 🟢 COMMAND HERO PANEL (header + live stat rail, one unit) */}
-        <div className="relative mb-8 rounded-[2rem] border border-slate-800/80 bg-gradient-to-br from-[#131A2B] to-[#0F1523] shadow-2xl overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/40 to-transparent"></div>
-          <div className="absolute -top-24 -left-24 w-72 h-72 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none"></div>
-          <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-indigo-600/10 rounded-full blur-[100px] pointer-events-none"></div>
-
+        {/* HEADER + STAT RAIL */}
+        <div className="mb-6 rounded-xl border border-white/[0.06] bg-[#0F1523] overflow-hidden ring-1 ring-inset ring-white/[0.04]">
           {/* ROW 1 — title + actions */}
-          <div className="relative p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-slate-800/60">
-            <div className="flex items-center gap-5">
-              <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600/30 to-blue-600/5 border border-blue-500/30 items-center justify-center shadow-[0_0_25px_rgba(37,99,235,0.3)] shrink-0">
-                <Activity className="w-7 h-7 text-blue-400" />
+          <div className="p-5 md:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/[0.06]">
+            <div className="flex items-center gap-4">
+              <div className="hidden sm:flex w-11 h-11 rounded-lg bg-blue-600/15 border border-blue-500/30 items-center justify-center shrink-0">
+                <Activity className="w-5 h-5 text-blue-400" />
               </div>
               <div>
-                <h1 className="text-3xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-white via-white to-blue-200 bg-clip-text text-transparent">Live Operations</h1>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
-                  <div className="text-emerald-400 font-bold text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
+                <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white">Live Operations</h1>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-1.5">
+                  <div className="text-emerald-400 font-semibold text-[10px] uppercase tracking-[0.2em] flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                     Real-Time Sync
                   </div>
-                  <div className="hidden sm:block w-px h-3 bg-slate-700"></div>
-                  <div className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.2em] flex items-center gap-1.5">
+                  <div className="hidden sm:block w-px h-3 bg-white/10"></div>
+                  <div className="text-zinc-500 font-semibold text-[10px] uppercase tracking-[0.15em] flex items-center gap-1.5">
                     <Clock className="w-3 h-3" /> {todayPretty}
                   </div>
                 </div>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3 shrink-0">
-              <button onClick={exportToCSV} className="px-6 py-3.5 bg-[#1A2235]/80 backdrop-blur-sm hover:bg-[#1A2235] border border-slate-700 hover:border-slate-600 text-slate-300 rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-3 shadow-md">
+            <div className="flex flex-col sm:flex-row gap-2.5 shrink-0">
+              <button onClick={exportToCSV} className="px-4 py-2.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-zinc-300 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2">
                 <Download className="w-4 h-4" /> Export
               </button>
-              <button onClick={openPayLinkModal} className="px-6 py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-3 shadow-[0_10px_30px_-5px_rgba(16,185,129,0.5)] hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-                <Link2 className="w-5 h-5" /> Payment Link
+              <button onClick={openPayLinkModal} className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2">
+                <Link2 className="w-4 h-4" /> Payment Link
               </button>
-              <button onClick={() => setShowManualModal(true)} className="px-6 py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-3 shadow-[0_10px_30px_-5px_rgba(37,99,235,0.5)] hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-                <Plus className="w-5 h-5" /> New Booking
+              <button onClick={() => setShowManualModal(true)} className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2">
+                <Plus className="w-4 h-4" /> New Booking
               </button>
             </div>
           </div>
 
-          {/* ROW 2 — live stat rail */}
-          <div className="relative grid grid-cols-2 lg:grid-cols-4 divide-x divide-slate-800/60">
+          {/* ROW 2 — stat rail */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-white/[0.06]">
             {[
               { label: "Total Revenue", value: `£${totalRevenue.toFixed(2)}`, sub: `${paidCount} paid · avg £${avgBookingValue.toFixed(0)}`, color: "#10b981", Icon: Wallet },
               { label: "Active Jobs", value: `${filteredBookings.length}`, sub: pendingCount > 0 ? `${pendingCount} awaiting action` : "all up to date", color: "#3b82f6", Icon: Zap },
               { label: "Inbound Today", value: `${arrivalsToday}`, sub: "cars in today", color: "#6366f1", Icon: PlaneLanding },
               { label: "Return Today", value: `${returnsToday}`, sub: "cars out today", color: "#f59e0b", Icon: PlaneTakeoff },
             ].map((s, i) => (
-              <div key={i} className="p-5 md:p-6 relative group hover:bg-white/[0.02] transition-colors border-t border-slate-800/60 lg:border-t-0">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: s.color }}>{s.label}</p>
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center border" style={{ background: `${s.color}1A`, borderColor: `${s.color}33` }}>
-                    <s.Icon className="w-3.5 h-3.5" style={{ color: s.color }} />
-                  </div>
+              <div key={i} className="p-4 md:p-5 border-t border-white/[0.06] lg:border-t-0">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-500">{s.label}</p>
+                  <s.Icon className="w-3.5 h-3.5" style={{ color: s.color }} />
                 </div>
-                <p className="text-2xl md:text-3xl font-black text-white tracking-tight tabular-nums">{s.value}</p>
-                <p className="text-[10px] font-bold text-slate-500 mt-1.5 tabular-nums truncate">{s.sub}</p>
-                <div className="absolute bottom-0 left-0 h-0.5 w-0 group-hover:w-full transition-all duration-500" style={{ background: s.color }}></div>
+                <p className="text-xl md:text-2xl font-black text-white tracking-tight tabular-nums">{s.value}</p>
+                <p className="text-[10px] font-medium text-zinc-600 mt-1 tabular-nums truncate">{s.sub}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* 🟢 CONTROL TOOLBAR */}
-        <div className="mb-6">
-          <div className="relative mb-3">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+        {/* TOOLBAR */}
+        <div className="mb-5">
+          <div className="relative mb-2.5">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
             <input
               type="text"
               autoComplete="off"
               placeholder="Search reference, client name, plate, email or phone..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#131A2B]/80 backdrop-blur-xl border border-slate-800 hover:border-blue-500/40 rounded-2xl py-4 pl-12 pr-6 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/40 transition-all placeholder:text-slate-500 shadow-lg"
+              className="w-full bg-[#0F1523] border border-white/[0.06] hover:border-white/15 rounded-lg py-2.5 pl-10 pr-4 text-[13px] font-medium text-white outline-none focus:ring-1 focus:ring-blue-500/40 focus:border-blue-500/40 transition-colors placeholder:text-zinc-600"
             />
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5">
             {[
               { id: 'time', icon: Filter, state: timeFilter, set: setTimeFilter, opts: [{v: "ALL", l: "Dates: All"}, {v: "TODAY_DROP", l: "Inbound Today"}, {v: "TODAY_PICK", l: "Return Today"}] },
               { id: 'air', icon: MapPin, state: airportFilter, set: setAirportFilter, opts: [{v: "ALL", l: "Hubs: All"}, {v: "Luton", l: "Luton (LTN)"}, {v: "Heathrow", l: "Heathrow (LHR)"}] },
@@ -1072,67 +1052,67 @@ function DashboardContent() {
               { id: 'comp', icon: Building2, state: companyFilter, set: setCompanyFilter, opts: [{v: "ALL", l: "Partners: All"}, {v: "DIRECT", l: "Aero Direct"}, ...companies.map(c => ({v: c.id, l: c.name}))] }
             ].map((f) => (
               <div key={f.id} className="relative group/sel">
-                <f.icon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 z-10 transition-colors group-hover/sel:text-blue-400 pointer-events-none" />
-                <select 
-                  value={f.state} 
-                  onChange={(e) => f.set(e.target.value)} 
-                  className="w-full appearance-none bg-[#1A2235]/80 backdrop-blur-sm border border-slate-700 hover:border-blue-500/50 rounded-2xl py-3 pl-10 pr-9 text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none cursor-pointer transition-all shadow-inner focus:ring-2 focus:ring-blue-500/50 truncate"
+                <f.icon className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 z-10 pointer-events-none" />
+                <select
+                  value={f.state}
+                  onChange={(e) => f.set(e.target.value)}
+                  className="w-full appearance-none bg-[#0F1523] border border-white/[0.06] hover:border-white/15 rounded-lg py-2.5 pl-9 pr-8 text-[10px] font-semibold uppercase tracking-wider text-zinc-300 outline-none cursor-pointer transition-colors focus:ring-1 focus:ring-blue-500/40 truncate"
                 >
-                  {f.opts.map((o, idx) => <option key={idx} value={o.v} className="bg-[#1A2235] text-white font-bold">{o.l}</option>)}
+                  {f.opts.map((o, idx) => <option key={idx} value={o.v} className="bg-[#0F1523] text-white">{o.l}</option>)}
                 </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none group-hover/sel:text-blue-500 transition-colors" />
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
               </div>
             ))}
           </div>
         </div>
 
-        {/* 🟢 RESULTS BAR + SORT (NEW FEATURE 1) */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 px-1">
-          <div className="flex items-center gap-3 text-[11px] font-bold text-slate-400">
-            <span className="text-white font-black tabular-nums">{displayBookings.length}</span>
-            <span className="uppercase tracking-widest text-slate-500">record{displayBookings.length === 1 ? "" : "s"}</span>
+        {/* RESULTS BAR + SORT */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 px-0.5">
+          <div className="flex items-center gap-2.5 text-[11px] font-medium text-zinc-400">
+            <span className="text-white font-bold tabular-nums">{displayBookings.length}</span>
+            <span className="uppercase tracking-wider text-zinc-500">record{displayBookings.length === 1 ? "" : "s"}</span>
             {activeFilterCount > 0 && (
-              <span className="flex items-center gap-1.5 text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-lg uppercase tracking-widest text-[9px] font-black">
-                <Filter className="w-3 h-3" /> {activeFilterCount} filter{activeFilterCount === 1 ? "" : "s"} active
+              <span className="flex items-center gap-1.5 text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md uppercase tracking-wider text-[9px] font-semibold">
+                <Filter className="w-2.5 h-2.5" /> {activeFilterCount} filter{activeFilterCount === 1 ? "" : "s"}
               </span>
             )}
-            <span className="hidden md:flex items-center gap-1.5 text-emerald-400 bg-emerald-500/5 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
-              <Wallet className="w-3 h-3" /> <span className="tabular-nums">£{totalRevenue.toFixed(2)}</span>
+            <span className="hidden md:flex items-center gap-1.5 text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
+              <Wallet className="w-2.5 h-2.5" /> <span className="tabular-nums">£{totalRevenue.toFixed(2)}</span>
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             {activeFilterCount > 0 && (
-              <button onClick={resetFilters} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-red-400 border border-slate-700 hover:border-red-500/30 px-3 py-2.5 rounded-xl transition-all">
+              <button onClick={resetFilters} className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 hover:text-red-400 border border-white/10 hover:border-red-500/30 px-2.5 py-2 rounded-lg transition-colors">
                 <X className="w-3 h-3" /> Clear All
               </button>
             )}
             <div className="relative group/sort flex-1 sm:flex-none">
-              <TrendingUp className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 z-10 pointer-events-none group-hover/sort:text-blue-400 transition-colors" />
+              <TrendingUp className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 z-10 pointer-events-none" />
               <select
                 value={sortKey}
                 onChange={(e) => setSortKey(e.target.value)}
-                className="w-full appearance-none bg-[#1A2235]/80 backdrop-blur-sm border border-slate-700 hover:border-blue-500/50 rounded-xl py-2.5 pl-10 pr-9 text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none cursor-pointer transition-all focus:ring-2 focus:ring-blue-500/50"
+                className="w-full appearance-none bg-[#0F1523] border border-white/[0.06] hover:border-white/15 rounded-lg py-2 pl-9 pr-8 text-[10px] font-semibold uppercase tracking-wider text-zinc-300 outline-none cursor-pointer transition-colors focus:ring-1 focus:ring-blue-500/40"
               >
-                <option value="NEWEST" className="bg-[#1A2235] text-white">Sort: Newest</option>
-                <option value="PRICE_HIGH" className="bg-[#1A2235] text-white">Sort: Price High → Low</option>
-                <option value="PRICE_LOW" className="bg-[#1A2235] text-white">Sort: Price Low → High</option>
-                <option value="INBOUND" className="bg-[#1A2235] text-white">Sort: Inbound Date</option>
-                <option value="RETURN" className="bg-[#1A2235] text-white">Sort: Return Date</option>
-                <option value="NAME" className="bg-[#1A2235] text-white">Sort: Name A → Z</option>
+                <option value="NEWEST" className="bg-[#0F1523] text-white">Sort: Newest</option>
+                <option value="PRICE_HIGH" className="bg-[#0F1523] text-white">Sort: Price High → Low</option>
+                <option value="PRICE_LOW" className="bg-[#0F1523] text-white">Sort: Price Low → High</option>
+                <option value="INBOUND" className="bg-[#0F1523] text-white">Sort: Inbound Date</option>
+                <option value="RETURN" className="bg-[#0F1523] text-white">Sort: Return Date</option>
+                <option value="NAME" className="bg-[#0F1523] text-white">Sort: Name A → Z</option>
               </select>
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none group-hover/sort:text-blue-500 transition-colors" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
             </div>
           </div>
         </div>
 
         {/* ── ENTERPRISE DATA TABLE ─────────────────────────────────────────────── */}
-        <div className="mb-24 rounded-xl border border-white/[0.06] overflow-hidden bg-zinc-950/60 ring-1 ring-inset ring-white/[0.04]">
+        <div className="mb-24 rounded-xl border border-white/[0.06] overflow-hidden bg-[#0F1523] ring-1 ring-inset ring-white/[0.04]">
 
           {/* Sticky column header */}
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[1240px] border-collapse">
               <thead>
-                <tr className="border-b border-white/[0.08] bg-zinc-900/80">
+                <tr className="border-b border-white/[0.08] bg-[#131A2B]">
                   {[
                     { label: "Booking Ref",    cls: "w-[130px] pl-5" },
                     { label: "Customer",        cls: "w-[200px]" },
@@ -1348,7 +1328,7 @@ function DashboardContent() {
 
           {/* Table footer — record count + revenue summary */}
           {displayBookings.length > 0 && (
-            <div className="flex items-center justify-between px-5 py-3 border-t border-white/[0.06] bg-zinc-900/40">
+            <div className="flex items-center justify-between px-5 py-3 border-t border-white/[0.06] bg-[#131A2B]">
               <span className="text-[11px] text-zinc-500 tabular-nums">
                 <span className="font-semibold text-zinc-300">{displayBookings.length}</span> record{displayBookings.length === 1 ? "" : "s"}
                 {activeFilterCount > 0 && <span className="text-blue-500 ml-2">({activeFilterCount} filter{activeFilterCount === 1 ? "" : "s"} active)</span>}
@@ -1364,9 +1344,8 @@ function DashboardContent() {
 
         {/* 🟢 DOSSIER MODAL — full record + all dispatch actions */}
         {viewBooking && (
-          <div className="fixed inset-0 z-[200] bg-[#0B1120]/95 backdrop-blur-md flex items-center justify-center p-0 sm:p-6 animate-in fade-in duration-150" onClick={() => setViewBooking(null)}>
-            <div className="bg-[#131A2B] border border-slate-800 w-full max-w-2xl sm:rounded-3xl h-full sm:h-auto sm:max-h-[92vh] flex flex-col shadow-2xl overflow-hidden relative animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
-              <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent z-10"></div>
+          <div className="fixed inset-0 z-[200] bg-[#060A14]/80 flex items-center justify-center p-0 sm:p-6 animate-in fade-in duration-150" onClick={() => setViewBooking(null)}>
+            <div className="bg-[#0F1523] border border-white/10 w-full max-w-2xl sm:rounded-2xl h-full sm:h-auto sm:max-h-[92vh] flex flex-col overflow-hidden relative animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
               {renderDetail(viewBooking)}
             </div>
           </div>
@@ -1374,10 +1353,10 @@ function DashboardContent() {
 
         {/* 🟢 FIXED MOBILE BOTTOM NAV */}
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] px-2 pb-6 pt-2 bg-gradient-to-t from-[#0B1120] via-[#0B1120]/95 to-transparent pointer-events-none">
-          <nav className="max-w-md mx-auto bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-3xl h-20 flex items-center justify-around px-2 shadow-2xl pointer-events-auto">
+          <nav className="max-w-md mx-auto bg-[#0F1523] border border-white/10 rounded-2xl h-20 flex items-center justify-around px-2 shadow-xl pointer-events-auto">
             <Link href="/admin" className="flex flex-col items-center justify-center gap-1 text-blue-500 transition-all"><LayoutDashboard className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Live</span></Link>
             <Link href="/admin/companies" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><Building2 className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Ops</span></Link>
-            <div className="relative -top-8"><button onClick={() => setShowManualModal(true)} className="w-14 h-14 bg-gradient-to-br from-blue-600 to-blue-500 rounded-2xl flex items-center justify-center shadow-[0_0_25px_rgba(37,99,235,0.6)] border-4 border-[#0B1120] active:scale-95 transition-transform"><Plus className="w-6 h-6 text-white" /></button></div>
+            <div className="relative -top-8"><button onClick={() => setShowManualModal(true)} className="w-14 h-14 bg-blue-600 hover:bg-blue-500 rounded-xl flex items-center justify-center border-4 border-[#0B1120] active:scale-95 transition-transform"><Plus className="w-6 h-6 text-white" /></button></div>
             <Link href="/admin/financials" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><PiggyBank className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Finance</span></Link>
             {/* 🟢 NEW SETTINGS TAB FOR MOBILE ADDED HERE */}
             <Link href="/admin/settings" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><Settings2 className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Settings</span></Link>
@@ -1388,11 +1367,10 @@ function DashboardContent() {
       {/* --- 🟢 MODAL: MANUAL BOOKING ENTRY --- */}
       {/* ── PAYMENT LINK GENERATOR MODAL ───────────────────────────────────── */}
       {showPayLinkModal && (
-        <div className="fixed inset-0 bg-[#0B1120]/95 backdrop-blur-md z-[300] flex items-center justify-center p-4 sm:p-8 overflow-hidden">
-          <div className="bg-[#0F1523]/95 backdrop-blur-2xl border border-slate-800 w-full max-w-5xl rounded-[2rem] max-h-[95vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 relative">
-            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent z-20"></div>
-            <div className="p-8 border-b border-slate-800 flex justify-between items-center bg-[#131A2B] relative">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-600 to-emerald-400"></div>
+        <div className="fixed inset-0 bg-[#060A14]/80 z-[300] flex items-center justify-center p-4 sm:p-8 overflow-hidden">
+          <div className="bg-[#0F1523] border border-white/10 w-full max-w-5xl rounded-2xl max-h-[95vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 relative">
+            <div className="p-8 border-b border-white/[0.06] flex justify-between items-center bg-[#131A2B] relative">
+              <div className="absolute top-0 left-0 w-full h-0.5 bg-emerald-500"></div>
               <div>
                 <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Payment Link</h2>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-1.5"><Link2 className="w-3.5 h-3.5 text-emerald-500" /> Stripe Checkout · valid 24h · fulfils like a normal booking</p>
@@ -1579,7 +1557,7 @@ function DashboardContent() {
                 </section>
 
                 <div className="pt-2 pb-4">
-                  <button type="submit" disabled={isGeneratingLink} className="w-full h-16 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 disabled:from-slate-700 disabled:to-slate-700 disabled:text-slate-500 text-white font-black text-sm uppercase tracking-[0.15em] flex items-center justify-center gap-3 shadow-[0_15px_30px_-5px_rgba(16,185,129,0.4)] transition-all active:scale-[0.98]">
+                  <button type="submit" disabled={isGeneratingLink} className="w-full h-16 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-black text-sm uppercase tracking-[0.15em] flex items-center justify-center gap-3 transition-colors active:scale-[0.98]">
                     {isGeneratingLink
                       ? <><Loader2 className="w-5 h-5 animate-spin" /> Creating secure link…</>
                       : <><Link2 className="w-5 h-5" /> Generate Payment Link{payLink.total_price ? ` — £${Number(payLink.total_price).toFixed(2)}` : ""}</>}
@@ -1592,11 +1570,10 @@ function DashboardContent() {
       )}
 
       {showManualModal && (
-        <div className="fixed inset-0 bg-[#0B1120]/95 backdrop-blur-md z-[300] flex items-center justify-center p-4 sm:p-8 overflow-hidden">
-          <div className="bg-[#0F1523]/95 backdrop-blur-2xl border border-slate-800 w-full max-w-5xl rounded-[2rem] max-h-[95vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 relative">
-            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/40 to-transparent z-20"></div>
-            <div className="p-8 border-b border-slate-800 flex justify-between items-center bg-[#131A2B] relative">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
+        <div className="fixed inset-0 bg-[#060A14]/80 z-[300] flex items-center justify-center p-4 sm:p-8 overflow-hidden">
+          <div className="bg-[#0F1523] border border-white/10 w-full max-w-5xl rounded-2xl max-h-[95vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 relative">
+            <div className="p-8 border-b border-white/[0.06] flex justify-between items-center bg-[#131A2B] relative">
+              <div className="absolute top-0 left-0 w-full h-0.5 bg-blue-600"></div>
               <div>
                 <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Manual Booking</h2>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-1.5"><Database className="w-3.5 h-3.5 text-blue-500" /> Direct Database Injection</p>
@@ -1726,7 +1703,7 @@ function DashboardContent() {
             
             <div className="p-8 bg-[#131A2B] border-t border-slate-800 flex gap-4">
                <button onClick={() => setShowManualModal(false)} className="px-8 py-4 text-slate-400 font-bold text-xs hover:text-white transition-colors">Cancel</button>
-               <button disabled={isSaving} onClick={handleCreateManualBooking} className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 py-4 rounded-xl font-bold text-sm text-white shadow-[0_10px_30px_-5px_rgba(37,99,235,0.5)] transition-all flex items-center justify-center gap-2 active:scale-95">
+               <button disabled={isSaving} onClick={handleCreateManualBooking} className="flex-1 bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-sm text-white transition-colors flex items-center justify-center gap-2 active:scale-95">
                 {isSaving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4"/>} Commit Deployment
               </button>
             </div>
@@ -1736,11 +1713,10 @@ function DashboardContent() {
 
       {/* --- 🟢 MODAL: MODIFY LIVE RECORD --- */}
       {editingBooking && (
-        <div className="fixed inset-0 bg-[#0B1120]/95 backdrop-blur-md z-[300] flex items-center justify-center p-4 sm:p-8 overflow-hidden">
-          <div className="bg-[#0F1523]/95 backdrop-blur-2xl border border-slate-800 w-full max-w-4xl rounded-[2rem] max-h-[95vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 relative">
-            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-amber-500/40 to-transparent z-20"></div>
-            <div className="p-8 border-b border-slate-800 flex justify-between items-center bg-[#131A2B] relative">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-red-500"></div>
+        <div className="fixed inset-0 bg-[#060A14]/80 z-[300] flex items-center justify-center p-4 sm:p-8 overflow-hidden">
+          <div className="bg-[#0F1523] border border-white/10 w-full max-w-4xl rounded-2xl max-h-[95vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 relative">
+            <div className="p-8 border-b border-white/[0.06] flex justify-between items-center bg-[#131A2B] relative">
+              <div className="absolute top-0 left-0 w-full h-0.5 bg-amber-500"></div>
               <div>
                 <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Modify Case</h2>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-1.5"><Settings2 className="w-3.5 h-3.5" /> Override Access: {editingBooking?.booking_ref || 'Unknown'}</p>
@@ -1846,7 +1822,7 @@ function DashboardContent() {
             
             <div className="p-8 bg-[#131A2B] border-t border-slate-800 flex gap-4">
                <button onClick={() => setEditingBooking(null)} className="px-8 py-4 text-slate-400 font-bold text-xs hover:text-white transition-colors">Abandon</button>
-               <button disabled={isSaving} onClick={handleUpdateBooking} className="flex-1 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 py-4 rounded-xl font-bold text-sm text-white shadow-[0_10px_30px_-5px_rgba(245,158,11,0.5)] transition-all flex items-center justify-center gap-2 active:scale-95">
+               <button disabled={isSaving} onClick={handleUpdateBooking} className="flex-1 bg-amber-600 hover:bg-amber-500 py-4 rounded-xl font-bold text-sm text-white transition-colors flex items-center justify-center gap-2 active:scale-95">
                 {isSaving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4"/>} Authorize Update
               </button>
             </div>
@@ -1856,8 +1832,8 @@ function DashboardContent() {
 
       {/* --- 🟢 CONFIRM DIALOG --- */}
       {confirmState && (
-        <div className="fixed inset-0 bg-[#0B1120]/90 backdrop-blur-sm z-[400] flex items-center justify-center p-4">
-          <div className="bg-[#0F1523] border border-slate-800 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-[#060A14]/80 z-[400] flex items-center justify-center p-4">
+          <div className="bg-[#0F1523] border border-white/10 w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-7">
               <div className="flex items-start gap-4">
                 <div className={`w-11 h-11 shrink-0 rounded-xl flex items-center justify-center border ${confirmState.danger ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-blue-500/10 border-blue-500/20 text-blue-400'}`}>
@@ -1873,7 +1849,7 @@ function DashboardContent() {
               <button onClick={() => setConfirmState(null)} className="px-5 py-3 text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-white transition-colors">Cancel</button>
               <button
                 onClick={() => { const fn = confirmState.onConfirm; setConfirmState(null); fn(); }}
-                className={`px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest text-white transition-all active:scale-95 ${confirmState.danger ? 'bg-red-600 hover:bg-red-500 shadow-[0_8px_16px_-4px_rgba(220,38,38,0.4)]' : 'bg-blue-600 hover:bg-blue-500 shadow-[0_8px_16px_-4px_rgba(37,99,235,0.4)]'}`}
+                className={`px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest text-white transition-colors active:scale-95 ${confirmState.danger ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'}`}
               >
                 {confirmState.confirmLabel}
               </button>
@@ -1887,10 +1863,10 @@ function DashboardContent() {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-2xl border shadow-2xl backdrop-blur-xl animate-in slide-in-from-right-8 duration-300 max-w-sm ${
-              t.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-              : t.type === 'error' ? 'bg-red-500/10 border-red-500/30 text-red-300'
-              : 'bg-blue-500/10 border-blue-500/30 text-blue-300'
+            className={`pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-xl border shadow-xl bg-[#131A2B] animate-in slide-in-from-right-8 duration-300 max-w-sm ${
+              t.type === 'success' ? 'border-emerald-500/30 text-emerald-300'
+              : t.type === 'error' ? 'border-red-500/30 text-red-300'
+              : 'border-blue-500/30 text-blue-300'
             }`}
           >
             {t.type === 'success' ? <CheckCircle2 className="w-5 h-5 shrink-0" />
