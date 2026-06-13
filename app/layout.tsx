@@ -6,6 +6,7 @@ import Script from 'next/script';
 import Chatbot from "@/components/Chatbot";
 import PromoBanner from "@/components/PromoBanner";
 import GclidCapture from "@/components/GclidCapture";
+import CookieConsent from "@/components/CookieConsent";
 
 export const metadata: Metadata = {
   title: "AeroPark Direct",
@@ -26,7 +27,44 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="subpixel-antialiased bg-[#F8FAFC]" suppressHydrationWarning>
-        
+
+        {/* 🍪 CONSENT MODE v2 — must run BEFORE gtag.js / Clarity load.
+            Everything defaults to DENIED so no analytics/ad cookies are set
+            until the visitor opts in via the CookieConsent banner. A previously
+            stored "granted" choice is re-applied immediately to avoid flicker.
+            beforeInteractive is hoisted by Next to run ahead of the tags below. */}
+        <Script
+          id="consent-mode-default"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              window.gtag = gtag;
+              gtag('consent', 'default', {
+                ad_storage: 'denied',
+                ad_user_data: 'denied',
+                ad_personalization: 'denied',
+                analytics_storage: 'denied',
+                functionality_storage: 'granted',
+                security_storage: 'granted',
+                wait_for_update: 500
+              });
+              try {
+                var c = JSON.parse(localStorage.getItem('apd_consent_v1') || 'null');
+                if (c) {
+                  gtag('consent', 'update', {
+                    analytics_storage: c.analytics ? 'granted' : 'denied',
+                    ad_storage: c.marketing ? 'granted' : 'denied',
+                    ad_user_data: c.marketing ? 'granted' : 'denied',
+                    ad_personalization: c.marketing ? 'granted' : 'denied'
+                  });
+                }
+              } catch (e) {}
+            `,
+          }}
+        />
+
         {/* Capture Google Ads click id (gclid) into a cookie for server-side conversions */}
         <GclidCapture />
 
@@ -66,17 +104,12 @@ export default function RootLayout({
           }}
         />
 
-        {/* MICROSOFT CLARITY HEATMAPS & RECORDINGS */}
-        <Script id="microsoft-clarity" strategy="afterInteractive">
-          {`
-            (function(c,l,a,r,i,t,y){
-                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-            })(window, document, "clarity", "script", "wssgetz48e");
-          `}
-        </Script>
-        
+        {/* Microsoft Clarity is now loaded by <CookieConsent /> only after the
+            visitor grants Analytics consent (see components/CookieConsent.tsx). */}
+
+        {/* 🍪 Cookie consent banner — drives Google Consent Mode v2 + Clarity */}
+        <CookieConsent />
+
       </body>
     </html>
   );
