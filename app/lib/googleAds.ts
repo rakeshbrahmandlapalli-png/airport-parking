@@ -14,12 +14,18 @@ import { logger } from "@/app/lib/logger";
 //   GOOGLE_ADS_CUSTOMER_ID          target account id, digits only (no dashes)
 //   GOOGLE_ADS_CONVERSION_ACTION_ID numeric id of the conversion action to fill
 //   GOOGLE_ADS_LOGIN_CUSTOMER_ID    (optional) MCC/manager id, digits only
+//   GOOGLE_ADS_API_VERSION          (optional) e.g. "v23" — override when Google
+//                                   ships a new version, no code change needed.
 //
 // NOTE: GOOGLE_ADS_CONVERSION_ACTION_ID is the numeric conversion *action* id
 // (Tools → Conversions → click the action → the number in the URL). It is NOT
 // the gtag label ("lAsCCJO-0LYcEIDbntVD") used on the client side.
 
-const GOOGLE_ADS_API_VERSION = "v18";
+// Google Ads REST API version (major version only, used in the URL path).
+// Default tracks the current supported version (v23 as of mid-2026); Google
+// sunsets old versions ~yearly, so set GOOGLE_ADS_API_VERSION in the env to bump
+// it without redeploying code. https://developers.google.com/google-ads/api/docs/release-notes
+const GOOGLE_ADS_API_VERSION = process.env.GOOGLE_ADS_API_VERSION || "v23";
 
 interface OfflineConversionInput {
   gclid: string;
