@@ -29,7 +29,7 @@ type ResultsCache = {
   livePrices: Record<string, number | null>;
 };
 function resultsCacheKey(sp: URLSearchParams): string {
-  return `apd_results_v1|${sp.get("airport") || ""}|${sp.get("dropoffDate") || ""}|${sp.get("pickupDate") || ""}|${sp.get("dropoffTime") || ""}|${sp.get("pickupTime") || ""}|${sp.get("type") || ""}`;
+  return `apd_results_v2|${sp.get("airport") || ""}|${sp.get("dropoffDate") || ""}|${sp.get("pickupDate") || ""}|${sp.get("dropoffTime") || ""}|${sp.get("pickupTime") || ""}|${sp.get("type") || ""}`;
 }
 function readResultsCache(sp: URLSearchParams): ResultsCache | null {
   if (typeof window === "undefined") return null;
@@ -347,7 +347,34 @@ function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
       setLiveLoadingIds(new Set());
       setLoading(false);
       getLaunchTimerConfig().then(setTimerConfig).catch(() => {});
-      return; // cache hit → render instantly, NO fetch, NO loop
+
+      // STALE-WHILE-REVALIDATE — render the cached snapshot instantly (no flash),
+      // then silently refresh the company records + pricing settings. This is a
+      // cheap Supabase read (NOT the paid live gateway), so any admin change —
+      // price_modifier, dynamic_surcharge_percent, pivot rates, markup — shows up
+      // on the next render without waiting for the cache to expire. The expensive
+      // live-API prices are reused from the cached snapshot, so we never re-bill.
+      (async () => {
+        try {
+          const [compRes, freshSettings] = await Promise.all([
+            supabase.from("companies").select("*"),
+            loadPricingSettings(supabase),
+          ]);
+          const freshCompanies: any[] = compRes.data || [];
+          if (!freshCompanies.length) return;
+          setCompanies(freshCompanies);
+          setSettings(freshSettings);
+          const next: ResultsCache = {
+            companies: freshCompanies,
+            settings: freshSettings,
+            pinnedOrder: cached.pinnedOrder,
+            livePrices: cached.livePrices || {},
+          };
+          apiCache.set(cacheKey, next);
+          writeResultsCache(searchParams, next);
+        } catch { /* keep showing cached data on any refresh error */ }
+      })();
+      return; // cache hit → render instantly; refresh happens in background
     }
 
     // 2. FETCH LOCK — never run two fetches concurrently.
@@ -488,11 +515,11 @@ function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
               } finally {
                 if (!signal.aborted) {
                   // Apply the single raw rate to every provider on this token,
-                  // each with its own dynamic surcharge.
+                  // Store the raw gateway price per company — surcharge is applied
+                  // in processedCompanies so the modifier→surcharge order is preserved.
                   const updates: Record<string, number | null> = {};
                   for (const c of group) {
-                    const surcharge = Number(c.dynamic_surcharge_percent || 0);
-                    updates[c.id] = rawPrice != null && rawPrice > 0 ? rawPrice * (1 + surcharge / 100) : null;
+                    updates[c.id] = rawPrice != null && rawPrice > 0 ? rawPrice : null;
                   }
                   Object.assign(liveAccum, updates);
                   setLivePrices((prev) => ({ ...prev, ...updates }));
@@ -546,10 +573,13 @@ function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
         const adjustedLive = requestDone ? livePrices[id] : null;
 
         if (adjustedLive != null && adjustedLive > 0) {
-          const modifier = Number(c.price_modifier || 1);
-          const markup   = settings.markupEnabled ? (1 + (settings.markupPercent || 10) / 100) : 1;
-          const final    = adjustedLive * modifier * markup;
-          const original = adjustedLive * markup; 
+          // adjustedLive is the raw gateway price (no surcharge baked in).
+          // Order: modifier first → surcharge → markup, matching pricing.ts.
+          const modifier      = Number(c.price_modifier || 1);
+          const surchargeRate = Number(c.dynamic_surcharge_percent || 0) / 100;
+          const markup        = settings.markupEnabled ? (1 + (settings.markupPercent || 10) / 100) : 1;
+          const original = adjustedLive * (1 + surchargeRate) * markup;          // no modifier → strikethrough price
+          const final    = adjustedLive * modifier * (1 + surchargeRate) * markup; // modifier → surcharge → markup
           priceObj = { original, final, modifier, source: "api" };
         } else {
           // If still loading or API returned nothing/timed out → Fail Closed (price box displays Unavailable)

@@ -268,13 +268,18 @@ export async function POST(req: Request) {
     }
 
     // ── 9. Add fast track (server-priced — 100% ours) ─────────────────────────
+    // Price comes from Platform Settings (settings table), falling back to the
+    // hardcoded default so it never breaks if the row is missing.
+    const fastTrackPrice = Number(settings.fastTrackPrice) > 0 ? Number(settings.fastTrackPrice) : FAST_TRACK_PRICE;
+    const loungePrice    = Number(settings.loungePrice)    > 0 ? Number(settings.loungePrice)    : LOUNGE_PRICE;
+
     if (fastTrackCount > 0) {
-      serverTotal = serverTotal + fastTrackCount * FAST_TRACK_PRICE;
+      serverTotal = serverTotal + fastTrackCount * fastTrackPrice;
     }
 
-    // ── 10. Add VIP Lounge if selected (£35 flat) ─────────────────────────────
+    // ── 10. Add VIP Lounge if selected ────────────────────────────────────────
     if (metaStr(metadata.lounge) === "yes") {
-      serverTotal = serverTotal + LOUNGE_PRICE;
+      serverTotal = serverTotal + loungePrice;
     }
 
     // ── 11. Final rounding ────────────────────────────────────────────────────
@@ -289,8 +294,9 @@ export async function POST(req: Request) {
 
     // ── 12. Price mismatch guard ───────────────────────────────────────────────
     const clientTotal = roundPennies(Number(price) || 0);
+    const priceTolerance = Number(settings.priceTolerance) > 0 ? Number(settings.priceTolerance) : PRICE_TOLERANCE;
 
-    if (Math.abs(clientTotal - serverTotal) > PRICE_TOLERANCE) {
+    if (Math.abs(clientTotal - serverTotal) > priceTolerance) {
       logger.warn("Price mismatch rejected", {
         clientTotal,
         serverTotal,

@@ -82,12 +82,18 @@ export async function POST(req: Request) {
       }
     }
 
-    serverTotal = serverTotal + fastTrackCount * FAST_TRACK_PRICE;
-    if (metadata?.lounge === "yes") serverTotal += 35.0; 
+    // Add-on prices + tolerance come from Platform Settings (settings table),
+    // falling back to defaults so a missing row never breaks checkout.
+    const fastTrackPrice = Number(settings.fastTrackPrice) > 0 ? Number(settings.fastTrackPrice) : FAST_TRACK_PRICE;
+    const loungePrice    = Number(settings.loungePrice)    > 0 ? Number(settings.loungePrice)    : 35.0;
+    const priceTolerance = Number(settings.priceTolerance) > 0 ? Number(settings.priceTolerance) : 2.0;
+
+    serverTotal = serverTotal + fastTrackCount * fastTrackPrice;
+    if (metadata?.lounge === "yes") serverTotal += loungePrice;
     serverTotal = Math.round(serverTotal * 100) / 100;
-    
+
     const clientTotal = Number(price) || 0;
-    if (Math.abs(clientTotal - serverTotal) > 2.00) {
+    if (Math.abs(clientTotal - serverTotal) > priceTolerance) {
       return NextResponse.json({ error: "The price has updated since you loaded this page. Please go back and re-confirm your booking before paying.", serverPrice: serverTotal }, { status: 409 });
     }
 

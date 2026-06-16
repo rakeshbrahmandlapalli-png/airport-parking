@@ -13,6 +13,11 @@ export interface PricingSettings {
   autoSurgeEnabled?: boolean;
   autoSurgeMaxPercent?: number;
   autoSurgeExcludedIds?: string[]; // pivot companies that opt OUT of auto-surge
+  // 🟢 Add-on prices + checkout guard — driven by the admin Platform Settings page
+  // (settings table) instead of being hardcoded, so editing them takes effect live.
+  fastTrackPrice?: number;  // £ per person
+  loungePrice?: number;     // £ per booking
+  priceTolerance?: number;  // £ max client/server price drift before checkout rejects
 }
 
 export const DEFAULT_SETTINGS: PricingSettings = {
@@ -21,6 +26,9 @@ export const DEFAULT_SETTINGS: PricingSettings = {
   autoSurgeEnabled: false,
   autoSurgeMaxPercent: 15,
   autoSurgeExcludedIds: [],
+  fastTrackPrice: FAST_TRACK_PRICE,
+  loungePrice: 35,
+  priceTolerance: 0.5,
 };
 
 // ── Deterministic auto-surge percent (0 … maxPercent) ────────────────────────
@@ -77,7 +85,7 @@ export async function loadPricingSettings(supa: any): Promise<PricingSettings> {
     const { data } = await supa
       .from("settings")
       .select("key, value")
-      .in("key", ["markup_enabled", "markup_percent", "auto_surge_enabled", "auto_surge_max_percent", "auto_surge_excluded_ids"]);
+      .in("key", ["markup_enabled", "markup_percent", "auto_surge_enabled", "auto_surge_max_percent", "auto_surge_excluded_ids", "fast_track_price", "lounge_price", "price_tolerance"]);
     const get = (k: string) => data?.find((r: any) => r.key === k)?.value;
     if (get("markup_enabled") != null) out.markupEnabled = get("markup_enabled") === "true";
     if (get("markup_percent") != null) out.markupPercent = Number(get("markup_percent")) || out.markupPercent;
@@ -85,6 +93,10 @@ export async function loadPricingSettings(supa: any): Promise<PricingSettings> {
     out.autoSurgeMaxPercent = Number(get("auto_surge_max_percent")) || 0;
     try { out.autoSurgeExcludedIds = JSON.parse(get("auto_surge_excluded_ids") || "[]"); }
     catch { out.autoSurgeExcludedIds = []; }
+    // Add-on prices + tolerance. `> 0` guards against blank/0 rows wiping defaults.
+    if (Number(get("fast_track_price")) > 0) out.fastTrackPrice = Number(get("fast_track_price"));
+    if (Number(get("lounge_price")) > 0)     out.loungePrice    = Number(get("lounge_price"));
+    if (Number(get("price_tolerance")) > 0)  out.priceTolerance = Number(get("price_tolerance"));
   } catch { /* fall back to defaults */ }
   return out;
 }
@@ -245,13 +257,8 @@ export function computePrice(opts: {
     }
   }
 
-  // 🟢 Dynamic surcharge applies to every real base (API + pivots), not the
-  // generic fallback. Previously it was only applied in the API branch, so
-  // pivot pricing silently ignored dynamic_surcharge_percent.
-  if (source !== "fallback") base = base * (1 + surcharge / 100);
-
   // 🟢 Automatic surge — pivot companies only, when globally enabled and this
-  // company hasn't opted out. Layered on top of the manual surcharge.
+  // company hasn't opted out. Applied to the raw base before modifier/surcharge.
   let autoSurgePercent = 0;
   if (
     source === "pivots" &&
@@ -268,11 +275,20 @@ export function computePrice(opts: {
     base = base * (1 + autoSurgePercent / 100);
   }
 
-  // Final validation: if still 0 or negative, mark as failed
   if (base <= 0) ok = false;
 
-  const original = base * markupFactor;          
-  const final = base * modifier * markupFactor;  
+  // ── Strict calculation order: modifier → surcharge → markup ─────────────────
+  // 1. modifier (discount) is applied to the raw base first.
+  // 2. dynamic_surcharge_percent is then applied to the already-modified price.
+  // 3. global markup is applied last.
+  //
+  // original = base × (1+surcharge) × markup   ← "was" price; shown as strikethrough when modifier < 1
+  // final    = base × modifier × (1+surcharge) × markup   ← actual customer charge
+  //
+  // Fallback prices carry no surcharge (no company record → no surcharge value).
+  const surchargeRate = source !== "fallback" ? surcharge / 100 : 0;
+  const original = base * (1 + surchargeRate) * markupFactor;
+  const final    = base * modifier * (1 + surchargeRate) * markupFactor;
 
   return { base, original, final, modifier, isDynamic, ok, source, autoSurgePercent };
 }
