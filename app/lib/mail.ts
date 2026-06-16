@@ -18,8 +18,24 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// Fast-track price kept in sync with the checkout route constant
-const FAST_TRACK_PRICE = 8.00;
+// Fast-track price fallback — the live value is read from Platform Settings
+// (settings table) at send time so it tracks the admin's configured price.
+const FAST_TRACK_PRICE_DEFAULT = 8.00;
+
+/** Read the live fast-track price from the settings table (admin-configurable). */
+async function getFastTrackPrice(): Promise<number> {
+  try {
+    const { data } = await supabase
+      .from("settings")
+      .select("value")
+      .eq("key", "fast_track_price")
+      .maybeSingle();
+    const v = Number(data?.value);
+    return v > 0 ? v : FAST_TRACK_PRICE_DEFAULT;
+  } catch {
+    return FAST_TRACK_PRICE_DEFAULT;
+  }
+}
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -54,6 +70,23 @@ function toTelLink(phone: string): string {
 function str(v: unknown, fallback = "N/A"): string {
   const s = String(v ?? "").trim();
   return s || fallback;
+}
+
+// Escape HTML so attacker-controlled booking fields (name, plate, car, flight…)
+// can't inject markup/links into the HTML emails we send to operators & admins.
+// Use for any user-supplied value placed inside an email HTML body (NOT subjects,
+// which are plain text).
+function escapeHtml(v: unknown): string {
+  return String(v ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+/** str() + HTML escaping, for user data rendered into an email body. */
+function escH(v: unknown, fallback = "N/A"): string {
+  return escapeHtml(str(v, fallback));
 }
 
 /**
@@ -350,7 +383,7 @@ export function buildReceiptHtml(p: ReceiptHtmlParams): string {
     : "";
 
   const firstName = String(p.booking.full_name || "").trim().split(" ")[0];
-  const greeting  = firstName ? `You're all set, ${firstName}! ✈️` : "You're all set! ✈️";
+  const greeting  = firstName ? `You're all set, ${escapeHtml(firstName)}! ✈️` : "You're all set! ✈️";
   const provider  = str(p.company?.name, "AeroPark Direct");
 
   return `<!DOCTYPE html>
@@ -448,7 +481,7 @@ export function buildReceiptHtml(p: ReceiptHtmlParams): string {
                   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
                     <td width="50%" valign="top">
                       <p style="margin:0;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:800;">Vehicle</p>
-                      <p style="margin:6px 0 0;font-size:14px;font-weight:800;color:#0f172a;">🚗 ${p.licencePlate}</p>
+                      <p style="margin:6px 0 0;font-size:14px;font-weight:800;color:#0f172a;">🚗 ${escapeHtml(p.licencePlate)}</p>
                     </td>
                     <td width="50%" valign="top">
                       <p style="margin:0;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:800;">Service</p>
@@ -545,10 +578,10 @@ export async function sendAmendmentAlerts(booking: any, company: any): Promise<v
       html: `
         <div style="font-family:sans-serif;padding:20px;max-width:600px;margin:0 auto;">
           <h2 style="color:#eab308;margin-bottom:10px;">⚠️ Action Required: Booking Amended</h2>
-          <p>Customer <strong>${str(booking.full_name)}</strong> just changed their dates.</p>
+          <p>Customer <strong>${escH(booking.full_name)}</strong> just changed their dates.</p>
           <div style="background:#f8fafc;padding:20px;border-radius:10px;border:1px solid #e2e8f0;margin-top:20px;">
-            <p><strong>Ref:</strong> ${booking.booking_ref}</p>
-            <p><strong>Vehicle:</strong> ${str(booking.license_plate)}</p>
+            <p><strong>Ref:</strong> ${escH(booking.booking_ref)}</p>
+            <p><strong>Vehicle:</strong> ${escH(booking.license_plate)}</p>
             <p style="color:#2563eb;"><strong>New Drop-off:</strong> ${dropDateFmt} @ ${str(booking.dropoff_time, "TBC")}</p>
             <p style="color:#2563eb;"><strong>New Return:</strong>   ${pickDateFmt} @ ${str(booking.pickup_time,  "TBC")}</p>
           </div>
@@ -634,7 +667,7 @@ export function buildReviewHtml(firstName: string, bookingRef: string): string {
         <tr>
           <td style="padding:38px 32px 8px;text-align:center;">
             <p style="margin:0 0 14px;font-size:30px;">🚗 ✈️</p>
-            <h1 style="margin:0 0 12px;font-size:24px;font-weight:900;color:#0f172a;">Welcome back, ${firstName}.</h1>
+            <h1 style="margin:0 0 12px;font-size:24px;font-weight:900;color:#0f172a;">Welcome back, ${escapeHtml(firstName)}.</h1>
             <p style="margin:0;font-size:15px;line-height:1.6;color:#475569;">
               Your car is home safe and your trip is complete. It would mean a great deal if you'd share how we did —
               your feedback helps the next traveller park with total confidence.
@@ -698,8 +731,8 @@ export function buildReviewHtml(firstName: string, bookingRef: string): string {
 /**
  * Sends booking details to the parking provider.
  * Shows parking-only total — fast track revenue is hidden from the provider.
- * FIX: fast track price was hardcoded as £8 here but defined as a constant
- *      in the checkout route. Now uses the shared FAST_TRACK_PRICE constant.
+ * The fast-track price is read live from Platform Settings (getFastTrackPrice)
+ * so the parking-only figure matches the admin's configured add-on price.
  */
 export async function sendProviderNotification(
   booking: any,
@@ -715,7 +748,7 @@ export async function sendProviderNotification(
     const pickDate = formatEmailDate(booking.pickup_date);
 
     const fastTrackCount   = Number(booking.fast_track_count || 0);
-    const fastTrackRevenue = fastTrackCount * FAST_TRACK_PRICE;
+    const fastTrackRevenue = fastTrackCount * (await getFastTrackPrice());
     // FIX: parseFloat on undefined returns NaN — use Number() with fallback
     const totalPaid        = Number(booking.total_price || 0);
     const parkingTotal     = Math.max(0, totalPaid - fastTrackRevenue).toFixed(2);
@@ -740,15 +773,15 @@ export async function sendProviderNotification(
           <table border="0" cellpadding="8" cellspacing="0" width="100%" style="border-collapse:collapse;">
             <tr style="background-color:#f8fafc;"><td width="35%"><strong>Booking Ref:</strong></td><td>${booking.booking_ref}</td></tr>
             <tr><td><strong>Status:</strong></td><td><span style="background-color:#dcfce7;color:#166534;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:bold;text-transform:uppercase;">${str(booking.status, "Confirmed")}</span></td></tr>
-            <tr style="background-color:#f8fafc;"><td><strong>Customer Name:</strong></td><td>${str(booking.full_name)}</td></tr>
-            <tr><td><strong>Phone Number:</strong></td><td>${str(booking.phone_number)}</td></tr>
-            <tr style="background-color:#f8fafc;"><td><strong>Car Details:</strong></td><td>${str(booking.car_make)} (${str(booking.car_color)})</td></tr>
-            <tr><td><strong>Registration:</strong></td><td><strong>${str(booking.license_plate)}</strong></td></tr>
-            <tr style="background-color:#f8fafc;"><td><strong>Airport:</strong></td><td>${str(booking.airport, "Luton Airport (LTN)")}</td></tr>
+            <tr style="background-color:#f8fafc;"><td><strong>Customer Name:</strong></td><td>${escH(booking.full_name)}</td></tr>
+            <tr><td><strong>Phone Number:</strong></td><td>${escH(booking.phone_number)}</td></tr>
+            <tr style="background-color:#f8fafc;"><td><strong>Car Details:</strong></td><td>${escH(booking.car_make)} (${escH(booking.car_color)})</td></tr>
+            <tr><td><strong>Registration:</strong></td><td><strong>${escH(booking.license_plate)}</strong></td></tr>
+            <tr style="background-color:#f8fafc;"><td><strong>Airport:</strong></td><td>${escH(booking.airport, "Luton Airport (LTN)")}</td></tr>
             <tr><td><strong>Drop-off:</strong></td><td>${dropDate} at ${dropTime}</td></tr>
             <tr style="background-color:#f8fafc;"><td><strong>Pick-up:</strong></td><td>${pickDate} at ${pickTime}</td></tr>
-            <tr><td><strong>Return Flight:</strong></td><td>${str(booking.flight_number, "N/A")}</td></tr>
-            <tr style="background-color:#f8fafc;"><td><strong>Service Type:</strong></td><td>${str(booking.service_type, company.name)}</td></tr>
+            <tr><td><strong>Return Flight:</strong></td><td>${escH(booking.flight_number, "N/A")}</td></tr>
+            <tr style="background-color:#f8fafc;"><td><strong>Service Type:</strong></td><td>${escH(booking.service_type, company.name)}</td></tr>
             <tr style="background-color:#eff6ff;border-top:2px solid #2563eb;">
               <td><strong>Total Paid for Parking:</strong></td>
               <td><strong style="color:#1e40af;font-size:18px;">£${parkingTotal}</strong></td>
