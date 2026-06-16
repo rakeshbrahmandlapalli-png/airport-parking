@@ -3,6 +3,7 @@
 import { logger } from "@/app/lib/logger";
 import { useState, useEffect, useMemo, Suspense } from "react";
 import { supabase } from "@/app/lib/supabase";
+import { loadPricingSettings } from "@/app/lib/pricing";
 import { recordAdminAction } from "@/app/lib/audit-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -17,7 +18,7 @@ import {
 // ── Fee constants ──────────────────────────────────────────────
 const STRIPE_PERCENT = 0.015;   // UK standard 1.5%
 const STRIPE_FIXED = 0.20;      // + 20p per transaction
-const FAST_TRACK_PRICE = 8.0;   // add-ons are 100% yours
+const FAST_TRACK_PRICE_DEFAULT = 8.0;   // fallback if the live setting is missing
 
 type RangeKey = "all" | "month" | "week" | "today" | "custom";
 
@@ -44,6 +45,7 @@ function FinancialsContent() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [companies, setCompanies] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]); // 🟢 NEW: Expenses State
+  const [fastTrackPrice, setFastTrackPrice] = useState(FAST_TRACK_PRICE_DEFAULT); // live add-on price from Platform Settings
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -86,14 +88,16 @@ function FinancialsContent() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [bRes, cRes, eRes] = await Promise.all([
+    const [bRes, cRes, eRes, settings] = await Promise.all([
       supabase.from("bookings").select("*").neq("status", "cancelled").order("created_at", { ascending: false }),
       supabase.from("companies").select("*"),
-      supabase.from("expenses").select("*").order("date", { ascending: false }) // 🟢 NEW: Fetch expenses
+      supabase.from("expenses").select("*").order("date", { ascending: false }), // 🟢 NEW: Fetch expenses
+      loadPricingSettings(supabase),
     ]);
     if (bRes.data) setBookings(bRes.data);
     if (cRes.data) setCompanies(cRes.data);
     if (eRes.data) setExpenses(eRes.data);
+    if (Number(settings.fastTrackPrice) > 0) setFastTrackPrice(Number(settings.fastTrackPrice));
     
     if (bRes.error) logger.error("financials bookings:", bRes.error);
     if (cRes.error) logger.error("financials companies:", cRes.error);
@@ -210,7 +214,7 @@ function FinancialsContent() {
       })
       .map((b) => {
         const total = Number(b.total_price || 0);
-        const addOns = Number(b.fast_track_count || 0) * FAST_TRACK_PRICE;
+        const addOns = Number(b.fast_track_count || 0) * fastTrackPrice;
         const parkingGross = Math.max(0, total - addOns);
         const commPct = commissionFor(b.company_id);
         const yourCommission = parkingGross * (commPct / 100);
@@ -227,7 +231,7 @@ function FinancialsContent() {
 
     return rows;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookings, companies, startDate, endDate]);
+  }, [bookings, companies, startDate, endDate, fastTrackPrice]);
 
   // 🟢 NEW: Filter Expenses based on date range
   const filteredExpenses = useMemo(() => {
@@ -302,7 +306,7 @@ function FinancialsContent() {
       })
       .map((b) => {
         const total = Number(b.total_price || 0);
-        const addOns = Number(b.fast_track_count || 0) * FAST_TRACK_PRICE;
+        const addOns = Number(b.fast_track_count || 0) * fastTrackPrice;
         const parkingGross = Math.max(0, total - addOns);
         const commPct = commissionFor(b.company_id);
         const operatorPayout = parkingGross - parkingGross * (commPct / 100);
@@ -334,7 +338,7 @@ function FinancialsContent() {
 
     return { lines, totalOwed, grossSold, parkingGrossTotal, count: lines.length, operatorLabel, periodLabel };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookings, companies, invoiceOperatorId, invFrom, invTo, invBasis]);
+  }, [bookings, companies, invoiceOperatorId, invFrom, invTo, invBasis, fastTrackPrice]);
 
   // Operators that actually have bookings (for the invoice dropdown)
   const operatorOptions = useMemo(() => {

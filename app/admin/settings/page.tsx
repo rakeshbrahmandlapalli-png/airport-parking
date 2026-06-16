@@ -164,7 +164,10 @@ export default function SettingsPage() {
 
   // ─── FETCH API COMPANIES ──────────────────────────────────────────────────
   const fetchApiCompanies = useCallback(async () => {
-    const { data } = await supabase.from("companies").select("id, name, api_token, dynamic_surcharge_percent, price_modifier").not("api_token", "is", null).neq("api_token", "");
+    // Don't pull the secret api_token into the browser. The filter still narrows
+    // to API partners server-side; the health check identifies them by id and the
+    // /api/parking-api proxy resolves the token from the id server-side.
+    const { data } = await supabase.from("companies").select("id, name, dynamic_surcharge_percent, price_modifier").not("api_token", "is", null).neq("api_token", "");
     if (data) setApiCompanies(data);
   }, []);
 
@@ -200,9 +203,32 @@ export default function SettingsPage() {
     setHasUnsaved(changed);
   }, [markupEnabled, markupPercent, fastTrackPrice, loungePrice, priceTolerance, slotsClaimed, slotsTotal, timerEnabled, timerHours, timerBadge, timerTitle, timerSubtitle, timerBenefitTitle, timerBenefitValue, timerBenefitNote, autoSurgeEnabled, autoSurgeMax, surgeExcluded, loading]);
 
+  // ─── ⌘/Ctrl+S TO SAVE ──────────────────────────────────────────────────────
+  // Ref keeps the handler pointing at the latest closure (avoids stale state).
+  const saveRef = useRef<() => void>(() => {});
+  useEffect(() => { saveRef.current = () => { if (hasUnsaved && !isSaving) handleSave(); }; });
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        saveRef.current();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // ─── WARN BEFORE LEAVING WITH UNSAVED CHANGES ──────────────────────────────
+  useEffect(() => {
+    if (!hasUnsaved) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [hasUnsaved]);
+
   // ─── SAVE ─────────────────────────────────────────────────────────────────
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     setIsSaving(true);
     setSaved(false);
     setSaveError(null);
@@ -335,7 +361,7 @@ export default function SettingsPage() {
           const res = await fetch("/api/parking-api", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token_no: c.api_token, drop_date: dropStr, drop_time: "09:00", return_date: pickStr, return_time: "09:00" }),
+            body: JSON.stringify({ companyId: c.id, drop_date: dropStr, drop_time: "09:00", return_date: pickStr, return_time: "09:00" }),
           });
           const data = await res.json();
           const rates = data.rates || [];
@@ -373,124 +399,106 @@ export default function SettingsPage() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0B1120] via-[#0A0E1A] to-[#0B1120] flex flex-col items-center justify-center text-white relative overflow-hidden">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px]"></div>
-      <Plane className="w-10 h-10 text-blue-500 animate-pulse rotate-45 relative z-10" />
-      <p className="font-black text-slate-400 tracking-widest uppercase text-xs mt-6 relative z-10">Loading System Config...</p>
+    <div className="min-h-screen bg-[#0B1120] flex flex-col items-center justify-center text-white">
+      <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+      <p className="font-semibold text-zinc-500 tracking-widest uppercase text-xs mt-5">Loading system config…</p>
     </div>
   );
 
-  const inputCls = "w-full bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-xl font-black text-white outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white]";
-  const labelCls = "text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest mb-2";
-  const sectionHeader = "p-6 md:p-8 border-b border-slate-800 bg-[#0F1523] flex items-center gap-4";
+  const inputCls = "w-full bg-[#0B1120] border border-white/[0.06] hover:border-white/15 rounded-lg px-4 py-3 text-lg font-black text-white outline-none focus:ring-1 focus:ring-blue-500/40 focus:border-blue-500/40 transition-colors shadow-[0_0_0_1000px_#0B1120_inset] [-webkit-text-fill-color:white]";
+  const labelCls = "text-[10px] font-semibold uppercase text-zinc-500 block ml-0.5 tracking-[0.15em] mb-2";
+  const sectionHeader = "p-5 md:p-6 border-b border-white/[0.06] flex items-center gap-3";
 
   const previewFinal = markupEnabled ? previewBase * (1 + markupPercent / 100) : previewBase;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0B1120] via-[#0A0E1A] to-[#0B1120] font-sans flex flex-col md:flex-row overflow-hidden text-slate-100 selection:bg-blue-600/30 selection:text-white antialiased relative">
+    <div className="min-h-screen bg-[#0B1120] font-sans flex flex-col md:flex-row text-slate-100 antialiased selection:bg-blue-600/30">
 
-      {/* 🌌 AMBIENT BACKGROUND GLOW LAYERS */}
-      <div className="fixed top-[-200px] left-[200px] w-[600px] h-[600px] bg-blue-600/8 rounded-full blur-[140px] pointer-events-none z-0"></div>
-      <div className="fixed bottom-[-200px] right-[100px] w-[500px] h-[500px] bg-indigo-600/8 rounded-full blur-[140px] pointer-events-none z-0"></div>
-      <div className="fixed top-[40%] right-[30%] w-[400px] h-[400px] bg-emerald-600/5 rounded-full blur-[120px] pointer-events-none z-0"></div>
-
-      {/* ── 🟢 PREMIUM SIDEBAR ──────────────────────────────────────────── */}
-      <aside className="w-full md:w-64 bg-[#0F1523]/90 backdrop-blur-xl text-slate-400 hidden md:flex flex-col sticky top-0 h-screen border-r border-slate-800/80 shadow-2xl z-50 shrink-0 relative">
-        <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-blue-500/20 to-transparent"></div>
-        <div className="p-8 flex items-center gap-4 text-white">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-600/30 to-blue-600/5 rounded-xl flex items-center justify-center border border-blue-500/30 shadow-[0_0_20px_rgba(37,99,235,0.25)]">
-            <Plane className="w-6 h-6 text-blue-400 rotate-45 drop-shadow-[0_0_6px_rgba(59,130,246,0.6)]" />
+      {/* ── SIDEBAR ──────────────────────────────────────────── */}
+      <aside className="w-full md:w-60 bg-[#0F1523] text-zinc-400 hidden md:flex flex-col sticky top-0 h-screen border-r border-white/[0.06] z-50 shrink-0">
+        <div className="px-6 py-7 flex items-center gap-3 text-white">
+          <div className="w-9 h-9 bg-blue-600/15 rounded-lg flex items-center justify-center border border-blue-500/30">
+            <Plane className="w-5 h-5 text-blue-400 rotate-45" />
           </div>
-          <span className="font-black text-xl tracking-tighter uppercase">OPS <span className="text-blue-500 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]">CENTER</span></span>
+          <span className="font-black text-lg tracking-tight uppercase">OPS <span className="text-blue-500">CENTER</span></span>
         </div>
-        <nav className="px-5 space-y-3 flex-grow mt-6 font-bold text-sm">
-          <Link href="/admin"          className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50"><LayoutDashboard className="w-5 h-5 text-slate-500" /> Live Board</Link>
-          <Link href="/admin/companies" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50"><Building2 className="w-5 h-5 text-slate-500" /> Partner Network</Link>
-          <Link href="/admin/promos"   className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50"><Tags className="w-5 h-5 text-slate-500" /> Promo Manager</Link>
-          <Link href="/admin/financials" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50"><PiggyBank className="w-5 h-5 text-slate-500" /> Financials</Link>
-          <Link href="/admin/activity" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50"><Activity className="w-5 h-5 text-slate-500" /> Activity Ledger</Link>
-          <Link href="/admin/settings" className="flex items-center gap-4 px-5 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl shadow-[0_10px_30px_-5px_rgba(37,99,235,0.5)] transition-all hover:shadow-[0_10px_40px_-5px_rgba(37,99,235,0.7)] hover:-translate-y-0.5 border-t border-slate-800/50 mt-4 pt-6 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-            <Settings2 className="w-5 h-5" /> Platform Settings
-          </Link>
+        <nav className="px-3 space-y-1 flex-grow mt-2 font-semibold text-[13px]">
+          <Link href="/admin"          className="flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:bg-white/[0.04] hover:text-white rounded-lg transition-colors"><LayoutDashboard className="w-4 h-4 text-zinc-500" /> Live Board</Link>
+          <Link href="/admin/companies" className="flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:bg-white/[0.04] hover:text-white rounded-lg transition-colors"><Building2 className="w-4 h-4 text-zinc-500" /> Partner Network</Link>
+          <Link href="/admin/promos"   className="flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:bg-white/[0.04] hover:text-white rounded-lg transition-colors"><Tags className="w-4 h-4 text-zinc-500" /> Promo Manager</Link>
+          <Link href="/admin/financials" className="flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:bg-white/[0.04] hover:text-white rounded-lg transition-colors"><PiggyBank className="w-4 h-4 text-zinc-500" /> Financials</Link>
+          <Link href="/admin/activity" className="flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:bg-white/[0.04] hover:text-white rounded-lg transition-colors"><Activity className="w-4 h-4 text-zinc-500" /> Activity Ledger</Link>
+          <Link href="/admin/settings" className="flex items-center gap-3 px-4 py-2.5 bg-blue-600 text-white rounded-lg transition-colors border-t border-white/[0.06] mt-3 pt-4"><Settings2 className="w-4 h-4" /> Platform Settings</Link>
         </nav>
-        <div className="p-6">
-          <button type="button" onClick={handleLogout} className="flex items-center gap-4 text-sm font-bold hover:text-red-400 transition-colors w-full text-left px-5 py-4 group bg-slate-900/50 rounded-xl border border-slate-800/80 hover:border-red-500/30 hover:shadow-[0_0_20px_-8px_rgba(239,68,68,0.4)]">
-            <LogOut className="w-5 h-5 text-slate-500 group-hover:text-red-500 transition-colors" /> Secure Logout
+        <div className="p-4">
+          <button type="button" onClick={handleLogout} className="flex items-center gap-3 text-[13px] font-semibold text-zinc-400 hover:text-red-400 transition-colors w-full text-left px-4 py-2.5 group rounded-lg border border-white/[0.06] hover:border-red-500/30">
+            <LogOut className="w-4 h-4 text-zinc-500 group-hover:text-red-500 transition-colors" /> Secure Logout
           </button>
         </div>
       </aside>
 
       {/* ── MAIN ────────────────────────────────────────────────────────── */}
-      <main className="flex-1 p-4 md:p-8 lg:p-12 w-full overflow-y-auto h-screen relative pb-32 md:pb-12 custom-scrollbar z-10">
+      <main className="flex-1 p-4 md:p-8 w-full overflow-y-auto h-screen pb-32 md:pb-10 custom-scrollbar">
 
         {/* MOBILE HEADER */}
-        <div className="md:hidden flex items-center justify-between mb-8 bg-[#131A2B]/80 backdrop-blur-xl p-5 rounded-3xl border border-slate-800 shadow-2xl">
-          <div className="flex items-center gap-3 font-black text-xl uppercase tracking-tighter text-white">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-500 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(37,99,235,0.5)]">
-              <Plane className="w-6 h-6 text-white rotate-45" />
+        <div className="md:hidden flex items-center justify-between mb-6 bg-[#0F1523] p-4 rounded-xl border border-white/[0.06]">
+          <div className="flex items-center gap-3 font-black text-lg uppercase tracking-tight text-white">
+            <div className="w-9 h-9 bg-blue-600/15 rounded-lg flex items-center justify-center border border-blue-500/30">
+              <Plane className="w-5 h-5 text-blue-400 rotate-45" />
             </div>
             OPS<span className="text-blue-500">CENTER</span>
           </div>
-          <button type="button" onClick={handleLogout} className="p-3 bg-slate-800 rounded-xl text-slate-300 hover:text-red-400 transition-colors">
+          <button type="button" onClick={handleLogout} className="p-2.5 bg-white/[0.04] rounded-lg text-zinc-300 hover:text-red-400 transition-colors border border-white/[0.06]">
             <LogOut className="w-5 h-5" />
           </button>
         </div>
 
-        {/* 🟢 COMMAND HERO PANEL (header + stat rail, one unit) */}
-        <div className="relative mb-8 rounded-[2rem] border border-slate-800/80 bg-gradient-to-br from-[#131A2B] to-[#0F1523] shadow-2xl overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/40 to-transparent"></div>
-          <div className="absolute -top-24 -left-24 w-72 h-72 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none"></div>
-          <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-indigo-600/10 rounded-full blur-[100px] pointer-events-none"></div>
-
+        {/* HEADER + STAT RAIL */}
+        <div className="mb-6 rounded-xl border border-white/[0.06] bg-[#0F1523] overflow-hidden ring-1 ring-inset ring-white/[0.04]">
           {/* ROW 1 — title + actions */}
-          <div className="relative p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-slate-800/60">
-            <div className="flex items-center gap-5">
-              <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600/30 to-blue-600/5 border border-blue-500/30 items-center justify-center shadow-[0_0_25px_rgba(37,99,235,0.3)] shrink-0">
-                <Settings2 className="w-7 h-7 text-blue-400" />
+          <div className="p-5 md:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/[0.06]">
+            <div className="flex items-center gap-4">
+              <div className="hidden sm:flex w-11 h-11 rounded-lg bg-blue-600/15 border border-blue-500/30 items-center justify-center shrink-0">
+                <Settings2 className="w-5 h-5 text-blue-400" />
               </div>
               <div>
-                <h1 className="text-3xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-white via-white to-blue-200 bg-clip-text text-transparent">Platform Settings</h1>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
-                  <div className="text-emerald-400 font-bold text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
+                <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white">Platform Settings</h1>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-1.5">
+                  <div className="text-emerald-400 font-semibold text-[10px] uppercase tracking-[0.2em] flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                     System Config
                   </div>
-                  {lastSaved && <><div className="hidden sm:block w-px h-3 bg-slate-700"></div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-1.5"><Clock className="w-3 h-3" /> Saved {lastSaved.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span></>}
-                  {hasUnsaved && !isSaving && <span className="text-[10px] font-bold text-amber-400 uppercase tracking-[0.2em] animate-pulse">● Unsaved changes</span>}
+                  {lastSaved && <><div className="hidden sm:block w-px h-3 bg-white/10"></div><span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-[0.15em] flex items-center gap-1.5"><Clock className="w-3 h-3" /> Saved {lastSaved.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span></>}
+                  {hasUnsaved && !isSaving && <span className="text-[10px] font-semibold text-amber-400 uppercase tracking-[0.15em]">● Unsaved changes</span>}
                 </div>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3 shrink-0">
-              <Link href="/admin" className="px-6 py-3.5 bg-[#1A2235]/80 backdrop-blur-sm hover:bg-[#1A2235] border border-slate-700 hover:border-slate-600 text-slate-300 rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-3 shadow-md">
+            <div className="flex flex-col sm:flex-row gap-2.5 shrink-0">
+              <Link href="/admin" className="px-4 py-2.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] hover:border-white/15 text-zinc-300 rounded-lg text-[11px] font-bold uppercase tracking-[0.1em] transition-colors flex items-center justify-center gap-2">
                 <ArrowLeft className="w-4 h-4" /> Live Board
               </Link>
               <button type="button" onClick={() => { fetchSettings(); fetchPromos(); fetchApiCompanies(); fetchPivotCompanies(); }}
-                className="px-6 py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-3 shadow-[0_10px_30px_-5px_rgba(37,99,235,0.5)] hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[11px] font-bold uppercase tracking-[0.1em] transition-colors flex items-center justify-center gap-2">
                 <RefreshCw className="w-4 h-4" /> Reload
               </button>
             </div>
           </div>
 
           {/* ROW 2 — stat rail */}
-          <div className="relative grid grid-cols-2 lg:grid-cols-4 divide-x divide-slate-800/60">
+          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-white/[0.06]">
             {[
               { label: "Global Markup", value: markupEnabled ? `${markupPercent}%` : "OFF", sub: markupEnabled ? "on every price" : "disabled", color: markupEnabled ? "#3b82f6" : "#64748b", Icon: Percent },
               { label: "Auto Surge", value: autoSurgeEnabled ? `≤${autoSurgeMax}%` : "OFF", sub: autoSurgeEnabled ? "demand pricing" : "disabled", color: autoSurgeEnabled ? "#f97316" : "#64748b", Icon: Activity },
               { label: "Live API", value: `${apiCompanies.length}`, sub: "api partners", color: "#10b981", Icon: Network },
               { label: "Active Promos", value: `${promos.filter(p => p.is_active).length}`, sub: `of ${promos.length} codes`, color: "#a855f7", Icon: Tag },
             ].map((s, i) => (
-              <div key={i} className="p-5 md:p-6 relative group hover:bg-white/[0.02] transition-colors border-t border-slate-800/60 lg:border-t-0">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: s.color }}>{s.label}</p>
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center border" style={{ background: `${s.color}1A`, borderColor: `${s.color}33` }}>
-                    <s.Icon className="w-3.5 h-3.5" style={{ color: s.color }} />
-                  </div>
+              <div key={i} className="p-4 md:p-5 border-t border-white/[0.06] lg:border-t-0">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-500">{s.label}</p>
+                  <s.Icon className="w-3.5 h-3.5" style={{ color: s.color }} />
                 </div>
-                <p className="text-2xl md:text-3xl font-black text-white tracking-tight tabular-nums">{s.value}</p>
-                <p className="text-[10px] font-bold text-slate-500 mt-1.5 truncate">{s.sub}</p>
-                <div className="absolute bottom-0 left-0 h-0.5 w-0 group-hover:w-full transition-all duration-500" style={{ background: s.color }}></div>
+                <p className="text-xl md:text-2xl font-black text-white tracking-tight tabular-nums">{s.value}</p>
+                <p className="text-[10px] font-medium text-zinc-600 mt-1 truncate">{s.sub}</p>
               </div>
             ))}
           </div>
@@ -501,7 +509,7 @@ export default function SettingsPage() {
           <div className="mb-6 bg-red-500/10 border border-red-500/30 rounded-2xl p-5">
             <p className="text-red-400 font-black text-xs uppercase tracking-widest mb-2 flex items-center gap-2"><TriangleAlert className="w-4 h-4" /> Save Error — Toggle Reset Root Cause</p>
             <pre className="text-red-300 text-[10px] font-mono whitespace-pre-wrap leading-relaxed">{saveError}</pre>
-            <div className="mt-4 bg-[#0A101D] rounded-xl p-4 border border-red-500/20">
+            <div className="mt-4 bg-[#0B1120] rounded-xl p-4 border border-red-500/20">
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Run this SQL in Supabase to fix:</p>
               <pre className="text-emerald-400 text-[10px] font-mono">{`-- Ensure all settings rows exist with correct key column
 INSERT INTO settings (key, value) VALUES
@@ -520,21 +528,20 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
         <form onSubmit={handleSave} className="max-w-3xl space-y-6">
 
           {/* ── SECTION 1: GLOBAL MARKUP ──────────────────────────────────── */}
-          <div className="bg-[#131A2B] rounded-[2rem] border border-slate-800 shadow-2xl overflow-hidden">
+          <div className="bg-[#0F1523] rounded-xl border border-white/[0.06] overflow-hidden">
             <div className={sectionHeader}>
-              <div className="w-11 h-11 bg-blue-600/10 rounded-2xl flex items-center justify-center shrink-0 border border-blue-500/20"><Percent className="w-5 h-5 text-blue-500" /></div>
+              <div className="w-11 h-11 bg-blue-600/10 rounded-lg flex items-center justify-center shrink-0 border border-blue-500/20"><Percent className="w-5 h-5 text-blue-500" /></div>
               <div><h2 className="text-lg font-black text-white tracking-tight">Global Markup Engine</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Applied on top of every base price (API or pivot)</p></div>
             </div>
-            <div className="p-6 md:p-8 space-y-6">
+            <div className="p-5 md:p-6 space-y-6">
 
               {/* Toggle */}
-              <div className="flex items-center justify-between bg-[#1A2235] p-5 rounded-2xl border border-slate-700/50">
+              <div className="flex items-center justify-between bg-[#0B1120] p-5 rounded-2xl border border-white/[0.06]">
                 <div>
                   <p className="text-white font-black text-lg">Enable Global Markup</p>
                   <p className="text-slate-400 text-xs mt-0.5">Multiplies all displayed prices by (1 + markup%)</p>
                   <p className="text-[10px] font-bold text-slate-600 mt-1 uppercase tracking-widest">
                     Currently: <span className={markupEnabled ? "text-emerald-400" : "text-red-400"}>{markupEnabled ? "ON" : "OFF"}</span>
-                    {" — "} Will save as: <span className="text-blue-400">"{markupEnabled.toString()}"</span>
                   </p>
                 </div>
                 {/* 🟢 FIXED: Direct boolean, NOT functional updater */}
@@ -562,17 +569,17 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
                     <span className="text-3xl font-black text-slate-500 shrink-0">%</span>
                   </div>
                   <div className="mt-3 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full transition-all duration-300" style={{ width: `${Math.min(markupPercent, 50) * 2}%` }} />
+                    <div className="h-full bg-blue-500 rounded-full transition-all duration-300" style={{ width: `${Math.min(markupPercent, 50) * 2}%` }} />
                   </div>
                 </div>
 
                 {/* 🟢 NEW: Interactive price preview */}
-                <div className="bg-[#0A101D] border border-slate-800 rounded-2xl p-5">
+                <div className="bg-[#0B1120] border border-white/[0.06] rounded-2xl p-5">
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><Eye className="w-3.5 h-3.5" /> Live Price Preview</p>
                   <div className="flex items-center gap-3 mb-3">
                     <span className="text-slate-500 font-bold text-sm shrink-0">API base: £</span>
                     <input type="number" step="0.01" value={previewBase} onChange={e => setPreviewBase(Number(e.target.value) || 0)}
-                      className="w-28 bg-[#1A2235] border border-slate-700 rounded-lg px-3 py-2 text-sm font-black text-white outline-none focus:border-blue-500 [-webkit-text-fill-color:white] shadow-[0_0_0_1000px_#1A2235_inset]" />
+                      className="w-28 bg-[#0B1120] border border-white/[0.06] rounded-lg px-3 py-2 text-sm font-black text-white outline-none focus:border-blue-500/40 [-webkit-text-fill-color:white] shadow-[0_0_0_1000px_#0B1120_inset]" />
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400 text-sm font-bold">After {markupPercent}% markup:</span>
@@ -581,40 +588,56 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
                   <div className="text-[10px] text-slate-600 font-bold mt-1">
                     Difference: +£{(previewFinal - previewBase).toFixed(2)} ({markupPercent}%)
                   </div>
+
+                  {/* Full customer total incl. the live add-on prices below */}
+                  <div className="mt-4 pt-4 border-t border-white/[0.06] space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-400">
+                      <span className="flex items-center gap-1.5"><Zap className="w-3 h-3 text-amber-400" /> + 1× Fast Track</span>
+                      <span>+£{fastTrackPrice.toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-400">
+                      <span className="flex items-center gap-1.5"><Coffee className="w-3 h-3 text-indigo-400" /> + VIP Lounge</span>
+                      <span>+£{loungePrice.toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center justify-between pt-2 mt-1 border-t border-white/[0.06]">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Example total · markup + both add-ons</span>
+                      <span className="text-lg font-black text-white">£{(previewFinal + fastTrackPrice + loungePrice).toFixed(2)}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* ── SECTION 2: ADD-ON PRICES ──────────────────────────────────── */}
-          <div className="bg-[#131A2B] rounded-[2rem] border border-slate-800 shadow-2xl overflow-hidden">
+          <div className="bg-[#0F1523] rounded-xl border border-white/[0.06] overflow-hidden">
             <div className={sectionHeader}>
-              <div className="w-11 h-11 bg-amber-500/10 rounded-2xl flex items-center justify-center shrink-0 border border-amber-500/20"><Zap className="w-5 h-5 text-amber-400" /></div>
+              <div className="w-11 h-11 bg-amber-500/10 rounded-lg flex items-center justify-center shrink-0 border border-amber-500/20"><Zap className="w-5 h-5 text-amber-400" /></div>
               <div><h2 className="text-lg font-black text-white tracking-tight">Add-On Prices</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Fast Track & Lounge — 100% AeroPark revenue</p></div>
             </div>
-            <div className="p-6 md:p-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="p-5 md:p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label className={labelCls}><Zap className="w-3 h-3 inline mr-1 text-amber-400" /> Fast Track (£ / person)</label>
                 <input type="number" step="0.50" min="0" value={fastTrackPrice} onChange={e => setFastTrackPrice(Number(e.target.value) || 0)}
                   className={`${inputCls} [-webkit-text-fill-color:#fbbf24]`} />
-                <p className="text-[10px] text-slate-500 font-bold mt-2">Reference — hardcoded in pricing.ts as FAST_TRACK_PRICE.</p>
+                <p className="text-[10px] text-emerald-500/80 font-bold mt-2">✓ Live — charged per person at checkout. Saves instantly.</p>
               </div>
               <div>
-                <label className={labelCls}><Coffee className="w-3 h-3 inline mr-1 text-indigo-400" /> VIP Lounge (£ / person)</label>
+                <label className={labelCls}><Coffee className="w-3 h-3 inline mr-1 text-indigo-400" /> VIP Lounge (£ / booking)</label>
                 <input type="number" step="1" min="0" value={loungePrice} onChange={e => setLoungePrice(Number(e.target.value) || 0)}
                   className={`${inputCls} [-webkit-text-fill-color:#818cf8]`} />
-                <p className="text-[10px] text-slate-500 font-bold mt-2">LOUNGE_PRICE in checkout route. Redeploy to take effect.</p>
+                <p className="text-[10px] text-emerald-500/80 font-bold mt-2">✓ Live — charged per booking at checkout. Saves instantly.</p>
               </div>
             </div>
           </div>
 
           {/* ── SECTION 3: CHECKOUT SAFETY ────────────────────────────────── */}
-          <div className="bg-[#131A2B] rounded-[2rem] border border-slate-800 shadow-2xl overflow-hidden">
+          <div className="bg-[#0F1523] rounded-xl border border-white/[0.06] overflow-hidden">
             <div className={sectionHeader}>
-              <div className="w-11 h-11 bg-emerald-500/10 rounded-2xl flex items-center justify-center shrink-0 border border-emerald-500/20"><ShieldCheck className="w-5 h-5 text-emerald-400" /></div>
+              <div className="w-11 h-11 bg-emerald-500/10 rounded-lg flex items-center justify-center shrink-0 border border-emerald-500/20"><ShieldCheck className="w-5 h-5 text-emerald-400" /></div>
               <div><h2 className="text-lg font-black text-white tracking-tight">Checkout Safety</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Server-side price validation tolerance</p></div>
             </div>
-            <div className="p-6 md:p-8 space-y-4">
+            <div className="p-5 md:p-6 space-y-4">
               <label className={labelCls}><Gauge className="w-3 h-3 inline mr-1 text-emerald-400" /> Price Tolerance (£)</label>
               <div className="flex items-center gap-3">
                 <span className="text-3xl font-black text-slate-500 shrink-0">£</span>
@@ -622,22 +645,22 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
                   className={`${inputCls} [-webkit-text-fill-color:#34d399]`} />
               </div>
               <p className="text-[10px] text-slate-500 font-bold leading-relaxed">Max price difference before checkout rejects. Default £0.50. Raise if you get false rejections.</p>
-              <div className="bg-[#1A2235] border border-slate-700/50 rounded-xl p-4 text-xs font-bold text-slate-400">
+              <div className="bg-[#0B1120] border border-white/[0.06] rounded-xl p-4 text-xs font-bold text-slate-400">
                 <span className="text-emerald-400 font-black">Example:</span> Customer sees £84.63. Server calculates £84.80. Diff = £0.17 → ✅ within tolerance.
               </div>
             </div>
           </div>
 
           {/* ── SECTION 4: LAUNCH TIMER ───────────────────────────────────── */}
-          <div className="bg-[#131A2B] rounded-[2rem] border border-slate-800 shadow-2xl overflow-hidden">
+          <div className="bg-[#0F1523] rounded-xl border border-white/[0.06] overflow-hidden">
             <div className={sectionHeader}>
-              <div className="w-11 h-11 bg-rose-500/10 rounded-2xl flex items-center justify-center shrink-0 border border-rose-500/20"><Users className="w-5 h-5 text-rose-400" /></div>
+              <div className="w-11 h-11 bg-rose-500/10 rounded-lg flex items-center justify-center shrink-0 border border-rose-500/20"><Users className="w-5 h-5 text-rose-400" /></div>
               <div><h2 className="text-lg font-black text-white tracking-tight">Launch Timer & Slots</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Founding Member scarcity on results page</p></div>
             </div>
 
             {/* Enable / disable the whole timer */}
-            <div className="p-6 md:p-8 border-b border-slate-800">
-              <div className="flex items-center justify-between bg-[#1A2235] p-5 rounded-2xl border border-slate-700/50">
+            <div className="p-5 md:p-6 border-b border-white/[0.06]">
+              <div className="flex items-center justify-between bg-[#0B1120] p-5 rounded-2xl border border-white/[0.06]">
                 <div>
                   <p className="text-white font-black text-lg">Show Launch Timer</p>
                   <p className="text-slate-400 text-xs mt-0.5">Toggle off to completely hide the timer card from the results page</p>
@@ -662,7 +685,7 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
             <div className={`transition-opacity duration-300 ${!timerEnabled ? "opacity-30 pointer-events-none select-none" : ""}`}>
 
             {/* Duration */}
-            <div className="p-6 md:p-8 border-b border-slate-800">
+            <div className="p-5 md:p-6 border-b border-white/[0.06]">
               <label className={labelCls}><Clock className="w-3 h-3 inline mr-1 text-rose-400" /> Countdown Duration (hours)</label>
               <div className="flex items-center gap-3">
                 <input type="number" step="1" min="1" max="8760" value={timerHours} onChange={e => setTimerHours(Number(e.target.value) || 1)}
@@ -673,7 +696,7 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
             </div>
 
             {/* Editable text */}
-            <div className="p-6 md:p-8 border-b border-slate-800 space-y-5">
+            <div className="p-5 md:p-6 border-b border-white/[0.06] space-y-5">
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><Eye className="w-3.5 h-3.5" /> Timer Text</p>
               <div>
                 <label className={labelCls}>Badge Label</label>
@@ -703,7 +726,7 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
               </div>
             </div>
 
-            <div className="p-6 md:p-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="p-5 md:p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label className={labelCls}><Users className="w-3 h-3 inline mr-1 text-rose-400" /> Slots Claimed</label>
                 <input type="number" step="1" min="0" value={slotsClaimed} onChange={e => setSlotsClaimed(Number(e.target.value) || 0)}
@@ -715,13 +738,13 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
                   className={inputCls} />
               </div>
               <div className="sm:col-span-2">
-                <div className="bg-[#1A2235] border border-slate-700/50 rounded-xl p-4">
+                <div className="bg-[#0B1120] border border-white/[0.06] rounded-xl p-4">
                   <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-2">
                     <span className="text-slate-500">Availability</span>
                     <span className={slotsClaimed >= slotsTotal ? "text-red-400" : "text-emerald-400"}>{Math.max(0, slotsTotal - slotsClaimed)} left of {slotsTotal}</span>
                   </div>
                   <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-rose-500 to-orange-500 rounded-full transition-all duration-500" style={{ width: `${Math.min((slotsClaimed / Math.max(slotsTotal, 1)) * 100, 100)}%` }} />
+                    <div className="h-full bg-rose-500 rounded-full transition-all duration-500" style={{ width: `${Math.min((slotsClaimed / Math.max(slotsTotal, 1)) * 100, 100)}%` }} />
                   </div>
                   <p className="text-[10px] text-slate-500 font-bold mt-2">
                     {slotsClaimed >= slotsTotal ? "⚠️ All slots filled — timer shows SOLD OUT." : `Timer shows ${slotsTotal - slotsClaimed} spots left.`}
@@ -733,15 +756,15 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
           </div>
 
           {/* ── SECTION 4b: AUTO SURGE (pivot pricing) ────────────────────── */}
-          <div className="bg-[#131A2B] rounded-[2rem] border border-slate-800 shadow-2xl overflow-hidden">
+          <div className="bg-[#0F1523] rounded-xl border border-white/[0.06] overflow-hidden">
             <div className={sectionHeader}>
-              <div className="w-11 h-11 bg-orange-500/10 rounded-2xl flex items-center justify-center shrink-0 border border-orange-500/20"><Activity className="w-5 h-5 text-orange-400" /></div>
+              <div className="w-11 h-11 bg-orange-500/10 rounded-lg flex items-center justify-center shrink-0 border border-orange-500/20"><Activity className="w-5 h-5 text-orange-400" /></div>
               <div><h2 className="text-lg font-black text-white tracking-tight">Auto Surge</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Automatic demand pricing on pivot-priced companies</p></div>
             </div>
 
             {/* Enable / disable */}
-            <div className="p-6 md:p-8 border-b border-slate-800">
-              <div className="flex items-center justify-between bg-[#1A2235] p-5 rounded-2xl border border-slate-700/50">
+            <div className="p-5 md:p-6 border-b border-white/[0.06]">
+              <div className="flex items-center justify-between bg-[#0B1120] p-5 rounded-2xl border border-white/[0.06]">
                 <div>
                   <p className="text-white font-black text-lg">Enable Auto Surge</p>
                   <p className="text-slate-400 text-xs mt-0.5">Fluctuates pivot prices by lead-time, weekend, length-of-stay & daily jitter. Deterministic so the quote shown matches the amount charged.</p>
@@ -766,7 +789,7 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
             <div className={`transition-opacity duration-300 ${!autoSurgeEnabled ? "opacity-30 pointer-events-none select-none" : ""}`}>
 
               {/* Max surge % */}
-              <div className="p-6 md:p-8 border-b border-slate-800">
+              <div className="p-5 md:p-6 border-b border-white/[0.06]">
                 <label className={labelCls}><TriangleAlert className="w-3 h-3 inline mr-1 text-orange-400" /> Max Surge (%)</label>
                 <input type="number" step="1" min="0" max="100" value={autoSurgeMax}
                   onChange={e => setAutoSurgeMax(Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
@@ -775,7 +798,7 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
               </div>
 
               {/* Per-company opt-out */}
-              <div className="p-6 md:p-8">
+              <div className="p-5 md:p-6">
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 mb-3"><Network className="w-3.5 h-3.5" /> Pivot Companies — toggle off to exclude</p>
                 {pivotCompanies.length === 0 ? (
                   <p className="text-xs text-slate-500 font-bold">No pivot-priced companies found.</p>
@@ -785,7 +808,7 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
                       const excluded = surgeExcluded.includes(String(c.id));
                       const on = !excluded;
                       return (
-                        <div key={c.id} className="flex items-center justify-between bg-[#1A2235] p-4 rounded-xl border border-slate-700/50">
+                        <div key={c.id} className="flex items-center justify-between bg-[#0B1120] p-4 rounded-xl border border-white/[0.06]">
                           <div>
                             <p className="text-white font-black text-sm">{c.name}</p>
                             <p className="text-[10px] font-bold uppercase tracking-widest mt-0.5">
@@ -812,28 +835,32 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
           </div>
 
           {/* ── SAVE ──────────────────────────────────────────────────────── */}
-          <div className="bg-[#131A2B] rounded-[2rem] border border-slate-800 p-6 md:p-8">
+          <div className="bg-[#0F1523] rounded-xl border border-white/[0.06] p-5 md:p-6">
             <button type="submit" disabled={isSaving}
-              className={`w-full h-16 font-black text-sm uppercase tracking-widest rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-60 text-white ${saved ? "bg-emerald-600 hover:bg-emerald-500 shadow-[0_15px_30px_-5px_rgba(16,185,129,0.4)]" : "bg-blue-600 hover:bg-blue-500 shadow-[0_15px_30px_-5px_rgba(37,99,235,0.4)]"}`}>
+              className={`w-full h-14 font-bold text-[13px] uppercase tracking-[0.15em] rounded-lg flex items-center justify-center gap-3 transition-colors active:scale-[0.99] disabled:opacity-60 text-white ${saved ? "bg-emerald-600 hover:bg-emerald-500" : "bg-blue-600 hover:bg-blue-500"}`}>
               {isSaving ? <><Loader2 className="w-5 h-5 animate-spin" /> Saving...</>
                 : saved  ? <><CheckCircle2 className="w-5 h-5" /> Saved Successfully!</>
                 :           <><Save className="w-5 h-5" /> Save Platform Settings</>}
             </button>
-            {hasUnsaved && !isSaving && (
-              <p className="text-center text-[10px] text-amber-400 font-bold uppercase tracking-widest mt-3 animate-pulse">● You have unsaved changes</p>
-            )}
+            <div className="flex items-center justify-center gap-2 mt-3 text-[10px] font-semibold uppercase tracking-[0.15em]">
+              {hasUnsaved && !isSaving
+                ? <span className="text-amber-400">● Unsaved changes</span>
+                : <span className="text-zinc-600">All changes saved</span>}
+              <span className="text-zinc-700">·</span>
+              <span className="text-zinc-600">Press <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/10 text-zinc-400 normal-case">⌘/Ctrl + S</kbd> to save</span>
+            </div>
           </div>
         </form>
 
         {/* ── SECTION 5: PROMO QUICK MANAGER (outside form) ──────────────── */}
         <div className="max-w-3xl mt-6">
-          <div className="bg-[#131A2B] rounded-[2rem] border border-slate-800 shadow-2xl overflow-hidden">
+          <div className="bg-[#0F1523] rounded-xl border border-white/[0.06] overflow-hidden">
             <div className={sectionHeader}>
-              <div className="w-11 h-11 bg-purple-500/10 rounded-2xl flex items-center justify-center shrink-0 border border-purple-500/20"><Tag className="w-5 h-5 text-purple-400" /></div>
+              <div className="w-11 h-11 bg-purple-500/10 rounded-lg flex items-center justify-center shrink-0 border border-purple-500/20"><Tag className="w-5 h-5 text-purple-400" /></div>
               <div className="flex-1"><h2 className="text-lg font-black text-white tracking-tight">Promo Code Manager</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Quick enable/disable without leaving settings</p></div>
               <Link href="/admin/promos" className="text-[10px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300 border border-blue-500/20 px-3 py-1.5 rounded-lg transition-all">Full Manager →</Link>
             </div>
-            <div className="p-6 md:p-8">
+            <div className="p-5 md:p-6">
               {loadingPromos ? (
                 <div className="flex items-center gap-3 text-slate-500"><Loader2 className="w-4 h-4 animate-spin" /> Loading promos...</div>
               ) : promos.length === 0 ? (
@@ -843,7 +870,7 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
                   {promos.map(promo => {
                     const isExpired = promo.expiry_date && new Date(promo.expiry_date) < new Date();
                     return (
-                      <div key={promo.id} className={`flex items-center justify-between bg-[#1A2235] px-5 py-4 rounded-xl border transition-all ${promo.is_active && !isExpired ? "border-emerald-500/20" : "border-slate-700/50 opacity-60"}`}>
+                      <div key={promo.id} className={`flex items-center justify-between bg-[#0B1120] px-5 py-4 rounded-xl border transition-all ${promo.is_active && !isExpired ? "border-emerald-500/20" : "border-white/[0.06] opacity-60"}`}>
                         <div className="flex items-center gap-4">
                           <span className="font-black text-white tracking-widest text-sm">{promo.code}</span>
                           <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">{promo.discount_percent}% off</span>
@@ -867,16 +894,16 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
 
         {/* ── SECTION 6: API HEALTH CHECK ─────────────────────────────────── */}
         <div className="max-w-3xl mt-6">
-          <div className="bg-[#131A2B] rounded-[2rem] border border-slate-800 shadow-2xl overflow-hidden">
+          <div className="bg-[#0F1523] rounded-xl border border-white/[0.06] overflow-hidden">
             <div className={sectionHeader}>
-              <div className="w-11 h-11 bg-blue-500/10 rounded-2xl flex items-center justify-center shrink-0 border border-blue-500/20"><Activity className="w-5 h-5 text-blue-400" /></div>
+              <div className="w-11 h-11 bg-blue-500/10 rounded-lg flex items-center justify-center shrink-0 border border-blue-500/20"><Activity className="w-5 h-5 text-blue-400" /></div>
               <div className="flex-1"><h2 className="text-lg font-black text-white tracking-tight">API Gateway Health</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Test all live API companies at once</p></div>
               <button type="button" onClick={runApiHealthCheck} disabled={testingApi || apiCompanies.length === 0}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
                 {testingApi ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Testing...</> : <><Network className="w-3.5 h-3.5" /> Run All</>}
               </button>
             </div>
-            <div className="p-6 md:p-8">
+            <div className="p-5 md:p-6">
               {apiCompanies.length === 0 ? (
                 <p className="text-slate-500 text-sm font-bold">No companies with API tokens found.</p>
               ) : (
@@ -884,7 +911,7 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
                   {apiCompanies.map(c => {
                     const r = apiResults[c.id];
                     return (
-                      <div key={c.id} className={`flex items-center justify-between bg-[#1A2235] px-5 py-4 rounded-xl border transition-all ${!r ? "border-slate-700/50" : r.ok ? "border-emerald-500/20" : "border-red-500/20"}`}>
+                      <div key={c.id} className={`flex items-center justify-between bg-[#0B1120] px-5 py-4 rounded-xl border transition-all ${!r ? "border-white/[0.06]" : r.ok ? "border-emerald-500/20" : "border-red-500/20"}`}>
                         <div>
                           <p className="font-black text-white text-sm">{c.name}</p>
                           <p className="text-[10px] text-slate-500 font-bold mt-0.5">
@@ -913,13 +940,13 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
 
         {/* ── SECTION 7: DANGER ZONE ──────────────────────────────────────── */}
         <div className="max-w-3xl mt-6 mb-12">
-          <div className="bg-[#131A2B] rounded-[2rem] border border-red-500/20 shadow-2xl overflow-hidden">
-            <div className="p-6 md:p-8 border-b border-red-500/10 bg-red-500/5 flex items-center gap-4">
-              <div className="w-11 h-11 bg-red-500/10 rounded-2xl flex items-center justify-center shrink-0 border border-red-500/20"><TriangleAlert className="w-5 h-5 text-red-400" /></div>
+          <div className="bg-[#0F1523] rounded-xl border border-red-500/20 overflow-hidden">
+            <div className="p-5 md:p-6 border-b border-red-500/10 bg-red-500/5 flex items-center gap-4">
+              <div className="w-11 h-11 bg-red-500/10 rounded-lg flex items-center justify-center shrink-0 border border-red-500/20"><TriangleAlert className="w-5 h-5 text-red-400" /></div>
               <div><h2 className="text-lg font-black text-white tracking-tight">Danger Zone</h2><p className="text-[10px] font-bold text-red-400/70 uppercase tracking-widest mt-0.5">Irreversible actions — use with caution</p></div>
             </div>
-            <div className="p-6 md:p-8">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#1A2235] p-5 rounded-xl border border-slate-700/50">
+            <div className="p-5 md:p-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#0B1120] p-5 rounded-xl border border-white/[0.06]">
                 <div>
                   <p className="text-white font-black">Reset All Price Modifiers</p>
                   <p className="text-slate-400 text-xs mt-0.5">Sets every company's price_modifier back to 1.0 (BASE). This cannot be undone.</p>
@@ -935,7 +962,7 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
 
         {/* MOBILE BOTTOM NAV */}
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] px-2 pb-6 pt-2 bg-gradient-to-t from-[#0B1120] via-[#0B1120]/95 to-transparent pointer-events-none">
-          <nav className="max-w-md mx-auto bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-3xl h-20 flex items-center justify-around px-2 shadow-2xl pointer-events-auto">
+          <nav className="max-w-md mx-auto bg-[#0F1523] border border-white/10 rounded-2xl h-20 flex items-center justify-around px-2 shadow-xl pointer-events-auto">
             <Link href="/admin" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><LayoutDashboard className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Live</span></Link>
             <Link href="/admin/companies" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><Building2 className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Ops</span></Link>
             <Link href="/admin/promos" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><Tags className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Promo</span></Link>
