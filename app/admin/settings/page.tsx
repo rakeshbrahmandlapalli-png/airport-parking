@@ -87,6 +87,22 @@ export default function SettingsPage() {
   const [apiResults,     setApiResults]     = useState<Record<string, any>>({});
   const [testingApi,     setTestingApi]     = useState(false);
 
+  // ── Google Ads conversion-tracking diagnostic ──────────────────────────────
+  const [adsCheck,    setAdsCheck]    = useState<any>(null);
+  const [adsChecking, setAdsChecking] = useState(false);
+  const runAdsCheck = async () => {
+    setAdsChecking(true);
+    setAdsCheck(null);
+    try {
+      const res = await fetch("/api/admin/google-ads-check");
+      setAdsCheck(await res.json());
+    } catch (e: any) {
+      setAdsCheck({ error: e?.message || "Request failed" });
+    } finally {
+      setAdsChecking(false);
+    }
+  };
+
   // ── Price preview ─────────────────────────────────────────────────────────
   const [previewBase,    setPreviewBase]    = useState(76.94);
 
@@ -938,6 +954,58 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
           </div>
         </div>
 
+        {/* ── SECTION 6b: CONVERSION TRACKING DIAGNOSTIC ──────────────────── */}
+        <div className="max-w-3xl mt-6">
+          <div className="bg-[#0F1523] rounded-xl border border-white/[0.06] overflow-hidden">
+            <div className={sectionHeader}>
+              <div className="w-11 h-11 bg-emerald-500/10 rounded-lg flex items-center justify-center shrink-0 border border-emerald-500/20"><Activity className="w-5 h-5 text-emerald-400" /></div>
+              <div className="flex-1"><h2 className="text-lg font-black text-white tracking-tight">Conversion Tracking</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Google Ads offline conversion pipeline</p></div>
+              <button type="button" onClick={runAdsCheck} disabled={adsChecking}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
+                {adsChecking ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Checking...</> : <><CheckCircle2 className="w-3.5 h-3.5" /> Verify Connection</>}
+              </button>
+            </div>
+            <div className="p-5 md:p-6">
+              {!adsCheck ? (
+                <p className="text-slate-500 text-sm font-bold">Tests env vars, OAuth, your developer token and the conversion action &mdash; no test booking needed.</p>
+              ) : adsCheck.error ? (
+                <div className="bg-[#0B1120] border border-red-500/20 rounded-xl p-4 text-red-400 text-sm font-bold">
+                  {adsCheck.error === "Unauthorized" ? "Session expired — reload the page and sign in again." : adsCheck.error}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${adsCheck.ready ? "border-emerald-500/30 bg-emerald-500/[0.06]" : "border-amber-500/30 bg-amber-500/[0.06]"}`}>
+                    {adsCheck.ready ? <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" /> : <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />}
+                    <div>
+                      <p className={`font-black text-sm ${adsCheck.ready ? "text-emerald-400" : "text-amber-400"}`}>{adsCheck.ready ? "Connected & ready" : "Not fully ready yet"}</p>
+                      <p className="text-[11px] text-slate-400 font-bold">Google Ads API {adsCheck.apiVersion}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {adsCheck.env && Object.entries(adsCheck.env).map(([k, ok]) => (
+                      <StatusRow key={k} ok={!!ok} label={k} note={ok ? "set" : "missing"} />
+                    ))}
+                    <StatusRow ok={!!adsCheck.oauth?.ok} label="OAuth token exchange" note={adsCheck.oauth?.ok ? "working" : (adsCheck.oauth?.error || "failed")} />
+                    <StatusRow ok={!!adsCheck.api?.ok} label="Google Ads API access" note={adsCheck.api?.ok ? "reachable" : (adsCheck.api?.error || "failed")} />
+                    {adsCheck.api?.conversionAction && (
+                      <StatusRow ok={adsCheck.api.conversionAction.status === "ENABLED"} label={`Conversion action: ${adsCheck.api.conversionAction.name}`} note={adsCheck.api.conversionAction.status} />
+                    )}
+                  </div>
+
+                  {Array.isArray(adsCheck.hints) && adsCheck.hints.length > 0 && (
+                    <div className="bg-[#0B1120] border border-white/[0.06] rounded-xl p-4 space-y-2">
+                      {adsCheck.hints.map((h: string, i: number) => (
+                        <p key={i} className="text-[12px] text-slate-300 font-medium leading-relaxed">{h}</p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* ── SECTION 7: DANGER ZONE ──────────────────────────────────────── */}
         <div className="max-w-3xl mt-6 mb-12">
           <div className="bg-[#0F1523] rounded-xl border border-red-500/20 overflow-hidden">
@@ -972,6 +1040,21 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
         </div>
 
       </main>
+    </div>
+  );
+}
+
+// Single pass/fail row used by the Conversion Tracking diagnostic.
+function StatusRow({ ok, label, note }: { ok: boolean; label: string; note?: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 bg-[#0B1120] border border-white/[0.06] rounded-lg px-4 py-2.5">
+      <div className="flex items-center gap-2.5 min-w-0">
+        {ok
+          ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          : <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />}
+        <span className="text-[12px] font-bold text-slate-200 truncate">{label}</span>
+      </div>
+      {note && <span className={`text-[11px] font-bold shrink-0 ${ok ? "text-emerald-400/80" : "text-red-400/80"}`}>{note}</span>}
     </div>
   );
 }

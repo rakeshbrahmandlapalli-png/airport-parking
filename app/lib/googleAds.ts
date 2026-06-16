@@ -162,3 +162,129 @@ export async function reportOfflineConversion(input: OfflineConversionInput): Pr
     return false;
   }
 }
+
+// ─── SETUP DIAGNOSTIC ─────────────────────────────────────────────────────────
+// Verifies the offline-conversion pipeline end to end WITHOUT needing a booking:
+//  1) which env vars are present (booleans only — never values)
+//  2) OAuth refresh-token exchange works (client id/secret/refresh token)
+//  3) the developer token + customer id + conversion action are valid & ENABLED
+// Returns a plain report the admin UI renders. Never throws.
+
+const REQUIRED_ENV = [
+  "GOOGLE_ADS_DEVELOPER_TOKEN",
+  "GOOGLE_ADS_CLIENT_ID",
+  "GOOGLE_ADS_CLIENT_SECRET",
+  "GOOGLE_ADS_REFRESH_TOKEN",
+  "GOOGLE_ADS_CUSTOMER_ID",
+  "GOOGLE_ADS_CONVERSION_ACTION_ID",
+] as const;
+
+export interface GoogleAdsCheckResult {
+  apiVersion: string;
+  env: Record<string, boolean>;
+  loginCustomerIdSet: boolean;
+  oauth: { ok: boolean; error?: string };
+  api: {
+    ok: boolean;
+    error?: string;
+    conversionAction?: { id: string; name: string; status: string; type: string };
+  };
+  ready: boolean;
+  hints: string[];
+}
+
+function googleAdsErrorHint(text: string): string {
+  if (/DEVELOPER_TOKEN_NOT_APPROVED|not.*approved/i.test(text))
+    return "Developer token isn't approved for Basic access yet — uploads to your live account won't work until Google approves it (1–2 days). Apply in API Center.";
+  if (/USER_PERMISSION_DENIED|PERMISSION_DENIED/i.test(text))
+    return "Permission denied — the Google account you authorised can't access this customer, or GOOGLE_ADS_LOGIN_CUSTOMER_ID (manager) is wrong/missing.";
+  if (/NOT_FOUND|invalid.*customer|CustomerNotEnabled/i.test(text))
+    return "Customer not found — check GOOGLE_ADS_CUSTOMER_ID is digits only (8109058894), and set GOOGLE_ADS_LOGIN_CUSTOMER_ID if you access via a manager account.";
+  if (/UNIMPLEMENTED|version|NOT_FOUND.*v\d+/i.test(text))
+    return "API version issue — set GOOGLE_ADS_API_VERSION to the current version.";
+  if (/DEVELOPER_TOKEN_PROHIBITED|developer token is not/i.test(text))
+    return "Developer token invalid — re-copy it from API Center.";
+  return "Google Ads API rejected the request — see the error text for the exact reason.";
+}
+
+export async function checkGoogleAdsSetup(): Promise<GoogleAdsCheckResult> {
+  const env: Record<string, boolean> = {};
+  for (const k of REQUIRED_ENV) env[k] = !!process.env[k];
+  const loginCustomerIdSet = !!process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID;
+  const base = { apiVersion: GOOGLE_ADS_API_VERSION, env, loginCustomerIdSet };
+
+  const cfg = envConfig();
+  if (!cfg) {
+    const missing = REQUIRED_ENV.filter((k) => !process.env[k]);
+    return {
+      ...base,
+      oauth: { ok: false },
+      api: { ok: false },
+      ready: false,
+      hints: [`Missing env vars: ${missing.join(", ")}. Add them in Vercel → Settings → Environment Variables (Production), then redeploy.`],
+    };
+  }
+
+  // 2) OAuth
+  let accessToken: string;
+  try {
+    accessToken = await getAccessToken(cfg);
+  } catch (e: any) {
+    return {
+      ...base,
+      oauth: { ok: false, error: (e?.message || String(e)).slice(0, 300) },
+      api: { ok: false },
+      ready: false,
+      hints: ["OAuth failed — check GOOGLE_ADS_CLIENT_ID / CLIENT_SECRET / REFRESH_TOKEN. Re-generate the refresh token with the https://www.googleapis.com/auth/adwords scope."],
+    };
+  }
+
+  // 3) Developer token + customer + conversion action
+  try {
+    const url = `https://googleads.googleapis.com/${GOOGLE_ADS_API_VERSION}/customers/${cfg.customerId}/googleAds:search`;
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${accessToken}`,
+      "developer-token": cfg.developerToken,
+      "Content-Type": "application/json",
+    };
+    if (cfg.loginCustomerId) headers["login-customer-id"] = cfg.loginCustomerId;
+    const query =
+      `SELECT conversion_action.id, conversion_action.name, conversion_action.status, conversion_action.type ` +
+      `FROM conversion_action WHERE conversion_action.id = ${cfg.conversionActionId}`;
+
+    const res = await fetch(url, { method: "POST", headers, body: JSON.stringify({ query }) });
+    const text = await res.text();
+
+    if (!res.ok) {
+      return { ...base, oauth: { ok: true }, api: { ok: false, error: text.slice(0, 400) }, ready: false, hints: [googleAdsErrorHint(text)] };
+    }
+
+    let parsed: any;
+    try { parsed = JSON.parse(text); } catch { parsed = null; }
+    const row = parsed?.results?.[0]?.conversionAction;
+    if (!row) {
+      return {
+        ...base,
+        oauth: { ok: true },
+        api: { ok: true },
+        ready: false,
+        hints: [`Connected, but conversion action ${cfg.conversionActionId} wasn't found in account ${cfg.customerId}. Re-check GOOGLE_ADS_CONVERSION_ACTION_ID (Goals → Conversions → your action → ctId in the URL).`],
+      };
+    }
+
+    const ca = { id: String(row.id), name: String(row.name ?? ""), status: String(row.status ?? ""), type: String(row.type ?? "") };
+    const hints = ca.status === "ENABLED"
+      ? [`✓ Connected. Conversion action "${ca.name}" is ENABLED. Confirm it's set to Primary in Google Ads so it drives bidding.`]
+      : [`Connected, but conversion action "${ca.name}" status is ${ca.status} — set it to ENABLED/Primary in Google Ads.`];
+
+    return { ...base, oauth: { ok: true }, api: { ok: true, conversionAction: ca }, ready: ca.status === "ENABLED", hints };
+  } catch (e: any) {
+    return {
+      ...base,
+      oauth: { ok: true },
+      api: { ok: false, error: (e?.message || String(e)).slice(0, 300) },
+      ready: false,
+      hints: ["The Google Ads API call threw before completing — check the error and your network/region restrictions."],
+    };
+  }
+}
