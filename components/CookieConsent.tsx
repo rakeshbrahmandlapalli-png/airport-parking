@@ -67,7 +67,11 @@ function applyConsent(prefs: Prefs) {
     ad_user_data: prefs.marketing ? "granted" : "denied",
     ad_personalization: prefs.marketing ? "granted" : "denied",
   });
-  if (prefs.analytics) loadClarity();
+  // NOTE: Microsoft Clarity is intentionally NOT gated by consent — it is loaded
+  // for every visitor on mount (see the effect below). Product decision for a new
+  // site that wants heatmap/session data from day one. Google Analytics & Ads
+  // remain consent-gated through Consent Mode v2 above. See compliance note in
+  // the team docs before relying on this for UK/EU traffic.
 }
 
 export default function CookieConsent() {
@@ -78,6 +82,10 @@ export default function CookieConsent() {
 
   // On mount: apply any stored choice, otherwise show the banner.
   useEffect(() => {
+    // Microsoft Clarity runs for ALL visitors regardless of consent (new-site
+    // product decision). GA4 / Google Ads stay consent-gated below.
+    loadClarity();
+
     const stored = readStored();
     if (stored) {
       applyConsent(stored);
@@ -129,8 +137,9 @@ export default function CookieConsent() {
                 </button>
               </div>
               <p className="mt-1.5 text-[13px] leading-relaxed text-slate-500">
-                We use essential cookies to run this site. With your consent we also use analytics and advertising
-                cookies (Google, Microsoft Clarity) to improve our service and measure ad performance. See our{" "}
+                We use essential cookies to run this site, plus product-analytics (Microsoft Clarity) to understand how
+                it&rsquo;s used. With your consent we also use Google analytics and advertising cookies to measure
+                performance. See our{" "}
                 <Link href="/privacy" className="text-blue-600 font-semibold hover:underline">Privacy Policy</Link>.
               </p>
 
@@ -147,7 +156,7 @@ export default function CookieConsent() {
                   <label className="flex items-center justify-between gap-3 cursor-pointer">
                     <span className="text-[13px]">
                       <span className="font-bold text-slate-900 block">Analytics</span>
-                      <span className="text-slate-500">Helps us understand site usage (GA4, Clarity).</span>
+                      <span className="text-slate-500">Google Analytics (GA4) usage statistics.</span>
                     </span>
                     <input type="checkbox" checked={analytics} onChange={(e) => setAnalytics(e.target.checked)} className="h-4 w-4 accent-blue-600 cursor-pointer" />
                   </label>
