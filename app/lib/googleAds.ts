@@ -191,6 +191,8 @@ export interface GoogleAdsCheckResult {
   };
   /** Customer IDs the authorised Google account can directly access. */
   accessibleCustomers?: string[];
+  /** Current GOOGLE_ADS_LOGIN_CUSTOMER_ID value (digits only) — for verifying config. */
+  loginCustomerId?: string;
   ready: boolean;
   hints: string[];
 }
@@ -213,7 +215,8 @@ export async function checkGoogleAdsSetup(): Promise<GoogleAdsCheckResult> {
   const env: Record<string, boolean> = {};
   for (const k of REQUIRED_ENV) env[k] = !!process.env[k];
   const loginCustomerIdSet = !!process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID;
-  const base = { apiVersion: GOOGLE_ADS_API_VERSION, env, loginCustomerIdSet };
+  const loginCustomerId = (process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID || "").replace(/\D/g, "");
+  const base = { apiVersion: GOOGLE_ADS_API_VERSION, env, loginCustomerIdSet, loginCustomerId };
 
   const cfg = envConfig();
   if (!cfg) {

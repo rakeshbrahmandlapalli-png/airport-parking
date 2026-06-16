@@ -997,6 +997,9 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
                     <div className="bg-[#0B1120] border border-white/[0.06] rounded-xl px-4 py-3">
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Accounts your token can access</p>
                       <p className="text-[12px] font-bold text-slate-300 tabular-nums">{adsCheck.accessibleCustomers.join(" · ")}</p>
+                      <p className="text-[10px] font-bold text-slate-500 mt-2">
+                        login-customer-id: <span className="text-slate-300 tabular-nums">{adsCheck.loginCustomerId || "(not set)"}</span>
+                      </p>
                     </div>
                   )}
 
