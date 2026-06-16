@@ -993,6 +993,13 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
                     )}
                   </div>
 
+                  {Array.isArray(adsCheck.accessibleCustomers) && adsCheck.accessibleCustomers.length > 0 && (
+                    <div className="bg-[#0B1120] border border-white/[0.06] rounded-xl px-4 py-3">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Accounts your token can access</p>
+                      <p className="text-[12px] font-bold text-slate-300 tabular-nums">{adsCheck.accessibleCustomers.join(" · ")}</p>
+                    </div>
+                  )}
+
                   {Array.isArray(adsCheck.hints) && adsCheck.hints.length > 0 && (
                     <div className="bg-[#0B1120] border border-white/[0.06] rounded-xl p-4 space-y-2">
                       {adsCheck.hints.map((h: string, i: number) => (

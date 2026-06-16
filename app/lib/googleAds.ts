@@ -189,6 +189,8 @@ export interface GoogleAdsCheckResult {
     error?: string;
     conversionAction?: { id: string; name: string; status: string; type: string };
   };
+  /** Customer IDs the authorised Google account can directly access. */
+  accessibleCustomers?: string[];
   ready: boolean;
   hints: string[];
 }
@@ -239,6 +241,34 @@ export async function checkGoogleAdsSetup(): Promise<GoogleAdsCheckResult> {
     };
   }
 
+  // 2b) Which customers can the authorised account directly access? This is the
+  // single most useful signal for a PERMISSION_DENIED: it shows whether the token
+  // can even see the target customer / manager.
+  let accessibleCustomers: string[] = [];
+  try {
+    const laRes = await fetch(
+      `https://googleads.googleapis.com/${GOOGLE_ADS_API_VERSION}/customers:listAccessibleCustomers`,
+      { headers: { Authorization: `Bearer ${accessToken}`, "developer-token": cfg.developerToken } }
+    );
+    if (laRes.ok) {
+      const j = await laRes.json();
+      accessibleCustomers = (j.resourceNames || []).map((r: string) => r.replace("customers/", ""));
+    }
+  } catch { /* surfaced via the search call below */ }
+
+  // Smarter permission hint using the accessible list.
+  const permissionHint = (): string => {
+    const cust = cfg.customerId;
+    const login = cfg.loginCustomerId;
+    if (accessibleCustomers.length === 0)
+      return "Your authorised account can't list ANY accounts — the developer token may not be approved for Basic access yet, or the OAuth account has no Ads access. Re-generate the refresh token signed in as the account that manages " + cust + ".";
+    if (login && !accessibleCustomers.includes(login))
+      return `GOOGLE_ADS_LOGIN_CUSTOMER_ID (${login}) isn't accessible by your authorised account. Set it to a manager you can access (you can access: ${accessibleCustomers.join(", ")}), or remove it if you don't use a manager.`;
+    if (!login && !accessibleCustomers.includes(cust))
+      return `Your account can access ${accessibleCustomers.join(", ")} but NOT ${cust}. Either set GOOGLE_ADS_LOGIN_CUSTOMER_ID to the manager that controls ${cust}, or re-generate the refresh token signed in as the account that manages ${cust}.`;
+    return `Permission denied reaching ${cust}. Check the manager link is accepted and the authorised account has access. (Accessible: ${accessibleCustomers.join(", ")}.)`;
+  };
+
   // 3) Developer token + customer + conversion action
   try {
     const url = `https://googleads.googleapis.com/${GOOGLE_ADS_API_VERSION}/customers/${cfg.customerId}/googleAds:search`;
@@ -256,7 +286,10 @@ export async function checkGoogleAdsSetup(): Promise<GoogleAdsCheckResult> {
     const text = await res.text();
 
     if (!res.ok) {
-      return { ...base, oauth: { ok: true }, api: { ok: false, error: text.slice(0, 400) }, ready: false, hints: [googleAdsErrorHint(text)] };
+      const hint = /PERMISSION_DENIED|USER_PERMISSION_DENIED|does not have permission/i.test(text)
+        ? permissionHint()
+        : googleAdsErrorHint(text);
+      return { ...base, accessibleCustomers, oauth: { ok: true }, api: { ok: false, error: text.slice(0, 400) }, ready: false, hints: [hint] };
     }
 
     let parsed: any;
@@ -265,6 +298,7 @@ export async function checkGoogleAdsSetup(): Promise<GoogleAdsCheckResult> {
     if (!row) {
       return {
         ...base,
+        accessibleCustomers,
         oauth: { ok: true },
         api: { ok: true },
         ready: false,
@@ -277,10 +311,11 @@ export async function checkGoogleAdsSetup(): Promise<GoogleAdsCheckResult> {
       ? [`✓ Connected. Conversion action "${ca.name}" is ENABLED. Confirm it's set to Primary in Google Ads so it drives bidding.`]
       : [`Connected, but conversion action "${ca.name}" status is ${ca.status} — set it to ENABLED/Primary in Google Ads.`];
 
-    return { ...base, oauth: { ok: true }, api: { ok: true, conversionAction: ca }, ready: ca.status === "ENABLED", hints };
+    return { ...base, accessibleCustomers, oauth: { ok: true }, api: { ok: true, conversionAction: ca }, ready: ca.status === "ENABLED", hints };
   } catch (e: any) {
     return {
       ...base,
+      accessibleCustomers,
       oauth: { ok: true },
       api: { ok: false, error: (e?.message || String(e)).slice(0, 300) },
       ready: false,
