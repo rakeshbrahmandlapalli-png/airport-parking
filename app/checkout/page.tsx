@@ -8,6 +8,7 @@ import { supabase } from "../lib/supabase";
 import {
   computePrice,
   calculateDays,
+  loadPricingSettings,
   FAST_TRACK_PRICE,
   DEFAULT_SETTINGS,
   type PricingSettings,
@@ -18,7 +19,7 @@ import {
   ShieldCheck, ArrowLeft, Loader2, CarFront, User,
   PlaneTakeoff, Plane, Lock, CreditCard, Calendar,
   Sparkles, Tag, AlertCircle, CheckCircle2, Coffee, Zap, Star,
-  Settings2, Footprints, ChevronDown, AlertTriangle,
+  Settings2, Footprints, ChevronDown, AlertTriangle, Clock,
 } from "lucide-react";
 
 // ─── STYLES ───────────────────────────────────────────────────────────────────
@@ -82,7 +83,7 @@ function PriceMismatchBanner({
 }) {
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[500] flex items-center justify-center p-6">
-      <div className="bg-[#0F1523] border border-amber-500/30 rounded-3xl p-8 max-w-md w-full shadow-2xl">
+      <div className="bg-[#0F1523] border border-amber-500/30 rounded-2xl p-8 max-w-md w-full">
         <div className="flex items-center gap-4 mb-5">
           <div className="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center shrink-0">
             <AlertTriangle className="w-6 h-6 text-amber-400" />
@@ -152,20 +153,11 @@ function CheckoutContent() {
   const [resolvedId, setResolvedId] = useState(urlId);
 
   // ── Fetch settings ──────────────────────────────────────────────────────────
+  // Use the shared loader so markup, auto-surge AND add-on prices/tolerance all
+  // come from the same source the server uses — keeps the displayed total and the
+  // server price-guard in lockstep.
   useEffect(() => {
-    supabase
-      .from("settings")
-      .select("*")
-      .in("key", ["markup_enabled", "markup_percent"])
-      .then(({ data }) => {
-        if (!data) return;
-        const en = data.find((r: any) => r.key === "markup_enabled");
-        const pc = data.find((r: any) => r.key === "markup_percent");
-        setSettings({
-          markupEnabled: en ? en.value === "true" : true,
-          markupPercent: pc ? Number(pc.value) || 10 : 10,
-        });
-      });
+    loadPricingSettings(supabase).then(setSettings).catch(() => {});
   }, []);
 
   // ── Fetch company ───────────────────────────────────────────────────────────
@@ -247,12 +239,6 @@ function CheckoutContent() {
     aeroTip:              searchParams.get("aeroTip") || "",
   }), [searchParams]);
 
-  const suggestedAncillaries = useMemo(() => {
-    const raw = (searchParams.get("upsells") || "").split(",").filter(Boolean);
-    if (airport.toLowerCase().includes("luton") && !raw.includes("fast-track")) return [...raw, "fast-track"];
-    return raw;
-  }, [searchParams, airport]);
-
   // ── Form state ──────────────────────────────────────────────────────────────
   const [fullName,     setFullName]     = useState("");
   const [email,        setEmail]        = useState("");
@@ -264,8 +250,11 @@ function CheckoutContent() {
   const [carColor,     setCarColor]     = useState("");
 
   const [wantsLounge,    setWantsLounge]    = useState(false);
-  const LOUNGE_PRICE = 35.0;
   const [fastTrackCount, setFastTrackCount] = useState(0);
+  // Live add-on prices from Platform Settings (fall back to defaults). Same values
+  // the server charges, so the displayed total matches what Stripe collects.
+  const LOUNGE_PRICE      = Number(settings.loungePrice)    > 0 ? Number(settings.loungePrice)    : 35.0;
+  const fastTrackUnitCost = Number(settings.fastTrackPrice) > 0 ? Number(settings.fastTrackPrice) : FAST_TRACK_PRICE;
 
   const [promoInput,       setPromoInput]       = useState("");
   const [discount,         setDiscount]         = useState({ active: false, code: "", percent: 0 });
@@ -374,7 +363,7 @@ function CheckoutContent() {
   }, [company, urlName, type, bookingDays, liveApiRates, dropDate, airport, fallbackUrlPrice, settings]);
 
   const discountAmount    = priceData.final * discount.percent;
-  const totalFastTrackCost = fastTrackCount * FAST_TRACK_PRICE;
+  const totalFastTrackCost = fastTrackCount * fastTrackUnitCost;
   const addOnsTotal       = (wantsLounge ? LOUNGE_PRICE : 0) + totalFastTrackCost;
   // FIX: clamp finalTotal to >= 0 so a huge promo can't produce a negative total
   const finalTotal        = Math.max(0, priceData.final - discountAmount + addOnsTotal);
@@ -556,8 +545,7 @@ function CheckoutContent() {
       )}
 
       {/* AERO SECURE BANNER */}
-      <div className="max-w-3xl mx-auto mb-8 bg-[#0B1120]/80 backdrop-blur-xl border border-blue-900/40 rounded-3xl p-4 md:p-6 flex items-center gap-5 shadow-2xl relative overflow-hidden">
-        <div className="absolute -right-10 -top-10 w-40 h-40 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="max-w-3xl mx-auto mb-8 bg-[#0F1523] border border-white/[0.06] rounded-2xl p-4 md:p-6 flex items-center gap-5">
         <AeroAvatar state="idle" size="md" onClick={handleAeroClick} />
         <div className="relative z-10">
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400 mb-1.5 flex items-center gap-2">
@@ -769,90 +757,84 @@ function CheckoutContent() {
             </div>
             </div>
 
-            {/* UPSELLS */}
-            {suggestedAncillaries.length > 0 && (
-              <div className="bg-gradient-to-br from-[#FAFAFF] to-[#F3F4FB] p-6 md:p-10 rounded-2xl border border-indigo-100 shadow-[0_15px_40px_-15px_rgba(79,70,229,0.15)] relative overflow-hidden">
-                <div className="flex items-center gap-4 mb-8 pb-6 border-b border-indigo-200/40">
-                  <div className="w-12 h-12 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/30">
-                    <Sparkles className="w-6 h-6 text-white" />
+            {/* AERO ADD-ONS */}
+            <div className="bg-white p-6 md:p-10 rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/50">
+              <div className="flex items-center justify-between mb-8 pb-6 border-b border-slate-100">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center shrink-0">
+                    <Sparkles className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
                     <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Enhance Your Trip</h2>
-                    <p className="text-[10px] md:text-xs font-bold text-indigo-500 uppercase tracking-widest mt-1">Aero Add-ons</p>
+                    <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Aero Add-ons · Optional</p>
                   </div>
                 </div>
-                <div className="space-y-5">
-                  {suggestedAncillaries.includes("lounge") && (
-                    <label className={`p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${wantsLounge ? "border-indigo-500 bg-indigo-50/50 ring-4 ring-indigo-500/10" : "bg-white border-slate-100 hover:border-indigo-200"}`}>
-                      <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${wantsLounge ? "bg-indigo-600 shadow-lg shadow-indigo-600/30" : "bg-indigo-50"}`}>
-                          <Coffee className={`w-6 h-6 ${wantsLounge ? "text-white" : "text-indigo-600"}`} />
-                        </div>
-                        <div>
-                          <p className="font-black text-slate-900 text-base md:text-lg tracking-tight">VIP Airport Lounge</p>
-                          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mt-0.5">Relax before your flight</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto border-t border-slate-100 sm:border-0 pt-4 sm:pt-0">
-                        <div className="text-left sm:text-right">
-                          <span className="block font-black text-xl text-indigo-600">+£{LOUNGE_PRICE.toFixed(2)}</span>
-                          <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-widest">Per Person</span>
-                        </div>
-                        <div className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 flex items-center shrink-0 ${wantsLounge ? "bg-indigo-600" : "bg-slate-200"}`}>
-                          <div className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 flex items-center justify-center ${wantsLounge ? "translate-x-6" : "translate-x-0"}`}>
-                            {wantsLounge && <CheckCircle2 className="w-4 h-4 text-indigo-600" />}
-                          </div>
-                        </div>
-                        <input type="checkbox" className="sr-only" checked={wantsLounge} onChange={() => setWantsLounge(v => !v)} aria-label="Add VIP Lounge" />
-                      </div>
-                    </label>
-                  )}
+              </div>
 
-                  {suggestedAncillaries.includes("fast-track") && (
-                    <div className={`p-5 rounded-2xl border-2 transition-all duration-300 shadow-sm ${fastTrackCount > 0 ? "border-amber-400 bg-amber-50/50 ring-4 ring-amber-400/10" : "bg-white border-slate-100 hover:border-amber-200"}`}>
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${fastTrackCount > 0 ? "bg-amber-500 shadow-lg shadow-amber-500/30" : "bg-amber-50"}`}>
-                            <Zap className={`w-6 h-6 ${fastTrackCount > 0 ? "text-white" : "text-amber-500"}`} />
-                          </div>
-                          <div>
-                            <p className="font-black text-slate-900 text-base md:text-lg tracking-tight">Fast Track Security</p>
-                            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mt-0.5">Skip the queues</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto border-t border-slate-100 sm:border-0 pt-4 sm:pt-0">
-                          <div className="text-left sm:text-right">
-                            <span className="block font-black text-xl text-amber-600">+£{FAST_TRACK_PRICE.toFixed(2)}</span>
-                            <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-widest">Per Person</span>
-                          </div>
-                          <div className="flex items-center bg-slate-100 rounded-xl p-1 shadow-inner shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => setFastTrackCount(n => Math.max(0, n - 1))}
-                              disabled={fastTrackCount === 0}
-                              aria-label="Remove fast track"
-                              className={`w-10 h-10 rounded-lg flex items-center justify-center font-black text-lg transition-all active:scale-95 ${fastTrackCount > 0 ? "bg-white text-slate-700 shadow hover:bg-slate-50 hover:text-amber-600" : "text-slate-400 cursor-not-allowed"}`}
-                            >
-                              &minus;
-                            </button>
-                            <span className="font-black text-lg w-10 text-center text-slate-800" aria-live="polite">{fastTrackCount}</span>
-                            <button
-                              type="button"
-                              onClick={() => setFastTrackCount(n => Math.min(9, n + 1))}
-                              disabled={fastTrackCount >= 9}
-                              aria-label="Add fast track"
-                              className="w-10 h-10 rounded-lg bg-white text-slate-700 font-black text-lg shadow hover:bg-slate-50 hover:text-amber-600 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
+              <div className="space-y-4">
+                {/* Fast Track Security — live */}
+                <div className={`p-5 rounded-xl border transition-colors ${fastTrackCount > 0 ? "border-amber-400 bg-amber-50/40" : "bg-white border-slate-200 hover:border-slate-300"}`}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${fastTrackCount > 0 ? "bg-amber-500" : "bg-amber-50"}`}>
+                        <Zap className={`w-6 h-6 ${fastTrackCount > 0 ? "text-white" : "text-amber-500"}`} />
+                      </div>
+                      <div>
+                        <p className="font-black text-slate-900 text-base md:text-lg tracking-tight">Fast Track Security</p>
+                        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mt-0.5">Skip the airport queues</p>
                       </div>
                     </div>
-                  )}
+                    <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto border-t border-slate-100 sm:border-0 pt-4 sm:pt-0">
+                      <div className="text-left sm:text-right">
+                        <span className="block font-black text-xl text-slate-900 tabular-nums">+£{fastTrackUnitCost.toFixed(2)}</span>
+                        <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-widest">Per Person</span>
+                      </div>
+                      <div className="flex items-center bg-slate-100 rounded-xl p-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setFastTrackCount(n => Math.max(0, n - 1))}
+                          disabled={fastTrackCount === 0}
+                          aria-label="Remove fast track"
+                          className={`w-10 h-10 rounded-lg flex items-center justify-center font-black text-lg transition-colors ${fastTrackCount > 0 ? "bg-white text-slate-700 shadow-sm hover:text-amber-600" : "text-slate-400 cursor-not-allowed"}`}
+                        >
+                          &minus;
+                        </button>
+                        <span className="font-black text-lg w-10 text-center text-slate-900 tabular-nums" aria-live="polite">{fastTrackCount}</span>
+                        <button
+                          type="button"
+                          onClick={() => setFastTrackCount(n => Math.min(9, n + 1))}
+                          disabled={fastTrackCount >= 9}
+                          aria-label="Add fast track"
+                          className="w-10 h-10 rounded-lg bg-white text-slate-700 font-black text-lg shadow-sm hover:text-amber-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* VIP Airport Lounge — coming soon */}
+                <div className="p-5 rounded-xl border border-slate-200 bg-slate-50/60">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-slate-200">
+                        <Coffee className="w-6 h-6 text-slate-400" />
+                      </div>
+                      <div>
+                        <p className="font-black text-slate-500 text-base md:text-lg tracking-tight">VIP Airport Lounge</p>
+                        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">Relax before your flight</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-end w-full sm:w-auto border-t border-slate-100 sm:border-0 pt-4 sm:pt-0">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-widest">
+                        <Clock className="w-3.5 h-3.5" /> Coming Soon
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            )}
+            </div>
 
             {/* 3. SECURE PAYMENT */}
             <div className="bg-white p-6 md:p-10 rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/50 relative overflow-hidden">
@@ -870,7 +852,7 @@ function CheckoutContent() {
                   <Lock className="w-3.5 h-3.5" /> Secure
                 </div>
               </div>
-              <div className="bg-blue-50 p-6 md:p-8 rounded-3xl border border-blue-100 flex items-center gap-5">
+              <div className="bg-blue-50 p-6 md:p-8 rounded-2xl border border-blue-100 flex items-center gap-5">
                 <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-md shrink-0">
                   <CreditCard className="w-6 h-6 text-blue-600" />
                 </div>
@@ -912,7 +894,7 @@ function CheckoutContent() {
               {/* ── Pay button ─────────────────────────────────────────────── */}
               <button
                 type="submit" form="checkout-form" disabled={isProcessing || !!hasDateIssue || priceResolving}
-                className="w-full h-16 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white font-black text-base rounded-2xl flex items-center justify-center gap-3 shadow-[0_15px_30px_-5px_rgba(37,99,235,0.4)] active:scale-95 transition-all uppercase tracking-widest touch-manipulation"
+                className="w-full h-16 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white font-black text-base rounded-2xl flex items-center justify-center gap-3 active:scale-[0.99] transition-colors uppercase tracking-widest touch-manipulation"
               >
                 {isProcessing
                   ? <><Loader2 className="w-5 h-5 animate-spin" /> Preparing...</>
@@ -1167,7 +1149,7 @@ function CheckoutContent() {
                     <Loader2 className="w-5 h-5 animate-spin" /> Confirming live price…
                   </span>
                 ) : (
-                  <span className="text-5xl font-black tracking-tighter text-blue-400 drop-shadow-lg">
+                  <span className="text-5xl font-black tracking-tighter text-blue-400 tabular-nums">
                     £{finalTotal.toFixed(2)}
                   </span>
                 )}
@@ -1211,7 +1193,7 @@ function CheckoutContent() {
                 <button
                   type="submit" form="checkout-form"
                   disabled={isProcessing || !!hasDateIssue || priceResolving}
-                  className="w-full h-16 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:border disabled:border-slate-700 disabled:text-slate-500 text-white font-black text-lg rounded-2xl flex items-center justify-center gap-3 shadow-[0_15px_30px_-5px_rgba(37,99,235,0.4)] active:scale-95 transition-all uppercase tracking-widest touch-manipulation"
+                  className="w-full h-16 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:border disabled:border-slate-700 disabled:text-slate-500 text-white font-black text-lg rounded-2xl flex items-center justify-center gap-3 active:scale-[0.99] transition-colors uppercase tracking-widest touch-manipulation"
                 >
                   {isProcessing
                     ? <><Loader2 className="w-6 h-6 animate-spin" /> Processing...</>
@@ -1228,7 +1210,7 @@ function CheckoutContent() {
           </div>
 
           <div className="mt-6 flex flex-col gap-4">
-            <div className="bg-[#131A2B] rounded-3xl p-6 border border-slate-800 shadow-lg flex items-start gap-4">
+            <div className="bg-[#0F1523] rounded-2xl p-6 border border-white/[0.06] flex items-start gap-4">
               <div className="w-10 h-10 bg-emerald-500/10 text-emerald-400 rounded-xl flex items-center justify-center flex-shrink-0">
                 <ShieldCheck className="w-5 h-5" />
               </div>
@@ -1277,7 +1259,7 @@ function CheckoutSkeleton() {
             </div>
           </div>
         </div>
-        <aside className="w-full lg:w-[420px] bg-[#0B1120] rounded-2xl border border-slate-800 p-10 shadow-2xl">
+        <aside className="w-full lg:w-[420px] bg-[#0F1523] rounded-2xl border border-white/[0.06] p-10">
           <div className="h-8 w-40 bg-slate-800 rounded animate-pulse mb-10" />
           <div className="space-y-4 mb-10">
             <div className="h-4 w-full bg-slate-800 rounded animate-pulse" />
@@ -1298,10 +1280,7 @@ export default function CheckoutPage() {
       suppressHydrationWarning
       className="min-h-[100dvh] bg-[#F8FAFC] font-sans antialiased pb-24 selection:bg-blue-200 selection:text-blue-900 overflow-x-hidden relative"
     >
-      <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0 flex justify-center overflow-hidden">
-        <div className="w-full max-w-[1000px] h-96 bg-blue-600/5 blur-[120px] rounded-full absolute -top-48" />
-      </div>
-      <header className="sticky top-0 z-[100] bg-[#0A101D] border-b border-slate-800 shadow-2xl backdrop-blur-md">
+      <header className="sticky top-0 z-[100] bg-[#0A101D] border-b border-white/[0.06]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 md:h-20 flex items-center justify-between">
           <Link href="/results" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group touch-manipulation">
             <ArrowLeft className="w-4 h-4 md:w-5 md:h-5 lg:group-hover:-translate-x-1 transition-transform" />
