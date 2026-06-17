@@ -29,6 +29,14 @@ alter table public.bookings enable row level security;
 -- Remove the old public INSERT hole (anyone with the anon key could insert).
 drop policy if exists "Allow Public Bookings" on public.bookings;
 
+-- Remove leftover account-model template policies. Customers have no logins,
+-- so these "own row" rules (auth.uid() = user_id) never matched and only added
+-- clutter. The single-email admin rule below is superseded by the domain one.
+drop policy if exists "Allow admin full access"       on public.bookings;
+drop policy if exists "Users can create own bookings" on public.bookings;
+drop policy if exists "Users can update own bookings" on public.bookings;
+drop policy if exists "Users can view own bookings"   on public.bookings;
+
 drop policy if exists "admin_manage_all_bookings" on public.bookings;
 create policy "admin_manage_all_bookings" on public.bookings
   for all to authenticated
@@ -75,25 +83,31 @@ create policy "settings admin delete" on public.settings
   using ((auth.jwt() ->> 'email') like '%@aeroparkdirect.co.uk');
 
 
--- ─── PROMOTIONS — public READ, authenticated WRITE ────────────────────────────
--- Uses the existing role()='authenticated' style. The UPDATE policy was missing
--- (so admins couldn't toggle a promo's active state) — added here.
+-- ─── PROMOTIONS — public READ, admin-email WRITE ──────────────────────────────
+-- Writes are restricted to the AeroPark admin domain, matching bookings,
+-- companies and settings. (Previously any authenticated user could create or
+-- edit promo codes — tightened here for consistency and defence in depth.)
 alter table public.promotions enable row level security;
 
 drop policy if exists "Enable read access for all users"          on public.promotions;
 drop policy if exists "Enable insert for authenticated users only" on public.promotions;
 drop policy if exists "Enable delete for authenticated users only" on public.promotions;
 drop policy if exists "promotions admin update"                    on public.promotions;
+drop policy if exists "promotions admin insert"                    on public.promotions;
+drop policy if exists "promotions admin delete"                    on public.promotions;
 
 create policy "Enable read access for all users" on public.promotions
   for select to public using (true);
-create policy "Enable insert for authenticated users only" on public.promotions
-  for insert to public with check (auth.role() = 'authenticated');
+create policy "promotions admin insert" on public.promotions
+  for insert to authenticated
+  with check ((auth.jwt() ->> 'email') like '%@aeroparkdirect.co.uk');
 create policy "promotions admin update" on public.promotions
   for update to authenticated
-  using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
-create policy "Enable delete for authenticated users only" on public.promotions
-  for delete to public using (auth.role() = 'authenticated');
+  using      ((auth.jwt() ->> 'email') like '%@aeroparkdirect.co.uk')
+  with check ((auth.jwt() ->> 'email') like '%@aeroparkdirect.co.uk');
+create policy "promotions admin delete" on public.promotions
+  for delete to authenticated
+  using ((auth.jwt() ->> 'email') like '%@aeroparkdirect.co.uk');
 
 
 -- ─── INTERNAL TABLES — service role ONLY (RLS on, no policies = deny all) ──────

@@ -5,6 +5,16 @@ import { rateLimit, getClientIp } from '@/app/lib/rateLimit';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Escape untrusted values before interpolating them into the HTML alert.
+function escapeHtml(v: unknown): string {
+  return String(v ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export async function POST(request: Request) {
   const rl = rateLimit(`notify-admin:${getClientIp(request)}`, 8, 60_000);
   if (!rl.ok) {
@@ -14,34 +24,40 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { type, ref, oldDate, newDate, addedCost, oldFlight, newFlight } = body;
 
+    const safeRef = escapeHtml(ref);
+    const addedCostNum = Number(addedCost);
+    const addedCostStr = isNaN(addedCostNum) ? "0.00" : addedCostNum.toFixed(2);
+
     let subject = '';
     let message = '';
 
     if (type === 'EXTENSION') {
-      subject = `🚨 Booking Extended: ${ref}`;
+      subject = `Booking Extended: ${safeRef}`;
       message = `
         <div style="font-family: sans-serif; max-width: 600px; padding: 20px; border: 1px solid #e2e8f0; border-radius: 10px;">
           <h2 style="color: #0f172a;">Booking Extension Alert</h2>
-          <p><strong>Reference:</strong> ${ref}</p>
-          <p><strong>Old Return Date:</strong> ${oldDate}</p>
-          <p><strong>New Return Date:</strong> ${newDate}</p>
-          <p style="font-size: 18px; color: #10b981;"><strong>Additional Amount Due:</strong> £${addedCost.toFixed(2)}</p>
+          <p><strong>Reference:</strong> ${safeRef}</p>
+          <p><strong>Old Return Date:</strong> ${escapeHtml(oldDate)}</p>
+          <p><strong>New Return Date:</strong> ${escapeHtml(newDate)}</p>
+          <p style="font-size: 18px; color: #10b981;"><strong>Additional Amount Due:</strong> £${addedCostStr}</p>
           <hr style="border-top: 1px solid #e2e8f0; margin: 20px 0;" />
           <p style="color: #64748b; font-size: 14px;"><em>Please ensure the operator is notified of this new return date.</em></p>
         </div>
       `;
     } else if (type === 'FLIGHT_CHANGE') {
-      subject = `✈️ Flight Updated: ${ref}`;
+      subject = `Flight Updated: ${safeRef}`;
       message = `
         <div style="font-family: sans-serif; max-width: 600px; padding: 20px; border: 1px solid #e2e8f0; border-radius: 10px;">
           <h2 style="color: #0f172a;">Flight Detail Update</h2>
-          <p><strong>Reference:</strong> ${ref}</p>
-          <p><strong>Old Flight:</strong> ${oldFlight || 'None'}</p>
-          <p><strong>New Flight:</strong> <span style="color: #2563eb; font-weight: bold;">${newFlight}</span></p>
+          <p><strong>Reference:</strong> ${safeRef}</p>
+          <p><strong>Old Flight:</strong> ${escapeHtml(oldFlight || 'None')}</p>
+          <p><strong>New Flight:</strong> <span style="color: #2563eb; font-weight: bold;">${escapeHtml(newFlight)}</span></p>
           <hr style="border-top: 1px solid #e2e8f0; margin: 20px 0;" />
           <p style="color: #64748b; font-size: 14px;"><em>Please update your dispatch board.</em></p>
         </div>
       `;
+    } else {
+      return NextResponse.json({ success: false, error: 'Unknown notification type.' }, { status: 400 });
     }
 
     // Send the email via Resend

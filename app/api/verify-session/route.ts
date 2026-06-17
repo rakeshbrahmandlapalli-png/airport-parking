@@ -43,7 +43,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ status: "unpaid" }, { status: 400 });
     }
   } catch (err: any) {
-    logger.error("Stripe Session Verification Error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    logger.error("Stripe Session Verification Error:", err?.message);
+    return NextResponse.json({ error: "Could not verify the payment session." }, { status: 500 });
   }
 }

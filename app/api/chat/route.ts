@@ -319,12 +319,9 @@ ESCALATION:
     return result.toDataStreamResponse();
 
   } catch (error) {
-    logger.error('AERO API Error:', error);
+    logger.error('AERO API Error:', error instanceof Error ? error.message : error);
     return new Response(
-      JSON.stringify({
-        error:   'AERO is temporarily unavailable.',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      }),
+      JSON.stringify({ error: 'AERO is temporarily unavailable.' }),
       { status: 503, headers: { 'Content-Type': 'application/json' } }
     );
   }

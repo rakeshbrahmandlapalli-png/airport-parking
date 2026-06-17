@@ -4,20 +4,59 @@ import { sendBookingReceipt, sendProviderNotification, sendReviewRequest } from 
 import { Resend } from "resend";
 import { createClient } from '@supabase/supabase-js';
 import { rateLimit, getClientIp } from "@/app/lib/rateLimit";
+import { getAdminUser } from "@/app/lib/adminAuth";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// 🟢 INITIALIZE SUPABASE CLIENT
+// Service-role client — server-only. Used to resolve the authoritative booking
+// and company records so we never trust customer data supplied by the caller.
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!, 
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// 🟢 HELPER FUNCTION: GENERATES AIRPORT-SPECIFIC VIP INSTRUCTIONS
+// Escape untrusted values before interpolating them into HTML email bodies.
+function escapeHtml(v: unknown): string {
+  return String(v ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// Strip a phone number down to a tel:-safe value.
+function toTel(phone: unknown): string {
+  return String(phone ?? "").replace(/[^\d+]/g, "");
+}
+
+// Resolve the authoritative booking row by its reference. All customer-facing
+// mail is addressed to the email stored on this row — never an address passed
+// in the request — so this endpoint cannot be used to send branded mail to
+// arbitrary recipients.
+async function loadBooking(ref: unknown) {
+  const bookingRef = String(ref || "").toUpperCase().trim();
+  if (!bookingRef) return null;
+  const { data } = await supabase
+    .from("bookings")
+    .select("*")
+    .eq("booking_ref", bookingRef)
+    .maybeSingle();
+  return data;
+}
+
+async function loadCompany(companyId: unknown) {
+  const id = String(companyId || "");
+  if (!id || id === "ALL" || id === "null") return null;
+  const { data } = await supabase.from("companies").select("*").eq("id", id).maybeSingle();
+  return data;
+}
+
+// Generates airport-specific VIP instructions for exclusive bookings.
 function getExclusiveInstructions(booking: any) {
   const airport = (booking.airport || '').toLowerCase();
   const service = (booking.service_type || '').toLowerCase();
-  
+
   let arrival = '';
   let returnInst = '';
 
@@ -72,6 +111,9 @@ function getExclusiveInstructions(booking: any) {
   return { arrival, returnInst };
 }
 
+const isExclusiveBooking = (booking: any, company: any) =>
+  booking?.service_type?.toLowerCase().includes('exclusive') ||
+  company?.name?.toLowerCase().includes('exclusive');
 
 export async function POST(req: Request) {
   const rl = rateLimit(`send:${getClientIp(req)}`, 20, 60_000);
@@ -81,16 +123,30 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
+    // The dashboard-triggered actions are privileged: gate them behind an
+    // authenticated admin session before any mail is sent.
+    const isPrivileged = Boolean(body.manual_provider_notify || body.manual_customer_notify || body.review_request);
+    if (isPrivileged) {
+      const admin = await getAdminUser(req);
+      if (!admin) {
+        return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+      }
+    }
+
     // --- CASE 1: GENERAL CONTACT FORM INQUIRY ---
+    // Public. Sent only to our own inbox; the customer's address is reply-to.
+    // Plain text, so no HTML-injection surface.
     if (body.message && body.name) {
-      const { name, email, reference, message } = body;
-      logger.info(`📩 New Contact Inquiry from: ${email}`);
+      const name = String(body.name).slice(0, 120);
+      const email = String(body.email || "").slice(0, 160);
+      const reference = String(body.reference || "").slice(0, 60);
+      const message = String(body.message).slice(0, 4000);
 
       const result = await resend.emails.send({
-        from: 'AeroPark Direct <info@aeroparkdirect.co.uk>', 
+        from: 'AeroPark Direct <info@aeroparkdirect.co.uk>',
         to: 'info@aeroparkdirect.co.uk',
         subject: `NEW INQUIRY: ${name} (${reference || 'No Ref'})`,
-        replyTo: email, 
+        replyTo: email || undefined,
         text: `Name: ${name}\nEmail: ${email}\nRef: ${reference}\n\nMessage:\n${message}`,
         tags: [{ name: "category", value: "contact_form" }],
       });
@@ -99,14 +155,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true });
     }
 
-    // --- CASE 5: REVIEW REQUEST ---
+    // --- CASE 5: REVIEW REQUEST (admin only) ---
     if (body.review_request && body.booking) {
-      const b = body.booking;
-      const targetEmail = (b.email || b.customerEmail)?.trim();
+      const b = await loadBooking(body.booking?.booking_ref);
+      if (!b) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+      const targetEmail = (b.email || "").trim();
       if (!targetEmail) {
         return NextResponse.json({ error: "Booking has no email address" }, { status: 400 });
       }
-      logger.info(`⭐ Sending review request to: ${targetEmail} | Ref: ${b.booking_ref}`);
       const result = await sendReviewRequest(targetEmail, b.full_name || "", b.booking_ref || "");
       if (!result.success) {
         return NextResponse.json({ error: "Failed to send review request" }, { status: 500 });
@@ -114,76 +170,71 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, message: "Review request sent" });
     }
 
-    // --- CASE 3: MANUAL PROVIDER TRIGGER (Dashboard "Briefcase" Button) ---
+    // --- CASE 3: MANUAL PROVIDER TRIGGER (admin only, dashboard) ---
     if (body.manual_provider_notify && body.booking) {
-      logger.info(`🚀 Manually triggering provider email for: ${body.booking.booking_ref}`);
-      const { data: company } = await supabase.from('companies').select('*').eq('id', body.booking.company_id).maybeSingle();
-        
-      const isExclusive = body.booking.service_type?.toLowerCase().includes('exclusive') || company?.name?.toLowerCase().includes('exclusive');
+      const booking = await loadBooking(body.booking?.booking_ref);
+      if (!booking) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+      const company = await loadCompany(booking.company_id);
 
-      // 🟢 IF EXCLUSIVE: Intercept and send a MASSIVE RED WARNING to the operator
-      if (isExclusive) {
+      if (isExclusiveBooking(booking, company)) {
         await resend.emails.send({
           from: 'AeroPark Ops <ops@aeroparkdirect.co.uk>',
           to: company?.email || 'info@aeroparkdirect.co.uk',
-          subject: `VIP JOB ALERT: ${body.booking.booking_ref} (BARRIER PRE-PAID) 🚨`,
+          subject: `VIP JOB ALERT: ${escapeHtml(booking.booking_ref)} (BARRIER PRE-PAID)`,
           html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: auto;">
               <h2 style="color: #2563eb;">New VIP Booking Assigned</h2>
               <div style="background: #fee2e2; border: 2px solid #ef4444; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="color: #b91c1c; margin-top: 0;">⚠️ AEROPARK EXCLUSIVE BOOKING ⚠️</h3>
+                <h3 style="color: #b91c1c; margin-top: 0;">AEROPARK EXCLUSIVE BOOKING</h3>
                 <p style="color: #991b1b; font-weight: bold; font-size: 16px;">
                   All barrier and terminal drop-off fees have been PRE-PAID by AeroPark Direct.<br><br>
                   Under NO CIRCUMSTANCES should the customer be asked to pay cash or card at the barrier.
                 </p>
               </div>
-              <p><strong>Customer:</strong> ${body.booking.full_name}</p>
-              <p><strong>Mobile:</strong> ${body.booking.phone_number}</p>
-              <p><strong>Car:</strong> ${body.booking.car_color} ${body.booking.car_make} [${body.booking.license_plate}]</p>
-              <p><strong>Drop-off:</strong> ${body.booking.dropoff_date} @ ${body.booking.dropoff_time}</p>
-              <p><strong>Pick-up:</strong> ${body.booking.pickup_date} @ ${body.booking.pickup_time}</p>
-              <p><strong>Terminal:</strong> ${body.booking.terminal}</p>
-              <p><strong>Flight:</strong> ${body.booking.flight_number}</p>
+              <p><strong>Customer:</strong> ${escapeHtml(booking.full_name)}</p>
+              <p><strong>Mobile:</strong> ${escapeHtml(booking.phone_number)}</p>
+              <p><strong>Car:</strong> ${escapeHtml(booking.car_color)} ${escapeHtml(booking.car_make)} [${escapeHtml(booking.license_plate)}]</p>
+              <p><strong>Drop-off:</strong> ${escapeHtml(booking.dropoff_date)} @ ${escapeHtml(booking.dropoff_time)}</p>
+              <p><strong>Pick-up:</strong> ${escapeHtml(booking.pickup_date)} @ ${escapeHtml(booking.pickup_time)}</p>
+              <p><strong>Terminal:</strong> ${escapeHtml(booking.terminal)}</p>
+              <p><strong>Flight:</strong> ${escapeHtml(booking.flight_number)}</p>
             </div>
           `
         });
         return NextResponse.json({ success: true, message: "VIP Provider notification sent" });
       }
 
-      // If standard booking, use normal template
-      await sendProviderNotification(body.booking, company);
+      await sendProviderNotification(booking, company);
       return NextResponse.json({ success: true, message: "Manual provider notification sent" });
     }
 
-    // --- CASE 4: MANUAL CUSTOMER TRIGGER (Dashboard "Receipt" Button) ---
+    // --- CASE 4: MANUAL CUSTOMER TRIGGER (admin only, dashboard) ---
     if (body.manual_customer_notify && body.booking) {
-      logger.info(`🚀 Manually triggering customer dispatch for: ${body.booking.booking_ref}`);
-      const { data: company } = await supabase.from('companies').select('*').eq('id', body.booking.company_id).maybeSingle();
-        
-      const isExclusive = body.booking.service_type?.toLowerCase().includes('exclusive') || company?.name?.toLowerCase().includes('exclusive');
+      const booking = await loadBooking(body.booking?.booking_ref);
+      if (!booking) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+      const company = await loadCompany(booking.company_id);
 
-      // 🟢 IF EXCLUSIVE: Send the VIP Instructions with the assigned operator's phone number
-      if (isExclusive) {
-        const inst = getExclusiveInstructions(body.booking);
+      if (isExclusiveBooking(booking, company)) {
+        const inst = getExclusiveInstructions(booking);
         const operatorName = company?.name || 'our Premium Partner network';
         const driverPhone = company?.phone_number || company?.phone || company?.contact_number || 'See booking portal for dispatch number';
 
         await resend.emails.send({
           from: 'AeroPark Direct <bookings@aeroparkdirect.co.uk>',
-          to: body.booking.email,
-          subject: `Your VIP Driver Details - AeroPark Exclusive 👑`,
+          to: booking.email,
+          subject: `Your VIP Driver Details - AeroPark Exclusive`,
           html: `
             <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: auto;">
               <h2 style="color: #2563eb;">Your VIP Driver is Ready!</h2>
-              <p>Dear ${body.booking.full_name},</p>
-              <p>Your vehicle has been successfully assigned to <strong>${operatorName}</strong>, one of our fully-vetted premium partners. Here are your highly important instructions for <strong>${body.booking.airport}</strong>.</p>
-              
+              <p>Dear ${escapeHtml(booking.full_name)},</p>
+              <p>Your vehicle has been successfully assigned to <strong>${escapeHtml(operatorName)}</strong>, one of our fully-vetted premium partners. Here are your highly important instructions for <strong>${escapeHtml(booking.airport)}</strong>.</p>
+
               <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;">
                  <h3 style="margin-top: 0; color: #0f172a;">Your Exclusive Perks:</h3>
                  <ul style="margin-bottom: 0;">
-                   <li>✅ <strong>Zero Hidden Fees:</strong> We have completely covered your airport barrier/drop-off charges. Do not pay them!</li>
-                   <li>✅ <strong>Hand-Picked Operator:</strong> Your car is being handled by a fully insured, top-rated provider.</li>
-                   <li>✅ <strong>Priority Support:</strong> You have direct access to our in-house team if your flights change.</li>
+                   <li><strong>Zero Hidden Fees:</strong> We have completely covered your airport barrier/drop-off charges. Do not pay them!</li>
+                   <li><strong>Hand-Picked Operator:</strong> Your car is being handled by a fully insured, top-rated provider.</li>
+                   <li><strong>Priority Support:</strong> You have direct access to our in-house team if your flights change.</li>
                  </ul>
               </div>
 
@@ -192,9 +243,9 @@ export async function POST(req: Request) {
 
               <h3>Return Instructions:</h3>
               ${inst.returnInst}
-              
+
               <div style="background: #e0f2fe; padding: 15px; border-radius: 8px; margin-top: 25px; border: 1px solid #bae6fd;">
-                <p style="margin: 0; font-size: 16px;"><strong>Driver Contact Number:</strong> <a href="tel:${driverPhone}">${driverPhone}</a></p>
+                <p style="margin: 0; font-size: 16px;"><strong>Driver Contact Number:</strong> <a href="tel:${escapeHtml(toTel(driverPhone))}">${escapeHtml(driverPhone)}</a></p>
               </div>
             </div>
           `
@@ -202,58 +253,51 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true, message: "VIP Customer dispatch sent" });
       }
 
-      // If standard booking, use normal template
-      await sendBookingReceipt(body.booking, company, false);
+      await sendBookingReceipt(booking, company, false);
       return NextResponse.json({ success: true, message: "Manual customer receipt sent" });
     }
 
-    // --- CASE 2: AUTOMATED BOOKING RECEIPT (Immediately after Stripe payment) ---
+    // --- CASE 2: AUTOMATED BOOKING RECEIPT (public, post-payment) ---
+    // Always resolves the booking from our database and mails the stored
+    // address; the request cannot redirect the receipt to another recipient.
     if (body.booking) {
-      const { booking, isAmendment } = body;
-      
-      const targetEmail = (booking.email || booking.customerEmail)?.trim().toLowerCase();
-      logger.info(`📤 Sending Receipt to: "${targetEmail}" | Ref: ${booking.booking_ref}`);
+      const isAmendment = Boolean(body.isAmendment);
+      const booking = await loadBooking(body.booking?.booking_ref);
+      if (!booking) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
 
-      let company = null;
-      
-      // 🟢 BULLETPROOF SUPABASE FETCH
-      try {
-        if (booking.company_id && booking.company_id !== "ALL" && booking.company_id !== "null") {
-          const { data } = await supabase.from('companies').select('*').eq('id', booking.company_id).maybeSingle();
-          company = data;
-        }
-
-        if (!company) {
-           logger.info("⚠️ Missing company_id. Falling back to AeroPark Direct profile.");
-           const { data } = await supabase.from('companies').select('*').eq('name', 'AeroPark Direct').maybeSingle();
-           company = data;
-        }
-      } catch (dbError: any) {
-        logger.error("⚠️ Supabase DB Error:", dbError.message);
-        company = null; 
+      const targetEmail = (booking.email || "").trim().toLowerCase();
+      if (!targetEmail) {
+        return NextResponse.json({ error: "Booking has no email address" }, { status: 400 });
       }
 
-      const isExclusive = booking.service_type?.toLowerCase().includes('exclusive') || company?.name?.toLowerCase().includes('exclusive');
+      let company = await loadCompany(booking.company_id);
+      if (!company) {
+        const { data } = await supabase.from('companies').select('*').eq('name', 'AeroPark Direct').maybeSingle();
+        company = data;
+      }
 
-      // 🟢 IF EXCLUSIVE: Intercept the automated checkout receipt and send the "Matching" email
+      const isExclusive = isExclusiveBooking(booking, company);
+
+      // Exclusive bookings get a "matching in progress" holding email rather
+      // than the standard receipt with immediate instructions.
       if (isExclusive && !isAmendment) {
         const result = await resend.emails.send({
           from: 'AeroPark Direct <bookings@aeroparkdirect.co.uk>',
           to: targetEmail,
-          subject: `Booking Confirmed: AeroPark Direct Exclusive 👑`,
+          subject: `Booking Confirmed: AeroPark Direct Exclusive`,
           html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
               <h2 style="color: #2563eb;">Booking Confirmed: AeroPark Exclusive</h2>
-              <p>Dear ${booking.full_name},</p>
-              <p>Thank you for choosing the VIP standard! We have successfully received your booking and payment of <strong>£${booking.total_price}</strong>.</p>
-              
+              <p>Dear ${escapeHtml(booking.full_name)},</p>
+              <p>Thank you for choosing the VIP standard! We have successfully received your booking and payment of <strong>£${escapeHtml(booking.total_price)}</strong>.</p>
+
               <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;">
                 <h3 style="margin-top: 0;">What happens next?</h3>
                 <p>Our concierge team is currently matching your vehicle with one of our top-rated, fully-vetted parking partners for your dates.</p>
                 <p>We will email and text you your dedicated VIP driver's contact number and exact terminal meeting point <strong>very soon</strong>, well ahead of your travel date.</p>
                 <p>Rest assured, your airport barrier and drop-off fees are fully covered by us!</p>
               </div>
-              <p><strong>Booking Reference:</strong> ${booking.booking_ref}</p>
+              <p><strong>Booking Reference:</strong> ${escapeHtml(booking.booking_ref)}</p>
             </div>
           `
         });
@@ -262,32 +306,25 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true, data: result.data });
       }
 
-      // If Standard Booking: Fire the standard email function
-      const result = await sendBookingReceipt(booking, company, isAmendment || false);
-      
+      const result = await sendBookingReceipt(booking, company, isAmendment);
+
       if (result.success) {
-        // 🟢 PROVIDER NOTIFICATION CHECK
         if (!isAmendment && company && !isExclusive) {
           const allowedPartners = ['APD', '24/7 Meet & Greet', 'Airport Parking Bay'];
-          
           if (allowedPartners.includes(company.name)) {
             await sendProviderNotification(booking, company);
-            logger.info(`✅ Provider Notification routed to ${company.name}`);
-          } else {
-            logger.info(`ℹ️ No provider notification sent. ${company.name} is not in the allowed partners list.`);
           }
         }
         return NextResponse.json({ success: true, data: result.data });
       } else {
-        const resendError = result.error as any;
-        return NextResponse.json({ error: "Resend rejected the request", debug_msg: resendError?.message || "Check Resend Dashboard" }, { status: 403 });
+        return NextResponse.json({ error: "Resend rejected the request" }, { status: 403 });
       }
     }
 
     return NextResponse.json({ error: "Invalid payload format" }, { status: 400 });
 
   } catch (error: any) {
-    logger.error("🔥 API Route Crash:", error.message);
-    return NextResponse.json({ error: "Server Error", msg: error.message }, { status: 500 });
+    logger.error("send route error:", error?.message);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

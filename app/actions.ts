@@ -1,7 +1,5 @@
 "use server";
 
-import { redirect } from "next/navigation";
-import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 import { logger } from "@/app/lib/logger";
 
@@ -32,19 +30,6 @@ const safeParseDate = (dateStr: string): Date => {
   }
   const d = new Date(dateStr);
   return isNaN(d.getTime()) ? new Date() : d;
-};
-
-// ─── BOOKING REF GENERATOR ────────────────────────────────────────────────────
-// 🟢 FIXED: crypto.randomUUID is available in Node 18+ / Edge runtime
-const generateRef = (): string => {
-  try {
-    // Use Node crypto for a collision-safe ref
-    const { randomBytes } = require("crypto");
-    return "APD-" + randomBytes(4).toString("hex").toUpperCase();
-  } catch {
-    // Fallback: still better than Math.random()
-    return "APD-" + Date.now().toString(36).toUpperCase();
-  }
 };
 
 // ============================================================================
@@ -188,117 +173,7 @@ export async function checkAvailability(
   }
 }
 
-// ============================================================================
-// CREATE CHECKOUT SESSION
-// Legacy server action — kept for backwards compatibility.
-// The primary checkout flow uses /api/checkout route instead.
-// ============================================================================
-export async function createCheckoutSession(formData: FormData) {
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
-
-  // ── Extract form fields ────────────────────────────────────────────────────
-  const customerName  = formData.get("customerName")  as string;
-  const customerEmail = formData.get("customerEmail")  as string;
-  const customerPhone = formData.get("customerPhone")  as string;
-  const flightNumber  = formData.get("flightNumber")   as string;
-  const licensePlate  = formData.get("licensePlate")   as string;
-  const carMake       = (formData.get("carMake")       as string) || "";
-  const carColor      = (formData.get("carColor")      as string) || "";
-  const promoUsed     = (formData.get("promoUsed")     as string) || "";
-  const fastTrackCount = parseInt((formData.get("fastTrackCount") as string) || "0", 10);
-  const parkingType   = (formData.get("parkingType")   as string) || "standard";
-  const totalPrice    = parseFloat((formData.get("totalPrice")   as string) || "0");
-  const airport       = (formData.get("airport")       as string) || "Luton Airport (LTN)";
-  const terminal      = (formData.get("terminal")      as string) || "Main Terminal";
-  const dropoffDateStr = formData.get("dropoffDate")   as string;
-  const pickupDateStr  = formData.get("pickupDate")    as string;
-  const companyId     = (formData.get("companyId")     as string) || "";
-
-  const dropoffDate = safeParseDate(dropoffDateStr);
-  const pickupDate  = safeParseDate(pickupDateStr);
-
-  // 🟢 FIXED: Collision-safe booking ref
-  const bookingRef = generateRef();
-
-  let sessionUrl = "";
-
-  try {
-    // ── 1. Resolve company ─────────────────────────────────────────────────
-    let company: any = null;
-    if (companyId && companyId !== "null") {
-      const { data } = await supabaseAdmin.from("companies").select("*").eq("id", companyId).maybeSingle();
-      company = data;
-    }
-    if (!company && parkingType) {
-      const { data } = await supabaseAdmin.from("companies").select("*").ilike("name", `%${parkingType}%`).maybeSingle();
-      company = data;
-    }
-
-    // ── 2. 🟢 FIXED: Create Stripe session FIRST (so we get the session_id) ─
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "gbp",
-            product_data: {
-              name: `AeroPark Direct: ${company?.name || parkingType.toUpperCase()}`,
-              description: `Flight: ${flightNumber} | Plate: ${licensePlate} | Ref: ${bookingRef}`,
-            },
-            unit_amount: Math.round(totalPrice * 100),
-          },
-          quantity: 1,
-        },
-      ],
-      metadata: {
-        booking_ref:      bookingRef,
-        company_id:       company?.id    || "",
-        provider_name:    company?.name  || parkingType,
-        terminal,
-        promo_used:       promoUsed,
-        fast_track_count: fastTrackCount.toString(),
-      },
-      mode: "payment",
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || "https://www.aeroparkdirect.co.uk"}/success?session_id={CHECKOUT_SESSION_ID}&ref=${bookingRef}`,
-      cancel_url:  `${process.env.NEXT_PUBLIC_BASE_URL || "https://www.aeroparkdirect.co.uk"}/checkout?type=${parkingType}`,
-      customer_email: customerEmail,
-    });
-
-    sessionUrl = session.url as string;
-
-    // ── 3. 🟢 FIXED: Insert booking AFTER session created, WITH session_id ─
-    const { error: insertError } = await supabaseAdmin.from("bookings").insert([{
-      booking_ref:      bookingRef,
-      stripe_session_id: session.id,   // 🟢 Now saved correctly for webhook matching
-      full_name:        customerName,
-      email:            customerEmail,
-      phone_number:     customerPhone,
-      flight_number:    flightNumber,
-      license_plate:    licensePlate,
-      car_make:         carMake,
-      car_color:        carColor,
-      promo_used:       promoUsed,
-      service_type:     parkingType,
-      total_price:      totalPrice,
-      fast_track_count: fastTrackCount,
-      status:           "pending",     // Webhook updates to "paid" on success
-      airport,
-      terminal,
-      dropoff_date:     dropoffDate.toISOString(),
-      pickup_date:      pickupDate.toISOString(),
-      company_id:       company?.id || null,
-    }]);
-
-    if (insertError) {
-      // Log but don't block — Stripe session exists, webhook will still fire
-      logger.error("Booking DB insert failed (session still valid):", insertError.message);
-    }
-
-  } catch (err) {
-    logger.error("createCheckoutSession failed:", err);
-    return; // Returns undefined — caller should handle gracefully
-  }
-
-  // ── 4. Redirect to Stripe ─────────────────────────────────────────────────
-  if (sessionUrl) redirect(sessionUrl);
-}
+// The checkout flow lives entirely in the /api/checkout route, which recomputes
+// the price server-side before creating a Stripe session. The previous legacy
+// server action here trusted a client-supplied total and has been removed so it
+// can't be invoked as a price-bypass path.
