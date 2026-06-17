@@ -24,18 +24,24 @@ export async function proxy(req: NextRequest) {
   // getUser() validates the JWT with Supabase (not just decodes it).
   const { data: { user } } = await supabase.auth.getUser();
 
+  // Authorisation, not just authentication: a valid session only counts as an
+  // admin if the email is on the AeroPark domain — the same predicate the RLS
+  // policies enforce. This blocks any non-admin authenticated user from /admin.
+  const email = (user?.email ?? "").toLowerCase();
+  const isAdmin = !!user && email.endsWith("@aeroparkdirect.co.uk");
+
   const path = req.nextUrl.pathname;
   const isAdminArea = path.startsWith("/admin");
   const isLoginPage = path === "/admin/login";
 
-  if (isAdminArea && !isLoginPage && !user) {
+  if (isAdminArea && !isLoginPage && !isAdmin) {
     const url = req.nextUrl.clone();
     url.pathname = "/admin/login";
     url.searchParams.set("redirect", path);
     return NextResponse.redirect(url);
   }
 
-  if (isLoginPage && user) {
+  if (isLoginPage && isAdmin) {
     const url = req.nextUrl.clone();
     url.pathname = "/admin";
     url.search = "";
