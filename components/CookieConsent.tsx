@@ -117,80 +117,79 @@ export default function CookieConsent() {
 
   if (!open) return null;
 
+  const toggleRow = (
+    label: string,
+    desc: string,
+    checked: boolean,
+    onChange?: (v: boolean) => void,
+    disabled?: boolean,
+  ) => (
+    <label className={`flex items-center justify-between gap-4 ${disabled ? "opacity-50" : "cursor-pointer"}`}>
+      <span>
+        <span className="block text-[13px] font-medium text-white">{label}</span>
+        <span className="block text-[11px] leading-snug text-slate-400">{desc}</span>
+      </span>
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange?.(e.target.checked)}
+        className="h-3.5 w-3.5 shrink-0 accent-blue-600"
+      />
+    </label>
+  );
+
   return (
-    <div className="fixed inset-x-0 bottom-0 z-[9999] p-3 sm:p-5 pointer-events-none">
-      <div className="pointer-events-auto mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 overflow-hidden">
-        <div className="p-5 sm:p-6">
-          <div className="flex items-start gap-3">
-            <div className="hidden sm:flex w-10 h-10 shrink-0 rounded-xl bg-blue-50 border border-blue-100 items-center justify-center">
-              <Cookie className="w-5 h-5 text-blue-600" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-base font-black text-slate-900 tracking-tight">We value your privacy</h2>
-                <button
-                  onClick={rejectAll}
-                  aria-label="Reject non-essential cookies and close"
-                  className="sm:hidden text-slate-400 hover:text-slate-700 transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-slate-500">
-                We use essential cookies to run this site, plus product-analytics (Microsoft Clarity) to understand how
-                it&rsquo;s used. With your consent we also use Google analytics and advertising cookies to measure
-                performance. See our{" "}
-                <Link href="/privacy" className="text-blue-600 font-semibold hover:underline">Privacy Policy</Link>.
-              </p>
+    <div className="fixed bottom-4 left-4 right-4 sm:right-auto z-[9999] pointer-events-none">
+      <div className="pointer-events-auto sm:w-[380px] rounded-xl border border-slate-700/60 bg-[#0B1120] shadow-lg shadow-black/40">
+        <div className="p-4">
+          <div className="flex items-center gap-2">
+            <Cookie className="w-4 h-4 text-blue-400 shrink-0" aria-hidden="true" />
+            <h2 className="text-[13px] font-medium text-white">Cookies</h2>
+            <button
+              onClick={rejectAll}
+              aria-label="Reject non-essential cookies and close"
+              className="ml-auto -mr-1 p-1 text-slate-500 hover:text-slate-300 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
 
-              {/* Granular preferences */}
-              {showPrefs && (
-                <div className="mt-4 space-y-2.5 border-t border-slate-100 pt-4">
-                  <label className="flex items-center justify-between gap-3 opacity-60">
-                    <span className="text-[13px]">
-                      <span className="font-bold text-slate-900 block">Essential</span>
-                      <span className="text-slate-500">Required for booking &amp; checkout. Always on.</span>
-                    </span>
-                    <input type="checkbox" checked disabled className="h-4 w-4 accent-blue-600" />
-                  </label>
-                  <label className="flex items-center justify-between gap-3 cursor-pointer">
-                    <span className="text-[13px]">
-                      <span className="font-bold text-slate-900 block">Analytics</span>
-                      <span className="text-slate-500">Google Analytics (GA4) usage statistics.</span>
-                    </span>
-                    <input type="checkbox" checked={analytics} onChange={(e) => setAnalytics(e.target.checked)} className="h-4 w-4 accent-blue-600 cursor-pointer" />
-                  </label>
-                  <label className="flex items-center justify-between gap-3 cursor-pointer">
-                    <span className="text-[13px]">
-                      <span className="font-bold text-slate-900 block">Marketing</span>
-                      <span className="text-slate-500">Measures Google Ads conversions &amp; personalisation.</span>
-                    </span>
-                    <input type="checkbox" checked={marketing} onChange={(e) => setMarketing(e.target.checked)} className="h-4 w-4 accent-blue-600 cursor-pointer" />
-                  </label>
-                </div>
-              )}
+          <p className="mt-2 text-[12px] leading-relaxed text-slate-400">
+            We use essential cookies to run the site and, with your consent, analytics and advertising
+            cookies to improve it.{" "}
+            <Link href="/privacy" className="text-blue-400 hover:underline">Privacy Policy</Link>.
+          </p>
 
-              {/* Actions */}
-              <div className="mt-5 flex flex-col sm:flex-row gap-2.5">
-                {showPrefs ? (
-                  <button onClick={savePrefs} className="order-1 flex-1 h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-[13px] uppercase tracking-wide transition-colors">
-                    Save preferences
-                  </button>
-                ) : (
-                  <button onClick={acceptAll} className="order-1 flex-1 h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-[13px] uppercase tracking-wide transition-colors">
-                    Accept all
-                  </button>
-                )}
-                <button onClick={rejectAll} className="order-2 flex-1 h-11 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[13px] uppercase tracking-wide transition-colors">
-                  Reject non-essential
-                </button>
-                {!showPrefs && (
-                  <button onClick={() => setShowPrefs(true)} className="order-3 sm:flex-none h-11 px-4 rounded-xl border border-slate-200 hover:border-slate-300 text-slate-600 font-bold text-[13px] uppercase tracking-wide transition-colors">
-                    Preferences
-                  </button>
-                )}
-              </div>
+          {showPrefs && (
+            <div className="mt-3 space-y-3 border-t border-slate-700/60 pt-3">
+              {toggleRow("Essential", "Required for booking and checkout. Always on.", true, undefined, true)}
+              {toggleRow("Analytics", "Google Analytics usage statistics.", analytics, setAnalytics)}
+              {toggleRow("Marketing", "Google Ads conversion measurement.", marketing, setMarketing)}
             </div>
+          )}
+
+          <div className="mt-4 flex items-center gap-2">
+            <button
+              onClick={showPrefs ? savePrefs : acceptAll}
+              className="flex-1 h-9 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[12px] font-semibold transition-colors"
+            >
+              {showPrefs ? "Save" : "Accept"}
+            </button>
+            <button
+              onClick={rejectAll}
+              className="flex-1 h-9 rounded-lg border border-slate-600 hover:border-slate-400 text-slate-200 text-[12px] font-semibold transition-colors"
+            >
+              Reject
+            </button>
+            {!showPrefs && (
+              <button
+                onClick={() => setShowPrefs(true)}
+                className="h-9 px-2.5 text-slate-400 hover:text-white text-[12px] font-medium transition-colors"
+              >
+                Manage
+              </button>
+            )}
           </div>
         </div>
       </div>
