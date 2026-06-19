@@ -9,9 +9,31 @@ import GclidCapture from "@/components/GclidCapture";
 import CookieConsent from "@/components/CookieConsent";
 
 export const metadata: Metadata = {
-  title: "AeroPark Direct",
-  description: "Your direct route to stress free travel at Luton and Heathrow.",
-  // 🟢 Trustpilot Domain Verification
+  metadataBase: new URL("https://www.aeroparkdirect.co.uk"),
+  title: "Airport Parking at Luton & Heathrow | Meet & Greet & Park & Ride | AeroPark Direct",
+  description:
+    "Compare and book fully insured Meet & Greet and Park & Ride airport parking at Luton (LTN) and Heathrow (LHR). Vetted operators, free cancellation, 4.8-star rated — book in under 60 seconds.",
+  keywords: [
+    "airport parking",
+    "Luton airport parking",
+    "Heathrow airport parking",
+    "meet and greet parking",
+    "park and ride",
+    "LTN parking",
+    "LHR parking",
+    "cheap airport parking",
+  ],
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: "AeroPark Direct",
+    title: "Airport Parking at Luton & Heathrow | AeroPark Direct",
+    description:
+      "Fully insured Meet & Greet and Park & Ride parking at Luton and Heathrow. Vetted operators, free cancellation, book in 60 seconds.",
+    url: "https://www.aeroparkdirect.co.uk",
+    locale: "en_GB",
+  },
+  // Trustpilot domain verification.
   verification: {
     other: {
       "trustpilot-one-time-domain-verification-id": "d267340e-b316-47f6-bec2-7e50d8b23d9c",
