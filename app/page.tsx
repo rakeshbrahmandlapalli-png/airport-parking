@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useMemo } from "react";
 import AeroFeature from "@/components/AeroFeature";
 import { supabase } from "./lib/supabase";
-import { getLaunchSlots } from "./actions";
+import { getLaunchSlots, getLaunchTimerConfig } from "./actions";
 import {
   User, Calendar, PlaneTakeoff, ShieldCheck, Star, CreditCard,
   Menu, X, ChevronRight, Info, ChevronDown, Search, Car,
@@ -67,12 +67,28 @@ export type HomePreset = {
   h1Top?: string;           // first headline line
   h1Highlight?: string;     // blue highlighted line
   intro?: string;           // lead paragraph
+  // Unique long-form content for keyword landing pages. Without this, pages
+  // are near-duplicates of "/" and Google treats them as thin doorway pages.
+  seoBlock?: {
+    eyebrow?: string;        // small uppercase label above the heading
+    heading: string;
+    highlight?: string;      // blue-accented tail of the heading
+    paragraphs: string[];    // first paragraph renders as a bold lead
+    highlights?: { stat: string; label: string }[];  // optional 3-up stat row
+  };
+  // Page-specific FAQs. Overrides the default set so the FAQPage schema is
+  // unique per landing page (a ranking signal for long-tail terms).
+  faqs?: { q: string; a: string }[];
 };
 
 export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
   const router = useRouter();
   const [slotsClaimed, setSlotsClaimed] = useState(12);
   const [slotsTotal,   setSlotsTotal]   = useState(15);
+  // Founding-member offer text comes from Admin → Settings → Launch Timer
+  // (timer_benefit_value), e.g. "20% Off+5% Lifetime Discount". Split on "+"
+  // into highlighted segments. Null until loaded so we never flash a stale %.
+  const [foundingOffer, setFoundingOffer] = useState<string | null>(null);
   const [now,              setNow]              = useState<Date | null>(null);
   const [isMenuOpen,       setIsMenuOpen]       = useState(false);
   const [isMapOpen,        setIsMapOpen]        = useState(false);
@@ -101,6 +117,7 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
     setPickupDate(addDays(today, 8));
     setIsLoaded(true);
     getLaunchSlots().then(({ claimed, total }) => { setSlotsClaimed(claimed); setSlotsTotal(total); }).catch(() => {});
+    getLaunchTimerConfig().then((c) => setFoundingOffer(c.benefitValue)).catch(() => {});
 
     const timer = setInterval(() => setNow(new Date()), 60000);
     return () => { clearInterval(timer); };
@@ -228,7 +245,7 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
     "BA123 from T5, back Sunday night",
   ];
 
-  const faqs = [
+  const faqs = preset?.faqs ?? [
     { q: "How much does Meet & Greet parking cost at Luton Airport?",  a: "Our Luton Meet & Greet parking starts from around £44 for short stays, depending on your dates and chosen operator. Use the search form above for an exact price — it takes under 10 seconds." },
     { q: "What is Meet & Greet airport parking?",                       a: "Meet & Greet is a premium service where a professional driver meets you at the terminal drop-off zone, parks your car securely while you fly, and returns it on your arrival. No shuttle buses, no long walks — drive straight to departures." },
     { q: "Is airport parking at Heathrow available through AeroPark?", a: "Yes — we offer Meet & Greet and Park & Ride at Heathrow across all terminals (T2, T3, T4, T5). Search your dates above to compare available operators and prices." },
@@ -301,7 +318,7 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
             <div className={`lg:col-span-7 flex flex-col items-center text-center lg:items-start lg:text-left justify-center transition-all duration-1000 delay-300 ${isLoaded ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"}`}>
               <div className="inline-flex items-center gap-2.5 pl-1.5 pr-4 py-1.5 rounded-full bg-[#0F1523] border border-blue-500/30 mb-6 md:mb-8">
                 <span className="w-6 h-6 md:w-7 md:h-7 bg-blue-600 rounded-full flex items-center justify-center shrink-0"><Timer className="w-3.5 h-3.5 text-white" aria-hidden="true" /></span>
-                <span className="text-white text-[9px] md:text-[11px] font-black uppercase tracking-widest">Founding Member: <span className="text-emerald-400">15% Off</span> + <span className="text-emerald-400">Lifetime Perk</span></span>
+                <span className="text-white text-[9px] md:text-[11px] font-black uppercase tracking-widest">Founding Member:{" "}{(foundingOffer ?? "").split("+").map((s) => s.trim()).filter(Boolean).map((seg, i) => (<span key={i}>{i > 0 ? <span className="text-white"> + </span> : null}<span className="text-emerald-400">{seg}</span></span>))}</span>
               </div>
               <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-4 md:mb-6 leading-[1.1] tracking-tight">{preset?.h1Top ?? "Airport Parking"} <br className="hidden sm:block" /><span className="text-blue-500">{preset?.h1Highlight ?? "Made Simple."}</span></h1>
               <p className="text-base sm:text-lg md:text-xl text-white leading-relaxed font-semibold opacity-90 max-w-xl mb-3">{preset?.intro ? preset.intro : <>Licenced <strong>Meet &amp; Greet</strong> and <strong>Park &amp; Ride</strong> at <strong>Luton</strong> and <strong>Heathrow</strong> airports. Drive to the terminal, hand over your keys, and fly.</>}</p>
@@ -447,6 +464,36 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
         </section>
 
         <AeroFeature />
+
+        {preset?.seoBlock && (
+          <section aria-label={preset.seoBlock.heading} className="py-20 md:py-28 px-4 md:px-6 bg-white border-b border-slate-100">
+            <div className="max-w-4xl mx-auto">
+              {preset.seoBlock.eyebrow && (
+                <span className="inline-block text-[11px] font-black uppercase tracking-[0.2em] text-blue-600 mb-5">{preset.seoBlock.eyebrow}</span>
+              )}
+              <h2 className="text-3xl md:text-5xl font-black text-slate-900 mb-8 md:mb-10 tracking-tight leading-[1.1]">
+                {preset.seoBlock.heading}{preset.seoBlock.highlight ? <> <span className="text-blue-600">{preset.seoBlock.highlight}</span></> : null}
+              </h2>
+              <div className="space-y-6">
+                {preset.seoBlock.paragraphs.map((p, i) => (
+                  <p key={i} className={i === 0
+                    ? "text-lg md:text-2xl text-slate-800 font-semibold leading-relaxed"
+                    : "text-base md:text-lg text-slate-600 font-medium leading-relaxed"}>{p}</p>
+                ))}
+              </div>
+              {preset.seoBlock.highlights && (
+                <div className="mt-10 md:mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-5">
+                  {preset.seoBlock.highlights.map((h, i) => (
+                    <div key={i} className="bg-slate-50 border border-slate-200 rounded-2xl p-6">
+                      <p className="text-3xl md:text-4xl font-black text-blue-600 tracking-tight">{h.stat}</p>
+                      <p className="text-slate-500 text-sm font-bold mt-2 leading-snug">{h.label}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
         <section aria-label="Airport parking locations" className="py-16 md:py-24 px-4 md:px-6">
           <div className="max-w-7xl mx-auto">
