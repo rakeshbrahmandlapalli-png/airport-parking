@@ -590,16 +590,70 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
           </div>
         </section>
 
-        <footer role="contentinfo" className="bg-[#0B1121] py-8 md:py-14 px-4 md:px-6 border-t border-white/5">
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 md:gap-4">
-            <Link href="/" aria-label="AeroPark Direct home" className="flex items-center w-full md:w-1/3 justify-center md:justify-start touch-manipulation [-webkit-tap-highlight-color:transparent]"><div className="bg-white px-2.5 py-1.5 rounded-lg shadow-sm"><Image src="/footer.jpg" alt="AeroPark Direct - Airport Parking UK" width={200} height={60} className="h-6 md:h-9 w-auto object-contain" /></div></Link>
-            <nav aria-label="Footer links" className="flex flex-wrap justify-center gap-4 md:gap-10 text-slate-300/80 text-[9px] md:text-[11px] font-bold uppercase tracking-[0.15em] md:tracking-[0.2em] w-full md:w-1/3">
-              <Link href="/about" className="hover:text-white transition-colors touch-manipulation [-webkit-tap-highlight-color:transparent]">About</Link>
-              <Link href="/privacy" className="hover:text-white transition-colors touch-manipulation [-webkit-tap-highlight-color:transparent]">Privacy Policy</Link>
-              <Link href="/terms" className="hover:text-white transition-colors touch-manipulation [-webkit-tap-highlight-color:transparent]">Terms</Link>
-              <Link href="mailto:info@aeroparkdirect.co.uk" className="hover:text-white transition-colors touch-manipulation [-webkit-tap-highlight-color:transparent]">Support</Link>
+        <footer role="contentinfo" className="bg-[#0B1121] pt-14 md:pt-20 pb-8 md:pb-10 px-4 md:px-6 border-t border-white/5">
+          <div className="max-w-7xl mx-auto">
+
+            {/* Directory — links every parking page so they're crawlable and reachable, not orphaned */}
+            <nav aria-label="Parking directory" className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10 md:gap-x-10 pb-12 md:pb-14 border-b border-white/5">
+              {[
+                {
+                  heading: "Heathrow (LHR)",
+                  links: [
+                    { label: "Heathrow Meet & Greet", href: "/heathrow-meet-and-greet" },
+                    { label: "Heathrow Park & Ride",  href: "/heathrow-park-and-ride" },
+                    { label: "Terminal 2 Parking",    href: "/heathrow-terminal-2-parking" },
+                    { label: "Terminal 3 Parking",    href: "/heathrow-terminal-3-parking" },
+                    { label: "Terminal 4 Parking",    href: "/heathrow-terminal-4-parking" },
+                    { label: "Terminal 5 Parking",    href: "/heathrow-terminal-5-parking" },
+                  ],
+                },
+                {
+                  heading: "Luton (LTN)",
+                  links: [
+                    { label: "Luton Meet & Greet",      href: "/luton-meet-and-greet" },
+                    { label: "Luton Park & Ride",       href: "/luton-park-and-ride" },
+                    { label: "Luton Airport Parking",   href: "/luton-airport-parking" },
+                    { label: "Heathrow Airport Parking", href: "/heathrow-airport-parking" },
+                  ],
+                },
+                {
+                  heading: "Booking",
+                  links: [
+                    { label: "How It Works",    href: "/how-it-works" },
+                    { label: "Our Services",    href: "/services" },
+                    { label: "Manage Booking",  href: "/manage" },
+                  ],
+                },
+                {
+                  heading: "Company",
+                  links: [
+                    { label: "About Us",        href: "/about" },
+                    { label: "Contact",         href: "/contact" },
+                    { label: "Privacy Policy",  href: "/privacy" },
+                    { label: "Terms",           href: "/terms" },
+                  ],
+                },
+              ].map((col) => (
+                <div key={col.heading}>
+                  <h3 className="text-white font-black text-[10px] md:text-[11px] uppercase tracking-[0.2em] mb-5">{col.heading}</h3>
+                  <ul className="space-y-3">
+                    {col.links.map((l) => (
+                      <li key={l.href}>
+                        <Link href={l.href} className="text-slate-300/70 hover:text-white text-[13px] md:text-sm font-medium transition-colors touch-manipulation [-webkit-tap-highlight-color:transparent]">{l.label}</Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </nav>
-            <div className="text-slate-500/70 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.15em] md:tracking-widest w-full md:w-1/3 text-center md:text-right">© {new Date().getFullYear()} AeroPark Direct Ltd</div>
+
+            {/* Legal bar */}
+            <div className="mt-8 md:mt-10 flex flex-col md:flex-row items-center justify-between gap-6 md:gap-4">
+              <Link href="/" aria-label="AeroPark Direct home" className="flex items-center w-full md:w-1/3 justify-center md:justify-start touch-manipulation [-webkit-tap-highlight-color:transparent]"><div className="bg-white px-2.5 py-1.5 rounded-lg shadow-sm"><Image src="/footer.jpg" alt="AeroPark Direct - Airport Parking UK" width={200} height={60} className="h-6 md:h-9 w-auto object-contain" /></div></Link>
+              <div className="text-slate-400/70 text-[10px] md:text-xs font-medium text-center w-full md:w-1/3 normal-case tracking-normal">Fully insured Meet &amp; Greet &amp; Park &amp; Ride at Luton &amp; Heathrow. <Link href="mailto:info@aeroparkdirect.co.uk" className="text-slate-300 hover:text-white font-bold transition-colors">Support</Link></div>
+              <div className="text-slate-500/70 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.15em] md:tracking-widest w-full md:w-1/3 text-center md:text-right">© {new Date().getFullYear()} AeroPark Direct Ltd</div>
+            </div>
+
           </div>
         </footer>
 
