@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Building2, LogOut, Plane, Tags, Settings2,
   PiggyBank, Save, Loader2, Percent, ArrowLeft, Zap, Coffee,
   ShieldCheck, RefreshCw, CheckCircle2, AlertCircle, Gauge,
-  Clock, Users, Network, Tag, TriangleAlert, Activity, Eye
+  Clock, Users, Network, Tag, TriangleAlert, Activity, Eye, Download
 } from "lucide-react";
 
 // ─── SETTINGS KEYS + DEFAULTS ────────────────────────────────────────────────
@@ -960,10 +960,16 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
             <div className={sectionHeader}>
               <div className="w-11 h-11 bg-emerald-500/10 rounded-lg flex items-center justify-center shrink-0 border border-emerald-500/20"><Activity className="w-5 h-5 text-emerald-400" /></div>
               <div className="flex-1"><h2 className="text-lg font-black text-white tracking-tight">Conversion Tracking</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Google Ads offline conversion pipeline</p></div>
-              <button type="button" onClick={runAdsCheck} disabled={adsChecking}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
-                {adsChecking ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Checking...</> : <><CheckCircle2 className="w-3.5 h-3.5" /> Verify Connection</>}
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <a href="/api/admin/conversions-export" download
+                  className="flex items-center gap-2 px-4 py-2 bg-white/[0.06] hover:bg-white/[0.1] text-slate-200 border border-white/[0.08] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
+                  <Download className="w-3.5 h-3.5" /> Conversions CSV
+                </a>
+                <button type="button" onClick={runAdsCheck} disabled={adsChecking}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
+                  {adsChecking ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Checking...</> : <><CheckCircle2 className="w-3.5 h-3.5" /> Verify Connection</>}
+                </button>
+              </div>
             </div>
             <div className="p-5 md:p-6">
               {!adsCheck ? (
