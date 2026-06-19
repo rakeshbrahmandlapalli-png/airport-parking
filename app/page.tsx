@@ -599,21 +599,21 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
                 {
                   heading: "Heathrow (LHR)",
                   links: [
-                    { label: "Heathrow Meet & Greet", href: "/heathrow-meet-and-greet" },
-                    { label: "Heathrow Park & Ride",  href: "/heathrow-park-and-ride" },
-                    { label: "Terminal 2 Parking",    href: "/heathrow-terminal-2-parking" },
-                    { label: "Terminal 3 Parking",    href: "/heathrow-terminal-3-parking" },
-                    { label: "Terminal 4 Parking",    href: "/heathrow-terminal-4-parking" },
-                    { label: "Terminal 5 Parking",    href: "/heathrow-terminal-5-parking" },
+                    { label: "Heathrow Airport Parking", href: "/heathrow-airport-parking" },
+                    { label: "Heathrow Meet & Greet",   href: "/heathrow-meet-and-greet" },
+                    { label: "Heathrow Park & Ride",    href: "/heathrow-park-and-ride" },
+                    { label: "Terminal 2 Parking",      href: "/heathrow-terminal-2-parking" },
+                    { label: "Terminal 3 Parking",      href: "/heathrow-terminal-3-parking" },
+                    { label: "Terminal 4 Parking",      href: "/heathrow-terminal-4-parking" },
+                    { label: "Terminal 5 Parking",      href: "/heathrow-terminal-5-parking" },
                   ],
                 },
                 {
                   heading: "Luton (LTN)",
                   links: [
-                    { label: "Luton Meet & Greet",      href: "/luton-meet-and-greet" },
-                    { label: "Luton Park & Ride",       href: "/luton-park-and-ride" },
-                    { label: "Luton Airport Parking",   href: "/luton-airport-parking" },
-                    { label: "Heathrow Airport Parking", href: "/heathrow-airport-parking" },
+                    { label: "Luton Airport Parking", href: "/luton-airport-parking" },
+                    { label: "Luton Meet & Greet",    href: "/luton-meet-and-greet" },
+                    { label: "Luton Park & Ride",     href: "/luton-park-and-ride" },
                   ],
                 },
                 {
