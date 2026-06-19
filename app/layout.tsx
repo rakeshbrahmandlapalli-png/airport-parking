@@ -90,10 +90,9 @@ export default function RootLayout({
         {/* Capture Google Ads click id (gclid) into a cookie for server-side conversions */}
         <GclidCapture />
 
-        {/* 🚀 Dynamic Banner containing LAUNCH10 and AERO15 hooks */}
+        {/* Dynamic promo banner (LAUNCH10 / AERO15 hooks) */}
         <PromoBanner />
 
-        {/* 🔥 THIS IS THE MAGIC FIX: We wrap your page in a relative container 🔥 */}
         <main className="relative w-full">
           {children}
         </main>

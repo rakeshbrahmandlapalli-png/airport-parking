@@ -607,7 +607,7 @@ function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
       {/* Aero concierge bar + launch timer */}
       <div className="flex flex-col lg:flex-row gap-3 mb-8">
         <div className="flex-1 bg-[#0F1523] border border-blue-900/30 rounded-2xl p-4 sm:p-5 flex items-center gap-4 shadow-xl relative overflow-hidden">
-          <div className="absolute -right-16 -top-16 w-48 h-48 bg-blue-600/10 rounded-full blur-[100100px] pointer-events-none" />
+          <div className="absolute -right-16 -top-16 w-48 h-48 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none" />
           <AeroAvatar size="md" />
           <div className="relative z-10 min-w-0">
             <p className="text-[9px] font-black uppercase tracking-[0.18em] text-blue-400 flex items-center gap-1.5">

@@ -24,7 +24,7 @@ const WELCOME_MESSAGE: Message = {
   id: "welcome",
   role: "assistant",
   content:
-    "Hi, I'm Aero! ✈️ I can check live rates for Heathrow and Luton, find discount codes, and build your booking. How can I help?",
+    "Hi, I'm Aero. I can check live rates for Heathrow and Luton, find discount codes, and build your booking. How can I help?",
 };
 
 // Detect an airport mention in free chat text for the email-quote lead.
@@ -107,7 +107,7 @@ function ToolBlock({ tool }: { tool: ToolInvocation }) {
     if (!data?.hasPromo || !data.code) return null;
     return (
       <div className="mt-3 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-3 flex items-center gap-3">
-        <span className="text-lg">🎟️</span>
+        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" aria-hidden="true" />
         <div>
           <p className="text-xs font-black text-emerald-700 tracking-wide">
             {data.discountPercent}% OFF · code <span className="font-mono">{data.code}</span>
@@ -330,13 +330,13 @@ export default function Chatbot() {
         <button
           onClick={openChat}
           aria-label="Open Aero — get a quote"
-          className="fixed bottom-24 right-6 z-50 max-w-[260px] bg-white border border-slate-200 rounded-2xl rounded-br-none shadow-[0_15px_40px_-10px_rgba(0,0,0,0.25)] px-4 py-3 text-left animate-in slide-in-from-bottom-2 fade-in"
+          className="hidden md:block fixed bottom-24 right-6 z-50 max-w-[260px] bg-white border border-slate-200 rounded-2xl rounded-br-none shadow-[0_15px_40px_-10px_rgba(0,0,0,0.25)] px-4 py-3 text-left animate-in slide-in-from-bottom-2 fade-in"
         >
           <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1 flex items-center gap-1.5">
             <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" /><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" /></span>
             Aero
           </p>
-          <p className="text-xs font-bold text-slate-700 leading-snug">👋 Need a price for Luton or Heathrow? I can check live rates in seconds.</p>
+          <p className="text-xs font-bold text-slate-700 leading-snug">Need a price for Luton or Heathrow? I can check live rates in seconds.</p>
         </button>
       )}
 

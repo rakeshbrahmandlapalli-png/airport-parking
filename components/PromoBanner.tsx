@@ -11,18 +11,9 @@ interface Promo {
 }
 
 interface Slide {
-  emoji: string;
   text: string;
   code: string;
 }
-
-// ── Emoji by discount tier ────────────────────────────────────────────────────
-const getEmoji = (pct: number) => {
-  if (pct >= 30) return "🔥";
-  if (pct >= 15) return "✈️";
-  if (pct >= 10) return "🚀";
-  return "🎉";
-};
 
 const getMessage = (pct: number, code: string) => {
   if (code === "AERO15")   return "Returning Traveler? Get 15% off your 3rd booking!";
@@ -33,8 +24,8 @@ const getMessage = (pct: number, code: string) => {
 };
 
 const FALLBACK_SLIDES: Slide[] = [
-  { emoji: "🚀", text: "Launch Offer: Save 10% on your airport parking today!", code: "LAUNCH10" },
-  { emoji: "✈️", text: "Returning Traveler? Get 15% off your 3rd booking!",    code: "AERO15"  },
+  { text: "Launch Offer: Save 10% on your airport parking today!", code: "LAUNCH10" },
+  { text: "Returning Traveller? Get 15% off your 3rd booking!",    code: "AERO15"  },
 ];
 
 const SLIDE_DURATION = 5000; // ms per slide
@@ -77,7 +68,6 @@ export default function PromoBanner() {
         );
         if (!live.length) return;
         const mapped = live.map((p: Promo) => ({
-          emoji: getEmoji(p.discount_percent),
           text:  getMessage(p.discount_percent, p.code),
           code:  p.code,
         }));
@@ -143,10 +133,6 @@ export default function PromoBanner() {
           className="flex items-center gap-2 justify-center transition-opacity duration-500"
           style={{ opacity: fading ? 0 : 1 }}
         >
-          <span className="text-base leading-none select-none" aria-hidden="true">
-            {slide.emoji}
-          </span>
-
           <span className="text-xs md:text-sm font-medium tracking-wide text-center leading-tight">
             {slide.text}
           </span>

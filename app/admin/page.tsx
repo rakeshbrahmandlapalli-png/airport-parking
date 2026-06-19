@@ -1,12 +1,8 @@
 "use client";
 
 /**
- * AeroPark Direct - Command Center v12.8 (Advanced Visual Overhaul)
- * ─────────────────────────────────────────────────────────────────
- * ✅ WHOLE CODE PRESERVED - EVERY FEATURE & HANDLER INTACT
- * ✅ ADVANCED COOL LOOK - glow effects, glassmorphism, depth, gradients
- * ✅ ORIGINAL COLOR DNA KEPT (#0B1120 / #0F1523 / #131A2B / blue accent)
- * Visual layer only — no logic touched.
+ * AeroPark Direct — Admin command center.
+ * Palette: #0B1120 / #0F1523 / #131A2B with a blue accent.
  */
 
 import { logger } from "@/app/lib/logger";

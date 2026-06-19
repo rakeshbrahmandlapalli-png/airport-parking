@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useMemo } from "react";
 import AeroFeature from "@/components/AeroFeature";
 import { supabase } from "./lib/supabase";
-import { getLaunchSlots, getLaunchTimerConfig } from "./actions";
+import { getLaunchTimerConfig } from "./actions";
 import {
   User, Calendar, PlaneTakeoff, ShieldCheck, Star, CreditCard,
   Menu, X, ChevronRight, Info, ChevronDown, Search, Car,
@@ -83,8 +83,6 @@ export type HomePreset = {
 
 export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
   const router = useRouter();
-  const [slotsClaimed, setSlotsClaimed] = useState(12);
-  const [slotsTotal,   setSlotsTotal]   = useState(15);
   // Founding-member offer text comes from Admin → Settings → Launch Timer
   // (timer_benefit_value), e.g. "20% Off+5% Lifetime Discount". Split on "+"
   // into highlighted segments. Null until loaded so we never flash a stale %.
@@ -116,7 +114,6 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
     setDropoffDate(addDays(today, 1));
     setPickupDate(addDays(today, 8));
     setIsLoaded(true);
-    getLaunchSlots().then(({ claimed, total }) => { setSlotsClaimed(claimed); setSlotsTotal(total); }).catch(() => {});
     getLaunchTimerConfig().then((c) => setFoundingOffer(c.benefitValue)).catch(() => {});
 
     const timer = setInterval(() => setNow(new Date()), 60000);
@@ -126,7 +123,6 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
   const todayStr    = now ? toDateStr(now) : "";
   const currentHour = now ? now.getHours() : 9;
   const tripDays    = useMemo(() => daysBetween(dropoffDate, pickupDate), [dropoffDate, pickupDate]);
-  const spotsLeft   = Math.max(0, slotsTotal - slotsClaimed);
   const isFormReady = !!(dropoffDate && pickupDate);
 
   const handleDropoffDateChange = (val: string) => {
@@ -145,11 +141,11 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
     if (magicParsed) setMagicParsed(null);
     const v = val.toLowerCase();
     if (!val) setMagicHint("");
-    else if (v.includes("luton") || v.includes("ltn")) setMagicHint("📍 Luton Airport detected");
-    else if (v.includes("heathrow") || v.includes("lhr")) setMagicHint("📍 Heathrow Airport detected");
-    else if (v.includes("meet")) setMagicHint("🚗 Meet & Greet detected");
-    else if (v.includes("park")) setMagicHint("🚌 Park & Ride detected");
-    else if (val.match(/[A-Z]{2}\d{3,4}/i)) setMagicHint("✈️ Flight number detected");
+    else if (v.includes("luton") || v.includes("ltn")) setMagicHint("Luton Airport detected");
+    else if (v.includes("heathrow") || v.includes("lhr")) setMagicHint("Heathrow Airport detected");
+    else if (v.includes("meet")) setMagicHint("Meet & Greet detected");
+    else if (v.includes("park")) setMagicHint("Park & Ride detected");
+    else if (val.match(/[A-Z]{2}\d{3,4}/i)) setMagicHint("Flight number detected");
     else setMagicHint("");
   };
 
@@ -361,7 +357,7 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
               </div>
               <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-4 md:mb-6 leading-[1.1] tracking-tight">{preset?.h1Top ?? "Airport Parking"} <br className="hidden sm:block" /><span className="text-blue-500">{preset?.h1Highlight ?? "Made Simple."}</span></h1>
               <p className="text-base sm:text-lg md:text-xl text-white leading-relaxed font-semibold opacity-90 max-w-xl mb-3">{preset?.intro ? preset.intro : <>Licenced <strong>Meet &amp; Greet</strong> and <strong>Park &amp; Ride</strong> at <strong>Luton</strong> and <strong>Heathrow</strong> airports. Drive to the terminal, hand over your keys, and fly.</>}</p>
-              <p className="text-sm sm:text-base md:text-lg text-gray-300 leading-relaxed font-light hidden sm:block max-w-xl mb-6">Trusted by thousands of UK travellers. Compare top-rated, fully insured parking operators and book in under 60 seconds.</p>
+              <p className="text-sm sm:text-base md:text-lg text-gray-300 leading-relaxed font-light hidden sm:block max-w-xl mb-6">Compare fully insured, vetted parking operators at Luton and Heathrow, and book in under 60 seconds.</p>
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-4 gap-y-2 mb-6">
                 {TRUST.map(({ Icon, label }) => (<span key={label} className="flex items-center gap-1.5 text-emerald-400 text-[10px] md:text-xs font-black uppercase tracking-widest"><Icon className="w-3.5 h-3.5" aria-hidden="true" /> {label}</span>))}
               </div>
@@ -488,7 +484,7 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
                   <div className="mt-4 grid grid-cols-2 gap-2">
                     <div className="p-3 rounded-xl bg-[#0F1523] border border-slate-800 flex items-center gap-2">
                       <div className="relative flex h-2 w-2 shrink-0"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" aria-hidden="true" /><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" /></div>
-                      <p className="text-[9px] text-slate-300 font-bold leading-tight"><span className="text-emerald-400 font-black">{spotsLeft}</span> founding spots left</p>
+                      <p className="text-[9px] text-slate-300 font-bold leading-tight"><span className="text-emerald-400 font-black">Founding</span>-member launch</p>
                     </div>
                     <div className="p-3 rounded-xl bg-[#0F1523] border border-slate-800 flex items-center gap-2">
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" aria-hidden="true" />
