@@ -8,15 +8,17 @@ import type { NextConfig } from "next";
 // vendor domains.
 const ContentSecurityPolicy = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.clarity.ms https://js.stripe.com https://va.vercel-scripts.com https://www.google.com https://www.googleadservices.com https://googleads.g.doubleclick.net",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.clarity.ms https://js.stripe.com https://va.vercel-scripts.com https://www.google.com https://www.googleadservices.com https://*.doubleclick.net",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data: https://fonts.gstatic.com",
   // connect-src MUST include the Google Ads conversion + Enhanced Conversions
-  // endpoints (www.google.com/ccm, /rmkt, googleadservices, doubleclick) or the
-  // conversion beacons are blocked and Google records ZERO conversions.
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://www.google-analytics.com https://*.google-analytics.com https://region1.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://www.google.com https://www.google.co.uk https://www.googleadservices.com https://googleads.g.doubleclick.net https://td.doubleclick.net https://stats.g.doubleclick.net https://*.clarity.ms https://vitals.vercel-insights.com",
-  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://*.trustpilot.com https://td.doubleclick.net https://googleads.g.doubleclick.net https://www.googletagmanager.com",
+  // endpoints (www.google.com/ccm, /rmkt, googleadservices, and ALL doubleclick
+  // subdomains incl. ad.doubleclick.net) or the conversion beacons are blocked
+  // and Google records ZERO conversions. Use *.doubleclick.net so no subdomain
+  // (ad./td./stats.g./googleads.g.) is ever missed.
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://www.google-analytics.com https://*.google-analytics.com https://region1.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://www.google.com https://www.google.co.uk https://www.googleadservices.com https://*.doubleclick.net https://*.clarity.ms https://vitals.vercel-insights.com",
+  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://*.trustpilot.com https://*.doubleclick.net https://www.googletagmanager.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self' https://checkout.stripe.com",
