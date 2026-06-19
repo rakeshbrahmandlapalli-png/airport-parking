@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://www.aeroparkdirect.co.uk"),
   title: "Airport Parking at Luton & Heathrow | Meet & Greet & Park & Ride | AeroPark Direct",
   description:
-    "Compare and book fully insured Meet & Greet and Park & Ride airport parking at Luton (LTN) and Heathrow (LHR). Vetted operators, free cancellation, 4.8-star rated — book in under 60 seconds.",
+    "Compare and book fully insured Meet & Greet and Park & Ride airport parking at Luton (LTN) and Heathrow (LHR). Vetted, fully insured operators, free cancellation — book in under 60 seconds.",
   keywords: [
     "airport parking",
     "Luton airport parking",

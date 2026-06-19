@@ -55,7 +55,7 @@ function Typewriter({ text, speed = 22 }: { text: string; speed?: number }) {
 const TRUST = [
   { Icon: BadgeCheck,   label: "Fully Insured"       },
   { Icon: CheckCircle2, label: "Free Cancellation"   },
-  { Icon: Star,         label: "4.8★ — 300+ Reviews" },
+  { Icon: ShieldCheck,  label: "Secure CCTV Parking"  },
   { Icon: PhoneCall,    label: "24/7 Support"        },
 ];
 
@@ -256,7 +256,7 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@graph": [{ "@type": "LocalBusiness", "name": "AeroPark Direct", "description": "Premium airport parking at Luton and Heathrow. Meet & Greet and Park & Ride.", "url": "https://www.aeroparkdirect.co.uk", "priceRange": "££", "areaServed": ["Luton Airport LTN", "Heathrow Airport LHR"], "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.8", "reviewCount": "312" } }, { "@type": "FAQPage", "mainEntity": faqs.map(f => ({ "@type": "Question", "name": f.q, "acceptedAnswer": { "@type": "Answer", "text": f.a } })) }] }) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@graph": [{ "@type": "LocalBusiness", "name": "AeroPark Direct", "description": "Premium airport parking at Luton and Heathrow. Meet & Greet and Park & Ride.", "url": "https://www.aeroparkdirect.co.uk", "priceRange": "££", "areaServed": ["Luton Airport LTN", "Heathrow Airport LHR"] }, { "@type": "FAQPage", "mainEntity": faqs.map(f => ({ "@type": "Question", "name": f.q, "acceptedAnswer": { "@type": "Answer", "text": f.a } })) }] }) }} />
 
       <main suppressHydrationWarning className="light-ui min-h-[100dvh] bg-white font-sans antialiased selection:bg-blue-600 selection:text-white overflow-x-hidden">
 
@@ -268,11 +268,37 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
         )}
 
         <nav aria-label="Main navigation" className={`sticky top-0 w-full z-[100] bg-white/80 backdrop-blur-xl border-b border-slate-200 transition-all duration-1000 ${isLoaded ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"}`}>
-          <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 md:h-24 flex items-center justify-between overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 md:h-24 flex items-center justify-between overflow-hidden md:overflow-visible">
             <Link href="/" aria-label="AeroPark Direct - Airport Parking Home" className="flex items-center z-50 overflow-visible touch-manipulation [-webkit-tap-highlight-color:transparent]">
               <Image src="/logo.png" alt="AeroPark Direct - Airport Parking Luton Heathrow" width={400} height={120} priority className="h-12 md:h-20 w-auto object-contain scale-[1.8] md:scale-[1.35] origin-left mix-blend-multiply -translate-x-4 md:translate-x-0 ml-6 md:ml-0" />
             </Link>
             <div className="hidden md:flex items-center gap-8">
+              <div className="relative group">
+                <button className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 group-hover:text-slate-900 transition-colors flex items-center gap-1.5 py-2 touch-manipulation">Parking <ChevronRight className="w-3 h-3 rotate-90 transition-transform duration-200 group-hover:rotate-[270deg]" aria-hidden="true" /></button>
+                <div className="absolute left-0 top-full pt-3 opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-200">
+                  <div className="bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-300/40 p-6 w-[460px] grid grid-cols-2 gap-x-10">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 mb-3">Heathrow (LHR)</p>
+                      <div className="flex flex-col gap-2">
+                        <Link href="/heathrow-meet-and-greet" className="text-[13px] font-bold text-slate-600 hover:text-blue-600 transition-colors">Meet &amp; Greet</Link>
+                        <Link href="/heathrow-park-and-ride" className="text-[13px] font-bold text-slate-600 hover:text-blue-600 transition-colors">Park &amp; Ride</Link>
+                        <Link href="/heathrow-terminal-5-parking" className="text-[13px] font-bold text-slate-600 hover:text-blue-600 transition-colors">Terminal 5</Link>
+                        <Link href="/heathrow-terminal-4-parking" className="text-[13px] font-bold text-slate-600 hover:text-blue-600 transition-colors">Terminal 4</Link>
+                        <Link href="/heathrow-terminal-3-parking" className="text-[13px] font-bold text-slate-600 hover:text-blue-600 transition-colors">Terminal 3</Link>
+                        <Link href="/heathrow-terminal-2-parking" className="text-[13px] font-bold text-slate-600 hover:text-blue-600 transition-colors">Terminal 2</Link>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 mb-3">Luton (LTN)</p>
+                      <div className="flex flex-col gap-2">
+                        <Link href="/luton-meet-and-greet" className="text-[13px] font-bold text-slate-600 hover:text-blue-600 transition-colors">Meet &amp; Greet</Link>
+                        <Link href="/luton-park-and-ride" className="text-[13px] font-bold text-slate-600 hover:text-blue-600 transition-colors">Park &amp; Ride</Link>
+                        <Link href="/luton-airport-parking" className="text-[13px] font-bold text-slate-600 hover:text-blue-600 transition-colors">All Luton Parking</Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <a href="#services" className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 hover:text-slate-900 transition-colors relative group">Services<span className="absolute -bottom-2 left-0 w-0 h-[2px] bg-blue-600 transition-all duration-300 group-hover:w-full" /></a>
               <Link href="/how-it-works" className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 hover:text-slate-900 transition-colors relative group">How it works<span className="absolute -bottom-2 left-0 w-0 h-[2px] bg-blue-600 transition-all duration-300 group-hover:w-full" /></Link>
               <Link href="/about" className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 hover:text-slate-900 transition-colors relative group">About<span className="absolute -bottom-2 left-0 w-0 h-[2px] bg-blue-600 transition-all duration-300 group-hover:w-full" /></Link>
@@ -289,6 +315,19 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
             <button onClick={() => setIsMenuOpen(false)} aria-label="Close menu" className="p-3 text-slate-900 bg-slate-100 rounded-full touch-manipulation [-webkit-tap-highlight-color:transparent]"><X className="w-6 h-6" /></button>
           </div>
           <div className="flex flex-col px-8 py-12 gap-2 flex-grow overflow-y-auto">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Parking</p>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3 mb-10">
+              {[
+                { label: "Heathrow Meet & Greet", href: "/heathrow-meet-and-greet" },
+                { label: "Heathrow Park & Ride",  href: "/heathrow-park-and-ride" },
+                { label: "Heathrow Terminals",    href: "/heathrow-airport-parking" },
+                { label: "Luton Meet & Greet",    href: "/luton-meet-and-greet" },
+                { label: "Luton Park & Ride",     href: "/luton-park-and-ride" },
+                { label: "All Luton Parking",     href: "/luton-airport-parking" },
+              ].map((l) => (
+                <Link key={l.href} href={l.href} onClick={() => setIsMenuOpen(false)} className="text-sm font-bold text-slate-700 hover:text-blue-600 transition-colors touch-manipulation [-webkit-tap-highlight-color:transparent]">{l.label}</Link>
+              ))}
+            </div>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Main Menu</p>
             <a href="#services" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-2xl font-black text-slate-900 border-b border-slate-50 touch-manipulation [-webkit-tap-highlight-color:transparent]">Services <ChevronRight className="w-6 h-6 text-blue-500" /></a>
             <Link href="/how-it-works" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-2xl font-black text-slate-900 border-b border-slate-50 touch-manipulation [-webkit-tap-highlight-color:transparent]">How it works <ChevronRight className="w-6 h-6 text-blue-500" /></Link>
@@ -452,8 +491,8 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
                       <p className="text-[9px] text-slate-300 font-bold leading-tight"><span className="text-emerald-400 font-black">{spotsLeft}</span> founding spots left</p>
                     </div>
                     <div className="p-3 rounded-xl bg-[#0F1523] border border-slate-800 flex items-center gap-2">
-                      <Star className="w-3.5 h-3.5 text-amber-400 fill-current shrink-0" aria-hidden="true" />
-                      <p className="text-[9px] text-slate-300 font-bold leading-tight"><span className="text-amber-400 font-black">4.8★</span> — 312 reviews</p>
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" aria-hidden="true" />
+                      <p className="text-[9px] text-slate-300 font-bold leading-tight"><span className="text-emerald-400 font-black">Insured</span> · free cancellation</p>
                     </div>
                   </div>
                 </div>
@@ -526,7 +565,7 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
                 { Icon: Car,          title: "Terminal Drop-Off",         desc: "Drive to departures and hand over your keys. No shuttle buses, no long walks." },
                 { Icon: CreditCard,   title: "No Hidden Fees",            desc: "Transparent pricing with our price-match guarantee as your safety net." },
                 { Icon: BadgeCheck,   title: "Insured & DBS-Checked",     desc: "Every driver DBS-checked. Photos on handover. Fully insured CCTV compounds." },
-                { Icon: Star,         title: "4.8★ Rated",                desc: "Over 300 verified reviews across Trustpilot and Google." },
+                { Icon: CheckCircle2, title: "Free Cancellation",         desc: "Plans change. Cancel free up to 24 hours before your drop-off." },
               ].map(({ Icon, title, desc }, i) => (
                 <div key={i} className="bg-slate-50 border border-slate-200 rounded-2xl p-6 md:p-7 hover:border-blue-500/50 transition-colors">
                   <div className="w-12 h-12 bg-blue-600/10 rounded-xl flex items-center justify-center text-blue-600 mb-5"><Icon className="w-6 h-6" aria-hidden="true" /></div>

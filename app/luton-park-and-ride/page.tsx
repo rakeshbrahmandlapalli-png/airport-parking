@@ -4,7 +4,7 @@ import HomePage from "../page";
 export const metadata: Metadata = {
   title: "Luton Park & Ride Parking | Secure Off-Airport — AeroPark Direct",
   description:
-    "Park & Ride at Luton Airport (LTN). Park in a secure, CCTV-monitored compound and take a quick transfer to the terminal. Fully insured, free cancellation, 4.8★. Book in under 60 seconds.",
+    "Park & Ride at Luton Airport (LTN). Park in a secure, CCTV-monitored compound and take a quick transfer to the terminal. Fully insured, free cancellation. Book in under 60 seconds.",
   alternates: { canonical: "https://www.aeroparkdirect.co.uk/luton-park-and-ride" },
   openGraph: {
     title: "Luton Park & Ride Parking | Secure Off-Airport",
@@ -23,7 +23,7 @@ export default function LutonParkAndRidePage() {
         h1Top: "Luton Park & Ride Parking",
         h1Highlight: "Made Simple.",
         intro:
-          "Park & Ride at Luton Airport (LTN). Park your own car in a secure, CCTV-monitored compound and take a short, frequent transfer to the terminal. The best-value way to park at Luton. Fully insured, free cancellation, 4.8★ rated.",
+          "Park & Ride at Luton Airport (LTN). Park your own car in a secure, CCTV-monitored compound and take a short, frequent transfer to the terminal. The best-value way to park at Luton. Fully insured, free cancellation.",
         seoBlock: {
           eyebrow: "Luton Airport Park & Ride Guide",
           heading: "Park & Ride at",
@@ -35,7 +35,7 @@ export default function LutonParkAndRidePage() {
           ],
           highlights: [
             { stat: "£", label: "The best-value way to park at Luton. Keen Park & Ride prices." },
-            { stat: "4.8★", label: "300+ verified reviews across Google and Trustpilot." },
+            { stat: "24h", label: "Free cancellation up to 24 hours before drop-off." },
             { stat: "60s", label: "Compare insured Luton operators and book. No account needed." },
           ],
         },

@@ -4,7 +4,7 @@ import HomePage from "../page";
 export const metadata: Metadata = {
   title: "Heathrow Terminal 2 Parking | Meet & Greet T2 — AeroPark Direct",
   description:
-    "Meet & Greet parking at Heathrow Terminal 2 (LHR T2, the Queen's Terminal). Drive to T2 departures, hand over your keys, and fly. Fully insured, free cancellation, 4.8★. Book in under 60 seconds.",
+    "Meet & Greet parking at Heathrow Terminal 2 (LHR T2, the Queen's Terminal). Drive to T2 departures, hand over your keys, and fly. Fully insured, free cancellation. Book in under 60 seconds.",
   alternates: { canonical: "https://www.aeroparkdirect.co.uk/heathrow-terminal-2-parking" },
   openGraph: {
     title: "Heathrow Terminal 2 Parking | Meet & Greet",
@@ -23,7 +23,7 @@ export default function HeathrowTerminal2ParkingPage() {
         h1Top: "Heathrow Terminal 2 Parking",
         h1Highlight: "Made Simple.",
         intro:
-          "Meet & Greet parking at Heathrow Terminal 2 (LHR T2), the Queen's Terminal. Drive straight to T2 departures, hand your keys to a vetted driver, and walk inside. No shuttle buses, no long-stay car park. Fully insured, free cancellation, 4.8★ rated.",
+          "Meet & Greet parking at Heathrow Terminal 2 (LHR T2), the Queen's Terminal. Drive straight to T2 departures, hand your keys to a vetted driver, and walk inside. No shuttle buses, no long-stay car park. Fully insured, free cancellation.",
         seoBlock: {
           eyebrow: "Heathrow Terminal 2 Parking Guide",
           heading: "Meet & Greet Parking at",
@@ -35,7 +35,7 @@ export default function HeathrowTerminal2ParkingPage() {
           ],
           highlights: [
             { stat: "T2", label: "Drive straight to the Queen's Terminal departures. No shuttle." },
-            { stat: "4.8★", label: "300+ verified reviews across Google and Trustpilot." },
+            { stat: "24h", label: "Free cancellation up to 24 hours before drop-off." },
             { stat: "60s", label: "Compare insured T2 operators and book. No account needed." },
           ],
         },

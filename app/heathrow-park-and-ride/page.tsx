@@ -4,7 +4,7 @@ import HomePage from "../page";
 export const metadata: Metadata = {
   title: "Heathrow Park & Ride Parking | Secure Off-Airport — AeroPark Direct",
   description:
-    "Park & Ride at Heathrow Airport (LHR). Park in a secure, CCTV-monitored compound and take a transfer to your terminal. Fully insured, free cancellation, 4.8★. Book in under 60 seconds.",
+    "Park & Ride at Heathrow Airport (LHR). Park in a secure, CCTV-monitored compound and take a transfer to your terminal. Fully insured, free cancellation. Book in under 60 seconds.",
   alternates: { canonical: "https://www.aeroparkdirect.co.uk/heathrow-park-and-ride" },
   openGraph: {
     title: "Heathrow Park & Ride Parking | Secure Off-Airport",
@@ -23,7 +23,7 @@ export default function HeathrowParkAndRidePage() {
         h1Top: "Heathrow Park & Ride Parking",
         h1Highlight: "Made Simple.",
         intro:
-          "Park & Ride at Heathrow Airport (LHR). Park your own car in a secure, CCTV-monitored compound and take a transfer to your terminal, T2 to T5. The best-value way to park at Heathrow. Fully insured, free cancellation, 4.8★ rated.",
+          "Park & Ride at Heathrow Airport (LHR). Park your own car in a secure, CCTV-monitored compound and take a transfer to your terminal, T2 to T5. The best-value way to park at Heathrow. Fully insured, free cancellation.",
         seoBlock: {
           eyebrow: "Heathrow Park & Ride Guide",
           heading: "Park & Ride at",
@@ -35,7 +35,7 @@ export default function HeathrowParkAndRidePage() {
           ],
           highlights: [
             { stat: "£", label: "The best-value way to park at Heathrow. Keen Park & Ride prices." },
-            { stat: "4.8★", label: "300+ verified reviews across Google and Trustpilot." },
+            { stat: "24h", label: "Free cancellation up to 24 hours before drop-off." },
             { stat: "60s", label: "Compare insured Heathrow operators and book. No account needed." },
           ],
         },

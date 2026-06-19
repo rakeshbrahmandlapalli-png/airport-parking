@@ -4,7 +4,7 @@ import HomePage from "../page";
 export const metadata: Metadata = {
   title: "Luton Meet & Greet Parking | Drive to the Terminal — AeroPark Direct",
   description:
-    "Meet & Greet parking at Luton Airport (LTN). Drive straight to the terminal forecourt, hand over your keys, and fly. No shuttle buses. Fully insured, free cancellation, 4.8★. Book in under 60 seconds.",
+    "Meet & Greet parking at Luton Airport (LTN). Drive straight to the terminal forecourt, hand over your keys, and fly. No shuttle buses. Fully insured, free cancellation. Book in under 60 seconds.",
   alternates: { canonical: "https://www.aeroparkdirect.co.uk/luton-meet-and-greet" },
   openGraph: {
     title: "Luton Meet & Greet Parking | Drive to the Terminal",
@@ -23,7 +23,7 @@ export default function LutonMeetAndGreetPage() {
         h1Top: "Luton Meet & Greet Parking",
         h1Highlight: "Made Simple.",
         intro:
-          "Meet & Greet parking at Luton Airport (LTN). Drive straight to the terminal forecourt, hand your keys to a vetted driver, and walk into departures. No shuttle buses, no long-stay car park wait. Fully insured, free cancellation, 4.8★ rated.",
+          "Meet & Greet parking at Luton Airport (LTN). Drive straight to the terminal forecourt, hand your keys to a vetted driver, and walk into departures. No shuttle buses, no long-stay car park wait. Fully insured, free cancellation.",
         seoBlock: {
           eyebrow: "Luton Airport Meet & Greet Guide",
           heading: "Meet & Greet Parking at",
@@ -35,7 +35,7 @@ export default function LutonMeetAndGreetPage() {
           ],
           highlights: [
             { stat: "LTN", label: "Drive straight to the terminal. No shuttle bus, no car park trek." },
-            { stat: "4.8★", label: "300+ verified reviews across Google and Trustpilot." },
+            { stat: "24h", label: "Free cancellation up to 24 hours before drop-off." },
             { stat: "60s", label: "Compare insured Luton operators and book. No account needed." },
           ],
         },

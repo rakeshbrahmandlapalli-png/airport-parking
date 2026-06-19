@@ -31,8 +31,8 @@ export default function About() {
   ];
 
   const stats = [
-    { value: "4.8★", label: "Average rating" },
-    { value: "312+", label: "Verified reviews" },
+    { value: "100%", label: "Insured operators" },
+    { value: "24h", label: "Free cancellation" },
     { value: "2", label: "Airports — LTN & LHR" },
     { value: "100+", label: "Data points per search" }
   ];
@@ -151,7 +151,7 @@ export default function About() {
             Find my parking <ArrowRight className="w-4 h-4" />
           </Link>
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-8 text-[11px] font-bold uppercase tracking-widest text-slate-500">
-            <span className="flex items-center gap-1.5"><Star className="w-3.5 h-3.5 text-amber-400 fill-current" /> 4.8★ rated</span>
+            <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Free cancellation</span>
             <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Fully insured</span>
             <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-blue-400" /> Luton &amp; Heathrow</span>
           </div>

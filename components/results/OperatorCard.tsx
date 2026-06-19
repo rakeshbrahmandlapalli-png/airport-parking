@@ -85,7 +85,7 @@ export function OperatorCard({
                     <span className="text-sm font-black">{rating.toFixed(1)}</span>
                   </span>
                   <span className="text-[11px] font-bold text-slate-500">
-                    ({reviews.length} {reviews.length === 1 ? "review" : "reviews"})
+                    ({reviews.length} operator {reviews.length === 1 ? "review" : "reviews"})
                   </span>
                 </div>
               )}

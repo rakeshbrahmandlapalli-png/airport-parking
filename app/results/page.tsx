@@ -78,38 +78,6 @@ function ResultsCardSkeleton() {
   );
 }
 
-// ─── LIVE ACTIVITY TICKER ─────────────────────────────────────────────────────
-function LiveActivity() {
-  const [text, setText] = useState("John from London just booked Meet & Greet");
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const messages = [
-      "Sarah from Luton just booked Meet & Greet",
-      "Mike from Watford secured a 30% discount",
-      "Emma from Milton Keynes just booked 24/7 parking",
-      "David from St Albans joined as a Founding Member",
-      "James from London just booked Park & Ride",
-    ];
-    let i = 0;
-    setTimeout(() => setVisible(true), 2000);
-    const interval = setInterval(() => {
-      setVisible(false);
-      setTimeout(() => { i = (i + 1) % messages.length; setText(messages[i]); setVisible(true); }, 500);
-    }, 12000);
-    return () => clearInterval(interval);
-  }, []);
-  return (
-    <div className={`fixed bottom-6 left-6 z-[998] hidden lg:flex transition-all duration-500 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
-      <div className="bg-white/90 backdrop-blur-md border border-slate-200 px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2.5 text-[9px] font-black uppercase text-slate-700 tracking-widest">
-        <div className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-        </div>
-        {text}
-      </div>
-    </div>
-  );
-}
 
 // ─── AERO AVATAR ──────────────────────────────────────────────────────────────
 function AeroAvatar({ size = "md", thinking = false }: { size?: "sm" | "md" | "lg"; thinking?: boolean }) {

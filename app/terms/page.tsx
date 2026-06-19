@@ -193,9 +193,9 @@ export default function TermsPage() {
 
             <div>
               <h3 className="text-base font-bold text-white mt-0 mb-2">2. Collection and Publication of Reviews</h3>
-              <p className="m-0 text-sm">2.1 Customer reviews are collected and displayed through independent third-party review platforms, including but not limited to Trustpilot.<br/>
+              <p className="m-0 text-sm">2.1 The Company is a newly launched service and is in the process of collecting genuine customer reviews. Where customer reviews are displayed in future, they will be collected and published through independent third-party review platforms, including but not limited to Trustpilot.<br/>
               2.2 The Company does not operate a proprietary review system and relies upon the integrity and moderation systems of such third-party providers.<br/>
-              2.3 Reviews displayed on or in connection with the Website originate from these third-party platforms and are subject to their respective terms, policies, and moderation procedures.</p>
+              2.3 Any operator-level ratings shown on the Website are the respective parking operator's own ratings, attributed to that operator, and are not presented as reviews of the Company itself.</p>
             </div>
 
             <div>

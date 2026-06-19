@@ -4,7 +4,7 @@ import HomePage from "../page";
 export const metadata: Metadata = {
   title: "Heathrow Meet & Greet Parking | All Terminals — AeroPark Direct",
   description:
-    "Meet & Greet parking at Heathrow Airport (LHR), all terminals T2–T5. Drive to departures, hand over your keys, and fly. Fully insured, free cancellation, 4.8★. Book in under 60 seconds.",
+    "Meet & Greet parking at Heathrow Airport (LHR), all terminals T2–T5. Drive to departures, hand over your keys, and fly. Fully insured, free cancellation. Book in under 60 seconds.",
   alternates: { canonical: "https://www.aeroparkdirect.co.uk/heathrow-meet-and-greet" },
   openGraph: {
     title: "Heathrow Meet & Greet Parking | All Terminals",
@@ -23,7 +23,7 @@ export default function HeathrowMeetAndGreetPage() {
         h1Top: "Heathrow Meet & Greet Parking",
         h1Highlight: "Made Simple.",
         intro:
-          "Meet & Greet parking at Heathrow Airport (LHR), across all terminals. Drive straight to your terminal's departures forecourt, hand your keys to a vetted driver, and walk inside. No shuttle buses, no long-stay car park. Fully insured, free cancellation, 4.8★ rated.",
+          "Meet & Greet parking at Heathrow Airport (LHR), across all terminals. Drive straight to your terminal's departures forecourt, hand your keys to a vetted driver, and walk inside. No shuttle buses, no long-stay car park. Fully insured, free cancellation.",
         seoBlock: {
           eyebrow: "Heathrow Meet & Greet Guide",
           heading: "Meet & Greet Parking at",
@@ -35,7 +35,7 @@ export default function HeathrowMeetAndGreetPage() {
           ],
           highlights: [
             { stat: "T2–T5", label: "Meet & Greet at every Heathrow terminal. Drive to departures." },
-            { stat: "4.8★", label: "300+ verified reviews across Google and Trustpilot." },
+            { stat: "24h", label: "Free cancellation up to 24 hours before drop-off." },
             { stat: "60s", label: "Compare insured Heathrow operators and book. No account needed." },
           ],
         },
