@@ -155,10 +155,16 @@ export async function POST(req: Request) {
         promo_code: m.promo_used || "None",
         fast_track_count: Number(m.fast_track_count || 0),
         // Walk-in referral fee (hidden from provider) + per-booking commission %
-        // (shown to provider). Carried from the payment-link / checkout metadata
-        // so they're persisted on the FIRST write, not lost to the DB defaults.
+        // (shown to provider). Carried from the payment-link metadata so they're
+        // persisted on the FIRST write, not lost to the DB defaults.
+        // commission_percentage is only set for admin-priced bookings (walk-ins
+        // / payment links). For normal online bookings it stays NULL so the
+        // financials fall back to the operator's own configured commission_rate.
         attendant_commission: Number(m.attendant_commission) || 0,
-        commission_percentage: Number(m.commission_percentage) || 30,
+        commission_percentage:
+          m.commission_percentage != null && m.commission_percentage !== ""
+            ? Number(m.commission_percentage)
+            : null,
         gclid: m.gclid || null,
       };
 

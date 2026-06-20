@@ -751,7 +751,12 @@ export async function sendProviderNotification(
     const fastTrackRevenue = fastTrackCount * (await getFastTrackPrice());
     const totalPaid        = Number(booking.total_price || 0);
     const attendantFee     = Number(booking.attendant_commission || 0);
-    const commissionPct    = Number(booking.commission_percentage || 30);
+    // Use the booking's explicit commission % if the admin set one (walk-ins /
+    // payment links); otherwise fall back to the operator's own configured rate,
+    // so this email matches the financials & remittance invoice exactly.
+    const commissionPct    = booking.commission_percentage != null && booking.commission_percentage !== ""
+      ? Number(booking.commission_percentage)
+      : Number(company.commission_rate ?? 100);
     const parkingGross     = Math.max(0, totalPaid - fastTrackRevenue - attendantFee);
     const yourCommission   = parkingGross * (commissionPct / 100);
     const operatorPayout   = Math.max(0, parkingGross - yourCommission);
