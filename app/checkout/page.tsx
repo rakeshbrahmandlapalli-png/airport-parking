@@ -1211,11 +1211,11 @@ function CheckoutContent() {
 
           <div className="mt-6 flex flex-col gap-4">
             {((airport.includes("Heathrow") ? company?.lhr_fees_note : company?.ltn_fees_note) ?? "").trim() && (
-              <div className="bg-amber-500/[0.07] rounded-2xl p-5 border border-amber-500/30 flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+              <div className="bg-amber-400/[0.16] rounded-2xl p-5 border border-amber-400/60 flex items-start gap-3 shadow-[0_0_0_1px_rgba(251,191,36,0.15)]">
+                <AlertCircle className="w-5 h-5 text-amber-300 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-black text-white tracking-tight mb-1">Payable on collection</p>
-                  <p className="text-xs font-bold text-amber-200/90 leading-relaxed">{(airport.includes("Heathrow") ? company?.lhr_fees_note : company?.ltn_fees_note)}</p>
+                  <p className="text-[11px] font-black text-amber-300 uppercase tracking-[0.12em] mb-1">Payable on collection</p>
+                  <p className="text-sm font-bold text-amber-50 leading-relaxed">{(airport.includes("Heathrow") ? company?.lhr_fees_note : company?.ltn_fees_note)}</p>
                 </div>
               </div>
             )}

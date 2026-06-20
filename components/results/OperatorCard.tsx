@@ -115,9 +115,9 @@ export function OperatorCard({
           </ul>
 
           {feesNote && (
-            <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/[0.07] px-3 py-2.5">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
-              <p className="text-[12px] font-bold leading-snug text-amber-200/90">{feesNote}</p>
+            <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-400/60 bg-amber-400/[0.16] px-3.5 py-3">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
+              <p className="text-[13px] font-bold leading-snug text-amber-50">{feesNote}</p>
             </div>
           )}
 
