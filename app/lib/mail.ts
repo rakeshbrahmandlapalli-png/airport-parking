@@ -751,7 +751,10 @@ export async function sendProviderNotification(
     const fastTrackRevenue = fastTrackCount * (await getFastTrackPrice());
     // FIX: parseFloat on undefined returns NaN — use Number() with fallback
     const totalPaid        = Number(booking.total_price || 0);
-    const parkingTotal     = Math.max(0, totalPaid - fastTrackRevenue).toFixed(2);
+    // Hide both fast-track revenue AND any attendant referral fee from the
+    // provider, so this email matches the (reduced) amount on their remittance.
+    const attendantFee     = Number(booking.attendant_commission || 0);
+    const parkingTotal     = Math.max(0, totalPaid - fastTrackRevenue - attendantFee).toFixed(2);
 
     // FIX: don't fall back silently to info@ — log clearly when provider has no email
     const providerEmail = company.email?.trim();
