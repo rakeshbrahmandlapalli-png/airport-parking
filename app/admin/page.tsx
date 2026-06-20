@@ -238,7 +238,8 @@ function DashboardContent() {
         terminal: editingBooking?.terminal || null,
         company_id: updatedCompanyId, 
         service_type: editingBooking?.service_type || "Meet & Greet",
-        fast_track_count: Number(editingBooking?.fast_track_count || 0)
+        fast_track_count: Number(editingBooking?.fast_track_count || 0),
+        attendant_commission: Number(editingBooking?.attendant_commission || 0)
       }).eq('id', editingBooking.id);
 
       if (error) throw error;
@@ -1798,6 +1799,15 @@ function DashboardContent() {
                     <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-600" />
                     <input type="number" step="0.01" value={editingBooking?.total_price || 0} onChange={(e) => setEditingBooking({...editingBooking, total_price: parseFloat(e.target.value) || 0})} className={`${inputStyle} pl-12 text-emerald-400 text-xl`} />
                   </div>
+                </div>
+
+                <div className="space-y-2 lg:col-span-1">
+                  <label className="text-[10px] font-black uppercase text-blue-400 block ml-1 tracking-widest">Attendant Fee (£)</label>
+                  <div className="relative">
+                    <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-600" />
+                    <input type="number" step="0.01" min="0" value={editingBooking?.attendant_commission || 0} onChange={(e) => setEditingBooking({...editingBooking, attendant_commission: parseFloat(e.target.value) || 0})} className={`${inputStyle} pl-12 text-blue-400 text-xl`} />
+                  </div>
+                  <p className="text-[9px] text-slate-500 font-bold ml-1 leading-snug">Deducted from the provider&rsquo;s payout &amp; hidden from them. Leave 0 if none.</p>
                 </div>
               </div>
 

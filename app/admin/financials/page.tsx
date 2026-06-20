@@ -218,13 +218,14 @@ function FinancialsContent() {
         const parkingGross = Math.max(0, total - addOns);
         const commPct = commissionFor(b.company_id);
         const yourCommission = parkingGross * (commPct / 100);
-        const operatorPayout = parkingGross - yourCommission;
+        const attendantCommission = Number(b.attendant_commission || 0);
+        const operatorPayout = Math.max(0, parkingGross - yourCommission - attendantCommission);
         const stripeFee = total > 0 ? total * STRIPE_PERCENT + STRIPE_FIXED : 0;
         const yourNet = yourCommission + addOns - stripeFee;
         return {
           ...b,
           total, addOns, parkingGross, commPct,
-          yourCommission, operatorPayout, stripeFee, yourNet,
+          yourCommission, attendantCommission, operatorPayout, stripeFee, yourNet,
           operatorName: nameFor(b.company_id),
         };
       });
@@ -253,9 +254,10 @@ function FinancialsContent() {
         acc.operator += r.operatorPayout;
         acc.addOns += r.addOns;
         acc.net += r.yourNet;
+        acc.attendant += r.attendantCommission;
         return acc;
       },
-      { gross: 0, stripe: 0, operator: 0, addOns: 0, net: 0, opEx: 0, trueNet: 0 }
+      { gross: 0, stripe: 0, operator: 0, addOns: 0, net: 0, attendant: 0, opEx: 0, trueNet: 0 }
     );
 
     // 🟢 NEW: Add OpEx and calculate True Net
@@ -307,7 +309,11 @@ function FinancialsContent() {
       .map((b) => {
         const total = Number(b.total_price || 0);
         const addOns = Number(b.fast_track_count || 0) * fastTrackPrice;
-        const parkingGross = Math.max(0, total - addOns);
+        const rawParkingGross = Math.max(0, total - addOns);
+        const attendantCommission = Number(b.attendant_commission || 0);
+        // Net the attendant fee out of the parking value so the provider's
+        // remittance reconciles and never reveals the fee as a line item.
+        const parkingGross = Math.max(0, rawParkingGross - attendantCommission);
         const commPct = commissionFor(b.company_id);
         const operatorPayout = parkingGross - parkingGross * (commPct / 100);
         return {
