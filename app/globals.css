@@ -89,6 +89,21 @@ input.dark-input:-webkit-autofill:focus {
   transition: background-color 9999s ease-in-out 0s;
 }
 
+/* 3d. DEEP DARK-UI AUTOFILL GUARD — main admin page (#0B1120 inputs). Matches
+   the deeper navy of the Live Board / Payment Link / Manual Booking forms so
+   browser-autofilled fields (name/email/phone) blend in instead of going white. */
+.dark-ui-deep input:-webkit-autofill,
+.dark-ui-deep input:-webkit-autofill:hover,
+.dark-ui-deep input:-webkit-autofill:focus,
+.dark-ui-deep input:-webkit-autofill:active,
+.dark-ui-deep textarea:-webkit-autofill,
+.dark-ui-deep select:-webkit-autofill {
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff;
+  -webkit-box-shadow: 0 0 0px 1000px #0B1120 inset !important;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
 /* 4. BUTTON POLISH */
 button {
   cursor: pointer;

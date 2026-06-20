@@ -921,7 +921,7 @@ function DashboardContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B1120] font-sans flex flex-col md:flex-row text-slate-100 antialiased selection:bg-blue-600/30">
+    <div className="dark-ui-deep min-h-screen bg-[#0B1120] font-sans flex flex-col md:flex-row text-slate-100 antialiased selection:bg-blue-600/30">
 
       {/* SIDEBAR */}
       <aside className="w-full md:w-60 bg-[#0F1523] text-zinc-400 hidden md:flex flex-col sticky top-0 h-screen border-r border-white/[0.06] z-50 shrink-0">
