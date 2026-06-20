@@ -20,6 +20,7 @@ export default function LutonAirportParkingPage() {
     <HomePage
       preset={{
         airportDefault: "Luton (LTN)",
+        seoSchema: { path: "/luton-airport-parking", name: "Luton Airport Parking", serviceType: "Airport parking", areaServed: "Luton Airport (LTN)" },
         h1Top: "Luton Airport Parking",
         h1Highlight: "Made Simple.",
         intro:

@@ -79,6 +79,15 @@ export type HomePreset = {
   // Page-specific FAQs. Overrides the default set so the FAQPage schema is
   // unique per landing page (a ranking signal for long-tail terms).
   faqs?: { q: string; a: string }[];
+  // Per-page structured data. When present, the page emits BreadcrumbList +
+  // Service schema (in addition to LocalBusiness + FAQPage) so Google can place
+  // the page in a hierarchy and understand the specific service it offers.
+  seoSchema?: {
+    path: string;          // canonical path, e.g. "/heathrow-meet-and-greet"
+    name: string;          // page/service name, e.g. "Heathrow Meet & Greet Parking"
+    serviceType?: string;  // e.g. "Meet & Greet airport parking"
+    areaServed?: string;   // e.g. "Heathrow Airport (LHR)"
+  };
 };
 
 export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
@@ -250,9 +259,35 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
     { q: "Can I cancel or modify my airport parking booking?",          a: "Yes — free cancellation is available up to 24 hours before your drop-off time. To modify dates or times, use the Manage Booking page." },
   ];
 
+  const SITE_URL = "https://www.aeroparkdirect.co.uk";
+  const schemaGraph: any[] = [
+    { "@type": "LocalBusiness", "@id": `${SITE_URL}#business`, "name": "AeroPark Direct", "description": "Premium airport parking at Luton and Heathrow. Meet & Greet and Park & Ride.", "url": SITE_URL, "priceRange": "££", "areaServed": ["Luton Airport LTN", "Heathrow Airport LHR"] },
+    { "@type": "FAQPage", "mainEntity": faqs.map(f => ({ "@type": "Question", "name": f.q, "acceptedAnswer": { "@type": "Answer", "text": f.a } })) },
+  ];
+  // Per-landing-page BreadcrumbList + Service (only when the preset supplies it).
+  if (preset?.seoSchema) {
+    const { path, name, serviceType, areaServed } = preset.seoSchema;
+    const pageUrl = `${SITE_URL}${path}`;
+    schemaGraph.push({
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": SITE_URL },
+        { "@type": "ListItem", "position": 2, "name": name, "item": pageUrl },
+      ],
+    });
+    schemaGraph.push({
+      "@type": "Service",
+      "name": name,
+      "serviceType": serviceType || "Airport parking",
+      "provider": { "@id": `${SITE_URL}#business` },
+      "areaServed": areaServed || ["Luton Airport LTN", "Heathrow Airport LHR"],
+      "url": pageUrl,
+    });
+  }
+
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@graph": [{ "@type": "LocalBusiness", "name": "AeroPark Direct", "description": "Premium airport parking at Luton and Heathrow. Meet & Greet and Park & Ride.", "url": "https://www.aeroparkdirect.co.uk", "priceRange": "££", "areaServed": ["Luton Airport LTN", "Heathrow Airport LHR"] }, { "@type": "FAQPage", "mainEntity": faqs.map(f => ({ "@type": "Question", "name": f.q, "acceptedAnswer": { "@type": "Answer", "text": f.a } })) }] }) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@graph": schemaGraph }) }} />
 
       <main suppressHydrationWarning className="light-ui min-h-[100dvh] bg-white font-sans antialiased selection:bg-blue-600 selection:text-white overflow-x-hidden">
 

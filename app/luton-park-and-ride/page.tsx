@@ -20,6 +20,7 @@ export default function LutonParkAndRidePage() {
     <HomePage
       preset={{
         airportDefault: "Luton (LTN)",
+        seoSchema: { path: "/luton-park-and-ride", name: "Luton Park & Ride Parking", serviceType: "Park & Ride airport parking", areaServed: "Luton Airport (LTN)" },
         h1Top: "Luton Park & Ride Parking",
         h1Highlight: "Made Simple.",
         intro:

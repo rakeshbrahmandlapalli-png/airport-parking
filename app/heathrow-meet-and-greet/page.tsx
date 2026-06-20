@@ -20,6 +20,7 @@ export default function HeathrowMeetAndGreetPage() {
     <HomePage
       preset={{
         airportDefault: "Heathrow (LHR)",
+        seoSchema: { path: "/heathrow-meet-and-greet", name: "Heathrow Meet & Greet Parking", serviceType: "Meet & Greet airport parking", areaServed: "Heathrow Airport (LHR)" },
         h1Top: "Heathrow Meet & Greet Parking",
         h1Highlight: "Made Simple.",
         intro:

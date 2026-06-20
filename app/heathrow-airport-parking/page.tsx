@@ -20,6 +20,7 @@ export default function HeathrowAirportParkingPage() {
     <HomePage
       preset={{
         airportDefault: "Heathrow (LHR)",
+        seoSchema: { path: "/heathrow-airport-parking", name: "Heathrow Airport Parking", serviceType: "Airport parking", areaServed: "Heathrow Airport (LHR)" },
         h1Top: "Heathrow Airport Parking",
         h1Highlight: "Made Simple.",
         intro:

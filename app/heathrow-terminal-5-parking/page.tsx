@@ -20,6 +20,7 @@ export default function HeathrowTerminal5ParkingPage() {
     <HomePage
       preset={{
         airportDefault: "Heathrow (LHR)",
+        seoSchema: { path: "/heathrow-terminal-5-parking", name: "Heathrow Terminal 5 Parking", serviceType: "Meet & Greet airport parking", areaServed: "Heathrow Terminal 5 (LHR)" },
         h1Top: "Heathrow Terminal 5 Parking",
         h1Highlight: "Made Simple.",
         intro:

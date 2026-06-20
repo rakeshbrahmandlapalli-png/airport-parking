@@ -20,6 +20,7 @@ export default function HeathrowParkAndRidePage() {
     <HomePage
       preset={{
         airportDefault: "Heathrow (LHR)",
+        seoSchema: { path: "/heathrow-park-and-ride", name: "Heathrow Park & Ride Parking", serviceType: "Park & Ride airport parking", areaServed: "Heathrow Airport (LHR)" },
         h1Top: "Heathrow Park & Ride Parking",
         h1Highlight: "Made Simple.",
         intro:

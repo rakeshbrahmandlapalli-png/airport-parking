@@ -20,6 +20,7 @@ export default function LutonMeetAndGreetPage() {
     <HomePage
       preset={{
         airportDefault: "Luton (LTN)",
+        seoSchema: { path: "/luton-meet-and-greet", name: "Luton Meet & Greet Parking", serviceType: "Meet & Greet airport parking", areaServed: "Luton Airport (LTN)" },
         h1Top: "Luton Meet & Greet Parking",
         h1Highlight: "Made Simple.",
         intro:
