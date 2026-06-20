@@ -49,24 +49,26 @@ function DashboardContent() {
   const [assignSel, setAssignSel] = useState<Record<string, string>>({}); // per-booking provider pick for manual transfer
 
   const defaultNewBooking = {
-    full_name: "", 
-    email: "", 
-    phone_number: "", 
-    license_plate: "", 
-    car_make: "", 
-    car_color: "", 
-    flight_number: "", 
-    dropoff_date: "", 
-    dropoff_time: "", 
-    pickup_date: "", 
-    pickup_time: "", 
-    total_price: 0, 
-    status: "confirmed", 
-    airport: "Luton Airport (LTN)", 
-    terminal: "Main Terminal", 
-    company_id: "ALL", 
-    service_type: "Meet & Greet", 
-    fast_track_count: 0, 
+    full_name: "",
+    email: "",
+    phone_number: "",
+    license_plate: "",
+    car_make: "",
+    car_color: "",
+    flight_number: "",
+    dropoff_date: "",
+    dropoff_time: "",
+    pickup_date: "",
+    pickup_time: "",
+    total_price: 0,
+    status: "confirmed",
+    airport: "Luton Airport (LTN)",
+    terminal: "Main Terminal",
+    company_id: "ALL",
+    service_type: "Meet & Greet",
+    fast_track_count: 0,
+    attendant_commission: 0,
+    commission_percentage: 30,
   };
   
   const [newBooking, setNewBooking] = useState<any>(defaultNewBooking);
@@ -79,6 +81,7 @@ function DashboardContent() {
     total_price: "", airport: "Luton Airport (LTN)", terminal: "Main Terminal",
     company_id: "ALL", service_type: "Meet & Greet", fast_track_count: 0,
     attendant_commission: 0,
+    commission_percentage: 30,
   };
   const [showPayLinkModal, setShowPayLinkModal] = useState(false);
   const [payLink, setPayLink] = useState<any>(defaultPayLink);
@@ -229,7 +232,7 @@ function DashboardContent() {
         car_make: editingBooking?.car_make || null,
         car_color: editingBooking?.car_color || null,
         flight_number: editingBooking?.flight_number || null,
-        dropoff_date: editingBooking?.dropoff_date || null, 
+        dropoff_date: editingBooking?.dropoff_date || null,
         dropoff_time: editingBooking?.dropoff_time || null,
         pickup_date: editingBooking?.pickup_date || null,
         pickup_time: editingBooking?.pickup_time || null,
@@ -237,10 +240,11 @@ function DashboardContent() {
         status: editingBooking?.status || 'pending',
         airport: editingBooking?.airport || null,
         terminal: editingBooking?.terminal || null,
-        company_id: updatedCompanyId, 
+        company_id: updatedCompanyId,
         service_type: editingBooking?.service_type || "Meet & Greet",
         fast_track_count: Number(editingBooking?.fast_track_count || 0),
-        attendant_commission: Number(editingBooking?.attendant_commission || 0)
+        attendant_commission: Number(editingBooking?.attendant_commission || 0),
+        commission_percentage: Number(editingBooking?.commission_percentage || 30)
       }).eq('id', editingBooking.id);
 
       if (error) throw error;
@@ -1553,10 +1557,19 @@ function DashboardContent() {
                       <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-600" />
                       <input type="number" step="0.01" min="0" value={payLink.attendant_commission || 0} onChange={(e) => setPayLink({ ...payLink, attendant_commission: parseFloat(e.target.value) || 0 })} className={`${inputStyle} pl-12 text-blue-400 text-lg`} />
                     </div>
-                    <p className="text-[9px] text-slate-500 font-bold ml-1 leading-snug">Deducted from the provider's payout. Set before customer pays.</p>
+                    <p className="text-[9px] text-slate-500 font-bold ml-1 leading-snug">Hidden from provider; shown in financials only.</p>
                   </div>
 
-                  <label className="flex items-center gap-3 bg-[#1A2235] border border-slate-700/50 rounded-xl px-5 py-4 cursor-pointer hover:border-emerald-500/40 transition-colors mt-4">
+                  <div className="space-y-2 lg:col-span-1 mt-4">
+                    <label className="text-[10px] font-black uppercase text-emerald-400 block ml-1 tracking-widest">Your Commission (%)</label>
+                    <div className="relative">
+                      <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-600" />
+                      <input type="number" step="1" min="0" max="100" value={payLink.commission_percentage || 30} onChange={(e) => setPayLink({ ...payLink, commission_percentage: Number(e.target.value) || 30 })} className={`${inputStyle} pl-12 text-emerald-400 text-lg`} />
+                    </div>
+                    <p className="text-[9px] text-slate-500 font-bold ml-1 leading-snug">Shown on invoice + provider email. Operator keeps the rest.</p>
+                  </div>
+
+                  <label className="flex items-center gap-3 bg-[#1A2235] border border-slate-700/50 rounded-xl px-5 py-4 cursor-pointer hover:border-emerald-500/40 transition-colors mt-4 lg:col-span-full">
                     <input type="checkbox" checked={payLinkSendEmail} onChange={(e) => setPayLinkSendEmail(e.target.checked)} className="w-4 h-4 accent-emerald-500" />
                     <Mail className="w-4 h-4 text-emerald-400" />
                     <span className="text-xs font-bold text-slate-300">Email the payment link to the customer automatically</span>
@@ -1705,6 +1718,26 @@ function DashboardContent() {
                     </div>
                   </div>
                 </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-2">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-blue-400 block ml-1 tracking-widest">Attendant Fee (£)</label>
+                    <div className="relative">
+                      <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-600" />
+                      <input type="number" step="0.01" min="0" value={newBooking.attendant_commission || 0} onChange={(e) => setNewBooking({...newBooking, attendant_commission: parseFloat(e.target.value) || 0})} className={`${inputStyle} pl-12 text-blue-400`} />
+                    </div>
+                    <p className="text-[9px] text-slate-500 font-bold ml-1">Hidden from provider</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-emerald-400 block ml-1 tracking-widest">Your Commission (%)</label>
+                    <div className="relative">
+                      <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-600" />
+                      <input type="number" step="1" min="0" max="100" value={newBooking.commission_percentage || 30} onChange={(e) => setNewBooking({...newBooking, commission_percentage: Number(e.target.value) || 30})} className={`${inputStyle} pl-12 text-emerald-400`} />
+                    </div>
+                    <p className="text-[9px] text-slate-500 font-bold ml-1">On invoice + email</p>
+                  </div>
+                </div>
               </section>
             </form>
             
@@ -1818,6 +1851,15 @@ function DashboardContent() {
                     <input type="number" step="0.01" min="0" value={editingBooking?.attendant_commission || 0} onChange={(e) => setEditingBooking({...editingBooking, attendant_commission: parseFloat(e.target.value) || 0})} className={`${inputStyle} pl-12 text-blue-400 text-xl`} />
                   </div>
                   <p className="text-[9px] text-slate-500 font-bold ml-1 leading-snug">Deducted from the provider&rsquo;s payout &amp; hidden from them. Leave 0 if none.</p>
+                </div>
+
+                <div className="space-y-2 lg:col-span-1">
+                  <label className="text-[10px] font-black uppercase text-emerald-400 block ml-1 tracking-widest">Your Commission (%)</label>
+                  <div className="relative">
+                    <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-600" />
+                    <input type="number" step="1" min="0" max="100" value={editingBooking?.commission_percentage || 30} onChange={(e) => setEditingBooking({...editingBooking, commission_percentage: Number(e.target.value) || 30})} className={`${inputStyle} pl-12 text-emerald-400 text-xl`} />
+                  </div>
+                  <p className="text-[9px] text-slate-500 font-bold ml-1 leading-snug">Shown on invoice &amp; provider email. Operator keeps the rest.</p>
                 </div>
               </div>
 

@@ -216,7 +216,7 @@ function FinancialsContent() {
         const total = Number(b.total_price || 0);
         const addOns = Number(b.fast_track_count || 0) * fastTrackPrice;
         const parkingGross = Math.max(0, total - addOns);
-        const commPct = commissionFor(b.company_id);
+        const commPct = Number(b.commission_percentage) !== undefined && b.commission_percentage !== null ? Number(b.commission_percentage) : commissionFor(b.company_id);
         const yourCommission = parkingGross * (commPct / 100);
         const attendantCommission = Number(b.attendant_commission || 0);
         const operatorPayout = Math.max(0, parkingGross - yourCommission - attendantCommission);
@@ -314,7 +314,7 @@ function FinancialsContent() {
         // Net the attendant fee out of the parking value so the provider's
         // remittance reconciles and never reveals the fee as a line item.
         const parkingGross = Math.max(0, rawParkingGross - attendantCommission);
-        const commPct = commissionFor(b.company_id);
+        const commPct = Number(b.commission_percentage) !== undefined && b.commission_percentage !== null ? Number(b.commission_percentage) : commissionFor(b.company_id);
         const operatorPayout = parkingGross - parkingGross * (commPct / 100);
         return {
           ref: b.booking_ref || b.id,

@@ -749,12 +749,13 @@ export async function sendProviderNotification(
 
     const fastTrackCount   = Number(booking.fast_track_count || 0);
     const fastTrackRevenue = fastTrackCount * (await getFastTrackPrice());
-    // FIX: parseFloat on undefined returns NaN — use Number() with fallback
     const totalPaid        = Number(booking.total_price || 0);
-    // Hide both fast-track revenue AND any attendant referral fee from the
-    // provider, so this email matches the (reduced) amount on their remittance.
     const attendantFee     = Number(booking.attendant_commission || 0);
-    const parkingTotal     = Math.max(0, totalPaid - fastTrackRevenue - attendantFee).toFixed(2);
+    const commissionPct    = Number(booking.commission_percentage || 30);
+    const parkingGross     = Math.max(0, totalPaid - fastTrackRevenue - attendantFee);
+    const yourCommission   = parkingGross * (commissionPct / 100);
+    const operatorPayout   = Math.max(0, parkingGross - yourCommission);
+    const parkingTotal     = parkingGross.toFixed(2);
 
     // FIX: don't fall back silently to info@ — log clearly when provider has no email
     const providerEmail = company.email?.trim();
@@ -785,9 +786,13 @@ export async function sendProviderNotification(
             <tr style="background-color:#f8fafc;"><td><strong>Pick-up:</strong></td><td>${pickDate} at ${pickTime}</td></tr>
             <tr><td><strong>Return Flight:</strong></td><td>${escH(booking.flight_number, "N/A")}</td></tr>
             <tr style="background-color:#f8fafc;"><td><strong>Service Type:</strong></td><td>${escH(booking.service_type, company.name)}</td></tr>
+            <tr style="background-color:#f0fdf4;border-top:2px solid #10b981;"><td colspan="2"><strong style="color:#166534;">Payout Summary</strong></td></tr>
+            <tr style="background-color:#f0fdf4;"><td><strong>Parking Value:</strong></td><td><strong style="color:#15803d;font-size:16px;">£${parkingTotal}</strong></td></tr>
+            <tr style="background-color:#f0fdf4;"><td><strong>Your Commission Rate:</strong></td><td><strong style="color:#15803d;">${commissionPct}%</strong></td></tr>
+            <tr style="background-color:#f0fdf4;"><td><strong>Your Commission Deducted:</strong></td><td><strong style="color:#b91c1c;">−£${yourCommission.toFixed(2)}</strong></td></tr>
             <tr style="background-color:#eff6ff;border-top:2px solid #2563eb;">
-              <td><strong>Total Paid for Parking:</strong></td>
-              <td><strong style="color:#1e40af;font-size:18px;">£${parkingTotal}</strong></td>
+              <td><strong>You Receive:</strong></td>
+              <td><strong style="color:#1e40af;font-size:18px;">£${operatorPayout.toFixed(2)}</strong></td>
             </tr>
           </table>
           <p style="margin-top:30px;font-size:12px;color:#64748b;text-align:center;">

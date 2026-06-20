@@ -64,6 +64,7 @@ export async function POST(req: Request) {
       company_id:        m.company_id    || null,
       fast_track_count:  Number(m.fast_track_count) || 0,
       attendant_commission: Number(m.attendant_commission) || 0,
+      commission_percentage: Number(m.commission_percentage) || 30,
       promo_code:        (m.promo_used && m.promo_used !== "None") ? m.promo_used : null,
       gclid:             m.gclid || null,
       status:            "confirmed",

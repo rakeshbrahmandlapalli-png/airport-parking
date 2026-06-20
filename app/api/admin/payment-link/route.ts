@@ -120,6 +120,7 @@ export async function POST(req: Request) {
     promo_used:       "None",
     fast_track_count: metaStr(body.fast_track_count, "0"),
     attendant_commission: metaStr(body.attendant_commission, "0"),
+    commission_percentage: metaStr(body.commission_percentage, "30"),
     lounge:           "no",
     gclid:            "",
     source:           "admin_payment_link",
