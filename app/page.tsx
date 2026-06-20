@@ -370,8 +370,8 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
             <div id="booking-form" className={`lg:col-span-5 flex justify-center lg:justify-end transition-all duration-1000 delay-700 w-full ${isLoaded ? "translate-y-0 opacity-100" : "translate-y-12 opacity-0"}`}>
               <div className="w-full max-w-[480px] bg-[#0B1120] border border-slate-800 rounded-2xl p-5 sm:p-6 md:p-7 shadow-2xl shadow-black/50 relative overflow-hidden flex flex-col">
                 <div className="absolute top-0 inset-x-0 h-px bg-blue-500/50 pointer-events-none" aria-hidden="true" />
-                <div className="relative z-10 w-full">
-                  <div className="mb-5 md:mb-6">
+                <div className="relative z-10 w-full flex flex-col">
+                  <div className="order-4 mb-5 md:mb-6">
                     <div className="flex items-center justify-between mb-3">
                       <label htmlFor="magic-input" className="flex items-center gap-2">
                         <span className="w-6 h-6 bg-blue-600 rounded-md flex items-center justify-center gap-[3px] shrink-0" aria-hidden="true">
@@ -439,9 +439,9 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-4 mb-5" aria-hidden="true"><div className="h-px bg-slate-800 flex-1" /><span className="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-black whitespace-nowrap">Or select manually</span><div className="h-px bg-slate-800 flex-1" /></div>
+                  <div className="order-3 flex items-center gap-4 my-5" aria-hidden="true"><div className="h-px bg-slate-800 flex-1" /><span className="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-black whitespace-nowrap">Or try Aero Magic Search</span><div className="h-px bg-slate-800 flex-1" /></div>
 
-                  <form onSubmit={handleSearch} className="relative z-10 flex flex-col gap-4" aria-label="Manual airport parking search">
+                  <form onSubmit={handleSearch} className="order-1 relative z-10 flex flex-col gap-4" aria-label="Airport parking search">
                     <div className="bg-[#0F1523] border border-slate-800 rounded-xl p-3 md:p-4 hover:border-slate-700 transition-colors">
                       <label htmlFor="airport-select" className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-300 block mb-2">Departure Airport</label>
                       <div className="relative">
@@ -481,7 +481,7 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
                     </button>
                   </form>
 
-                  <div className="mt-4 grid grid-cols-2 gap-2">
+                  <div className="order-2 mt-4 grid grid-cols-2 gap-2">
                     <div className="p-3 rounded-xl bg-[#0F1523] border border-slate-800 flex items-center gap-2">
                       <div className="relative flex h-2 w-2 shrink-0"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" aria-hidden="true" /><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" /></div>
                       <p className="text-[9px] text-slate-300 font-bold leading-tight"><span className="text-emerald-400 font-black">Founding</span>-member launch</p>
