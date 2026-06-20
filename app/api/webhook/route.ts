@@ -154,6 +154,11 @@ export async function POST(req: Request) {
         company_id: resolvedCompany ? resolvedCompany.id : null,
         promo_code: m.promo_used || "None",
         fast_track_count: Number(m.fast_track_count || 0),
+        // Walk-in referral fee (hidden from provider) + per-booking commission %
+        // (shown to provider). Carried from the payment-link / checkout metadata
+        // so they're persisted on the FIRST write, not lost to the DB defaults.
+        attendant_commission: Number(m.attendant_commission) || 0,
+        commission_percentage: Number(m.commission_percentage) || 30,
         gclid: m.gclid || null,
       };
 
