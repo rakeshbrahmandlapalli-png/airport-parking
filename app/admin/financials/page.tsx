@@ -168,6 +168,19 @@ function FinancialsContent() {
     return c ? Number(c.commission_rate ?? 100) : 100;
   };
 
+  // Per-booking commission %. Rules:
+  //  • No operator assigned (direct/walk-in you fulfil) → you keep 100%; any
+  //    stored commission_percentage is ignored (it only makes sense with an operator).
+  //  • Operator assigned → use the booking's own commission_percentage if set,
+  //    otherwise fall back to the operator's default commission_rate.
+  const commissionPctForBooking = (b: any) => {
+    if (!b.company_id) return 100;
+    if (b.commission_percentage !== null && b.commission_percentage !== undefined) {
+      return Number(b.commission_percentage);
+    }
+    return commissionFor(b.company_id);
+  };
+
   const nameFor = (companyId: string | null) => {
     if (!companyId) return "Aero Direct";
     const c = companies.find((x) => x.id === companyId);
@@ -216,7 +229,7 @@ function FinancialsContent() {
         const total = Number(b.total_price || 0);
         const addOns = Number(b.fast_track_count || 0) * fastTrackPrice;
         const parkingGross = Math.max(0, total - addOns);
-        const commPct = Number(b.commission_percentage) !== undefined && b.commission_percentage !== null ? Number(b.commission_percentage) : commissionFor(b.company_id);
+        const commPct = commissionPctForBooking(b);
         const yourCommission = parkingGross * (commPct / 100);
         const attendantCommission = Number(b.attendant_commission || 0);
         const operatorPayout = Math.max(0, parkingGross - yourCommission - attendantCommission);
@@ -314,7 +327,7 @@ function FinancialsContent() {
         // Net the attendant fee out of the parking value so the provider's
         // remittance reconciles and never reveals the fee as a line item.
         const parkingGross = Math.max(0, rawParkingGross - attendantCommission);
-        const commPct = Number(b.commission_percentage) !== undefined && b.commission_percentage !== null ? Number(b.commission_percentage) : commissionFor(b.company_id);
+        const commPct = commissionPctForBooking(b);
         const operatorPayout = parkingGross - parkingGross * (commPct / 100);
         return {
           ref: b.booking_ref || b.id,
