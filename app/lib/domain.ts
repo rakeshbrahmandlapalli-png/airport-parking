@@ -80,6 +80,11 @@ export interface Company {
   on_arrival_ltn?: string | null;
   on_return_lhr?: string | null;
   on_return_ltn?: string | null;
+  // Per-airport disclosure of any charge the customer pays separately (e.g. a
+  // barrier charge on collection, or ULEZ not being covered). Shown on the
+  // result card + checkout so there are no surprises. Blank = nothing extra.
+  ltn_fees_note?: string | null;
+  lhr_fees_note?: string | null;
   badges?: Badge[] | null;
 
   /** Pricing-pivot + token columns consumed by the pricing engine. */
@@ -142,7 +147,11 @@ export function getBadgeIcon(label: string): LucideIcon {
  * badges (filtered to the relevant service category), then tops up with
  * brand-universal trust points so every card shows a consistent value stack.
  */
-export function buildHighlights(company: Company, isMeetGreet: boolean, max = 4): string[] {
+export function buildHighlights(company: Company, isMeetGreet: boolean, max = 4, feesNote?: string | null): string[] {
+  // If this operator discloses an extra charge, never surface a "no hidden
+  // fees" style badge — it would directly contradict the disclosure.
+  const hasExtraFees = !!(feesNote && feesNote.trim());
+
   const fromBadges = (company.badges ?? [])
     .filter((b) => b.category === "General" || b.category === company.category)
     .map((b) => b.label.trim())
@@ -155,6 +164,7 @@ export function buildHighlights(company: Company, isMeetGreet: boolean, max = 4)
   const seen = new Set<string>();
   const out: string[] = [];
   for (const item of [...fromBadges, ...defaults]) {
+    if (hasExtraFees && /hidden fee|no\s+fee|all[- ]?inclusive/i.test(item)) continue;
     const key = item.toLowerCase();
     if (!seen.has(key)) { seen.add(key); out.push(item); }
     if (out.length >= max) break;

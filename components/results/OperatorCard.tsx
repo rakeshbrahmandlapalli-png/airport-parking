@@ -32,7 +32,8 @@ export function OperatorCard({
   const reviews = (isHeathrow ? operator.lhr_reviews : operator.ltn_reviews) ?? [];
   const rating = getAvgRating(reviews);
   const isMeetGreet = (operator.category ?? "").toLowerCase().includes("meet");
-  const highlights = buildHighlights(operator, isMeetGreet);
+  const feesNote = ((isHeathrow ? operator.lhr_fees_note : operator.ltn_fees_note) ?? "").trim();
+  const highlights = buildHighlights(operator, isMeetGreet, 4, feesNote);
 
   const isApiMode = operator.pricing_mode !== "pivot" && Boolean(operator.api_token);
   const showSkeleton = isApiMode && liveRateLoading;
@@ -112,6 +113,13 @@ export function OperatorCard({
               );
             })}
           </ul>
+
+          {feesNote && (
+            <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/[0.07] px-3 py-2.5">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+              <p className="text-[12px] font-bold leading-snug text-amber-200/90">{feesNote}</p>
+            </div>
+          )}
 
           <OperatorDetailPanel operator={operator} isHeathrow={isHeathrow} />
         </div>

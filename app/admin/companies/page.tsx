@@ -64,6 +64,8 @@ const defaultCompany = {
   on_arrival_ltn: "",
   on_return_lhr: "",
   on_return_ltn: "",
+  ltn_fees_note: "",
+  lhr_fees_note: "",
   address: "",
   postcode: "",
   map_url: "",
@@ -1523,6 +1525,11 @@ export default function AdminCompaniesPage() {
                               <div className="space-y-2"><label className={labelCls}>Arrival Instructions (HTML)</label><textarea rows={5} value={getField(editingCompany, newCompany, "on_arrival_ltn") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "on_arrival_ltn", e.target.value)} className={textareaCls} /></div>
                               <div className="space-y-2"><label className={labelCls}>Return Instructions (HTML)</label><textarea rows={5} value={getField(editingCompany, newCompany, "on_return_ltn") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "on_return_ltn", e.target.value)} className={textareaCls} /></div>
                             </div>
+                            <div className="space-y-2 pt-6 border-t border-slate-800">
+                              <label className={labelCls}>Extra Charges Note — Luton (shown to the customer)</label>
+                              <input type="text" value={getField(editingCompany, newCompany, "ltn_fees_note") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "ltn_fees_note", e.target.value)} className={inputCls} placeholder="e.g. £10 barrier charge payable on collection" />
+                              <p className="text-[10px] text-slate-500 font-bold leading-relaxed">Shows as an amber notice on the result card &amp; checkout. Leave BLANK for all-inclusive operators (e.g. AeroPark Exclusive) — they keep their &ldquo;No Hidden Fees&rdquo; badge.</p>
+                            </div>
                             <ReviewSection airport="ltn" color="blue" reviews={getField(editingCompany, newCompany, "ltn_reviews") || []} onAdd={() => addReview("ltn")} onRemove={idx => removeReview("ltn", idx)} onUpdate={(idx, f, v) => updateReview("ltn", idx, f, v)} />
                           </>
                         )}
@@ -1561,6 +1568,11 @@ export default function AdminCompaniesPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8 border-t border-slate-800">
                               <div className="space-y-2"><label className={labelCls}>Arrival Instructions (HTML)</label><textarea rows={5} value={getField(editingCompany, newCompany, "on_arrival_lhr") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "on_arrival_lhr", e.target.value)} className={textareaCls} /></div>
                               <div className="space-y-2"><label className={labelCls}>Return Instructions (HTML)</label><textarea rows={5} value={getField(editingCompany, newCompany, "on_return_lhr") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "on_return_lhr", e.target.value)} className={textareaCls} /></div>
+                            </div>
+                            <div className="space-y-2 pt-6 border-t border-slate-800">
+                              <label className={labelCls}>Extra Charges Note — Heathrow (shown to the customer)</label>
+                              <input type="text" value={getField(editingCompany, newCompany, "lhr_fees_note") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "lhr_fees_note", e.target.value)} className={inputCls} placeholder="e.g. ULEZ / drop-off charge not included" />
+                              <p className="text-[10px] text-slate-500 font-bold leading-relaxed">Shows as an amber notice on the result card &amp; checkout. Leave BLANK for all-inclusive operators (e.g. AeroPark Exclusive) — they keep their &ldquo;No Hidden Fees&rdquo; badge.</p>
                             </div>
                             <ReviewSection airport="lhr" color="purple" reviews={getField(editingCompany, newCompany, "lhr_reviews") || []} onAdd={() => addReview("lhr")} onRemove={idx => removeReview("lhr", idx)} onUpdate={(idx, f, v) => updateReview("lhr", idx, f, v)} />
                           </>

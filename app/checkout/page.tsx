@@ -1210,6 +1210,15 @@ function CheckoutContent() {
           </div>
 
           <div className="mt-6 flex flex-col gap-4">
+            {((airport.includes("Heathrow") ? company?.lhr_fees_note : company?.ltn_fees_note) ?? "").trim() && (
+              <div className="bg-amber-500/[0.07] rounded-2xl p-5 border border-amber-500/30 flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-black text-white tracking-tight mb-1">Payable on collection</p>
+                  <p className="text-xs font-bold text-amber-200/90 leading-relaxed">{(airport.includes("Heathrow") ? company?.lhr_fees_note : company?.ltn_fees_note)}</p>
+                </div>
+              </div>
+            )}
             <div className="bg-[#0F1523] rounded-2xl p-6 border border-white/[0.06] flex items-start gap-4">
               <div className="w-10 h-10 bg-emerald-500/10 text-emerald-400 rounded-xl flex items-center justify-center flex-shrink-0">
                 <ShieldCheck className="w-5 h-5" />
