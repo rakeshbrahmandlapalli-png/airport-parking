@@ -788,8 +788,8 @@ export async function sendProviderNotification(
             <tr style="background-color:#f8fafc;"><td><strong>Service Type:</strong></td><td>${escH(booking.service_type, company.name)}</td></tr>
             <tr style="background-color:#f0fdf4;border-top:2px solid #10b981;"><td colspan="2"><strong style="color:#166534;">Payout Summary</strong></td></tr>
             <tr style="background-color:#f0fdf4;"><td><strong>Parking Value:</strong></td><td><strong style="color:#15803d;font-size:16px;">£${parkingTotal}</strong></td></tr>
-            <tr style="background-color:#f0fdf4;"><td><strong>Your Commission Rate:</strong></td><td><strong style="color:#15803d;">${commissionPct}%</strong></td></tr>
-            <tr style="background-color:#f0fdf4;"><td><strong>Your Commission Deducted:</strong></td><td><strong style="color:#b91c1c;">−£${yourCommission.toFixed(2)}</strong></td></tr>
+            <tr style="background-color:#f0fdf4;"><td><strong>Our Commission Rate:</strong></td><td><strong style="color:#15803d;">${commissionPct}%</strong></td></tr>
+            <tr style="background-color:#f0fdf4;"><td><strong>Our Commission Deducted:</strong></td><td><strong style="color:#b91c1c;">−£${yourCommission.toFixed(2)}</strong></td></tr>
             <tr style="background-color:#eff6ff;border-top:2px solid #2563eb;">
               <td><strong>You Receive:</strong></td>
               <td><strong style="color:#1e40af;font-size:18px;">£${operatorPayout.toFixed(2)}</strong></td>
