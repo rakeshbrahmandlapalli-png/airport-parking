@@ -119,6 +119,7 @@ export async function POST(req: Request) {
     is_amendment:     "false",
     promo_used:       "None",
     fast_track_count: metaStr(body.fast_track_count, "0"),
+    attendant_commission: metaStr(body.attendant_commission, "0"),
     lounge:           "no",
     gclid:            "",
     source:           "admin_payment_link",

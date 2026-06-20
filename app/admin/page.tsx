@@ -78,6 +78,7 @@ function DashboardContent() {
     dropoff_date: "", dropoff_time: "10:00", pickup_date: "", pickup_time: "10:00",
     total_price: "", airport: "Luton Airport (LTN)", terminal: "Main Terminal",
     company_id: "ALL", service_type: "Meet & Greet", fast_track_count: 0,
+    attendant_commission: 0,
   };
   const [showPayLinkModal, setShowPayLinkModal] = useState(false);
   const [payLink, setPayLink] = useState<any>(defaultPayLink);
@@ -1546,7 +1547,16 @@ function DashboardContent() {
                     </div>
                   </div>
 
-                  <label className="flex items-center gap-3 bg-[#1A2235] border border-slate-700/50 rounded-xl px-5 py-4 cursor-pointer hover:border-emerald-500/40 transition-colors">
+                  <div className="space-y-2 lg:col-span-1 mt-4">
+                    <label className="text-[10px] font-black uppercase text-blue-400 block ml-1 tracking-widest">Attendant Fee (£)</label>
+                    <div className="relative">
+                      <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-600" />
+                      <input type="number" step="0.01" min="0" value={payLink.attendant_commission || 0} onChange={(e) => setPayLink({ ...payLink, attendant_commission: parseFloat(e.target.value) || 0 })} className={`${inputStyle} pl-12 text-blue-400 text-lg`} />
+                    </div>
+                    <p className="text-[9px] text-slate-500 font-bold ml-1 leading-snug">Deducted from the provider's payout. Set before customer pays.</p>
+                  </div>
+
+                  <label className="flex items-center gap-3 bg-[#1A2235] border border-slate-700/50 rounded-xl px-5 py-4 cursor-pointer hover:border-emerald-500/40 transition-colors mt-4">
                     <input type="checkbox" checked={payLinkSendEmail} onChange={(e) => setPayLinkSendEmail(e.target.checked)} className="w-4 h-4 accent-emerald-500" />
                     <Mail className="w-4 h-4 text-emerald-400" />
                     <span className="text-xs font-bold text-slate-300">Email the payment link to the customer automatically</span>
