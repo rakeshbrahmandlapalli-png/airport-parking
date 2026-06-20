@@ -32,6 +32,21 @@ export const metadata: Metadata = {
       "Fully insured Meet & Greet and Park & Ride parking at Luton and Heathrow. Vetted operators, free cancellation, book in 60 seconds.",
     url: "https://www.aeroparkdirect.co.uk",
     locale: "en_GB",
+    images: [
+      {
+        url: "/footer.jpg",
+        width: 1200,
+        height: 630,
+        alt: "AeroPark Direct — Airport Parking at Luton & Heathrow",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Airport Parking at Luton & Heathrow | AeroPark Direct",
+    description:
+      "Fully insured Meet & Greet and Park & Ride parking at Luton and Heathrow. Book in 60 seconds.",
+    images: ["/footer.jpg"],
   },
   // Trustpilot domain verification.
   verification: {
