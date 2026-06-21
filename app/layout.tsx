@@ -23,7 +23,6 @@ export const metadata: Metadata = {
     "LHR parking",
     "cheap airport parking",
   ],
-  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     siteName: "AeroPark Direct",
