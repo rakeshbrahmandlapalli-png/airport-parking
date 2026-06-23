@@ -40,6 +40,9 @@ function ServiceSelectionContent() {
     : "Dates not set";
 
   const airportCode = airport.includes("Heathrow") ? "LHR" : "LTN";
+  // Park & Ride isn't live at Luton yet — show it as "Coming Soon" (like Hotel
+  // & Parking) only for LTN; it stays bookable for Heathrow.
+  const isLuton = airportCode === "LTN";
 
   // --- EDIT SEARCH MODAL STATE ---
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -107,15 +110,17 @@ function ServiceSelectionContent() {
     {
       id: "park-ride",
       title: "Park & Ride",
-      tag: "Best Value",
+      tag: isLuton ? "Coming Soon" : "Best Value",
       tagColor: "bg-slate-100 text-slate-600 border-slate-200",
-      description: "Find the best deals on secure off-site parking. Park your vehicle and take a quick, comfortable shuttle bus to the terminal door.",
-      icon: <Bus className="w-7 h-7 text-slate-500" />,
+      description: isLuton
+        ? "We're onboarding trusted Park & Ride operators at Luton. Soon you'll be able to park off-site and shuttle to the terminal. In the meantime, our Meet & Greet service is often the same price."
+        : "Find the best deals on secure off-site parking. Park your vehicle and take a quick, comfortable shuttle bus to the terminal door.",
+      icon: <Bus className={`w-7 h-7 ${isLuton ? "text-slate-400" : "text-slate-500"}`} />,
       iconBg: "bg-slate-50",
       features: ["Vetted parking facilities", "Regular shuttle services", "Budget-friendly deals"],
-      time: "5-10 min shuttle",
+      time: isLuton ? "Available Shortly" : "5-10 min shuttle",
       recommended: false,
-      disabled: false
+      disabled: isLuton
     },
     {
       id: "hotel",
