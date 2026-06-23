@@ -107,7 +107,7 @@ export async function POST(req: Request) {
               View Live Prices &amp; Book →
             </a>
             <p style="margin:18px 0 0;font-size:12px;color:#94a3b8;text-align:center;line-height:1.6;">
-              Fully insured operators · Free cancellation · 4.8★ rated<br/>
+              Fully insured operators · Free cancellation · Secure CCTV parking<br/>
               Prices may change with availability. This quote is a guide based on your search.
             </p>
           </div>

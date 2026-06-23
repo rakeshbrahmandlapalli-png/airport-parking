@@ -444,7 +444,7 @@ export function buildReceiptHtml(p: ReceiptHtmlParams): string {
         <!-- Trust row -->
         <tr>
           <td align="center" style="padding:18px 24px 0;font-size:11px;font-weight:700;color:#475569;">
-            🛡️ Fully Insured&nbsp;&nbsp;·&nbsp;&nbsp;✅ Free Cancellation&nbsp;&nbsp;·&nbsp;&nbsp;⭐ 4.8 Rated
+            🛡️ Fully Insured&nbsp;&nbsp;·&nbsp;&nbsp;✅ Free Cancellation&nbsp;&nbsp;·&nbsp;&nbsp;📷 Secure CCTV
           </td>
         </tr>
 
