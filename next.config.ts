@@ -8,7 +8,7 @@ import type { NextConfig } from "next";
 // vendor domains.
 const ContentSecurityPolicy = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.clarity.ms https://js.stripe.com https://va.vercel-scripts.com https://www.google.com https://www.googleadservices.com https://*.doubleclick.net",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.clarity.ms https://js.stripe.com https://va.vercel-scripts.com https://www.google.com https://www.googleadservices.com https://*.doubleclick.net https://*.googlesyndication.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data: https://fonts.gstatic.com",
@@ -17,7 +17,7 @@ const ContentSecurityPolicy = [
   // subdomains incl. ad.doubleclick.net) or the conversion beacons are blocked
   // and Google records ZERO conversions. Use *.doubleclick.net so no subdomain
   // (ad./td./stats.g./googleads.g.) is ever missed.
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://www.google-analytics.com https://*.google-analytics.com https://region1.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://www.google.com https://www.google.co.uk https://www.googleadservices.com https://*.doubleclick.net https://*.clarity.ms https://vitals.vercel-insights.com",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://www.google-analytics.com https://*.google-analytics.com https://region1.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://www.google.com https://www.google.co.uk https://www.googleadservices.com https://*.doubleclick.net https://*.googlesyndication.com https://*.clarity.ms https://vitals.vercel-insights.com",
   "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://*.trustpilot.com https://*.doubleclick.net https://www.googletagmanager.com",
   "object-src 'none'",
   "base-uri 'self'",
