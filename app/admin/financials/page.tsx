@@ -234,11 +234,14 @@ function FinancialsContent() {
       .map((b) => {
         const total = Number(b.total_price || 0);
         const addOns = Number(b.fast_track_count || 0) * fastTrackPrice;
-        const parkingGross = Math.max(0, total - addOns);
+        const attendantCommission = Number(b.attendant_commission || 0);
+        // Net the attendant fee out of the parking value BEFORE commission, so the
+        // operator never sees it and their payout matches the remittance invoice
+        // and provider email exactly (commission is charged on the reduced base).
+        const parkingGross = Math.max(0, total - addOns - attendantCommission);
         const commPct = commissionPctForBooking(b);
         const yourCommission = parkingGross * (commPct / 100);
-        const attendantCommission = Number(b.attendant_commission || 0);
-        const operatorPayout = Math.max(0, parkingGross - yourCommission - attendantCommission);
+        const operatorPayout = Math.max(0, parkingGross - yourCommission);
         const stripeFee = total > 0 ? total * STRIPE_PERCENT + STRIPE_FIXED : 0;
         const yourNet = yourCommission + addOns + attendantCommission - stripeFee;
         return {
