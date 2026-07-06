@@ -639,15 +639,19 @@ function DashboardContent() {
     return "#f59e0b";                          // amber (pending)
   };
 
-  // Real aggregator commission. Each partner stores its own commission_rate
-  // (set on the Partner Network page; same field the Partner Statement export
-  // uses). Direct / in-house bookings (no partner) are 100% ours.
+  // Real aggregator commission — same rules as the Financials page:
+  //  • attendant fee is netted off the parking value BEFORE commission
+  //  • a per-booking commission_percentage (set on the pay-link / booking /
+  //    edit forms) overrides the partner's default commission_rate
+  //  • direct / in-house bookings (no partner) are 100% ours.
   const getCommission = (b: any): { amount: number; label: string } => {
-    const price = Number(b.total_price || 0);
-    if (!b.company_id) return { amount: price, label: "100% direct" };
+    const attendant = Number(b.attendant_commission || 0);
+    const base = Math.max(0, Number(b.total_price || 0) - attendant);
+    if (!b.company_id) return { amount: base, label: "100% direct" };
+    const hasCustom = b.commission_percentage !== null && b.commission_percentage !== undefined;
     const comp = companies.find((c) => c.id === b.company_id);
-    const rate = Number(comp?.commission_rate ?? 15);
-    return { amount: price * (rate / 100), label: `${rate}% fee` };
+    const rate = hasCustom ? Number(b.commission_percentage) : Number(comp?.commission_rate ?? 15);
+    return { amount: base * (rate / 100), label: `${rate}% fee` };
   };
 
   // Compact table status pill — no glow, no backdrop blur; pure semantic colour.
