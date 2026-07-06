@@ -12,7 +12,7 @@ import {
   Tags, Wallet, TrendingUp, CreditCard, Users, Download, Zap, PiggyBank,
   Filter, ChevronDown, ExternalLink, DollarSign, Plus, X,
   Receipt, ArrowDownRight, FolderMinus, Save, CheckCircle2, Trash2,
-  FileText, Printer, Settings2, Activity
+  FileText, Printer, Settings2, Activity, HandCoins
 } from "lucide-react";
 
 // ── Fee constants ──────────────────────────────────────────────
@@ -234,7 +234,7 @@ function FinancialsContent() {
         const attendantCommission = Number(b.attendant_commission || 0);
         const operatorPayout = Math.max(0, parkingGross - yourCommission - attendantCommission);
         const stripeFee = total > 0 ? total * STRIPE_PERCENT + STRIPE_FIXED : 0;
-        const yourNet = yourCommission + addOns - stripeFee;
+        const yourNet = yourCommission + addOns + attendantCommission - stripeFee;
         return {
           ...b,
           total, addOns, parkingGross, commPct,
@@ -280,6 +280,15 @@ function FinancialsContent() {
     return baseTotals;
   }, [computed, filteredExpenses]);
 
+  // ── Period insights (enterprise KPIs) ───────────────────────
+  const insights = useMemo(() => {
+    const count = computed.length;
+    const avgBooking = count ? totals.gross / count : 0;
+    const avgNet = count ? totals.net / count : 0;
+    const margin = totals.gross > 0 ? (totals.net / totals.gross) * 100 : 0;
+    return { count, avgBooking, avgNet, margin };
+  }, [computed, totals]);
+
   // ── Per-operator rollup ─────────────────────────────────────
   const byOperator = useMemo(() => {
     const map = new Map<string, any>();
@@ -294,7 +303,7 @@ function FinancialsContent() {
       const o = map.get(key);
       o.gross += r.total;
       o.operatorPayout += r.operatorPayout;
-      o.yourCut += r.yourCommission + r.addOns - r.stripeFee;
+      o.yourCut += r.yourCommission + r.addOns + r.attendantCommission - r.stripeFee;
       o.count += 1;
     });
     return Array.from(map.values()).sort((a, b) => b.yourCut - a.yourCut);
@@ -518,10 +527,10 @@ function FinancialsContent() {
     if (endDate) csv += `To: ${endDate.toLocaleString()}\n`;
     csv += `Bookings in period: ${computed.length}\n`;
     csv += `Generated: ${new Date().toLocaleString()}\n\n`;
-    csv += "Ref,Date,Operator,Comm %,Total Charged,Add-ons,Parking Gross,Operator Payout,Your Commission,Stripe Fee,Net from Booking\n";
+    csv += "Ref,Date,Operator,Comm %,Total Charged,Add-ons,Parking Gross,Operator Payout,Attendant Fee,Your Commission,Stripe Fee,Net from Booking\n";
     computed.forEach((r) => {
       const created = r.created_at ? new Date(r.created_at).toLocaleDateString("en-GB") : "";
-      csv += `${r.booking_ref},${created},${r.operatorName},${r.commPct}%,${r.total.toFixed(2)},${r.addOns.toFixed(2)},${r.parkingGross.toFixed(2)},${r.operatorPayout.toFixed(2)},${r.yourCommission.toFixed(2)},${r.stripeFee.toFixed(2)},${r.yourNet.toFixed(2)}\n`;
+      csv += `${r.booking_ref},${created},${r.operatorName},${r.commPct}%,${r.total.toFixed(2)},${r.addOns.toFixed(2)},${r.parkingGross.toFixed(2)},${r.operatorPayout.toFixed(2)},${r.attendantCommission.toFixed(2)},${r.yourCommission.toFixed(2)},${r.stripeFee.toFixed(2)},${r.yourNet.toFixed(2)}\n`;
     });
     
     // 🟢 NEW: Export Expenses section
@@ -535,9 +544,11 @@ function FinancialsContent() {
     csv += `\n\nFINAL TOTALS\n`;
     csv += `Gross Collected,${totals.gross.toFixed(2)}\n`;
     csv += `Operator Payouts,${totals.operator.toFixed(2)}\n`;
+    csv += `Attendant Fees (held by you - included in Net),${totals.attendant.toFixed(2)}\n`;
     csv += `Stripe Fees,${totals.stripe.toFixed(2)}\n`;
     csv += `Operating Expenses,${totals.opEx.toFixed(2)}\n`;
     csv += `TRUE NET PROFIT,${totals.trueNet.toFixed(2)}\n`;
+    csv += `\nNote: Attendant fees are held by you and included in Net until you pay the attendant separately.\n`;
 
     const blob = new Blob([csv], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
@@ -752,15 +763,44 @@ function FinancialsContent() {
            </button>
         </div>
 
-        {/* FAST TRACK STRIP */}
-        <div className="bg-gradient-to-r from-amber-500/10 to-transparent border border-amber-500/20 rounded-2xl p-6 mb-10 flex items-center gap-5 relative overflow-hidden">
-          <div className="absolute -left-4 -top-4 w-24 h-24 bg-amber-500/10 blur-2xl rounded-full"></div>
-          <div className="w-12 h-12 bg-amber-500/20 border border-amber-500/30 rounded-xl flex items-center justify-center shrink-0 relative z-10">
-            <Zap className="w-6 h-6 text-amber-400" />
+        {/* 🟢 PERIOD INSIGHTS (enterprise KPIs) */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+          {[
+            { label: "Bookings", value: `${insights.count}` },
+            { label: "Avg Booking Value", value: `£${insights.avgBooking.toFixed(2)}` },
+            { label: "Avg Net / Booking", value: `£${insights.avgNet.toFixed(2)}` },
+            { label: "Net Margin", value: `${insights.margin.toFixed(1)}%` },
+          ].map((k) => (
+            <div key={k.label} className="bg-[#131A2B] border border-slate-800/80 rounded-2xl px-5 py-4">
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">{k.label}</p>
+              <p className="text-xl font-black text-white mt-1 tabular-nums tracking-tight">{k.value}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+          {/* FAST TRACK STRIP */}
+          <div className="bg-gradient-to-r from-amber-500/10 to-transparent border border-amber-500/20 rounded-2xl p-6 flex items-center gap-5 relative overflow-hidden">
+            <div className="absolute -left-4 -top-4 w-24 h-24 bg-amber-500/10 blur-2xl rounded-full"></div>
+            <div className="w-12 h-12 bg-amber-500/20 border border-amber-500/30 rounded-xl flex items-center justify-center shrink-0 relative z-10">
+              <Zap className="w-6 h-6 text-amber-400" />
+            </div>
+            <div className="relative z-10">
+              <p className="text-[10px] font-black uppercase tracking-widest text-amber-400">Fast Track Add-ons (100% Margin)</p>
+              <p className="text-2xl font-black text-white mt-1 tabular-nums tracking-tight">£{totals.addOns.toFixed(2)}</p>
+            </div>
           </div>
-          <div className="relative z-10">
-            <p className="text-[10px] font-black uppercase tracking-widest text-amber-400">Fast Track Add-ons (100% Margin)</p>
-            <p className="text-2xl font-black text-white mt-1 tabular-nums tracking-tight">£{totals.addOns.toFixed(2)} <span className="text-xs font-bold text-slate-500 ml-2 tracking-normal">included in revenue</span></p>
+
+          {/* 🟢 ATTENDANT FEES STRIP (pass-through, never profit) */}
+          <div className="bg-gradient-to-r from-violet-500/10 to-transparent border border-violet-500/20 rounded-2xl p-6 flex items-center gap-5 relative overflow-hidden">
+            <div className="absolute -left-4 -top-4 w-24 h-24 bg-violet-500/10 blur-2xl rounded-full"></div>
+            <div className="w-12 h-12 bg-violet-500/20 border border-violet-500/30 rounded-xl flex items-center justify-center shrink-0 relative z-10">
+              <HandCoins className="w-6 h-6 text-violet-400" />
+            </div>
+            <div className="relative z-10">
+              <p className="text-[10px] font-black uppercase tracking-widest text-violet-400">Attendant Fees</p>
+              <p className="text-2xl font-black text-white mt-1 tabular-nums tracking-tight">£{totals.attendant.toFixed(2)}</p>
+            </div>
           </div>
         </div>
 
@@ -879,6 +919,7 @@ function FinancialsContent() {
                   <th className="px-8 py-5 text-right">Charged</th>
                   <th className="px-8 py-5 text-right">Fast Track</th>
                   <th className="px-8 py-5 text-right">Stripe Fee</th>
+                  <th className="px-8 py-5 text-right text-violet-400">Attendant</th>
                   <th className="px-8 py-5 text-right">Operator Owed</th>
                   <th className="px-8 py-5 text-right text-emerald-400">Net Revenue</th>
                 </tr>
@@ -894,12 +935,15 @@ function FinancialsContent() {
                       {r.addOns > 0 ? `+£${r.addOns.toFixed(2)}` : <span className="text-slate-700">—</span>}
                     </td>
                     <td className="px-8 py-4 text-right text-xs font-bold text-rose-400 tabular-nums">−£{r.stripeFee.toFixed(2)}</td>
+                    <td className="px-8 py-4 text-right text-xs font-bold text-violet-400 tabular-nums">
+                      {r.attendantCommission > 0 ? `−£${r.attendantCommission.toFixed(2)}` : <span className="text-slate-700">—</span>}
+                    </td>
                     <td className="px-8 py-4 text-right text-xs font-bold text-blue-400 tabular-nums">£{r.operatorPayout.toFixed(2)}</td>
                     <td className="px-8 py-4 text-right text-xs font-black text-emerald-400 tabular-nums">£{r.yourNet.toFixed(2)}</td>
                   </tr>
                 ))}
                 {computed.length === 0 && (
-                  <tr><td colSpan={8} className="px-8 py-12 text-center text-slate-500 font-bold text-sm">No bookings found in this period.</td></tr>
+                  <tr><td colSpan={9} className="px-8 py-12 text-center text-slate-500 font-bold text-sm">No bookings found in this period.</td></tr>
                 )}
               </tbody>
             </table>
