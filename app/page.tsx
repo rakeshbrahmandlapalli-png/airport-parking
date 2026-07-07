@@ -691,6 +691,7 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
                   links: [
                     { label: "How It Works",    href: "/how-it-works" },
                     { label: "Our Services",    href: "/services" },
+                    { label: "Price Guide",     href: "/airport-parking-price-guide" },
                     { label: "Manage Booking",  href: "/manage" },
                   ],
                 },

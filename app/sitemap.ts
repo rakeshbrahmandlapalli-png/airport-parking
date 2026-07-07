@@ -20,6 +20,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/luton-meet-and-greet",         priority: 0.8, changeFrequency: "weekly" },
     { path: "/luton-park-and-ride",          priority: 0.8, changeFrequency: "weekly" },
     { path: "/heathrow-park-and-ride",       priority: 0.8, changeFrequency: "weekly" },
+    { path: "/airport-parking-price-guide", priority: 0.7, changeFrequency: "daily" },
     { path: "/how-it-works",             priority: 0.6, changeFrequency: "monthly" },
     { path: "/services",                 priority: 0.6, changeFrequency: "monthly" },
     { path: "/about",                    priority: 0.5, changeFrequency: "monthly" },
