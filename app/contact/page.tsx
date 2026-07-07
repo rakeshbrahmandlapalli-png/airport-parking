@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { 
-  ArrowLeft, Plane, Mail, MessageSquare, 
+import {
+  ArrowLeft, Plane, Mail, MessageSquare,
   Clock, ShieldCheck, Zap, Send, CheckCircle2,
-  Globe, ArrowUpRight
+  Globe, ArrowUpRight, Phone
 } from "lucide-react";
 import { useState } from "react";
 
@@ -107,6 +107,16 @@ export default function ContactPage() {
                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Official Channel</span>
                 </div>
                 <p className="text-lg md:text-xl font-black text-white break-all tracking-tight">info@aeroparkdirect.co.uk</p>
+              </div>
+
+              <div className="p-6 bg-white/[0.03] border border-white/10 rounded-[2rem]">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                    <Phone className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Call Or Text</span>
+                </div>
+                <a href="tel:+447868277648" className="text-lg md:text-xl font-black text-white tracking-tight hover:text-blue-400 transition-colors">07868 277648</a>
               </div>
 
               <div className="p-6 bg-white/[0.03] border border-white/10 rounded-[2rem]">

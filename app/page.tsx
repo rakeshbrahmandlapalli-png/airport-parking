@@ -720,7 +720,7 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
             {/* Legal bar */}
             <div className="mt-8 md:mt-10 flex flex-col md:flex-row items-center justify-between gap-6 md:gap-4">
               <Link href="/" aria-label="AeroPark Direct home" className="flex items-center w-full md:w-1/3 justify-center md:justify-start touch-manipulation [-webkit-tap-highlight-color:transparent]"><div className="bg-white px-2.5 py-1.5 rounded-lg shadow-sm"><Image src="/footer.jpg" alt="AeroPark Direct - Airport Parking UK" width={200} height={60} className="h-6 md:h-9 w-auto object-contain" /></div></Link>
-              <div className="text-slate-400/70 text-[10px] md:text-xs font-medium text-center w-full md:w-1/3 normal-case tracking-normal">Fully insured Meet &amp; Greet &amp; Park &amp; Ride at Luton &amp; Heathrow. <Link href="mailto:info@aeroparkdirect.co.uk" className="text-slate-300 hover:text-white font-bold transition-colors">Support</Link></div>
+              <div className="text-slate-400/70 text-[10px] md:text-xs font-medium text-center w-full md:w-1/3 normal-case tracking-normal">Fully insured Meet &amp; Greet &amp; Park &amp; Ride at Luton &amp; Heathrow. <Link href="mailto:info@aeroparkdirect.co.uk" className="text-slate-300 hover:text-white font-bold transition-colors">Support</Link> &middot; <Link href="tel:+447868277648" className="text-slate-300 hover:text-white font-bold transition-colors">07868 277648</Link></div>
               <div className="text-slate-500/70 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.15em] md:tracking-widest w-full md:w-1/3 text-center md:text-right">© {new Date().getFullYear()} AeroPark Direct Ltd</div>
             </div>
 

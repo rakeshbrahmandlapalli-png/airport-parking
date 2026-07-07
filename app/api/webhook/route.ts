@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { sendBookingReceipt, sendAmendmentAlerts, sendProviderNotification } from "@/app/lib/mail";
 import { createClient } from "@supabase/supabase-js";
-import { triggerMissingFlightAlert } from "@/app/lib/twilio";
+import { triggerMissingFlightAlert, sendBookingConfirmationSMS } from "@/app/lib/twilio";
 import { Resend } from "resend";
 import { reportOfflineConversion } from "@/app/lib/googleAds";
 
@@ -228,9 +228,17 @@ export async function POST(req: Request) {
           logger.info(`[WEBHOOK] Provider notified: ${resolvedCompany.name}`);
         }
 
-        // 🟢 Twilio gate (set to true in July when live)
-        const TWILIO_ENABLED = false;
+        // 🟢 Twilio SMS — live as of July with the real business number
+        const TWILIO_ENABLED = true;
         if (TWILIO_ENABLED) {
+          await sendBookingConfirmationSMS({
+            full_name: newBooking.full_name,
+            phone_number: newBooking.phone_number,
+            booking_ref: newBooking.booking_ref,
+            dropoff_date: newBooking.dropoff_date,
+            pickup_date: newBooking.pickup_date,
+          }).catch((err) => logger.error("[WEBHOOK] Booking Confirmation SMS Failed:", err));
+
           await triggerMissingFlightAlert({
             full_name: newBooking.full_name,
             phone_number: newBooking.phone_number,
