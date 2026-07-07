@@ -84,6 +84,40 @@ export default function About() {
           </div>
         </section>
 
+        {/* Built by an insider */}
+        <section className="bg-[#0F1523] border border-blue-500/20 rounded-3xl p-8 md:p-10 mb-20 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-emerald-500" />
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 bg-blue-600/10 rounded-2xl flex items-center justify-center text-blue-500">
+              <Star className="w-6 h-6" />
+            </div>
+            <h2 className="text-2xl font-black tracking-tight">Built by an industry insider</h2>
+          </div>
+          <blockquote className="border-l-2 border-blue-500 pl-5 mb-8">
+            <p className="text-slate-200 text-lg leading-relaxed italic">
+              &ldquo;After fifteen years inside this industry, I&rsquo;d seen enough holidays ruined before they
+              started — bookings made on fake websites, cars handed to unlicensed operators, fees nobody
+              warned you about at the barrier. AeroPark Direct is the service I always believed travellers
+              deserved: vetted operators, honest prices, and a real person on the phone.&rdquo;
+            </p>
+            <footer className="text-slate-500 text-sm font-bold mt-4">— Rakesh, Founder</footer>
+          </blockquote>
+          <ul className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <li className="flex items-start gap-3 text-sm text-slate-300">
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+              15 years of hands-on experience in UK airport parking
+            </li>
+            <li className="flex items-start gap-3 text-sm text-slate-300">
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+              Every operator vetted personally before it&rsquo;s listed
+            </li>
+            <li className="flex items-start gap-3 text-sm text-slate-300">
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+              A team of four — including real humans answering the phones
+            </li>
+          </ul>
+        </section>
+
         {/* Meet Aero */}
         <section className="bg-[#0F1523] border border-slate-800 rounded-3xl p-8 md:p-10 mb-20">
           <div className="flex items-center gap-3 mb-5">
