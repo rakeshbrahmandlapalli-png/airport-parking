@@ -40,6 +40,15 @@ async function sendSMS(to: string, body: string): Promise<{ success: boolean; si
   }
 }
 
+// Operators can store two contact numbers (phone_number + phone_number_2);
+// include both, like the confirmation email does.
+function operatorPhones(company: any): string {
+  const p1 = String(company?.phone_number || "").trim();
+  const p2 = String(company?.phone_number_2 || "").trim();
+  if (p1 && p2) return `${p1} or ${p2}`;
+  return p1 || p2 || "";
+}
+
 // Operator instructions helpers — mirror app/lib/mail.ts field priority.
 function arrivalText(isLuton: boolean, company: any): string {
   return isLuton
@@ -89,7 +98,8 @@ export async function sendDropoffDaySMS(booking: {
   const isLuton = !!booking.airport?.toLowerCase().includes("luton");
   let body: string;
   if (company) {
-    const phone = company.phone_number ? ` Call ${company.phone_number} on arrival.` : "";
+    const phones = operatorPhones(company);
+    const phone = phones ? ` Call ${phones} on arrival.` : "";
     body = `AeroPark Direct: Drop-off day for ref ${booking.booking_ref}. ${arrivalText(isLuton, company)}${phone} Full directions are in your email.`;
   } else {
     body = `AeroPark Direct: Drop-off day for ref ${booking.booking_ref}. When you arrive, call ${AGENT_NUMBER} and we'll meet you to take your car. Full details are in your email.`;
@@ -105,7 +115,8 @@ export async function sendReturnDaySMS(booking: {
   const isLuton = !!booking.airport?.toLowerCase().includes("luton");
   let body: string;
   if (company) {
-    const phone = company.phone_number ? ` Call ${company.phone_number}.` : "";
+    const phones = operatorPhones(company);
+    const phone = phones ? ` Call ${phones}.` : "";
     body = `AeroPark Direct: Today's your return day, ref ${booking.booking_ref}. ${returnText(isLuton, company)}${phone}`;
   } else {
     body = `AeroPark Direct: Today's your return day, ref ${booking.booking_ref}. Once you've collected your luggage, call ${AGENT_NUMBER} and your car and parking ticket will be ready.`;
