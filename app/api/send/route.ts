@@ -1,6 +1,7 @@
 import { logger } from "@/app/lib/logger";
 import { NextResponse } from "next/server";
 import { sendBookingReceipt, sendProviderNotification, sendReviewRequest } from "@/app/lib/mail";
+import { sendReviewRequestSMS } from "@/app/lib/twilio";
 import { Resend } from "resend";
 import { createClient } from '@supabase/supabase-js';
 import { rateLimit, getClientIp } from "@/app/lib/rateLimit";
@@ -125,7 +126,7 @@ export async function POST(req: Request) {
 
     // The dashboard-triggered actions are privileged: gate them behind an
     // authenticated admin session before any mail is sent.
-    const isPrivileged = Boolean(body.manual_provider_notify || body.manual_customer_notify || body.review_request);
+    const isPrivileged = Boolean(body.manual_provider_notify || body.manual_customer_notify || body.review_request || body.review_request_sms);
     if (isPrivileged) {
       const admin = await getAdminUser(req);
       if (!admin) {
@@ -168,6 +169,20 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Failed to send review request" }, { status: 500 });
       }
       return NextResponse.json({ success: true, message: "Review request sent" });
+    }
+
+    // --- CASE 5b: REVIEW REQUEST BY SMS (admin only) ---
+    if (body.review_request_sms && body.booking) {
+      const b = await loadBooking(body.booking?.booking_ref);
+      if (!b) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+      if (!(b.phone_number || "").trim()) {
+        return NextResponse.json({ error: "Booking has no phone number" }, { status: 400 });
+      }
+      const result = await sendReviewRequestSMS(b);
+      if (!result.success) {
+        return NextResponse.json({ error: result.error || "Failed to send review SMS" }, { status: 500 });
+      }
+      return NextResponse.json({ success: true, message: "Review SMS sent" });
     }
 
     // --- CASE 3: MANUAL PROVIDER TRIGGER (admin only, dashboard) ---

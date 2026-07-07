@@ -495,6 +495,35 @@ function DashboardContent() {
     });
   };
 
+  const handleRequestReviewSMS = (booking: any) => {
+    if (!booking.phone_number) {
+      notify("error", "This booking has no phone number on file.");
+      return;
+    }
+    askConfirm({
+      title: "Request Review by SMS",
+      body: `Send a review request text to ${booking.full_name || "the customer"} (${booking.phone_number})?`,
+      confirmLabel: "Send SMS",
+      onConfirm: async () => {
+        try {
+          const response = await fetch('/api/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ review_request_sms: true, booking }),
+          });
+          if (response.ok) {
+            notify("success", `Review SMS sent to ${booking.phone_number}.`);
+          } else {
+            notify("error", "Failed to send review SMS. Check server logs.");
+          }
+        } catch (error) {
+          logger.error("Review SMS Error:", error);
+          notify("error", "Critical routing error while sending review SMS.");
+        }
+      },
+    });
+  };
+
   // Process Refund: marks booking as cancelled (refund must be issued manually in Stripe)
   const processRefund = (b: any) => {
     askConfirm({
@@ -909,9 +938,14 @@ function DashboardContent() {
             <MessageCircle className="w-4 h-4" /> WhatsApp
           </button>
           {b.status?.toLowerCase() === "completed" && (
-            <button onClick={() => handleRequestReview(b)} className="flex items-center justify-center gap-2 px-3 py-3 bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white rounded-xl border border-amber-500/20 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest">
-              <Star className="w-4 h-4 fill-current" /> Review
-            </button>
+            <>
+              <button onClick={() => handleRequestReview(b)} className="flex items-center justify-center gap-2 px-3 py-3 bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white rounded-xl border border-amber-500/20 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest">
+                <Star className="w-4 h-4 fill-current" /> Review
+              </button>
+              <button onClick={() => handleRequestReviewSMS(b)} className="flex items-center justify-center gap-2 px-3 py-3 bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white rounded-xl border border-amber-500/20 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest">
+                <Smartphone className="w-4 h-4" /> Review SMS
+              </button>
+            </>
           )}
           <button onClick={() => setEditingBooking(b)} className="flex items-center justify-center gap-2 px-3 py-3 bg-[#1A2235] text-slate-300 hover:bg-blue-600 hover:text-white rounded-xl border border-slate-700 hover:border-transparent transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest">
             <Settings2 className="w-4 h-4" /> Edit
@@ -1300,13 +1334,22 @@ function DashboardContent() {
                             <Database className="w-3.5 h-3.5" />
                           </button>
                           {b.status?.toLowerCase() === "completed" && (
-                            <button
-                              title="Request Review"
-                              onClick={() => handleRequestReview(b)}
-                              className="h-7 w-7 rounded-md flex items-center justify-center text-zinc-600 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
-                            >
-                              <Star className="w-3.5 h-3.5" />
-                            </button>
+                            <>
+                              <button
+                                title="Request review by email"
+                                onClick={() => handleRequestReview(b)}
+                                className="h-7 w-7 rounded-md flex items-center justify-center text-zinc-600 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
+                              >
+                                <Star className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                title="Request review by SMS"
+                                onClick={() => handleRequestReviewSMS(b)}
+                                className="h-7 w-7 rounded-md flex items-center justify-center text-zinc-600 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
+                              >
+                                <Smartphone className="w-3.5 h-3.5" />
+                              </button>
+                            </>
                           )}
                           <div className="w-px h-4 bg-white/10 mx-1" />
                           <button

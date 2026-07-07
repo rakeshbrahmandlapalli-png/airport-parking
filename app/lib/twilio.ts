@@ -4,11 +4,10 @@ import twilio from "twilio";
 const REVIEW_LINK = "https://uk.trustpilot.com/evaluate/aeroparkdirect.co.uk";
 const AGENT_NUMBER = "07868 277648";
 
-function getClient(): { client: ReturnType<typeof twilio>; fromNumber: string; messagingServiceSid: string } | null {
+function getClient(): { client: ReturnType<typeof twilio>; fromNumber: string } | null {
   const rawSid = process.env.TWILIO_ACCOUNT_SID || "";
   const rawToken = process.env.TWILIO_AUTH_TOKEN || "";
   const fromNumber = (process.env.TWILIO_SMS_NUMBER || "").replace(/['"]/g, "").trim();
-  const messagingServiceSid = (process.env.TWILIO_MESSAGING_SERVICE_SID || "").replace(/['"]/g, "").trim();
 
   const accountSid = rawSid.replace(/['"]/g, "").trim();
   const authToken = rawToken.replace(/['"]/g, "").trim();
@@ -17,7 +16,7 @@ function getClient(): { client: ReturnType<typeof twilio>; fromNumber: string; m
     logger.error("Twilio disabled: SID, auth token, or SMS number missing in environment variables.");
     return null;
   }
-  return { client: twilio(accountSid, authToken), fromNumber, messagingServiceSid };
+  return { client: twilio(accountSid, authToken), fromNumber };
 }
 
 // UK local (0xxxx) -> E.164 (+44xxxx). Leaves already-international numbers alone.
@@ -26,21 +25,6 @@ function toUKE164(raw: string): string {
   if (phone.startsWith("0")) phone = `+44${phone.slice(1)}`;
   if (!phone.startsWith("+")) phone = `+${phone}`;
   return phone;
-}
-
-// Interpret a "YYYY-MM-DD" + "HH:mm" as Europe/London local wall-clock time and
-// return the matching UTC instant (handles BST/GMT automatically).
-function londonToUTC(dateStr: string, timeStr: string): Date | null {
-  if (!dateStr) return null;
-  const [y, m, d] = dateStr.split("-").map(Number);
-  const [hh, mm] = (timeStr || "12:00").split(":").map(Number);
-  if (!y || !m || !d) return null;
-  const utcGuess = Date.UTC(y, m - 1, d, hh || 0, mm || 0);
-  const asUTC = new Date(utcGuess);
-  const offsetMs =
-    new Date(asUTC.toLocaleString("en-US", { timeZone: "Europe/London" })).getTime() -
-    new Date(asUTC.toLocaleString("en-US", { timeZone: "UTC" })).getTime();
-  return new Date(utcGuess - offsetMs);
 }
 
 async function sendSMS(to: string, body: string): Promise<{ success: boolean; sid?: string; error?: string }> {
@@ -56,39 +40,7 @@ async function sendSMS(to: string, body: string): Promise<{ success: boolean; si
   }
 }
 
-// Schedule an SMS for a future instant via a Messaging Service (Twilio requires a
-// Messaging Service, not a plain "from" number, for scheduled sends). Falls back
-// to sending immediately if sendAt is within Twilio's 15-min minimum, or if no
-// Messaging Service is configured.
-async function scheduleSMS(to: string, body: string, sendAt: Date): Promise<{ success: boolean; sid?: string; scheduled?: boolean; error?: string }> {
-  const ctx = getClient();
-  if (!ctx) return { success: false, error: "Twilio uninitialized" };
-
-  const minsAhead = (sendAt.getTime() - Date.now()) / 60000;
-  const canSchedule = ctx.messagingServiceSid && minsAhead >= 16 && minsAhead <= 7 * 24 * 60;
-
-  try {
-    if (canSchedule) {
-      const response = await ctx.client.messages.create({
-        messagingServiceSid: ctx.messagingServiceSid,
-        to: toUKE164(to),
-        body,
-        scheduleType: "fixed",
-        sendAt,
-      });
-      logger.info(`[TWILIO SUCCESS] SMS scheduled for ${sendAt.toISOString()}: ${response.sid}`);
-      return { success: true, sid: response.sid, scheduled: true };
-    }
-    // No messaging service, or the target time is already (near) now — send immediately.
-    const immediate = await sendSMS(to, body);
-    return { ...immediate, scheduled: false };
-  } catch (error: any) {
-    logger.error("[TWILIO ERROR] Failed to schedule SMS:", error);
-    return { success: false, error: error.message };
-  }
-}
-
-// Operator instructions helper — mirrors app/lib/mail.ts field priority.
+// Operator instructions helpers — mirror app/lib/mail.ts field priority.
 function arrivalText(isLuton: boolean, company: any): string {
   return isLuton
     ? (company?.on_arrival_ltn || company?.on_arrival || "Please call your parking provider 20 minutes before you arrive.")
@@ -161,16 +113,15 @@ export async function sendReturnDaySMS(booking: {
   return sendSMS(booking.phone_number, body);
 }
 
-// 5. Review request — scheduled for 2 hours after their collection time
-//    (pickup_date + pickup_time + 2h, London time).
-export async function scheduleReviewRequestSMS(booking: {
-  full_name: string; phone_number: string; booking_ref: string; pickup_date?: string; pickup_time?: string;
+// 5. Review request — sent the day AFTER collection (by the daily cron), and also
+//    on demand from the admin "Review SMS" button.
+export async function sendReviewRequestSMS(booking: {
+  full_name: string; phone_number: string; booking_ref: string;
 }) {
   if (!booking.phone_number) return { success: false, error: "No phone number on booking" };
-  const collection = londonToUTC(booking.pickup_date || "", booking.pickup_time || "12:00");
-  if (!collection) return { success: false, error: "No valid pickup date/time" };
-  const sendAt = new Date(collection.getTime() + 2 * 60 * 60 * 1000);
   const firstName = (booking.full_name || "there").split(" ")[0];
-  const body = `Hi ${firstName}, thanks for parking with AeroPark Direct! We hope everything went smoothly. If you have 30 seconds, an honest review would mean a lot to us: ${REVIEW_LINK}`;
-  return scheduleSMS(booking.phone_number, body, sendAt);
+  return sendSMS(
+    booking.phone_number,
+    `Hi ${firstName}, thanks for parking with AeroPark Direct! We hope everything went smoothly. If you have 30 seconds, an honest review would mean a lot to us: ${REVIEW_LINK}`
+  );
 }
