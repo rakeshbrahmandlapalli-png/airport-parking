@@ -261,7 +261,7 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
 
   const SITE_URL = "https://www.aeroparkdirect.co.uk";
   const schemaGraph: any[] = [
-    { "@type": "LocalBusiness", "@id": `${SITE_URL}#business`, "name": "AeroPark Direct", "description": "Premium airport parking at Luton and Heathrow. Meet & Greet and Park & Ride.", "url": SITE_URL, "priceRange": "££", "areaServed": ["Luton Airport LTN", "Heathrow Airport LHR"] },
+    { "@type": "LocalBusiness", "@id": `${SITE_URL}#business`, "name": "AeroPark Direct", "legalName": "AeroPark Direct Ltd", "description": "Premium airport parking at Luton and Heathrow. Meet & Greet and Park & Ride.", "url": SITE_URL, "priceRange": "££", "telephone": "+44 7868 277648", "email": "info@aeroparkdirect.co.uk", "logo": `${SITE_URL}/logo.png`, "image": `${SITE_URL}/footer.jpg`, "address": { "@type": "PostalAddress", "streetAddress": "66 Paul Street", "addressLocality": "London", "postalCode": "EC2A 4NA", "addressCountry": "GB" }, "areaServed": ["Luton Airport LTN", "Heathrow Airport LHR"] },
     { "@type": "FAQPage", "mainEntity": faqs.map(f => ({ "@type": "Question", "name": f.q, "acceptedAnswer": { "@type": "Answer", "text": f.a } })) },
   ];
   // Per-landing-page BreadcrumbList + Service (only when the preset supplies it).
