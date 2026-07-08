@@ -19,12 +19,16 @@ function getClient(): { client: ReturnType<typeof twilio>; fromNumber: string } 
   return { client: twilio(accountSid, authToken), fromNumber };
 }
 
-// UK local (0xxxx) -> E.164 (+44xxxx). Leaves already-international numbers alone.
+// Normalise a UK number to E.164 (+44…), tolerating however the customer typed
+// it: spaces/dashes, leading 0, 44, 0044, or a bare 10-digit mobile (no 0).
 function toUKE164(raw: string): string {
-  let phone = (raw || "").trim();
-  if (phone.startsWith("0")) phone = `+44${phone.slice(1)}`;
-  if (!phone.startsWith("+")) phone = `+${phone}`;
-  return phone;
+  const p = (raw || "").replace(/[^\d+]/g, "");
+  if (p.startsWith("+")) return p;                 // already international
+  if (p.startsWith("00")) return `+${p.slice(2)}`; // 00-intl prefix (incl. 0044)
+  if (p.startsWith("44")) return `+${p}`;          // 44… -> +44…
+  if (p.startsWith("0")) return `+44${p.slice(1)}`; // 07… -> +447…
+  if (/^7\d{9}$/.test(p)) return `+44${p}`;        // bare UK mobile with no leading 0
+  return `+${p}`;                                  // fallback
 }
 
 async function sendSMS(to: string, body: string): Promise<{ success: boolean; sid?: string; error?: string }> {
