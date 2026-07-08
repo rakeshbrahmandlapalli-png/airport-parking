@@ -10,9 +10,13 @@ import CookieConsent from "@/components/CookieConsent";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.aeroparkdirect.co.uk"),
-  title: "Airport Parking at Luton & Heathrow | Meet & Greet & Park & Ride | AeroPark Direct",
+  // Self-canonical for the homepage. Every indexable child route sets its own
+  // canonical (so this only ever applies to "/"); the noindexed funnel pages
+  // inherit it harmlessly since noindex takes precedence.
+  alternates: { canonical: "/" },
+  title: "Airport Parking at Luton & Heathrow | AeroPark Direct",
   description:
-    "Compare and book fully insured Meet & Greet and Park & Ride airport parking at Luton (LTN) and Heathrow (LHR). Vetted, fully insured operators, free cancellation — book in under 60 seconds.",
+    "Book fully insured Meet & Greet and Park & Ride parking at Luton (LTN) and Heathrow (LHR). Vetted operators, free cancellation, book in 60 seconds.",
   keywords: [
     "airport parking",
     "Luton airport parking",
