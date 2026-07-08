@@ -35,8 +35,11 @@ async function sendSMS(to: string, body: string): Promise<{ success: boolean; si
     logger.info(`[TWILIO SUCCESS] SMS dispatched: ${response.sid}`);
     return { success: true, sid: response.sid };
   } catch (error: any) {
-    logger.error("[TWILIO ERROR] Failed to send SMS:", error);
-    return { success: false, error: error.message };
+    // Surface Twilio's actual code + message (e.g. 21408 = region not enabled in
+    // Geo Permissions, 20003 = auth token wrong, 21606 = From number not SMS-capable).
+    const detail = `code ${error?.code ?? "?"}: ${error?.message ?? error}`;
+    logger.error(`[TWILIO ERROR] Failed to send SMS — ${detail} ${error?.moreInfo ?? ""}`);
+    return { success: false, error: `Twilio ${detail}` };
   }
 }
 

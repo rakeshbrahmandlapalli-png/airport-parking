@@ -514,7 +514,8 @@ function DashboardContent() {
           if (response.ok) {
             notify("success", `Review SMS sent to ${booking.phone_number}.`);
           } else {
-            notify("error", "Failed to send review SMS. Check server logs.");
+            const data = await response.json().catch(() => ({}));
+            notify("error", data.error || "Failed to send review SMS. Check server logs.");
           }
         } catch (error) {
           logger.error("Review SMS Error:", error);
