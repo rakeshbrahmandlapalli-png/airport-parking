@@ -14,7 +14,7 @@ import {
   Percent, Image as ImageIcon, ArrowUp, ArrowDown, PiggyBank,
   ChevronDown, AlertCircle, Filter, Phone, Code2, Tags, Zap,
   Eye, EyeOff, Copy, Check, CheckCircle2,
-  Calculator, RefreshCw, Info, Activity
+  Calculator, RefreshCw, Info, Activity, MessageCircle
 } from "lucide-react";
 
 interface Review {
@@ -1008,6 +1008,7 @@ export default function AdminCompaniesPage() {
           <Link href="/admin/companies" className="flex items-center gap-4 px-5 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl shadow-[0_10px_30px_-5px_rgba(37,99,235,0.5)] transition-all hover:shadow-[0_10px_40px_-5px_rgba(37,99,235,0.7)] hover:-translate-y-0.5 relative overflow-hidden group"><div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div><Building2 className="w-5 h-5" /> Partner Network</Link>
           <Link href="/admin/promos" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50"><Tags className="w-5 h-5 text-slate-500" /> Promo Manager</Link>
           <Link href="/admin/financials" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50"><CalendarDays className="w-5 h-5 text-slate-500" /> Financials</Link>
+          <Link href="/admin/messages" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50"><MessageCircle className="w-5 h-5 text-slate-500" /> Messages</Link>
           <Link href="/admin/activity" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50"><Activity className="w-5 h-5 text-slate-500" /> Activity Ledger</Link>
           <Link href="/admin/settings" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all border-t border-slate-800/50 mt-4 pt-6 hover:border-l-2 hover:border-blue-500/50"><Settings2 className="w-5 h-5 text-slate-500" /> Platform Settings</Link>
         </nav>

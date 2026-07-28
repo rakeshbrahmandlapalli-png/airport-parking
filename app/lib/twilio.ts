@@ -76,6 +76,44 @@ export async function listMessagesFor(phone: string, limit = 20) {
   }
 }
 
+/**
+ * Every message on the account, newest first — the feed behind the admin
+ * Messages page. Twilio is the source of truth (real delivery status, and
+ * inbound replies we never see otherwise), so there's no local mirror to drift.
+ *
+ * `counterparty` is the customer's number: the far end of the conversation,
+ * whichever direction it went.
+ */
+export async function listAllMessages(limit = 100) {
+  const ctx = getClient();
+  if (!ctx) return { success: false, error: "Twilio uninitialized", messages: [] as any[] };
+  try {
+    const list = await ctx.client.messages.list({ limit });
+    const ours = toUKE164(ctx.fromNumber);
+    const messages = list
+      .map((m) => {
+        const inbound = String(m.direction || "").startsWith("inbound");
+        return {
+          sid: m.sid,
+          body: m.body,
+          status: m.status,
+          direction: inbound ? "inbound" : "outbound",
+          counterparty: inbound ? m.from : m.to,
+          errorMessage: m.errorMessage || null,
+          segments: Number(m.numSegments || 1),
+          price: m.price ? Number(m.price) : null,
+          sentAt: (m.dateSent || m.dateCreated)?.toISOString?.() ?? null,
+        };
+      })
+      .filter((m) => toUKE164(String(m.counterparty || "")) !== ours)
+      .sort((a, b) => (b.sentAt || "").localeCompare(a.sentAt || ""));
+    return { success: true, messages };
+  } catch (error: any) {
+    logger.error(`[TWILIO ERROR] Failed to list account messages — code ${error?.code ?? "?"}: ${error?.message ?? error}`);
+    return { success: false, error: error?.message || "Failed to load messages", messages: [] as any[] };
+  }
+}
+
 // 1. Instant confirmation — fires right after payment. Operator is usually not
 //    assigned yet at this point, so it stays generic and points to the email.
 export async function sendBookingConfirmationSMS(booking: MessageBooking) {

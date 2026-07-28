@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Building2, LogOut, Plane, Tags, Settings2,
   PiggyBank, Save, Loader2, Percent, ArrowLeft, Zap, Coffee,
   ShieldCheck, RefreshCw, CheckCircle2, AlertCircle, Gauge,
-  Clock, Users, Network, Tag, TriangleAlert, Activity, Eye, Download
+  Clock, Users, Network, Tag, TriangleAlert, Activity, Eye, Download, MessageCircle
 } from "lucide-react";
 
 // ─── SETTINGS KEYS + DEFAULTS ────────────────────────────────────────────────
@@ -443,6 +443,7 @@ export default function SettingsPage() {
           <Link href="/admin/companies" className="flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:bg-white/[0.04] hover:text-white rounded-lg transition-colors"><Building2 className="w-4 h-4 text-zinc-500" /> Partner Network</Link>
           <Link href="/admin/promos"   className="flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:bg-white/[0.04] hover:text-white rounded-lg transition-colors"><Tags className="w-4 h-4 text-zinc-500" /> Promo Manager</Link>
           <Link href="/admin/financials" className="flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:bg-white/[0.04] hover:text-white rounded-lg transition-colors"><PiggyBank className="w-4 h-4 text-zinc-500" /> Financials</Link>
+          <Link href="/admin/messages" className="flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:bg-white/[0.04] hover:text-white rounded-lg transition-colors"><MessageCircle className="w-4 h-4 text-zinc-500" /> Messages</Link>
           <Link href="/admin/activity" className="flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:bg-white/[0.04] hover:text-white rounded-lg transition-colors"><Activity className="w-4 h-4 text-zinc-500" /> Activity Ledger</Link>
           <Link href="/admin/settings" className="flex items-center gap-3 px-4 py-2.5 bg-blue-600 text-white rounded-lg transition-colors border-t border-white/[0.06] mt-3 pt-4"><Settings2 className="w-4 h-4" /> Platform Settings</Link>
         </nav>

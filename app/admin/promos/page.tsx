@@ -9,7 +9,7 @@ import Link from "next/link";
 import {
   Tags, Plus, Trash2, Save, X, Power,
   Plane, LayoutDashboard, Building2, LogOut, Settings2,
-  PiggyBank, Percent, CheckCircle2, Activity
+  PiggyBank, Percent, CheckCircle2, Activity, MessageCircle
 } from "lucide-react";
 
 export default function PromoManager() {
@@ -158,6 +158,9 @@ export default function PromoManager() {
           </Link>
           <Link href="/admin/financials" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50">
             <PiggyBank className="w-5 h-5 text-slate-500" /> Financials
+          </Link>
+          <Link href="/admin/messages" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50">
+            <MessageCircle className="w-5 h-5 text-slate-500" /> Messages
           </Link>
           <Link href="/admin/activity" className="flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50">
             <Activity className="w-5 h-5 text-slate-500" /> Activity Ledger
