@@ -9,6 +9,10 @@ import { logger } from "@/app/lib/logger";
 import { useEffect, useState, useMemo, Suspense } from "react";
 import { supabase } from "@/app/lib/supabase";
 import { recordAdminAction } from "@/app/lib/audit-client";
+import {
+  MESSAGE_TEMPLATES, renderTemplate, smsInfo, toWhatsAppNumber,
+  type TemplateId,
+} from "@/app/lib/messageTemplates";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -91,6 +95,15 @@ function DashboardContent() {
   const [linkCopied, setLinkCopied] = useState(false);
 
   // --- 3b. TOAST + CONFIRM STATE ---
+  // --- MESSAGE CENTRE ---
+  const [msgBooking, setMsgBooking] = useState<any>(null);          // booking being messaged
+  const [msgTemplate, setMsgTemplate] = useState<TemplateId>("dropoff");
+  const [msgBody, setMsgBody] = useState("");
+  const [msgSending, setMsgSending] = useState(false);
+  const [msgHistory, setMsgHistory] = useState<any[]>([]);
+  const [msgHistoryLoading, setMsgHistoryLoading] = useState(false);
+  const [msgHistoryError, setMsgHistoryError] = useState<string | null>(null);
+
   const [toasts, setToasts] = useState<{ id: number; type: "success" | "error" | "info"; msg: string }[]>([]);
   const [confirmState, setConfirmState] = useState<{ title: string; body: string; confirmLabel: string; danger: boolean; onConfirm: () => void } | null>(null);
 
@@ -525,6 +538,87 @@ function DashboardContent() {
     });
   };
 
+  // --- MESSAGE CENTRE ---------------------------------------------------
+  // Templates render from the same module the automated senders use, so a
+  // message typed here matches the automated ones word for word.
+
+  const companyForBooking = (b: any) =>
+    b?.company_id ? companies.find((c) => c.id === b.company_id) || null : null;
+
+  /** Sensible opening template for the booking's current stage. */
+  const defaultTemplateFor = (b: any): TemplateId => {
+    const status = (b?.status || "").toLowerCase();
+    if (status === "completed") return "review";
+    if (!b?.flight_number || !String(b.flight_number).trim()) return "flight";
+    if (status === "parked") return "return";
+    return "dropoff";
+  };
+
+  const loadMessageHistory = async (ref: string) => {
+    setMsgHistoryLoading(true);
+    setMsgHistoryError(null);
+    try {
+      const res = await fetch(`/api/admin/messages?ref=${encodeURIComponent(ref)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to load history");
+      setMsgHistory(data.messages || []);
+      if (data.error) setMsgHistoryError(data.error);
+    } catch (err: any) {
+      setMsgHistory([]);
+      setMsgHistoryError(err.message || "Could not load message history");
+    } finally {
+      setMsgHistoryLoading(false);
+    }
+  };
+
+  const openMessageCentre = (booking: any) => {
+    const tpl = defaultTemplateFor(booking);
+    setMsgBooking(booking);
+    setMsgTemplate(tpl);
+    setMsgBody(renderTemplate(tpl, booking, companyForBooking(booking)));
+    setMsgHistory([]);
+    setMsgHistoryError(null);
+    if (booking?.booking_ref) loadMessageHistory(booking.booking_ref);
+  };
+
+  const applyTemplate = (id: TemplateId) => {
+    setMsgTemplate(id);
+    if (id !== "custom") setMsgBody(renderTemplate(id, msgBooking, companyForBooking(msgBooking)));
+  };
+
+  const sendMessageSMS = async () => {
+    if (!msgBooking?.booking_ref || !msgBody.trim()) return;
+    setMsgSending(true);
+    try {
+      const res = await fetch("/api/admin/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ref: msgBooking.booking_ref, body: msgBody.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to send");
+      notify("success", `SMS sent to ${msgBooking.full_name || msgBooking.phone_number}.`);
+      recordAdminAction({
+        actionType: "message.sms.sent",
+        entityType: "booking",
+        entityId: msgBooking.id,
+        metadata: { label: `SMS · ${msgBooking.booking_ref}`, after: msgTemplate },
+      });
+      loadMessageHistory(msgBooking.booking_ref);
+    } catch (err: any) {
+      notify("error", err.message || "Failed to send SMS.");
+    } finally {
+      setMsgSending(false);
+    }
+  };
+
+  /** Hands the same text to WhatsApp Web, addressed to the customer. */
+  const sendMessageWhatsApp = () => {
+    if (!msgBooking?.phone_number || !msgBody.trim()) return;
+    const number = toWhatsAppNumber(msgBooking.phone_number);
+    window.open(`https://wa.me/${number}?text=${encodeURIComponent(msgBody.trim())}`, "_blank");
+  };
+
   // Process Refund: marks booking as cancelled (refund must be issued manually in Stripe)
   const processRefund = (b: any) => {
     askConfirm({
@@ -935,8 +1029,11 @@ function DashboardContent() {
           <button onClick={() => sendManualEmail(b, "provider")} className="flex items-center justify-center gap-2 px-3 py-3 bg-purple-500/10 text-purple-400 hover:bg-purple-500 hover:text-white rounded-xl border border-purple-500/20 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest">
             <Briefcase className="w-4 h-4" /> Provider
           </button>
+          <button onClick={() => openMessageCentre(b)} className="flex items-center justify-center gap-2 px-3 py-3 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white rounded-xl border border-blue-500/20 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest">
+            <Send className="w-4 h-4" /> Message
+          </button>
           <button onClick={() => sendToWhatsApp(b)} className="flex items-center justify-center gap-2 px-3 py-3 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-xl border border-emerald-500/20 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest">
-            <MessageCircle className="w-4 h-4" /> WhatsApp
+            <MessageCircle className="w-4 h-4" /> Ops Dispatch
           </button>
           {b.status?.toLowerCase() === "completed" && (
             <>
@@ -1326,6 +1423,13 @@ function DashboardContent() {
                             className="h-7 w-7 rounded-md flex items-center justify-center text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
                           >
                             <Mail className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            title="Message customer"
+                            onClick={() => openMessageCentre(b)}
+                            className="h-7 w-7 rounded-md flex items-center justify-center text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+                          >
+                            <Send className="w-3.5 h-3.5" />
                           </button>
                           <button
                             title="Force API Sync"
@@ -1931,6 +2035,172 @@ function DashboardContent() {
                <button disabled={isSaving} onClick={handleUpdateBooking} className="flex-1 bg-amber-600 hover:bg-amber-500 py-4 rounded-xl font-bold text-sm text-white transition-colors flex items-center justify-center gap-2 active:scale-95">
                 {isSaving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4"/>} Authorize Update
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- 🟢 MESSAGE CENTRE --- */}
+      {msgBooking && (
+        <div className="fixed inset-0 bg-[#0B1120]/95 backdrop-blur-sm z-[300] flex items-start md:items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#0F1523] border border-slate-800 w-full max-w-3xl rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 my-8">
+
+            {/* Header */}
+            <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-[#131A2B] relative">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-emerald-500"></div>
+              <div>
+                <h2 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
+                  <MessageCircle className="w-5 h-5 text-blue-400" /> Message Centre
+                </h2>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                  {msgBooking.full_name || "Customer"} · {msgBooking.booking_ref} · {msgBooking.phone_number || "no number"}
+                </p>
+              </div>
+              <button onClick={() => setMsgBooking(null)} className="p-2 bg-[#1A2235] rounded-xl text-slate-400 hover:text-white border border-slate-700/50">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 md:p-8 space-y-6">
+
+              {!(msgBooking.phone_number || "").trim() && (
+                <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400 text-xs font-bold">
+                  This booking has no phone number — add one in Edit before messaging.
+                </div>
+              )}
+
+              {/* Template picker */}
+              <div>
+                <label className="text-[9px] font-black uppercase text-slate-500 block mb-3 tracking-widest">Template</label>
+                <div className="flex flex-wrap gap-2">
+                  {MESSAGE_TEMPLATES.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => applyTemplate(t.id)}
+                      title={t.hint}
+                      className={`px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all ${
+                        msgTemplate === t.id
+                          ? "bg-blue-600 border-blue-500 text-white"
+                          : "bg-[#1A2235] border-slate-700 text-slate-400 hover:text-white hover:border-slate-600"
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-500 font-bold mt-2">
+                  {MESSAGE_TEMPLATES.find((t) => t.id === msgTemplate)?.hint}
+                </p>
+              </div>
+
+              {/* Editable body */}
+              <div>
+                <label className="text-[9px] font-black uppercase text-slate-500 block mb-2 tracking-widest">Message</label>
+                <textarea
+                  value={msgBody}
+                  onChange={(e) => { setMsgBody(e.target.value); if (msgTemplate !== "custom") setMsgTemplate("custom"); }}
+                  rows={6}
+                  placeholder="Write your message…"
+                  className="w-full bg-[#1A2235] border border-slate-700 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-white font-medium leading-relaxed outline-none focus:ring-2 focus:ring-blue-500/50 transition-all resize-y placeholder:text-slate-600"
+                />
+                {(() => {
+                  const info = smsInfo(msgBody);
+                  return (
+                    <div className="flex flex-wrap items-center gap-3 mt-2 text-[10px] font-bold">
+                      <span className="text-slate-500">{info.chars} chars</span>
+                      <span className={info.segments > 2 ? "text-amber-400" : "text-slate-500"}>
+                        {info.segments} SMS segment{info.segments === 1 ? "" : "s"}
+                      </span>
+                      {info.unicode && (
+                        <span className="text-amber-400">
+                          Contains emoji/special characters — halves the SMS limit and costs more
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={sendMessageSMS}
+                  disabled={msgSending || !msgBody.trim() || !(msgBooking.phone_number || "").trim()}
+                  className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white py-4 rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95"
+                >
+                  {msgSending ? <Loader2 className="animate-spin w-4 h-4" /> : <Send className="w-4 h-4" />} Send SMS
+                </button>
+                <button
+                  onClick={sendMessageWhatsApp}
+                  disabled={!msgBody.trim() || !(msgBooking.phone_number || "").trim()}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white py-4 rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95"
+                >
+                  <MessageCircle className="w-4 h-4" /> Open In WhatsApp
+                </button>
+                <button
+                  onClick={() => { navigator.clipboard?.writeText(msgBody.trim()); notify("success", "Message copied."); }}
+                  disabled={!msgBody.trim()}
+                  className="px-6 py-4 bg-[#1A2235] hover:bg-[#222b40] disabled:opacity-40 border border-slate-700 text-slate-300 rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2"
+                >
+                  <Copy className="w-4 h-4" /> Copy
+                </button>
+              </div>
+
+              {/* History */}
+              <div className="border-t border-slate-800 pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">SMS History</h3>
+                  <button
+                    onClick={() => msgBooking.booking_ref && loadMessageHistory(msgBooking.booking_ref)}
+                    className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white flex items-center gap-1.5"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${msgHistoryLoading ? "animate-spin" : ""}`} /> Refresh
+                  </button>
+                </div>
+
+                {msgHistoryLoading && msgHistory.length === 0 && (
+                  <p className="text-slate-500 text-xs font-bold py-6 text-center">Loading…</p>
+                )}
+                {!msgHistoryLoading && msgHistoryError && (
+                  <p className="text-amber-400 text-xs font-bold py-4 text-center">{msgHistoryError}</p>
+                )}
+                {!msgHistoryLoading && !msgHistoryError && msgHistory.length === 0 && (
+                  <p className="text-slate-500 text-xs font-bold py-6 text-center">No SMS sent to this customer yet.</p>
+                )}
+
+                <div className="space-y-3 max-h-[30vh] overflow-y-auto">
+                  {msgHistory.map((m) => {
+                    const failed = ["failed", "undelivered"].includes(String(m.status));
+                    const inbound = m.direction === "inbound";
+                    return (
+                      <div
+                        key={m.sid}
+                        className={`p-4 rounded-xl border text-xs leading-relaxed ${
+                          inbound
+                            ? "bg-[#131A2B] border-slate-700 text-slate-200"
+                            : failed
+                            ? "bg-red-500/5 border-red-500/20 text-slate-300"
+                            : "bg-[#1A2235] border-slate-800 text-slate-300"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3 mb-1.5">
+                          <span className={`text-[9px] font-black uppercase tracking-widest ${inbound ? "text-emerald-400" : "text-slate-500"}`}>
+                            {inbound ? "Customer replied" : "Sent"}
+                          </span>
+                          <span className={`text-[9px] font-black uppercase tracking-widest ${failed ? "text-red-400" : "text-slate-600"}`}>
+                            {m.status}{m.sentAt ? ` · ${new Date(m.sentAt).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}
+                          </span>
+                        </div>
+                        <p className="whitespace-pre-wrap">{m.body}</p>
+                        {failed && m.errorMessage && (
+                          <p className="text-red-400 text-[10px] font-bold mt-2">{m.errorMessage}</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
             </div>
           </div>
         </div>

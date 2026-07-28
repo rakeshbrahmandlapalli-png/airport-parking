@@ -1,8 +1,17 @@
 import { logger } from "@/app/lib/logger";
 import twilio from "twilio";
+import {
+  toUKE164,
+  bookingConfirmationBody,
+  missingFlightBody,
+  dropoffDayBody,
+  returnDayBody,
+  reviewRequestBody,
+  type MessageBooking,
+} from "@/app/lib/messageTemplates";
 
-const REVIEW_LINK = "https://uk.trustpilot.com/evaluate/aeroparkdirect.co.uk";
-const AGENT_NUMBER = "07868 277648";
+// Message bodies live in app/lib/messageTemplates.ts so the admin Message Centre
+// sends exactly the same wording as these automated senders.
 
 function getClient(): { client: ReturnType<typeof twilio>; fromNumber: string } | null {
   const rawSid = process.env.TWILIO_ACCOUNT_SID || "";
@@ -19,19 +28,7 @@ function getClient(): { client: ReturnType<typeof twilio>; fromNumber: string } 
   return { client: twilio(accountSid, authToken), fromNumber };
 }
 
-// Normalise a UK number to E.164 (+44…), tolerating however the customer typed
-// it: spaces/dashes, leading 0, 44, 0044, or a bare 10-digit mobile (no 0).
-function toUKE164(raw: string): string {
-  const p = (raw || "").replace(/[^\d+]/g, "");
-  if (p.startsWith("+")) return p;                 // already international
-  if (p.startsWith("00")) return `+${p.slice(2)}`; // 00-intl prefix (incl. 0044)
-  if (p.startsWith("44")) return `+${p}`;          // 44… -> +44…
-  if (p.startsWith("0")) return `+44${p.slice(1)}`; // 07… -> +447…
-  if (/^7\d{9}$/.test(p)) return `+44${p}`;        // bare UK mobile with no leading 0
-  return `+${p}`;                                  // fallback
-}
-
-async function sendSMS(to: string, body: string): Promise<{ success: boolean; sid?: string; error?: string }> {
+export async function sendSMS(to: string, body: string): Promise<{ success: boolean; sid?: string; error?: string }> {
   const ctx = getClient();
   if (!ctx) return { success: false, error: "Twilio uninitialized" };
   try {
@@ -47,99 +44,70 @@ async function sendSMS(to: string, body: string): Promise<{ success: boolean; si
   }
 }
 
-// Operators can store two contact numbers (phone_number + phone_number_2);
-// include both, like the confirmation email does.
-function operatorPhones(company: any): string {
-  const p1 = String(company?.phone_number || "").trim();
-  const p2 = String(company?.phone_number_2 || "").trim();
-  if (p1 && p2) return `${p1} or ${p2}`;
-  return p1 || p2 || "";
-}
-
-// Operator instructions helpers — mirror app/lib/mail.ts field priority.
-function arrivalText(isLuton: boolean, company: any): string {
-  return isLuton
-    ? (company?.on_arrival_ltn || company?.on_arrival || "Please call your parking provider 20 minutes before you arrive.")
-    : (company?.on_arrival_lhr || company?.on_arrival || "Please call your parking provider 20 minutes before you arrive.");
-}
-function returnText(isLuton: boolean, company: any): string {
-  return isLuton
-    ? (company?.on_return_ltn || company?.on_return || "Please call your parking provider after collecting your luggage.")
-    : (company?.on_return_lhr || company?.on_return || "Please call your parking provider after collecting your luggage.");
+/**
+ * Recent message history with one customer, newest first. Pulled live from
+ * Twilio so it carries real delivery status (delivered / failed / undelivered)
+ * and any inbound replies — no local mirror table to drift out of sync.
+ */
+export async function listMessagesFor(phone: string, limit = 20) {
+  const ctx = getClient();
+  if (!ctx) return { success: false, error: "Twilio uninitialized", messages: [] as any[] };
+  const e164 = toUKE164(phone);
+  try {
+    const [outbound, inbound] = await Promise.all([
+      ctx.client.messages.list({ to: e164, limit }),
+      ctx.client.messages.list({ from: e164, limit }),
+    ]);
+    const messages = [...outbound, ...inbound]
+      .map((m) => ({
+        sid: m.sid,
+        body: m.body,
+        status: m.status,
+        direction: String(m.direction || "").startsWith("inbound") ? "inbound" : "outbound",
+        errorMessage: m.errorMessage || null,
+        sentAt: (m.dateSent || m.dateCreated)?.toISOString?.() ?? null,
+      }))
+      .sort((a, b) => (b.sentAt || "").localeCompare(a.sentAt || ""))
+      .slice(0, limit);
+    return { success: true, messages };
+  } catch (error: any) {
+    logger.error(`[TWILIO ERROR] Failed to list messages — code ${error?.code ?? "?"}: ${error?.message ?? error}`);
+    return { success: false, error: error?.message || "Failed to load messages", messages: [] as any[] };
+  }
 }
 
 // 1. Instant confirmation — fires right after payment. Operator is usually not
 //    assigned yet at this point, so it stays generic and points to the email.
-export async function sendBookingConfirmationSMS(booking: {
-  full_name: string; phone_number: string; booking_ref: string; dropoff_date?: string; pickup_date?: string;
-}) {
+export async function sendBookingConfirmationSMS(booking: MessageBooking) {
   if (!booking.phone_number) return { success: false, error: "No phone number on booking" };
-  const drop = booking.dropoff_date ? new Date(booking.dropoff_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) : "TBC";
-  const pick = booking.pickup_date ? new Date(booking.pickup_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) : "TBC";
-  return sendSMS(
-    booking.phone_number,
-    `AeroPark Direct: Booking confirmed, ref ${booking.booking_ref}. Drop-off ${drop}, return ${pick}. Full details & instructions are in your email. Questions? Call ${AGENT_NUMBER}.`
-  );
+  return sendSMS(booking.phone_number, bookingConfirmationBody(booking));
 }
 
 // 2. Missing-flight-number nudge (skips silently if a flight number is present).
-export async function triggerMissingFlightAlert(booking: {
-  full_name: string; phone_number: string; booking_ref: string; flight_number?: string; car_make?: string;
-}) {
+export async function triggerMissingFlightAlert(booking: MessageBooking) {
   if (booking.flight_number && booking.flight_number.trim() !== "") {
     return { success: true, message: "Flight number present. Skipping alert." };
   }
   if (!booking.phone_number) return { success: false, error: "No phone number on booking" };
-  return sendSMS(
-    booking.phone_number,
-    `Hi ${booking.full_name}, AeroPark Direct here. We're missing your return flight number for ref ${booking.booking_ref} — reply with it so we can track your landing and have your car ready on time.`
-  );
+  return sendSMS(booking.phone_number, missingFlightBody(booking));
 }
 
 // 3. Drop-off day (morning). Operator-aware: assigned operator -> their arrival
-//    instructions + number; no operator (Rakesh's own hold) -> his number.
-export async function sendDropoffDaySMS(booking: {
-  full_name: string; phone_number: string; booking_ref: string; airport?: string;
-}, company: any | null) {
+//    instructions + number; no operator (we hold the car) -> our number.
+export async function sendDropoffDaySMS(booking: MessageBooking, company: any | null) {
   if (!booking.phone_number) return { success: false, error: "No phone number on booking" };
-  const isLuton = !!booking.airport?.toLowerCase().includes("luton");
-  let body: string;
-  if (company) {
-    const phones = operatorPhones(company);
-    const phone = phones ? ` Call ${phones} on arrival.` : "";
-    body = `AeroPark Direct: Drop-off day for ref ${booking.booking_ref}. ${arrivalText(isLuton, company)}${phone} Full directions are in your email.`;
-  } else {
-    body = `AeroPark Direct: Drop-off day for ref ${booking.booking_ref}. When you arrive, call ${AGENT_NUMBER} and we'll meet you to take your car. Full details are in your email.`;
-  }
-  return sendSMS(booking.phone_number, body);
+  return sendSMS(booking.phone_number, dropoffDayBody(booking, company));
 }
 
 // 4. Return day (morning). Operator-aware, same rule as drop-off.
-export async function sendReturnDaySMS(booking: {
-  full_name: string; phone_number: string; booking_ref: string; airport?: string;
-}, company: any | null) {
+export async function sendReturnDaySMS(booking: MessageBooking, company: any | null) {
   if (!booking.phone_number) return { success: false, error: "No phone number on booking" };
-  const isLuton = !!booking.airport?.toLowerCase().includes("luton");
-  let body: string;
-  if (company) {
-    const phones = operatorPhones(company);
-    const phone = phones ? ` Call ${phones}.` : "";
-    body = `AeroPark Direct: Today's your return day, ref ${booking.booking_ref}. ${returnText(isLuton, company)}${phone}`;
-  } else {
-    body = `AeroPark Direct: Today's your return day, ref ${booking.booking_ref}. Once you've collected your luggage, call ${AGENT_NUMBER} and your car and parking ticket will be ready.`;
-  }
-  return sendSMS(booking.phone_number, body);
+  return sendSMS(booking.phone_number, returnDayBody(booking, company));
 }
 
 // 5. Review request — sent the day AFTER collection (by the daily cron), and also
 //    on demand from the admin "Review SMS" button.
-export async function sendReviewRequestSMS(booking: {
-  full_name: string; phone_number: string; booking_ref: string;
-}) {
+export async function sendReviewRequestSMS(booking: MessageBooking) {
   if (!booking.phone_number) return { success: false, error: "No phone number on booking" };
-  const firstName = (booking.full_name || "there").split(" ")[0];
-  return sendSMS(
-    booking.phone_number,
-    `Hi ${firstName}, thanks for parking with AeroPark Direct! We hope everything went smoothly. If you have 30 seconds, an honest review would mean a lot to us: ${REVIEW_LINK}`
-  );
+  return sendSMS(booking.phone_number, reviewRequestBody(booking));
 }
