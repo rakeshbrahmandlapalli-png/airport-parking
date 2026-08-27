@@ -4,7 +4,7 @@ import Link from "next/link";
 import {
   ArrowLeft, Plane, Mail, MessageSquare,
   Clock, ShieldCheck, Zap, Send, CheckCircle2,
-  Globe, ArrowUpRight, Phone
+  Globe, ArrowUpRight, Phone, MapPin
 } from "lucide-react";
 import { useState } from "react";
 
@@ -117,6 +117,29 @@ export default function ContactPage() {
                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Call Or Text</span>
                 </div>
                 <a href="tel:+447868277648" className="text-lg md:text-xl font-black text-white tracking-tight hover:text-blue-400 transition-colors">07868 277648</a>
+              </div>
+
+              {/* Registered office. Kept deliberately quieter than email and phone —
+                  it is a legal address, not somewhere a customer should drive to,
+                  and the operation runs out of Luton and Heathrow. It matches the
+                  Privacy and Terms pages and the LocalBusiness schema on the
+                  homepage, so a real address appears everywhere a person or a
+                  reviewer looks for one. */}
+              <div className="p-6 bg-white/[0.03] border border-white/10 rounded-[2rem]">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center">
+                    <MapPin className="w-5 h-5 text-slate-400" />
+                  </div>
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Registered Office</span>
+                </div>
+                <address className="not-italic text-base md:text-lg font-black text-white tracking-tight leading-snug">
+                  66 Paul Street<br />
+                  London EC2A 4NA<br />
+                  United Kingdom
+                </address>
+                <p className="mt-3 text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed">
+                  AeroPark Direct Ltd &middot; Company No. 17211973
+                </p>
               </div>
 
               <div className="p-6 bg-white/[0.03] border border-white/10 rounded-[2rem]">
