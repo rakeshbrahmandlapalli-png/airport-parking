@@ -817,3 +817,77 @@ export async function sendProviderNotification(
     return { success: false, error: err };
   }
 }
+// ─── CANCELLATION ─────────────────────────────────────────────────────────────
+
+/**
+ * Tells the customer their booking is cancelled, and tells the office to refund.
+ *
+ * The refund is deliberately NOT automatic. It is issued by hand in Stripe so a
+ * person sees every one — but the customer is told that in plain words, with a
+ * timescale, because "cancelled" without a word about the money is exactly what
+ * makes someone escalate.
+ */
+export async function sendCancellationAlerts(booking: any, company: any): Promise<void> {
+  const ref = escH(booking?.booking_ref);
+  const name = escH(booking?.full_name);
+  const first = String(booking?.full_name || "there").trim().split(/\s+/)[0];
+  const total = Number(booking?.total_price || 0).toFixed(2);
+  const dropDateFmt = formatEmailDate(booking?.dropoff_date);
+
+  // The office first — this one carries an action and must not be lost if the
+  // customer's address bounces.
+  try {
+    await resend.emails.send({
+      from:    "AeroPark System <info@aeroparkdirect.co.uk>",
+      to:      ["info@aeroparkdirect.co.uk"],
+      subject: `❌ CANCELLED — refund ${ref} (£${total})`,
+      html: `
+        <div style="font-family:sans-serif;padding:20px;max-width:600px;margin:0 auto;">
+          <h2 style="color:#dc2626;margin-bottom:10px;">Refund needed</h2>
+          <p><strong>${name}</strong> cancelled online. The booking is already marked cancelled.</p>
+          <div style="background:#fef2f2;padding:20px;border-radius:10px;border:1px solid #fecaca;margin-top:20px;">
+            <p style="margin:0 0 8px;"><strong>Ref:</strong> ${ref}</p>
+            <p style="margin:0 0 8px;"><strong>Refund:</strong> £${total}</p>
+            <p style="margin:0 0 8px;"><strong>Was due:</strong> ${dropDateFmt}</p>
+            <p style="margin:0;"><strong>Email:</strong> ${escH(booking?.email, "")}</p>
+          </div>
+          <p style="margin-top:20px;color:#b91c1c;"><strong>Refund this in Stripe.</strong>
+             They have been told it lands within 5 to 10 working days.</p>
+        </div>
+      `,
+    });
+  } catch (err) {
+    logger.error("sendCancellationAlerts (office) failed:", err);
+  }
+
+  const to = String(booking?.email || "").trim();
+  if (!to) return;
+
+  try {
+    await resend.emails.send({
+      from:    "AeroPark Direct <info@aeroparkdirect.co.uk>",
+      to:      [to],
+      subject: `Booking ${booking?.booking_ref} cancelled — refund of £${total} on its way`,
+      html: `
+        <div style="font-family:sans-serif;padding:24px;max-width:600px;margin:0 auto;color:#0f172a;">
+          <h2 style="margin:0 0 6px;">Your booking is cancelled</h2>
+          <p style="margin:0 0 20px;color:#475569;">Reference ${ref}</p>
+          <p>Hi ${escH(first, "there")},</p>
+          <p>That is done — nothing further is needed from you, and you will not be charged
+             anything more.</p>
+          <div style="background:#f8fafc;padding:20px;border-radius:10px;border:1px solid #e2e8f0;margin:20px 0;">
+            <p style="margin:0 0 8px;"><strong>Refund:</strong> £${total}</p>
+            <p style="margin:0;color:#475569;">Back to the card you paid with, normally within
+               5 to 10 working days depending on your bank.</p>
+          </div>
+          <p>If it has not arrived by then, reply to this email and we will chase it.</p>
+          <p style="margin-top:24px;color:#64748b;font-size:13px;">
+            AeroPark Direct &middot; info@aeroparkdirect.co.uk
+          </p>
+        </div>
+      `,
+    });
+  } catch (err) {
+    logger.error("sendCancellationAlerts (customer) failed:", err);
+  }
+}
