@@ -46,7 +46,7 @@ export default function HeathrowTerminal5ParkingPage() {
           { q: "How does my car get back to me at T5 when I land?", a: "Your operator tracks your inbound flight. When you land at Terminal 5 and collect your bags, your car is brought back to the T5 arrivals meeting point ready for you. If your flight is delayed, there's no extra charge for the delay." },
           { q: "Is Meet & Greet at Terminal 5 better than the official T5 car parks?", a: "For most travellers, yes. The official long-stay and Pod Park options require a shuttle or pod transfer with your luggage, while T5 short-stay is expensive for anything beyond a few hours. Meet & Greet lets you drive straight to departures and skip the transfer entirely, usually at a lower price than short-stay." },
           { q: "Is my car insured and secure while I'm away?", a: "Yes. Every operator we list for Terminal 5 is fully insured, audited by us before listing, and keeps vehicles in CCTV-monitored, fenced compounds. Drivers are DBS-checked and photograph your vehicle at handover." },
-          { q: "Can I cancel my Heathrow Terminal 5 parking booking?", a: "Yes — free cancellation is available up to 24 hours before your drop-off time. To change dates or times, use the Manage Booking page." },
+          { q: "Can I cancel my Heathrow Terminal 5 parking booking?", a: "You can cancel at any time from the Manage Booking page — free of charge up to 24 hours before your drop-off time. Inside 24 hours the booking still cancels, and we review the refund and come back to you within one working day. To change your dates, please call your parking operator on the number in your confirmation email — they hold your space, so they are the only ones who can arrange it." },
         ],
       }}
     />

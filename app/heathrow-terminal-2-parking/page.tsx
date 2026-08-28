@@ -46,7 +46,7 @@ export default function HeathrowTerminal2ParkingPage() {
           { q: "How much does Meet & Greet parking cost at Terminal 2?", a: "It depends on your dates, length of stay and operator, and is typically below the official T2 short-stay rate. Enter your dates above for an exact live price — it takes under 10 seconds." },
           { q: "What if my flight back to T2 is delayed?", a: "Your operator tracks your inbound flight. If you land late, your car is still brought to Terminal 2 ready for you, with no extra charge for the delay." },
           { q: "Is my car insured and secure while I'm away?", a: "Yes. Every operator we list for Terminal 2 is fully insured, audited by us before listing, and keeps vehicles in CCTV-monitored, fenced compounds. Drivers are DBS-checked and photograph your vehicle at handover." },
-          { q: "Can I cancel my Heathrow Terminal 2 parking booking?", a: "Yes — free cancellation is available up to 24 hours before your drop-off time. To change dates or times, use the Manage Booking page." },
+          { q: "Can I cancel my Heathrow Terminal 2 parking booking?", a: "You can cancel at any time from the Manage Booking page — free of charge up to 24 hours before your drop-off time. Inside 24 hours the booking still cancels, and we review the refund and come back to you within one working day. To change your dates, please call your parking operator on the number in your confirmation email — they hold your space, so they are the only ones who can arrange it." },
         ],
       }}
     />

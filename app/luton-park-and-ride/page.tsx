@@ -46,7 +46,7 @@ export default function LutonParkAndRidePage() {
           { q: "Is Park & Ride cheaper than Meet & Greet at Luton?", a: "Usually, yes. Park & Ride is the lower-cost option because you park your own car and take a transfer, rather than handing your keys over at the terminal. If you'd prefer to skip the transfer, Meet & Greet is the premium alternative." },
           { q: "What happens if my flight back to Luton is delayed?", a: "Transfers are scheduled around arriving flights, and your car is waiting in the compound regardless of when you land. There's no extra charge for a delayed return outside your control." },
           { q: "Is my car insured and secure while I'm away?", a: "Yes. Every Park & Ride operator we list for Luton is fully insured, audited by us before listing, and keeps vehicles in CCTV-monitored, fenced compounds." },
-          { q: "Can I cancel my Luton Park & Ride booking?", a: "Yes — free cancellation is available up to 24 hours before your drop-off time. To change dates or times, use the Manage Booking page." },
+          { q: "Can I cancel my Luton Park & Ride booking?", a: "You can cancel at any time from the Manage Booking page — free of charge up to 24 hours before your drop-off time. Inside 24 hours the booking still cancels, and we review the refund and come back to you within one working day. To change your dates, please call your parking operator on the number in your confirmation email — they hold your space, so they are the only ones who can arrange it." },
         ],
       }}
     />

@@ -256,7 +256,7 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
     { q: "Is airport parking at Heathrow available through AeroPark?", a: "Yes — we offer Meet & Greet and Park & Ride at Heathrow across all terminals (T2, T3, T4, T5). Search your dates above to compare available operators and prices." },
     { q: "What happens if my return flight is delayed?",                a: "All our operators monitor live flight arrivals. If you land late, your car is ready when you arrive — you'll never pay extra for delays outside your control." },
     { q: "Is my vehicle safe? What security do operators have?",        a: "Every partner compound is audited by us before listing. All sites have 24/7 CCTV, perimeter fencing, and fully insured coverage. Photos are taken of your vehicle on handover." },
-    { q: "Can I cancel or modify my airport parking booking?",          a: "Yes — free cancellation is available up to 24 hours before your drop-off time. To modify dates or times, use the Manage Booking page." },
+    { q: "Can I cancel or modify my airport parking booking?",          a: "You can cancel at any time from the Manage Booking page — free of charge up to 24 hours before your drop-off time. Inside 24 hours the booking still cancels, and we review the refund and come back to you within one working day. To change your dates, please call your parking operator on the number in your confirmation email — they hold your space, so they are the only ones who can arrange it." },
   ];
 
   const SITE_URL = "https://www.aeroparkdirect.co.uk";
@@ -693,6 +693,11 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
                     { label: "Our Services",    href: "/services" },
                     { label: "Price Guide",     href: "/airport-parking-price-guide" },
                     { label: "Manage Booking",  href: "/manage" },
+                    // Listed on its own, not buried inside Manage Booking.
+                    // Someone who has deleted the confirmation email has no
+                    // other way in, and a cancellation nobody can find is what
+                    // turns into a chargeback.
+                    { label: "Cancel a Booking", href: "/cancel" },
                   ],
                 },
                 {

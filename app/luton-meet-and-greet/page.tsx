@@ -46,7 +46,7 @@ export default function LutonMeetAndGreetPage() {
           { q: "Is Meet & Greet better than the Mid Stay or Long Term car park at Luton?", a: "For most travellers, yes. The Mid Stay and Long Term car parks require a shuttle bus transfer with your luggage at both ends. Meet & Greet lets you drive straight to the terminal and skip the bus entirely, often at a similar or lower price." },
           { q: "What happens if my flight back to Luton is delayed?", a: "Your operator tracks your inbound flight. If you land late, your car is still brought to the terminal ready for you, and there's no extra charge for the delay." },
           { q: "Is my car insured and secure while I'm away?", a: "Yes. Every operator we list for Luton is fully insured, audited by us before listing, and keeps vehicles in CCTV-monitored, fenced compounds. Drivers are DBS-checked and photograph your vehicle at handover." },
-          { q: "Can I cancel my Luton Meet & Greet booking?", a: "Yes — free cancellation is available up to 24 hours before your drop-off time. To change dates or times, use the Manage Booking page." },
+          { q: "Can I cancel my Luton Meet & Greet booking?", a: "You can cancel at any time from the Manage Booking page — free of charge up to 24 hours before your drop-off time. Inside 24 hours the booking still cancels, and we review the refund and come back to you within one working day. To change your dates, please call your parking operator on the number in your confirmation email — they hold your space, so they are the only ones who can arrange it." },
         ],
       }}
     />
