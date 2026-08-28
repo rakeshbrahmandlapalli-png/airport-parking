@@ -109,15 +109,6 @@ export default function ManageBooking() {
     }
   };
 
-  const checkCanCancel = () => {
-    if (!booking) return false;
-    const dropoff = parseLocalDate(booking.dropoff_date);
-    const [hh, mm] = String(booking.dropoff_time || "00:00").split(":").map(Number);
-    dropoff.setHours(hh || 0, mm || 0, 0, 0);
-    const diffHours = (dropoff.getTime() - Date.now()) / (1000 * 60 * 60);
-    return diffHours >= 24;
-  };
-
   return (
     <main className="min-h-screen bg-slate-50 py-12 md:py-20 px-4 md:px-6 font-sans selection:bg-blue-200">
 
@@ -209,16 +200,16 @@ export default function ManageBooking() {
                     </div>
                     <h2 className="text-3xl md:text-5xl font-black tracking-tighter font-mono text-white print:text-black">{booking.booking_ref}</h2>
                   </div>
+                  {/* Always offered, never hidden. This button used to disappear
+                      inside 24 hours and be replaced by "Contact Support" — which
+                      is the dead end that produced a Letter Before Action, because
+                      the phone went unanswered. The 24-hour rule decides the
+                      REFUND, not whether someone may cancel, and that is now
+                      handled on the cancel page and in the API. */}
                   <div className="print-hidden">
-                    {checkCanCancel() ? (
-                      <Link href={`/cancel?ref=${booking.booking_ref}`} className="px-4 py-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/20 rounded-lg text-xs font-black uppercase tracking-wider transition-all">
-                        Cancel Booking
-                      </Link>
-                    ) : (
-                      <Link href="/contact" className="px-4 py-2 bg-slate-800 text-slate-300 hover:text-white border border-slate-700 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2">
-                        <Phone className="w-3 h-3" /> Contact Support
-                      </Link>
-                    )}
+                    <Link href={`/cancel?ref=${booking.booking_ref}`} className="px-4 py-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/20 rounded-lg text-xs font-black uppercase tracking-wider transition-all">
+                      Cancel Booking
+                    </Link>
                   </div>
                 </div>
               </div>
