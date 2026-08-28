@@ -820,39 +820,59 @@ export async function sendProviderNotification(
 // ─── CANCELLATION ─────────────────────────────────────────────────────────────
 
 /**
- * Tells the customer their booking is cancelled, and tells the office to refund.
+ * Everyone who needs to know, told at once: the customer, the office, and the
+ * OPERATOR — who is holding a bay and a driver slot for a car that is no longer
+ * coming, and who finds out from nobody else.
  *
- * The refund is deliberately NOT automatic. It is issued by hand in Stripe so a
- * person sees every one — but the customer is told that in plain words, with a
- * timescale, because "cancelled" without a word about the money is exactly what
- * makes someone escalate.
+ * `insideWindow` means the cancellation landed within 24 hours of drop-off. It
+ * never blocks the cancellation — someone who wants to cancel must always be
+ * able to — it only changes what is promised about the money. Outside the
+ * window the refund is automatic and stated as a fact. Inside it, the booking
+ * still cancels but the refund is reviewed, and the customer is told that
+ * plainly rather than being sent away to a phone that may not answer.
+ *
+ * The refund is issued by hand in Stripe either way, so a person sees every one.
  */
-export async function sendCancellationAlerts(booking: any, company: any): Promise<void> {
+export async function sendCancellationAlerts(
+  booking: any,
+  company: any,
+  opts?: { insideWindow?: boolean }
+): Promise<void> {
+  const insideWindow = !!opts?.insideWindow;
   const ref = escH(booking?.booking_ref);
   const name = escH(booking?.full_name);
   const first = String(booking?.full_name || "there").trim().split(/\s+/)[0];
   const total = Number(booking?.total_price || 0).toFixed(2);
   const dropDateFmt = formatEmailDate(booking?.dropoff_date);
+  const pickDateFmt = formatEmailDate(booking?.pickup_date);
 
-  // The office first — this one carries an action and must not be lost if the
-  // customer's address bounces.
+  // ── the office ──────────────────────────────────────────────────────────
+  // Carries an action and must not be lost if the customer's address bounces,
+  // so it goes first and on its own.
   try {
     await resend.emails.send({
       from:    "AeroPark System <info@aeroparkdirect.co.uk>",
       to:      ["info@aeroparkdirect.co.uk"],
-      subject: `❌ CANCELLED — refund ${ref} (£${total})`,
+      subject: `${insideWindow ? "LATE CANCELLATION" : "CANCELLED"} — ${escH(booking?.booking_ref)} (£${total})`,
       html: `
         <div style="font-family:sans-serif;padding:20px;max-width:600px;margin:0 auto;">
-          <h2 style="color:#dc2626;margin-bottom:10px;">Refund needed</h2>
+          <h2 style="color:${insideWindow ? "#b45309" : "#dc2626"};margin-bottom:10px;">
+            ${insideWindow ? "Late cancellation — refund needs a decision" : "Refund needed"}
+          </h2>
           <p><strong>${name}</strong> cancelled online. The booking is already marked cancelled.</p>
-          <div style="background:#fef2f2;padding:20px;border-radius:10px;border:1px solid #fecaca;margin-top:20px;">
+          <div style="background:${insideWindow ? "#fffbeb" : "#fef2f2"};padding:20px;border-radius:10px;border:1px solid ${insideWindow ? "#fde68a" : "#fecaca"};margin-top:20px;">
             <p style="margin:0 0 8px;"><strong>Ref:</strong> ${ref}</p>
-            <p style="margin:0 0 8px;"><strong>Refund:</strong> £${total}</p>
+            <p style="margin:0 0 8px;"><strong>Amount:</strong> £${total}</p>
             <p style="margin:0 0 8px;"><strong>Was due:</strong> ${dropDateFmt}</p>
+            <p style="margin:0 0 8px;"><strong>Operator:</strong> ${escH(company?.name, "unassigned")}</p>
             <p style="margin:0;"><strong>Email:</strong> ${escH(booking?.email, "")}</p>
           </div>
-          <p style="margin-top:20px;color:#b91c1c;"><strong>Refund this in Stripe.</strong>
-             They have been told it lands within 5 to 10 working days.</p>
+          ${insideWindow
+            ? `<p style="margin-top:20px;color:#b45309;"><strong>This came in within 24 hours of drop-off.</strong>
+                 They have been told the refund is being reviewed and that you will reply
+                 within one working day. Decide, then refund in Stripe or email them.</p>`
+            : `<p style="margin-top:20px;color:#b91c1c;"><strong>Refund this in Stripe.</strong>
+                 They have been told it lands within 5 to 10 working days.</p>`}
         </div>
       `,
     });
@@ -860,6 +880,42 @@ export async function sendCancellationAlerts(booking: any, company: any): Promis
     logger.error("sendCancellationAlerts (office) failed:", err);
   }
 
+  // ── the operator ────────────────────────────────────────────────────────
+  // They are holding a space for this car. Money is none of their business
+  // here, so this email carries none of it — only that it is not coming.
+  const providerEmail = company?.email?.trim();
+  if (providerEmail) {
+    try {
+      await resend.emails.send({
+        from:    "AeroPark Bookings <info@aeroparkdirect.co.uk>",
+        to:      [providerEmail],
+        subject: `CANCELLED: ${escH(booking?.booking_ref)} | ${escH(booking?.full_name)}`,
+        html: `
+          <div style="font-family:sans-serif;color:#333;max-width:600px;padding:20px;">
+            <h2 style="border-bottom:2px solid #dc2626;padding-bottom:10px;">Booking Cancelled</h2>
+            <p>This car is <strong>no longer coming</strong>. Please free the space.</p>
+            <table border="0" cellpadding="8" cellspacing="0" width="100%" style="border-collapse:collapse;margin-top:10px;">
+              <tr style="background-color:#f8fafc;"><td width="35%"><strong>Booking Ref:</strong></td><td>${ref}</td></tr>
+              <tr><td><strong>Customer:</strong></td><td>${name}</td></tr>
+              <tr style="background-color:#f8fafc;"><td><strong>Registration:</strong></td><td><strong>${escH(booking?.license_plate)}</strong></td></tr>
+              <tr><td><strong>Car:</strong></td><td>${escH(booking?.car_make)} (${escH(booking?.car_color)})</td></tr>
+              <tr style="background-color:#f8fafc;"><td><strong>Was dropping off:</strong></td><td>${dropDateFmt} at ${str(booking?.dropoff_time, "TBC")}</td></tr>
+              <tr><td><strong>Was returning:</strong></td><td>${pickDateFmt} at ${str(booking?.pickup_time, "TBC")}</td></tr>
+            </table>
+            <p style="margin-top:20px;color:#64748b;font-size:14px;"><em>Please update your dispatch board.</em></p>
+          </div>
+        `,
+      });
+    } catch (err) {
+      logger.error("sendCancellationAlerts (operator) failed:", err);
+    }
+  } else {
+    logger.warn(
+      `sendCancellationAlerts: operator "${company?.name || "unassigned"}" has no email — nobody told them to free the space`
+    );
+  }
+
+  // ── the customer ────────────────────────────────────────────────────────
   const to = String(booking?.email || "").trim();
   if (!to) return;
 
@@ -867,20 +923,29 @@ export async function sendCancellationAlerts(booking: any, company: any): Promis
     await resend.emails.send({
       from:    "AeroPark Direct <info@aeroparkdirect.co.uk>",
       to:      [to],
-      subject: `Booking ${booking?.booking_ref} cancelled — refund of £${total} on its way`,
+      subject: insideWindow
+        ? `Booking ${booking?.booking_ref} cancelled`
+        : `Booking ${booking?.booking_ref} cancelled — refund of £${total} on its way`,
       html: `
         <div style="font-family:sans-serif;padding:24px;max-width:600px;margin:0 auto;color:#0f172a;">
           <h2 style="margin:0 0 6px;">Your booking is cancelled</h2>
           <p style="margin:0 0 20px;color:#475569;">Reference ${ref}</p>
           <p>Hi ${escH(first, "there")},</p>
-          <p>That is done — nothing further is needed from you, and you will not be charged
-             anything more.</p>
-          <div style="background:#f8fafc;padding:20px;border-radius:10px;border:1px solid #e2e8f0;margin:20px 0;">
-            <p style="margin:0 0 8px;"><strong>Refund:</strong> £${total}</p>
-            <p style="margin:0;color:#475569;">Back to the card you paid with, normally within
-               5 to 10 working days depending on your bank.</p>
-          </div>
-          <p>If it has not arrived by then, reply to this email and we will chase it.</p>
+          <p>That is done — nothing further is needed from you, and you will not be
+             charged anything more.</p>
+          ${insideWindow
+            ? `<div style="background:#fffbeb;padding:20px;border-radius:10px;border:1px solid #fde68a;margin:20px 0;">
+                 <p style="margin:0 0 8px;"><strong>About your refund</strong></p>
+                 <p style="margin:0;color:#475569;">Because this came in within 24 hours of your
+                    drop-off, your refund of £${total} is being reviewed rather than issued
+                    automatically. We will email you about it within one working day.</p>
+               </div>`
+            : `<div style="background:#f8fafc;padding:20px;border-radius:10px;border:1px solid #e2e8f0;margin:20px 0;">
+                 <p style="margin:0 0 8px;"><strong>Refund:</strong> £${total}</p>
+                 <p style="margin:0;color:#475569;">Back to the card you paid with, normally within
+                    5 to 10 working days depending on your bank.</p>
+               </div>
+               <p>If it has not arrived by then, reply to this email and we will chase it.</p>`}
           <p style="margin-top:24px;color:#64748b;font-size:13px;">
             AeroPark Direct &middot; info@aeroparkdirect.co.uk
           </p>

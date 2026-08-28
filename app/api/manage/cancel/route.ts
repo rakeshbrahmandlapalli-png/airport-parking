@@ -79,20 +79,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ booking, alreadyCancelled: true });
     }
 
+    // Cancelling is ALWAYS allowed. An earlier version refused inside the
+    // 24-hour window and told the customer to phone instead — which is exactly
+    // the dead end that produced a Letter Before Action: a broken cancel route
+    // plus a phone nobody answered. Someone who wants to cancel must always be
+    // able to, whatever it means for the refund.
+    //
+    // The window now decides the MONEY, not the ability. Outside it the refund
+    // is automatic and promised; inside it the booking still cancels but the
+    // refund is reviewed, and the customer is told so plainly rather than
+    // being blocked.
     const drop = dropoffMoment(booking);
     const hoursLeft = drop ? (drop.getTime() - Date.now()) / 3_600_000 : null;
-
-    if (hoursLeft !== null && hoursLeft < FREE_WINDOW_HOURS) {
-      return NextResponse.json(
-        {
-          error:
-            "This booking is inside the 24-hour window before drop-off, so it can no " +
-            "longer be cancelled online. Please contact us and we will help.",
-          tooLate: true,
-        },
-        { status: 409 }
-      );
-    }
+    const insideWindow = hoursLeft !== null && hoursLeft < FREE_WINDOW_HOURS;
 
     // Only `status`, matching what the admin dashboard writes. A timestamp
     // column would be useful here, but writing to one that does not exist would
@@ -117,10 +116,12 @@ export async function POST(req: Request) {
 
     // The refund itself is deliberately NOT automatic. It goes through Stripe by
     // hand so a person sees every one. But the customer is told that plainly on
-    // the confirmation, and the office is emailed so it cannot be missed.
-    await sendCancellationAlerts(updated || booking, company);
+    // the confirmation, and three people are emailed so it cannot be missed:
+    // the customer, the office, and the OPERATOR — who is holding a space and a
+    // slot for a car that is no longer coming.
+    await sendCancellationAlerts(updated || booking, company, { insideWindow });
 
-    return NextResponse.json({ booking: updated || booking });
+    return NextResponse.json({ booking: updated || booking, insideWindow });
   } catch (err) {
     logger.error("Cancellation failed:", err);
     return NextResponse.json(

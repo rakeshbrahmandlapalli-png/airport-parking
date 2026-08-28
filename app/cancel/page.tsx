@@ -39,13 +39,15 @@ function CancelInner() {
   const [booking, setBooking] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [tooLate, setTooLate] = useState(false);
+  // Set when the cancellation landed within 24h of drop-off. It never blocks
+  // anything - it only changes what we promise about the money.
+  const [insideWindow, setInsideWindow] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [done, setDone] = useState(false);
 
   const find = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true); setError(""); setTooLate(false);
+    setLoading(true); setError("");
     try {
       const res = await fetch("/api/manage/lookup", {
         method: "POST",
@@ -62,7 +64,7 @@ function CancelInner() {
   };
 
   const cancel = async () => {
-    setConfirming(true); setError(""); setTooLate(false);
+    setConfirming(true); setError("");
     try {
       const res = await fetch("/api/manage/cancel", {
         method: "POST",
@@ -72,9 +74,9 @@ function CancelInner() {
       const data = await res.json();
       if (!res.ok) {
         setError(data?.error || "We couldn't cancel that booking.");
-        if (data?.tooLate) setTooLate(true);
       } else {
         setBooking(data.booking);
+        setInsideWindow(!!data.insideWindow);
         setDone(true);
       }
     } catch (err) {
@@ -106,20 +108,40 @@ function CancelInner() {
               </h1>
               <p className="text-slate-500 font-mono font-bold mb-8">{booking?.booking_ref}</p>
 
-              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 text-left space-y-3">
-                <div className="flex justify-between items-baseline">
-                  <span className="text-slate-500 text-sm font-bold">Refund</span>
-                  <span className="text-2xl font-black text-slate-900">£{total}</span>
+              {/* The cancellation always succeeds. Only the promise about the
+                  money changes, and it is never dressed up as more certain than
+                  it is — an unkept refund promise is what turns a cancellation
+                  into a complaint. */}
+              {insideWindow ? (
+                <div className="bg-amber-50 border border-amber-100 rounded-2xl p-6 text-left space-y-3">
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-amber-800 text-sm font-bold">Refund under review</span>
+                    <span className="text-2xl font-black text-amber-900">£{total}</span>
+                  </div>
+                  <p className="text-sm text-amber-800 leading-relaxed">
+                    Because this is within 24 hours of your drop-off, your refund is being
+                    reviewed rather than issued automatically. We will email you about it
+                    within <strong>one working day</strong>. Nothing further is needed from
+                    you and you will not be charged anything more.
+                  </p>
                 </div>
-                <p className="text-sm text-slate-500 leading-relaxed">
-                  Back to the card you paid with, normally within <strong className="text-slate-700">5 to 10 working days</strong> depending
-                  on your bank. Nothing further is needed from you and you will not be charged anything more.
-                </p>
-              </div>
+              ) : (
+                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 text-left space-y-3">
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-slate-500 text-sm font-bold">Refund</span>
+                    <span className="text-2xl font-black text-slate-900">£{total}</span>
+                  </div>
+                  <p className="text-sm text-slate-500 leading-relaxed">
+                    Back to the card you paid with, normally within <strong className="text-slate-700">5 to 10 working days</strong> depending
+                    on your bank. Nothing further is needed from you and you will not be charged anything more.
+                  </p>
+                </div>
+              )}
 
               <p className="text-sm text-slate-500 mt-6">
-                A confirmation is on its way to your email. If the refund has not arrived
-                in that time, reply to it and we will chase it.
+                A confirmation is on its way to your email, and your parking operator
+                has been told. If you do not hear from us as described, reply to that
+                email and we will pick it up.
               </p>
             </div>
           </div>
@@ -131,7 +153,8 @@ function CancelInner() {
                 Cancel a booking
               </h1>
               <p className="text-slate-500 mb-8">
-                Free of charge up to 24 hours before your drop-off.
+                Free of charge up to 24 hours before your drop-off. You can cancel
+                at any time; inside 24 hours we review the refund and come back to you.
               </p>
 
               <form onSubmit={find} className="space-y-5">
@@ -214,11 +237,6 @@ function CancelInner() {
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                   <div>
                     {error}
-                    {tooLate && (
-                      <Link href="/contact" className="block mt-2 underline font-black">
-                        Contact us
-                      </Link>
-                    )}
                   </div>
                 </div>
               )}
