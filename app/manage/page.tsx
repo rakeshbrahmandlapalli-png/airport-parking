@@ -4,7 +4,7 @@ import { logger } from "@/app/lib/logger";
 import { useState, useEffect } from "react";
 import {
   Ticket, Calendar, Loader2, ArrowRight, Printer, User, MapPin,
-  CheckCircle2, Car, PlaneTakeoff, CalendarPlus, CreditCard, Lock,
+  CheckCircle2, Car, PlaneTakeoff, Lock,
   ArrowLeft, Receipt, Search, AlertCircle, Edit2,
   XCircle, Phone, Info
 } from "lucide-react";
@@ -35,22 +35,6 @@ export default function ManageBooking() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const [isExtending, setIsExtending] = useState(false);
-  const [newPickupDate, setNewPickupDate] = useState("");
-  const [extensionLoading, setExtensionLoading] = useState(false);
-  const [extensionError, setExtensionError] = useState("");
-
-  // Server-computed quote for the chosen new date (null until fetched).
-  const [quote, setQuote] = useState<{
-    newDuration: number;
-    newFullTotal: number;
-    alreadyPaid: number;
-    priceDifference: number;
-    amendmentFee: number;
-    extraToCharge: number;
-  } | null>(null);
-  const [quoteLoading, setQuoteLoading] = useState(false);
-
   const [isEditingFlight, setIsEditingFlight] = useState(false);
   const [newFlightNum, setNewFlightNum] = useState("");
   const [flightUpdateLoading, setFlightUpdateLoading] = useState(false);
@@ -61,9 +45,6 @@ export default function ManageBooking() {
     setError("");
     setBooking(null);
     setCompany(null);
-    setIsExtending(false);
-    setQuote(null);
-    setNewPickupDate("");
 
     try {
       // Looked up server-side (service role) so the bookings table is never
@@ -87,83 +68,6 @@ export default function ManageBooking() {
       setError("An error occurred while connecting to the booking service.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  // The new pickup must be at least the day AFTER the current pickup.
-  const getMinExtensionDate = () => {
-    if (!booking) return "";
-    const date = parseLocalDate(booking.pickup_date);
-    date.setDate(date.getDate() + 1);
-    return date.toISOString().split("T")[0];
-  };
-
-  // FIX: price is NEVER computed on the client. We ask the server for a quote
-  // whenever the chosen date changes. The server is the single source of truth.
-  useEffect(() => {
-    if (!booking || !newPickupDate) {
-      setQuote(null);
-      return;
-    }
-    let cancelled = false;
-    setQuoteLoading(true);
-    setExtensionError("");
-    setQuote(null);
-
-    (async () => {
-      try {
-        const res = await fetch("/api/create-extension-session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          // quote-only flag tells the endpoint to price without creating a session
-          body: JSON.stringify({
-            bookingRef: booking.booking_ref,
-            newPickupDate,
-            quoteOnly: true,
-          }),
-        });
-        const data = await res.json();
-        if (cancelled) return;
-        if (!res.ok) {
-          setExtensionError(data.error || "Could not price this date.");
-          setQuote(null);
-        } else if (data.breakdown) {
-          setQuote(data.breakdown);
-        }
-      } catch {
-        if (!cancelled) setExtensionError("Could not reach the pricing service.");
-      } finally {
-        if (!cancelled) setQuoteLoading(false);
-      }
-    })();
-
-    return () => { cancelled = true; };
-  }, [booking, newPickupDate]);
-
-  const handleExtendBooking = async () => {
-    if (!booking || !newPickupDate) return;
-    setExtensionLoading(true);
-    setExtensionError("");
-    try {
-      const response = await fetch("/api/create-extension-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        // NOTE: no amount sent — the server computes and verifies the charge.
-        body: JSON.stringify({
-          bookingRef: booking.booking_ref,
-          newPickupDate,
-        }),
-      });
-      const session = await response.json();
-      if (response.ok && session.url) {
-        window.location.href = session.url;
-      } else {
-        throw new Error(session.error || "Failed to create payment session");
-      }
-    } catch (err: any) {
-      setExtensionError(err.message || "Payment gateway error.");
-    } finally {
-      setExtensionLoading(false);
     }
   };
 
@@ -439,68 +343,36 @@ export default function ManageBooking() {
                   </div>
                 </div>
 
-                <div className="print-hidden">
-                  {!isExtending ? (
-                    <button onClick={() => setIsExtending(true)} className="w-full py-4 border-2 border-dashed border-blue-200 hover:bg-blue-50 text-blue-700 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2">
-                      <CalendarPlus className="w-5 h-5" /> Extend your booking
-                    </button>
-                  ) : (
-                    <div className="bg-slate-900 rounded-[2rem] p-6 md:p-8 text-white">
-                      <div className="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
-                        <h3 className="text-lg font-black tracking-tight flex items-center gap-2"><CalendarPlus className="w-5 h-5 text-blue-400" /> New Pick-up Date</h3>
-                        <button onClick={() => { setIsExtending(false); setNewPickupDate(""); setQuote(null); setExtensionError(""); }} className="text-[10px] font-black uppercase text-slate-400 hover:text-white">Cancel</button>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end relative">
-                        <div className="flex flex-col space-y-2 w-full relative">
-                          <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Select New Date</label>
-                          <input
-                            type="date"
-                            name="newPickupDate"
-                            autoComplete="new-password"
-                            min={getMinExtensionDate()}
-                            value={newPickupDate}
-                            onChange={(e) => setNewPickupDate(e.target.value)}
-                            className="w-full bg-[#1e293b] border border-slate-700 hover:border-blue-500 rounded-xl p-4 font-bold text-white outline-none cursor-pointer [color-scheme:dark] focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1e293b_inset] [-webkit-text-fill-color:#ffffff]"
-                          />
-                        </div>
-
-                        {/* Server-computed quote (NOT client maths) */}
-                        {newPickupDate && (
-                          <div className="bg-slate-800/50 p-4 rounded-xl text-right border border-slate-700/50">
-                            {quoteLoading ? (
-                              <div className="flex items-center justify-end gap-2 text-slate-400">
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Pricing…</span>
-                              </div>
-                            ) : quote ? (
-                              <>
-                                <p className="text-[10px] font-black text-slate-400 uppercase">Additional Due</p>
-                                <p className="text-3xl font-black text-emerald-400">£{quote.extraToCharge.toFixed(2)}</p>
-                                <p className="text-[9px] text-slate-500 font-bold mt-1">
-                                  Incl. £{quote.amendmentFee.toFixed(2)} amendment fee
-                                </p>
-                              </>
-                            ) : (
-                              <p className="text-[10px] font-black text-slate-500 uppercase">—</p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {extensionError && (
-                        <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2">
-                          <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-                          <p className="text-red-400 text-xs font-bold">{extensionError}</p>
-                        </div>
-                      )}
-
-                      {newPickupDate && quote && quote.extraToCharge > 0 && (
-                        <button onClick={handleExtendBooking} disabled={extensionLoading} className="w-full h-14 mt-6 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-black rounded-xl flex items-center justify-center gap-2 text-sm uppercase">
-                          {extensionLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CreditCard className="w-5 h-5" /> Pay £{quote.extraToCharge.toFixed(2)} & Extend</>}
-                        </button>
-                      )}
+                {/* Dates are NOT changed here.
+                    The operator holds the car and the yard space, so they are the
+                    only ones who can say whether a different date is possible.
+                    Letting the customer move a date on this page and take payment
+                    for it created bookings the operator had never agreed to.
+                    Everything routes to them; we are the last resort, not the
+                    first. */}
+                <div className="print-hidden bg-slate-50 border border-slate-200 rounded-[2rem] p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center shrink-0">
+                      <Phone className="w-5 h-5 text-slate-500" />
                     </div>
-                  )}
+                    <div>
+                      <h3 className="font-black text-slate-900 tracking-tight mb-1">
+                        Need to change your dates?
+                      </h3>
+                      <p className="text-sm text-slate-600 leading-relaxed">
+                        Please call your operator directly on the number in your
+                        confirmation email. They hold your space, so they are the
+                        only ones who can arrange a change or an extension.
+                      </p>
+                      <p className="text-sm text-slate-500 leading-relaxed mt-3">
+                        If you cannot reach them, email{" "}
+                        <a href="mailto:info@aeroparkdirect.co.uk" className="text-blue-600 font-bold hover:underline">
+                          info@aeroparkdirect.co.uk
+                        </a>{" "}
+                        and we will step in.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
