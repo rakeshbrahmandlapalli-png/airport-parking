@@ -5,6 +5,7 @@ import { Suspense, useEffect, useState, useMemo, useCallback, useRef } from "rea
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../lib/supabase";
+import { useLivePromo } from "../lib/useLivePromo";
 import {
   computePrice,
   calculateDays,
@@ -256,6 +257,7 @@ function CheckoutContent() {
   const LOUNGE_PRICE      = Number(settings.loungePrice)    > 0 ? Number(settings.loungePrice)    : 35.0;
   const fastTrackUnitCost = Number(settings.fastTrackPrice) > 0 ? Number(settings.fastTrackPrice) : FAST_TRACK_PRICE;
 
+  const livePromo = useLivePromo();
   const [promoInput,       setPromoInput]       = useState("");
   const [discount,         setDiscount]         = useState({ active: false, code: "", percent: 0 });
   const [promoMessage,     setPromoMessage]     = useState("");
@@ -282,9 +284,12 @@ function CheckoutContent() {
   }, [aiData.isFrequentFlyer, aiData.loyaltyMessage]);
 
   // ── Promo handler ────────────────────────────────────────────────────────────
-  const handleApplyPromo = async (e: React.FormEvent) => {
+  const handleApplyPromo = async (e: React.FormEvent, override?: string) => {
     e.preventDefault();
-    const code = promoInput.toUpperCase().trim();
+    // `override` matters: applyLivePromo sets the input and calls straight
+    // through, and React state does not update on the same tick - reading
+    // promoInput there would send the PREVIOUS value, or nothing at all.
+    const code = (override ?? promoInput).toUpperCase().trim();
     if (!code) { setPromoMessage("Please enter a code."); setIsPromoError(true); return; }
     setIsVerifyingPromo(true);
     try {
@@ -321,6 +326,15 @@ function CheckoutContent() {
       setIsPromoError(true);
     }
     setIsVerifyingPromo(false);
+  };
+
+  /** Apply the advertised code without making them type it. Goes through the
+      SAME verification as typing it by hand - the banner is only a hint, the
+      database is what decides. */
+  const applyLivePromo = () => {
+    if (!livePromo || discount.active) return;
+    setPromoInput(livePromo.code);
+    handleApplyPromo({ preventDefault() {} } as unknown as React.FormEvent, livePromo.code);
   };
 
   const handleAeroClick = () => {
@@ -1054,6 +1068,27 @@ function CheckoutContent() {
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
                     <Tag className="w-4 h-4" /> Have a Promo Code?
                   </label>
+                  {/* A code is being advertised and they have not used it. Say
+                      so plainly, and let them apply it in one tap - they saw
+                      this price struck through on the results page. */}
+                  {livePromo && !discount.active && (
+                    <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+                      <p className="text-xs font-bold text-amber-300 leading-relaxed">
+                        You have not used your {Math.round(livePromo.percent * 100)}% code yet.
+                        Apply <span className="font-black tracking-wider">{livePromo.code}</span> before
+                        you pay, or you will be charged the full price.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={applyLivePromo}
+                        disabled={isVerifyingPromo}
+                        className="mt-3 w-full rounded-lg bg-amber-500 px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-slate-900 transition-colors hover:bg-amber-400 disabled:opacity-60 active:scale-[0.98]"
+                      >
+                        {isVerifyingPromo ? "Applying…" : `Apply ${livePromo.code} — save ${Math.round(livePromo.percent * 100)}%`}
+                      </button>
+                    </div>
+                  )}
+
                   <form onSubmit={handleApplyPromo} className="flex gap-3">
                     <input
                       type="text"

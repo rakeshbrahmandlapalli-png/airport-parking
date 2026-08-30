@@ -19,11 +19,16 @@ interface OperatorCardProps {
   isHeathrow: boolean;
   featured?: boolean;
   liveRateLoading?: boolean;
+  /** The code the site is advertising, if any. Shown here as a struck-through
+   *  price so the saving is visible while choosing — but it is NOT applied for
+   *  them: they still enter it at checkout, which is where it is verified. */
+  promo?: { code: string; percent: number } | null;
   onSelect: (operator: PricedCompany, finalPrice: number) => void;
 }
 
 export function OperatorCard({
-  operator, duration, isHeathrow, featured = false, liveRateLoading = false, onSelect,
+  operator, duration, isHeathrow, featured = false, liveRateLoading = false,
+  promo = null, onSelect,
 }: OperatorCardProps) {
   const { original, final, source } = operator.calculatedPriceObj;
 
@@ -43,6 +48,13 @@ export function OperatorCard({
 
   const isDiscounted = original > final && !isSoldOut;
   const savePct = isDiscounted ? Math.round(((original - final) / original) * 100) : 0;
+
+  // Checkout takes the promo off the parking rate before any add-ons, so this
+  // is the same arithmetic and the same number they will be charged. Rounded to
+  // the penny here so the card can never show a figure a penny off the till.
+  const withCode = promo && showPrice
+    ? Math.round(final * (1 - promo.percent) * 100) / 100
+    : null;
   const perDay = duration > 0 ? final / duration : final;
   const categoryLabel =
     operator.category?.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) ?? "Meet & Greet";
@@ -157,14 +169,28 @@ export function OperatorCard({
 
             {showPrice && (
               <div className="flex flex-col items-center text-center">
-                {isDiscounted && (
+                {/* With a code live, the struck price is the one they pay
+                    WITHOUT it — that is the saving they are being shown. The
+                    operator's own original would be a third number on one card
+                    and helps nobody. */}
+                {withCode !== null ? (
+                  <p className="text-sm font-bold text-slate-500 line-through">{formatGBP(final)}</p>
+                ) : isDiscounted ? (
                   <p className="text-sm font-bold text-slate-500 line-through">{formatGBP(original)}</p>
-                )}
+                ) : null}
+
                 <p className="text-[2.75rem] font-black leading-none tracking-tighter text-emerald-400">
-                  {formatGBP(final)}
+                  {formatGBP(withCode ?? final)}
                 </p>
+
+                {withCode !== null && (
+                  <p className="mt-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-emerald-400">
+                    with code {promo!.code}
+                  </p>
+                )}
+
                 <p className="mt-1.5 text-[10px] font-black uppercase tracking-[0.1em] text-slate-400">
-                  Avg {formatGBP(perDay)} / day
+                  Avg {formatGBP((withCode ?? final) / Math.max(1, duration))} / day
                 </p>
               </div>
             )}

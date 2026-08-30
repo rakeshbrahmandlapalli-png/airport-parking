@@ -16,6 +16,7 @@ import { supabase } from "../lib/supabase";
 import { computePrice, calculateDays, loadPricingSettings, DEFAULT_SETTINGS, type PricingSettings } from "../lib/pricing";
 import { type PricedCompany, type SortKey, sortCompanies } from "../lib/domain";
 import { OperatorCard } from "@/components/results/OperatorCard";
+import { useLivePromo } from "../lib/useLivePromo";
 import { FilterBar } from "@/components/results/FilterBar";
 import { SearchSummaryHeader } from "@/components/results/SearchSummaryHeader";
 
@@ -240,6 +241,11 @@ function EmailQuoteCard({
 function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
   const searchParams = useSearchParams();
   const router       = useRouter();
+
+  // The code the site is advertising. Shown on each card as a struck-through
+  // price so the saving is visible while choosing; it is still entered and
+  // verified at checkout, never applied silently on their behalf.
+  const livePromo    = useLivePromo();
 
   // IMPORTANT: never read sessionStorage during render. The server has no
   // sessionStorage, so a render-time read makes the client's first render differ
@@ -691,6 +697,7 @@ function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
                 operator={operator}
                 duration={duration}
                 isHeathrow={isHeathrow}
+                promo={livePromo}
                 onSelect={handleBooking}
                 featured={sortKey === "recommended" && idx === 0}
                 liveRateLoading={liveLoadingIds.has(operator.id)}
