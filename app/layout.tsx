@@ -108,7 +108,7 @@ export default function RootLayout({
         {/* Capture Google Ads click id (gclid) into a cookie for server-side conversions */}
         <GclidCapture />
 
-        {/* Dynamic promo banner (LAUNCH10 / AERO15 hooks) */}
+        {/* Promo banner — reads live from Promo Manager; renders nothing when no code is active, and never on /admin */}
         <PromoBanner />
 
         <main className="relative w-full">

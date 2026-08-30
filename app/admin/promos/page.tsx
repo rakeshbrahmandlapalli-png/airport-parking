@@ -17,6 +17,7 @@ export default function PromoManager() {
   const [loading, setLoading] = useState(true);
   const [newCode, setNewCode] = useState("");
   const [newPercent, setNewPercent] = useState("");
+  const [newMessage, setNewMessage] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<any>({});
   const [errorMsg, setErrorMsg] = useState("");
@@ -78,6 +79,7 @@ export default function PromoManager() {
       setEditingId(null);
       setNewCode("");
       setNewPercent("");
+      setNewMessage("");
       fetchPromos();
     } else {
       alert("Database Error: " + error.message);
@@ -265,9 +267,13 @@ export default function PromoManager() {
               <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest mb-2">Discount %</label>
               <input type="number" placeholder="15" value={newPercent} onChange={(e) => setNewPercent(e.target.value)} className={inputStyle} />
             </div>
+            <div className="flex-1">
+              <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest mb-2">Banner Message <span className="text-slate-600 normal-case tracking-normal font-bold">(optional)</span></label>
+              <input placeholder="Leave blank for “Save 15% on your next booking!”" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} className={inputStyle} />
+            </div>
             <button
               disabled={!newCode || !newPercent}
-              onClick={() => savePromo({ code: newCode, discount_percent: Number(newPercent), is_active: true })}
+              onClick={() => savePromo({ code: newCode, discount_percent: Number(newPercent), is_active: true, message: newMessage.trim() || null })}
               className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600 px-8 py-4 rounded-xl font-black text-sm text-white shadow-[0_10px_20px_-5px_rgba(37,99,235,0.4)] transition-all active:scale-95 flex items-center justify-center gap-2"
             >
               <Plus className="w-5 h-5" /> Generate
@@ -281,6 +287,7 @@ export default function PromoManager() {
                 <tr>
                   <th className="px-8 py-6">Voucher Code</th>
                   <th className="px-8 py-6 text-center">Value (%)</th>
+                  <th className="px-8 py-6">Banner Message</th>
                   <th className="px-8 py-6 text-center">Engine Status</th>
                   <th className="px-8 py-6 text-right">System Controls</th>
                 </tr>
@@ -288,7 +295,7 @@ export default function PromoManager() {
               <tbody className="divide-y divide-slate-800/60">
                 {promos.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-8 py-12 text-center text-slate-500 font-bold text-sm">
+                    <td colSpan={5} className="px-8 py-12 text-center text-slate-500 font-bold text-sm">
                       No active promotions in the database.
                     </td>
                   </tr>
@@ -308,6 +315,21 @@ export default function PromoManager() {
                         <input type="number" className={`${inputStyle} w-24 text-center mx-auto`} value={editValues.discount_percent} onChange={(e) => setEditValues({ ...editValues, discount_percent: e.target.value })} />
                       ) : (
                         <span className="text-xl font-black text-emerald-400 tabular-nums">{p.discount_percent}%</span>
+                      )}
+                    </td>
+
+                    <td className="px-8 py-6 max-w-xs">
+                      {editingId === p.id ? (
+                        <input
+                          className={inputStyle}
+                          placeholder={`Save ${p.discount_percent}% on your next booking!`}
+                          value={editValues.message ?? ""}
+                          onChange={(e) => setEditValues({ ...editValues, message: e.target.value })}
+                        />
+                      ) : (
+                        <span className={`text-xs font-bold whitespace-normal ${p.message ? "text-slate-300" : "text-slate-600 italic"}`}>
+                          {p.message || `Save ${p.discount_percent}% on your next booking!`}
+                        </span>
                       )}
                     </td>
 

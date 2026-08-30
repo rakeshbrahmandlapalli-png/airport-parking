@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { usePathname } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
 
 interface Promo {
@@ -8,6 +9,8 @@ interface Promo {
   discount_percent: number;
   is_active: boolean;
   expiry_date: string | null;
+  message?: string | null;   // set in Promo Manager; optional so this works
+                             // whether or not the column migration has run yet
 }
 
 interface Slide {
@@ -15,25 +18,30 @@ interface Slide {
   code: string;
 }
 
-const getMessage = (pct: number, code: string) => {
-  if (code === "AERO15")   return "Returning Traveler? Get 15% off your 3rd booking!";
-  if (code === "LAUNCH10") return "Launch Offer: Save 10% on your airport parking today!";
-  if (code === "AERO5")    return "First time? Save 5% on your first booking!";
-  if (code === "AERO1")    return "Exclusive member rate — 1% extra off every trip!";
-  return `Save ${pct}% on your next booking!`;
-};
+// Wording comes from the `message` column, set in Promo Manager. Anything
+// without one gets a plain sentence built from its percentage — so a code
+// generated in the admin at 3am still reads properly on the site.
+const getMessage = (p: Promo) =>
+  p.message?.trim() || `Save ${p.discount_percent}% on your next booking!`;
 
-const FALLBACK_SLIDES: Slide[] = [
-  { text: "Launch Offer: Save 10% on your airport parking today!", code: "LAUNCH10" },
-  { text: "Returning Traveller? Get 15% off your 3rd booking!",    code: "AERO15"  },
-];
-
+// There is deliberately NO fallback list. The banner advertises whatever is
+// switched ON in Promo Manager and nothing else — so when nothing is active it
+// must show nothing at all. A hardcoded fallback is exactly how LAUNCH10 kept
+// advertising itself long after it had been disabled.
 const SLIDE_DURATION = 5000; // ms per slide
 
+// Staff tools are not the shop window. Anything under these paths never shows it.
+const HIDDEN_ON = ["/admin"];
+
 export default function PromoBanner() {
+  // usePathname can be null while the router settles, so treat that as "unknown"
+  // rather than letting it read as the site root.
+  const pathname = usePathname() ?? "";
+  const hidden = HIDDEN_ON.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
   const [mounted,   setMounted]   = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  const [slides,    setSlides]    = useState<Slide[]>(FALLBACK_SLIDES);
+  const [slides,    setSlides]    = useState<Slide[]>([]);
   const [current,   setCurrent]   = useState(0);
   const [fading,    setFading]    = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null); // 🟢 per-code, not boolean
@@ -41,7 +49,7 @@ export default function PromoBanner() {
   // 🟢 Use refs to avoid stale closures in interval callbacks
   const animatingRef = useRef(false);
   const currentRef   = useRef(0);
-  const slidesRef    = useRef<Slide[]>(FALLBACK_SLIDES);
+  const slidesRef    = useRef<Slide[]>([]);
 
   // Keep refs in sync
   useEffect(() => { currentRef.current = current; }, [current]);
@@ -49,6 +57,7 @@ export default function PromoBanner() {
 
   // ── Load live promos from DB ──────────────────────────────────────────────
   useEffect(() => {
+    if (hidden) return;   // no banner, and no needless query, on staff pages
     setMounted(true);
 
     // 🟢 FIXED: Dismiss expires after 24h — not forever
@@ -58,9 +67,16 @@ export default function PromoBanner() {
 
     supabase
       .from("promotions")
-      .select("code, discount_percent, is_active, expiry_date")
+      // `*` rather than a column list on purpose: `message` may not exist yet
+      // if the migration has not been run, and naming it would turn that into a
+      // 400 that empties the banner. The table is public-read catalogue data.
+      .select("*")
       .eq("is_active", true)
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        // Every exit below leaves `slides` empty, which renders nothing. That is
+        // the safe direction: showing no offer is fine, advertising a dead code
+        // is not.
+        if (error) { console.error("Promo load failed:", error.message); return; }
         if (!data?.length) return;
         const now  = new Date();
         const live = data.filter(
@@ -68,14 +84,14 @@ export default function PromoBanner() {
         );
         if (!live.length) return;
         const mapped = live.map((p: Promo) => ({
-          text:  getMessage(p.discount_percent, p.code),
+          text:  getMessage(p),
           code:  p.code,
         }));
         setSlides(mapped);
         slidesRef.current = mapped;
         setCurrent(0);
       });
-  }, []);
+  }, [hidden]);
 
   // ── 🟢 FIXED: goTo uses refs — no stale closure ──────────────────────────
   const goTo = useCallback((next: number) => {
@@ -118,7 +134,7 @@ export default function PromoBanner() {
     sessionStorage.setItem("apd_promo_closed_at", String(Date.now())); // expires after 24h
   };
 
-  if (!mounted || !isVisible || !slides.length) return null;
+  if (hidden || !mounted || !isVisible || !slides.length) return null;
 
   const slide = slides[current];
 
