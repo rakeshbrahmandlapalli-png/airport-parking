@@ -88,11 +88,11 @@ const work = [
     href: "https://sahasra-home-foods.vercel.app",
   },
   {
-    title: "A-Z Auto Spares",
-    body: "A working demo built to show a Luton car-parts shop what a real site could look like for them — built, not just mocked up.",
-    tag: "Concept build",
+    title: "Auto Parts Retailer",
+    body: "A working concept build for an independent car-parts shop — put together to show what a real site could look like for them, not just mocked up. Not yet commissioned, so no name and no public link.",
+    tag: "Confidential · Concept",
     live: false,
-    href: "https://claude.ai/code/artifact/18ac9aa9-1f22-47b6-8335-8a9c02c7d05e",
+    href: null,
   },
 ];
 
