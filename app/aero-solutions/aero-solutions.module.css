@@ -14,7 +14,11 @@
   -webkit-font-smoothing: antialiased;
 }
 .page * { box-sizing: border-box; }
-.page a { color: inherit; }
+/* :where() keeps this at zero specificity, so any button/link class below
+   (.btnPrimary, .cta, .workItem, ...) reliably wins its own color instead of
+   this generic default silently overriding it — that mismatch was exactly
+   what made the "See the work" button render as invisible dark-on-dark text. */
+:where(.page) a { color: inherit; }
 .page p { color: var(--muted); line-height: 1.6; margin: 0; }
 .page h1, .page h2, .page h3 {
   font-family: var(--font-unbounded), var(--font-plex-sans), sans-serif;

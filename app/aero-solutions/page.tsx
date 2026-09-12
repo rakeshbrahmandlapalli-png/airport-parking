@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Unbounded, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import styles from "./aero-solutions.module.css";
+import MailCta from "./MailCta";
 
 const unbounded = Unbounded({
   subsets: ["latin"],
@@ -114,9 +115,7 @@ export default function AeroSolutions() {
               <a href="#work">Work</a>
               <a href="#services">Services</a>
               <a href="#process">Process</a>
-              <a className={styles.cta} href="mailto:info@aeroparkdirect.co.uk?subject=New%20project">
-                Start a project
-              </a>
+              <MailCta className={styles.cta}>Start a project</MailCta>
             </div>
           </nav>
         </div>
@@ -134,7 +133,7 @@ export default function AeroSolutions() {
           </p>
           <div className={styles.heroCtas}>
             <a className={styles.btnPrimary} href="#work">See the work</a>
-            <a className={styles.btnGhost} href="mailto:info@aeroparkdirect.co.uk">info@aeroparkdirect.co.uk</a>
+            <MailCta className={styles.btnGhost}>info@aeroparkdirect.co.uk</MailCta>
           </div>
         </section>
 
@@ -214,9 +213,9 @@ export default function AeroSolutions() {
                 you&rsquo;re trying to do — we&rsquo;ll tell you honestly whether it&rsquo;s a good fit.
               </p>
             </div>
-            <a className={`${styles.cta} ${styles.contactCta}`} href="mailto:info@aeroparkdirect.co.uk?subject=New%20project">
+            <MailCta className={`${styles.cta} ${styles.contactCta}`}>
               Email info@aeroparkdirect.co.uk
-            </a>
+            </MailCta>
           </div>
         </section>
       </main>
