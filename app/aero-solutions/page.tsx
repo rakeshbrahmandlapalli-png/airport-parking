@@ -179,8 +179,10 @@ export default function AeroSolutions() {
                     <h3>{w.title}</h3>
                     <p>{w.body}</p>
                   </div>
-                  <span className={`${styles.tag} ${w.live ? styles.tagLive : ""}`}>{w.tag}</span>
-                  <span className={styles.arrow}>↗</span>
+                  <div className={styles.workMeta}>
+                    <span className={`${styles.tag} ${w.live ? styles.tagLive : ""}`}>{w.tag}</span>
+                    <span className={styles.arrow}>↗</span>
+                  </div>
                 </a>
               ) : (
                 <div className={styles.workItem} style={{ cursor: "default" }} key={w.title}>
@@ -188,7 +190,9 @@ export default function AeroSolutions() {
                     <h3>{w.title}</h3>
                     <p>{w.body}</p>
                   </div>
-                  <span className={styles.tag}>{w.tag}</span>
+                  <div className={styles.workMeta}>
+                    <span className={styles.tag}>{w.tag}</span>
+                  </div>
                 </div>
               )
             )}

@@ -115,7 +115,7 @@
   transition: background .15s ease;
 }
 .workItem:hover { background: color-mix(in srgb, var(--surface) 80%, var(--accent) 6%); }
-.workLeft { display: flex; flex-direction: column; gap: 6px; }
+.workLeft { display: flex; flex-direction: column; gap: 6px; flex: 1 1 auto; min-width: 0; }
 .workItem h3 { font-size: 18px; font-weight: 600; }
 .workItem p { font-size: 14px; }
 .tag {
@@ -124,6 +124,16 @@
 }
 .tagLive { color: #1A8A4A; border-color: #1a8a4a55; }
 .arrow { font-family: var(--font-plex-mono); color: var(--muted); font-size: 18px; flex-shrink: 0; }
+.workMeta { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+/* Below ~640px the row layout squeezes the text into a narrow column with
+   the tag floating in the leftover space — stack instead, tag+arrow as
+   their own row under the text, same as a real hand-built mobile layout
+   would, not a shrunk desktop grid. */
+@media (max-width: 640px) {
+  .workItem { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .workLeft { width: 100%; }
+}
 
 /* process */
 .process { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
@@ -140,7 +150,10 @@
 }
 .contact h2 { color: var(--bg); font-size: clamp(22px, 3vw, 30px); max-width: 460px; }
 .contact p { color: color-mix(in srgb, var(--bg) 70%, transparent); margin-top: 10px; font-size: 14.5px; }
-.contactCta { background: var(--accent); color: var(--accent-ink); padding: 14px 24px; font-size: 14px; }
+/* .cta sets white-space:nowrap for the short nav label ("Start a project"),
+   which forced this much longer email address to overflow the card on
+   narrow screens instead of wrapping — undo that specifically here. */
+.contactCta { background: var(--accent); color: var(--accent-ink); padding: 14px 24px; font-size: 14px; white-space: normal; text-align: center; }
 
 /* footer */
 .footer { padding: 36px 0 48px; }
