@@ -134,9 +134,8 @@ export default function AeroSolutions() {
           <span className={styles.eyebrow}>Software · Web Apps · Business Tools · Games</span>
           <h1>We build the software your business actually needs — not a template with your logo on it.</h1>
           <p className={styles.lede}>
-            A small team of four, real code. Ordering systems with admin panels behind them, booking flows,
-            internal tools, business sites, and the odd game — built around how your business actually runs,
-            not how a page builder wants it to.
+            A small team of four, real code — built around how your business actually runs, not how a
+            page builder wants it to.
           </p>
           <div className={styles.heroCtas}>
             <a className={styles.btnPrimary} href="#work">See the work</a>
