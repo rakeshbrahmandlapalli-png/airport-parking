@@ -95,6 +95,13 @@ const work = [
     live: false,
     href: null,
   },
+  {
+    title: "Save the Locals",
+    body: "Our own dream project — a demand-side ordering platform for local kirana and general stores being squeezed by quick-commerce apps. Not competing with the big delivery platforms, giving small shops the same repeat-order convenience. Starting with a real shop in Hyderabad this year.",
+    tag: "Dream project · In progress",
+    live: false,
+    href: null,
+  },
 ];
 
 const process = [
