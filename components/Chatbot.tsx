@@ -8,9 +8,15 @@
  */
 
 import { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { Send, Minus, Bot, ShieldCheck, Mail, Volume2, VolumeX, CheckCircle2, Loader2 } from "lucide-react";
 import { useChat } from "@ai-sdk/react";
 import type { Message, ToolInvocation } from "ai";
+
+// This is the "Aero" parking concierge specifically — it has no business on
+// Aero Solutions' pages, which are a different business (software/web dev),
+// not parking. Same convention as PromoBanner's HIDDEN_ON.
+const HIDDEN_ON = ["/aero-solutions"];
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const STORAGE_KEY = "aero_chat_history_v1";
@@ -184,6 +190,9 @@ function TypingIndicator() {
 
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
 export default function Chatbot() {
+  const pathname = usePathname() ?? "";
+  const hidden = HIDDEN_ON.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
   const [isOpen, setIsOpen] = useState(false);
   const [showNudge, setShowNudge] = useState(false);
   const [ttsOn, setTtsOn] = useState(false);
@@ -262,6 +271,8 @@ export default function Chatbot() {
       window.speechSynthesis.speak(u);
     } catch { /* TTS unsupported — ignore */ }
   }, [messages, ttsOn, isLoading]);
+
+  if (hidden) return null;
 
   const openChat = () => {
     setIsOpen(true);

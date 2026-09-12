@@ -30,8 +30,11 @@ const getMessage = (p: Promo) =>
 // advertising itself long after it had been disabled.
 const SLIDE_DURATION = 5000; // ms per slide
 
-// Staff tools are not the shop window. Anything under these paths never shows it.
-const HIDDEN_ON = ["/admin"];
+// Staff tools are not the shop window, and Aero Solutions is a different
+// business entirely (software/web dev, not parking) — the parking promo
+// banner has no business showing on its pages. Anything under these paths
+// never shows it.
+const HIDDEN_ON = ["/admin", "/aero-solutions"];
 
 export default function PromoBanner() {
   // usePathname can be null while the router settles, so treat that as "unknown"
