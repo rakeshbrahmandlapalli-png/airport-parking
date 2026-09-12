@@ -126,7 +126,7 @@ export default function AeroSolutions() {
         <section className={styles.sectionFirst}>
           <div className={styles.dial} aria-hidden="true" />
           <span className={styles.eyebrow}>Software · Web Apps · Business Tools · Games</span>
-          <h1>I build the software your business actually needs — not a template with your logo on it.</h1>
+          <h1>We build the software your business actually needs — not a template with your logo on it.</h1>
           <p className={styles.lede}>
             A small team of four, real code. Ordering systems with admin panels behind them, booking flows,
             internal tools, business sites, and the odd game — built around how your business actually runs,
