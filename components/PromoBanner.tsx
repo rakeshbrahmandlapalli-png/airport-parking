@@ -34,7 +34,7 @@ const SLIDE_DURATION = 5000; // ms per slide
 // business entirely (software/web dev, not parking) — the parking promo
 // banner has no business showing on its pages. Anything under these paths
 // never shows it.
-const HIDDEN_ON = ["/admin", "/aero-solutions"];
+const HIDDEN_ON = ["/admin", "/aeroone", "/aero-solutions"];
 
 export default function PromoBanner() {
   // usePathname can be null while the router settles, so treat that as "unknown"

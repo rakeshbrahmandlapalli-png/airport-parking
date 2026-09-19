@@ -16,7 +16,7 @@ import type { Message, ToolInvocation } from "ai";
 // This is the "Aero" parking concierge specifically — it has no business on
 // Aero Solutions' pages, which are a different business (software/web dev),
 // not parking. Same convention as PromoBanner's HIDDEN_ON.
-const HIDDEN_ON = ["/aero-solutions"];
+const HIDDEN_ON = ["/aeroone", "/aero-solutions"];
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const STORAGE_KEY = "aero_chat_history_v1";

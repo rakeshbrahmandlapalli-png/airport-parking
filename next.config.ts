@@ -50,6 +50,10 @@ const nextConfig: NextConfig = {
   },
   // Don't leak the framework version in response headers.
   poweredByHeader: false,
+  // The software business page moved from /aero-solutions to /aeroone (its trading name is now AeroOne).
+  async redirects() {
+    return [{ source: "/aero-solutions", destination: "/aeroone", permanent: true }];
+  },
   async headers() {
     return [
       {

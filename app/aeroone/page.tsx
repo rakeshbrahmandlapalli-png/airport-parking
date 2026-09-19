@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Unbounded, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
-import styles from "./aero-solutions.module.css";
+import styles from "./aeroone.module.css";
 import MailCta from "./MailCta";
 
 const unbounded = Unbounded({
@@ -24,14 +24,14 @@ export const metadata: Metadata = {
   title: "AeroOne — software, web apps and games",
   description:
     "AeroOne builds web apps, business software, mobile-friendly tools and games for small and growing businesses. A four-person team, real code, no templates.",
-  alternates: { canonical: "/aero-solutions" },
+  alternates: { canonical: "/aeroone" },
   openGraph: {
     type: "website",
     siteName: "AeroOne",
     title: "AeroOne — software, web apps and games",
     description:
       "Web apps, business software, mobile-friendly tools and games for small and growing businesses.",
-    url: "https://www.aeroparkdirect.co.uk/aero-solutions",
+    url: "https://www.aeroparkdirect.co.uk/aeroone",
     locale: "en_GB",
   },
 };
@@ -122,7 +122,7 @@ const process = [
   { n: "04", title: "Launch & support", body: "It goes live, and we're still around after — this isn't a handoff-and-disappear job." },
 ];
 
-export default function AeroSolutions() {
+export default function AeroOne() {
   return (
     <div className={`${unbounded.variable} ${plexSans.variable} ${plexMono.variable} ${styles.page}`}>
       <header className={styles.header}>
@@ -143,7 +143,7 @@ export default function AeroSolutions() {
       <main className={styles.wrap}>
         <section className={styles.sectionFirst}>
           <div className={styles.dial} aria-hidden="true" />
-          <span className={styles.eyebrow}>Software · Web Apps · Business Tools · Games</span>
+          <span className={styles.eyebrow}>Automated Enterprise Resource Operations</span>
           <h1>We build the software your business actually needs — not a template with your logo on it.</h1>
           <p className={styles.lede}>
             A small team of four, real code — built around how your business actually runs, not how a
