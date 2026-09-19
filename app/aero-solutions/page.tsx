@@ -21,20 +21,31 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Aero Solutions — software, web apps and games",
+  title: "AeroOne — software, web apps and games",
   description:
-    "Aero Solutions builds web apps, business software, mobile-friendly tools and games for small and growing businesses. A four-person team, real code, no templates.",
+    "AeroOne builds web apps, business software, mobile-friendly tools and games for small and growing businesses. A four-person team, real code, no templates.",
   alternates: { canonical: "/aero-solutions" },
   openGraph: {
     type: "website",
-    siteName: "Aero Solutions",
-    title: "Aero Solutions — software, web apps and games",
+    siteName: "AeroOne",
+    title: "AeroOne — software, web apps and games",
     description:
       "Web apps, business software, mobile-friendly tools and games for small and growing businesses.",
     url: "https://www.aeroparkdirect.co.uk/aero-solutions",
     locale: "en_GB",
   },
 };
+
+const products = [
+  {
+    title: "Aero Attendance",
+    body: "Staff attendance for teams that work on site. Staff clock in and out on their own phone, checked against the worksite. Managers see who is on shift, late starts and no-shows, breaks, rotas and timesheets, and export to CSV. Works as a home-screen app, with no app store. One app for every client: each company’s data is kept apart by the database itself, and we test that on every change.",
+    tag: "Product · Live",
+    live: true,
+    href: "https://aero-attendance.vercel.app/demo",
+    cta: "Try the demo",
+  },
+];
 
 const services = [
   {
@@ -117,8 +128,9 @@ export default function AeroSolutions() {
       <header className={styles.header}>
         <div className={styles.wrap}>
           <nav className={styles.nav}>
-            <div className={styles.logo}>AERO<b>·</b>SOLUTIONS</div>
+            <div className={styles.logo}>AERO<b>·</b>ONE</div>
             <div className={styles.navlinks}>
+              <a href="#products">Products</a>
               <a href="#work">Work</a>
               <a href="#services">Services</a>
               <a href="#process">Process</a>
@@ -140,6 +152,33 @@ export default function AeroSolutions() {
           <div className={styles.heroCtas}>
             <a className={styles.btnPrimary} href="#work">See the work</a>
             <MailCta className={styles.btnGhost}>info@aeroparkdirect.co.uk</MailCta>
+          </div>
+        </section>
+
+        <section id="products" className={styles.section}>
+          <div className={styles.secHead}>
+            <span className={styles.kicker}>Products</span>
+            <h2>Software we&rsquo;ve built once, and offer to other businesses.</h2>
+          </div>
+          <div className={styles.work}>
+            {products.map((p) => (
+              <a
+                className={styles.workItem}
+                href={p.href}
+                target="_blank"
+                rel="noopener"
+                key={p.title}
+              >
+                <div className={styles.workLeft}>
+                  <h3>{p.title}</h3>
+                  <p>{p.body}</p>
+                </div>
+                <div className={styles.workMeta}>
+                  <span className={`${styles.tag} ${p.live ? styles.tagLive : ""}`}>{p.tag}</span>
+                  <span className={styles.arrow} aria-label={p.cta}>↗</span>
+                </div>
+              </a>
+            ))}
           </div>
         </section>
 
@@ -232,9 +271,9 @@ export default function AeroSolutions() {
 
       <footer className={styles.footer}>
         <div className={`${styles.wrap} ${styles.fbar}`}>
-          <div className={styles.fmono}>AERO&nbsp;SOLUTIONS</div>
+          <div className={styles.fmono}>AERO&nbsp;ONE</div>
           <p className={styles.legal}>
-            Aero Solutions is a trading name of AeroPark Direct Ltd, company no. 17211973, registered in
+            AeroOne is a trading name of AeroPark Direct Ltd, company no. 17211973, registered in
             England &amp; Wales. <Link href="/">AeroPark Direct</Link> is our own airport parking booking service.
           </p>
         </div>
