@@ -1,5 +1,6 @@
 import { logger } from "@/app/lib/logger";
 import { AGENT_NUMBER } from "@/app/lib/messageTemplates";
+import { detectAirport, instructionsFor, terminalKeyFor, operatesAt, AIRPORT_NAME } from "@/app/lib/airport";
 import { Resend } from "resend";
 import { createClient } from "@supabase/supabase-js";
 import {
@@ -224,6 +225,7 @@ export function buildDirectionsUrl(dest: Destination, companyName: string, airpo
  */
 async function resolveCompany(booking: any, passedCompany: any): Promise<any> {
   if (passedCompany) return passedCompany;
+  const code = detectAirport(booking?.airport);
 
   logger.warn("⚠️ Mailer: company object missing — fetching from DB.");
 
@@ -237,13 +239,17 @@ async function resolveCompany(booking: any, passedCompany: any): Promise<any> {
       if (data) return data;
     }
 
-    // Last-resort fallback for test bookings
+    // Last-resort fallback for test bookings. "Airport Parking Bay" is a LUTON
+    // operator, so this used to hand a Heathrow booking Luton instructions and a
+    // Luton phone number. Only ever use it when it serves the booking's airport.
     const { data } = await supabase
       .from("companies")
       .select("*")
       .ilike("name", "%Airport Parking Bay%")
       .maybeSingle();
-    return data ?? null;
+    if (data && operatesAt(data, code)) return data;
+    logger.error(`resolveCompany: booking ${booking?.booking_ref} has no operator and no safe fallback for ${code ?? "an unknown airport"}`);
+    return null;
   } catch (e) {
     logger.error("Company self-repair failed:", e);
     return null;
@@ -263,32 +269,40 @@ export async function sendBookingReceipt(
   try {
     const company = await resolveCompany(booking, passedCompany);
 
-    const isLuton = booking.airport?.toLowerCase().includes("luton");
+    // Which airport, proved from the booking rather than assumed. Anything that
+    // is not Luton used to be treated as Heathrow, so a blank or mistyped field
+    // sent Luton customers Heathrow directions.
+    const code = detectAirport(booking.airport);
+    const isLuton = code === "LTN";
+    if (!code) {
+      logger.error(`sendBookingReceipt: booking ${booking.booking_ref} has an unrecognised airport ${JSON.stringify(booking.airport)} — operator instructions withheld`);
+    }
 
-    // Terminal lookup
-    const terminalKey = str(booking.terminal, isLuton ? "Main Terminal" : "Terminal 2");
-    const terminalInfo = company?.terminal_data?.[terminalKey];
+    // Terminal lookup. No blind "Terminal 2" for Heathrow: reading the wrong
+    // terminal's address is the same mistake in a smaller font.
+    const terminalKey = terminalKeyFor(booking.terminal, code);
+    const terminalInfo = terminalKey ? company?.terminal_data?.[terminalKey] : undefined;
 
-    // Instructions — FIX: canonicalised field names in priority order
-    const arrivalInstructions = isLuton
-      ? (company?.on_arrival_ltn || company?.on_arrival || "Please call the driver 20 minutes before arrival.")
-      : (company?.on_arrival_lhr || company?.on_arrival || "Please call the driver 20 minutes before arrival.");
-
-    const returnInstructions = isLuton
-      ? (company?.on_return_ltn || company?.on_return || "Call dispatch after collecting your luggage.")
-      : (company?.on_return_lhr || company?.on_return || "Call dispatch after collecting your luggage.");
+    // Instructions, only ever the ones proved to belong to this airport.
+    const arrival = instructionsFor(company, code, "arrival");
+    const ret = instructionsFor(company, code, "return");
+    for (const r of [arrival, ret]) {
+      if (r.warning) logger.error(`sendBookingReceipt: booking ${booking.booking_ref} — ${r.warning}`);
+    }
+    const arrivalInstructions = arrival.text;
+    const returnInstructions = ret.text;
 
     // Address & map — SERVICE-AWARE + embed-safe (see MAP / DIRECTIONS ENGINE).
     // Meet & Greet pins the terminal; Park & Ride pins the off-airport compound.
     // buildDirectionsUrl NEVER returns an iframe embed url, so the button always
     // opens real turn-by-turn directions.
     const destination = resolveDestination(str(booking.service_type, "Meet & Greet"), company, terminalInfo);
-    const displayAddress  = destination.address || (isLuton ? "London Luton Airport" : "London Heathrow Airport");
+    const displayAddress  = destination.address || (code ? AIRPORT_NAME[code] : "");
     const displayPostcode = destination.postcode;
     const mapsLink = buildDirectionsUrl(
       destination,
       str(company?.name, "Airport Parking"),
-      str(booking.airport, isLuton ? "Luton Airport" : "Heathrow Airport"),
+      str(booking.airport, code ? AIRPORT_NAME[code] : ""),
     );
 
     // Phones — FIX: use canonical db field names (phone_number / phone_number_2)

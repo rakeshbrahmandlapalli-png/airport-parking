@@ -11,6 +11,8 @@
  * segment size from 160 to 70 characters and roughly doubles the cost.
  */
 
+import { detectAirport, instructionsFor, operatesAt } from "@/app/lib/airport";
+
 export const REVIEW_LINK = "https://uk.trustpilot.com/evaluate/aeroparkdirect.co.uk";
 export const AGENT_NUMBER = "07868 277648";
 
@@ -108,7 +110,7 @@ const firstName = greetingName;
 const shortDate = (d?: string) =>
   d ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) : "TBC";
 
-const isLutonAirport = (airport?: string) => !!airport?.toLowerCase().includes("luton");
+const isLutonAirport = (airport?: string) => detectAirport(airport) === "LTN";
 
 /** "07762569061" -> "07762 569061". Anything else is left as typed. */
 export function prettyPhone(n: string): string {
@@ -160,6 +162,9 @@ export function plainText(raw: unknown): string {
  * entry; Park & Ride is the operator's compound. Short enough for one segment.
  */
 export function placeFor(company: any, b: MessageBooking): string {
+  // An operator that does not serve this airport must never name a place: that
+  // is how someone drives to the wrong one.
+  if (!operatesAt(company, detectAirport(b.airport))) return "";
   const isParkRide = String(company?.category || "").toLowerCase().includes("park");
   if (isParkRide) {
     const addr = plainText(company?.address);
@@ -183,18 +188,17 @@ export function callAheadMinutes(company: any, isLuton: boolean): number | null 
   return n >= 5 && n <= 120 ? n : null;
 }
 
-/** Operator's on-arrival wording, airport-specific with sensible fallbacks. */
+/**
+ * Operator's on-arrival wording for a given airport. Never falls through to the
+ * other airport's text: see app/lib/airport.ts for why that matters.
+ */
 export function arrivalText(isLuton: boolean, company: any): string {
-  return isLuton
-    ? company?.on_arrival_ltn || company?.on_arrival || "Please call your parking provider 20 minutes before you arrive."
-    : company?.on_arrival_lhr || company?.on_arrival || "Please call your parking provider 20 minutes before you arrive.";
+  return instructionsFor(company, isLuton ? "LTN" : "LHR", "arrival").text;
 }
 
-/** Operator's on-return wording, airport-specific with sensible fallbacks. */
+/** Operator's on-return wording, under the same rule. */
 export function returnText(isLuton: boolean, company: any): string {
-  return isLuton
-    ? company?.on_return_ltn || company?.on_return || "Please call your parking provider after collecting your luggage."
-    : company?.on_return_lhr || company?.on_return || "Please call your parking provider after collecting your luggage.";
+  return instructionsFor(company, isLuton ? "LTN" : "LHR", "return").text;
 }
 
 // ── Templates ───────────────────────────────────────────────────────────────
@@ -214,6 +218,9 @@ export function missingFlightBody(b: MessageBooking): string {
  * numbers, otherwise our number for bookings we hold ourselves.
  */
 export function dropoffDayBody(b: MessageBooking, company: any | null): string {
+  // Treat an operator that does not serve this booking's airport as no operator
+  // at all: our own number is always better than another airport's directions.
+  if (company && !operatesAt(company, detectAirport(b.airport))) company = null;
   if (!company) {
     return `AeroPark Direct: drop-off day, ref ${b.booking_ref}. When you arrive, call ${AGENT_NUMBER} and we will meet you to take your car. Full details are in your email.`;
   }
@@ -230,6 +237,7 @@ export function dropoffDayBody(b: MessageBooking, company: any | null): string {
 
 /** Return morning. Same operator-aware rule as drop-off. */
 export function returnDayBody(b: MessageBooking, company: any | null): string {
+  if (company && !operatesAt(company, detectAirport(b.airport))) company = null;
   if (!company) {
     return `AeroPark Direct: return day, ref ${b.booking_ref}. Once you have collected your luggage, call ${AGENT_NUMBER} and your car and parking ticket will be ready.`;
   }
