@@ -119,6 +119,34 @@ export function instructionsFor(
 }
 
 /**
+ * The operators that may be assigned to a booking at this airport.
+ *
+ * The admin dropdowns used to list every operator, which is how a Luton booking
+ * was handed to the Heathrow operator. An unknown airport returns everything
+ * rather than an empty list: better to let the office choose than to offer
+ * nothing at all.
+ */
+export function assignableTo<T extends { is_active?: boolean }>(companies: T[], code: AirportCode | null): T[] {
+  const live = (companies || []).filter((c) => c.is_active !== false);
+  return code ? live.filter((c) => operatesAt(c, code)) : live;
+}
+
+/**
+ * A name the office can actually tell apart. "AeroPark Exclusive" exists three
+ * times — Luton Meet & Greet, Heathrow Meet & Greet, Heathrow Park & Ride — and
+ * all three read identically in a dropdown. Only duplicated names are qualified,
+ * so the common case stays short.
+ */
+export function operatorLabel(company: any, all: any[]): string {
+  const name = String(company?.name ?? "").trim() || "Unnamed operator";
+  const sameName = (all || []).filter((c) => String(c?.name ?? "").trim() === name);
+  if (sameName.length < 2) return name;
+  const where = airportsOf(company).join("/") || "no airport";
+  const what = String(company?.category ?? "").replace("meet-greet", "Meet & Greet").replace("park-ride", "Park & Ride");
+  return `${name} — ${where}${what ? ` ${what}` : ""}`;
+}
+
+/**
  * The terminal key to read from terminal_data. Only defaults where the default
  * is safe: Luton has one terminal, Heathrow has five, so a Heathrow booking
  * with no terminal gets no terminal rather than being sent to Terminal 2.

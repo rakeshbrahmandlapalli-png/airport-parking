@@ -13,6 +13,7 @@ import {
   MESSAGE_TEMPLATES, renderTemplate, smsInfo, toWhatsAppNumber,
   type TemplateId,
 } from "@/app/lib/messageTemplates";
+import { detectAirport, operatesAt, assignableTo, operatorLabel, AIRPORT_NAME } from "@/app/lib/airport";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -237,6 +238,17 @@ function DashboardContent() {
     try {
       const updatedCompanyId = editingBooking?.company_id === "ALL" ? null : (editingBooking?.company_id || null);
 
+      // Changing the airport on a booking that already has a provider can leave
+      // the two disagreeing, and the customer is then told to drive to whichever
+      // airport the provider serves. Refuse before it reaches the database.
+      const editCode = detectAirport(editingBooking?.airport);
+      const editComp = updatedCompanyId ? companies.find((c) => c.id === updatedCompanyId) : null;
+      if (editComp && editCode && !operatesAt(editComp, editCode)) {
+        notify("error", `${editComp.name} does not operate at ${AIRPORT_NAME[editCode]}. Change the provider or the airport before saving.`);
+        setIsSaving(false);
+        return;
+      }
+
       const { error } = await supabase.from('bookings').update({
         full_name: editingBooking?.full_name || null,
         email: editingBooking?.email || null,
@@ -435,6 +447,14 @@ function DashboardContent() {
     if (!companyId) { notify("error", "Pick a provider first."); return; }
     const comp = companies.find((c) => c.id === companyId);
     if (!comp) { notify("error", "Provider not found."); return; }
+    // The dropdown is filtered, but a stale selection or an older booking can
+    // still carry a provider from the other airport. Refuse it here too: this is
+    // the call that emails the operator and changes what the customer is told.
+    const code = detectAirport(booking.airport);
+    if (code && !operatesAt(comp, code)) {
+      notify("error", `${comp.name} does not operate at ${AIRPORT_NAME[code]}. Assigning them would send this customer to the wrong airport.`);
+      return;
+    }
     askConfirm({
       title: "Assign & Notify Provider",
       body: `Assign ${booking.booking_ref} to ${comp.name} and email them the job${comp.email ? ` at ${comp.email}` : " (no operator email set — will go to info@)"}?`,
@@ -731,6 +751,19 @@ function DashboardContent() {
     return match ? match.name : "AeroPark Direct";
   };
 
+  /**
+   * A booking already saved with a provider from the other airport. The
+   * dropdowns now prevent new ones, but bookings made before that are still in
+   * the table, and nothing showed them.
+   */
+  const airportMismatch = (b: any): string | null => {
+    if (!b?.company_id) return null;
+    const comp = companies.find((c) => c.id === b.company_id);
+    const code = detectAirport(b.airport);
+    if (!comp || !code || operatesAt(comp, code)) return null;
+    return `${comp.name} does not operate at ${AIRPORT_NAME[code]}`;
+  };
+
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "TBC";
     // Parse YYYY-MM-DD as a LOCAL date to avoid UTC day-shift
@@ -986,6 +1019,11 @@ function DashboardContent() {
               {detailRow("Terminal", b.terminal)}
               {detailRow("Flight", b.flight_number)}
             </div>
+            {airportMismatch(b) && (
+              <p className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] font-bold text-amber-300">
+                Wrong airport: {airportMismatch(b)}. Reassign before this customer is told where to drive.
+              </p>
+            )}
           </div>
 
           {/* COMMERCIAL */}
@@ -1006,8 +1044,8 @@ function DashboardContent() {
                   className="flex-1 bg-[#0F1523] border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-bold text-white outline-none focus:border-blue-500"
                 >
                   <option value="">— Select provider —</option>
-                  {companies.filter((c) => c.is_active).map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}{c.email ? "" : " (no email)"}</option>
+                  {assignableTo(companies, detectAirport(b.airport)).map((c: any) => (
+                    <option key={c.id} value={c.id}>{operatorLabel(c, companies)}{c.email ? "" : " (no email)"}</option>
                   ))}
                 </select>
                 <button
@@ -1347,7 +1385,7 @@ function DashboardContent() {
                           </div>
                         </div>
                         <div className="text-[10px] text-zinc-600 mt-1 tabular-nums">
-                          {b.airport?.includes("Luton") ? "LTN" : b.airport?.includes("Heathrow") ? "LHR" : "—"}
+                          {detectAirport(b.airport) ?? "—"}
                           {b.service_type ? ` · ${b.service_type.length > 15 ? b.service_type.slice(0, 14) + "…" : b.service_type}` : ""}
                         </div>
                       </td>
@@ -1357,6 +1395,11 @@ function DashboardContent() {
                         <div className="text-[12px] font-semibold text-zinc-300 truncate leading-snug">
                           {getCompanyName(b.company_id)}
                         </div>
+                        {airportMismatch(b) && (
+                          <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-amber-400 mt-0.5" title={airportMismatch(b) ?? ""}>
+                            <AlertCircle className="w-2.5 h-2.5" />wrong airport
+                          </span>
+                        )}
                         {!b.company_id && (
                           <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-amber-500 mt-0.5">
                             <AlertCircle className="w-2.5 h-2.5" />needs routing
@@ -1695,7 +1738,7 @@ function DashboardContent() {
                       <div className="relative">
                         <select value={payLink.company_id} onChange={(e) => setPayLink({ ...payLink, company_id: e.target.value })} className={`${inputStyle} appearance-none cursor-pointer pr-10`}>
                           <option value="ALL">Unassigned (AeroPark Direct)</option>
-                          {companies.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                          {assignableTo(companies, detectAirport(payLink.airport)).map((c: any) => <option key={c.id} value={c.id}>{operatorLabel(c, companies)}</option>)}
                         </select>
                         <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                       </div>
@@ -1840,7 +1883,7 @@ function DashboardContent() {
                     <div className="relative">
                       <select value={newBooking.company_id || ''} onChange={(e) => setNewBooking({...newBooking, company_id: e.target.value})} className={selectStyle}>
                         <option value="ALL">Aero Direct (Internal)</option>
-                        {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        {assignableTo(companies, detectAirport(newBooking.airport)).map((c: any) => <option key={c.id} value={c.id}>{operatorLabel(c, companies)}</option>)}
                       </select>
                       <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                     </div>
@@ -1951,7 +1994,7 @@ function DashboardContent() {
                   <div className="relative">
                     <select value={editingBooking?.company_id || 'ALL'} onChange={(e) => setEditingBooking({...editingBooking, company_id: e.target.value === 'ALL' ? null : e.target.value})} className={selectStyle}>
                       <option value="ALL">Aero Direct</option>
-                      {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      {assignableTo(companies, detectAirport(editingBooking?.airport)).map((c: any) => <option key={c.id} value={c.id}>{operatorLabel(c, companies)}</option>)}
                     </select>
                     <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                   </div>
