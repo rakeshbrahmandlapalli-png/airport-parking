@@ -2,6 +2,7 @@ import { logger } from "@/app/lib/logger";
 import twilio from "twilio";
 import {
   toUKE164,
+  isSendableNumber,
   bookingConfirmationBody,
   missingFlightBody,
   dropoffDayBody,
@@ -31,6 +32,14 @@ function getClient(): { client: ReturnType<typeof twilio>; fromNumber: string } 
 export async function sendSMS(to: string, body: string): Promise<{ success: boolean; sid?: string; error?: string }> {
   const ctx = getClient();
   if (!ctx) return { success: false, error: "Twilio uninitialized" };
+  // A malformed number used to be handed to Twilio anyway and rejected as 21211
+  // on every single message for that booking, with nothing surfacing it. Say so
+  // once, plainly, so the admin can correct the number.
+  if (!isSendableNumber(to)) {
+    const reason = `Not a valid phone number: ${JSON.stringify(String(to ?? ""))}. Correct it on the booking and send again.`;
+    logger.error(`[TWILIO SKIPPED] ${reason}`);
+    return { success: false, error: reason };
+  }
   try {
     const response = await ctx.client.messages.create({ from: ctx.fromNumber, to: toUKE164(to), body });
     logger.info(`[TWILIO SUCCESS] SMS dispatched: ${response.sid}`);

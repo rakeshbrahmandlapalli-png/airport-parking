@@ -1,7 +1,11 @@
 import { logger } from "@/app/lib/logger";
+import { AGENT_NUMBER } from "@/app/lib/messageTemplates";
 import { Resend } from "resend";
 import { createClient } from "@supabase/supabase-js";
-import { renderReceiptHtml, renderReceiptText, type ReceiptHtmlParams } from "@/app/lib/receiptEmail";
+import {
+  renderReceiptHtml, renderReceiptText, emailShell, emailSection, paragraph,
+  detailTable, noteBox, sectionHeading, emailButton as buildEmailButton, type ReceiptHtmlParams,
+} from "@/app/lib/receiptEmail";
 
 // ─── CLIENTS ──────────────────────────────────────────────────────────────────
 
@@ -288,7 +292,11 @@ export async function sendBookingReceipt(
     );
 
     // Phones — FIX: use canonical db field names (phone_number / phone_number_2)
-    const phone1     = str(company?.phone_number,   "07397705005");
+    // If the operator has no number of their own (AeroPark Exclusive assigns a
+    // partner later), fall back to OUR office line. It used to fall back to a
+    // specific Luton operator's number, so a Heathrow customer was told to ring
+    // a company with no record of them.
+    const phone1     = str(company?.phone_number,   AGENT_NUMBER);
     const phone2     = str(company?.phone_number_2, "");
     const phone1Link = toTelLink(phone1);
     const phone2Link = toTelLink(phone2);
@@ -373,19 +381,28 @@ export async function sendAmendmentAlerts(booking: any, company: any): Promise<v
     await resend.emails.send({
       from:    "AeroPark System <info@aeroparkdirect.co.uk>",
       to:      ["info@aeroparkdirect.co.uk"],
-      subject: `🚨 BOOKING AMENDED: ${booking.booking_ref}`,
-      html: `
-        <div style="font-family:sans-serif;padding:20px;max-width:600px;margin:0 auto;">
-          <h2 style="color:#eab308;margin-bottom:10px;">⚠️ Action Required: Booking Amended</h2>
-          <p>Customer <strong>${escH(booking.full_name)}</strong> just changed their dates.</p>
-          <div style="background:#f8fafc;padding:20px;border-radius:10px;border:1px solid #e2e8f0;margin-top:20px;">
-            <p><strong>Ref:</strong> ${escH(booking.booking_ref)}</p>
-            <p><strong>Vehicle:</strong> ${escH(booking.license_plate)}</p>
-            <p style="color:#2563eb;"><strong>New Drop-off:</strong> ${dropDateFmt} @ ${str(booking.dropoff_time, "TBC")}</p>
-            <p style="color:#2563eb;"><strong>New Return:</strong>   ${pickDateFmt} @ ${str(booking.pickup_time,  "TBC")}</p>
-          </div>
-        </div>
-      `,
+      subject: `Booking amended ${booking.booking_ref}: new drop-off ${dropDateFmt}`,
+      html: emailShell({
+        title: `Booking amended ${escH(booking.booking_ref)}`,
+        kicker: "Amendment",
+        heading: "Booking amended: tell the operator",
+        preheader: `${escH(booking.full_name)} changed their dates. New drop-off ${dropDateFmt}.`,
+        internal: true,
+        bodyHtml:
+          emailSection(
+            paragraph(`<strong>${escH(booking.full_name)}</strong> changed their dates. The customer has been sent an updated confirmation.`) +
+            detailTable([
+              ["Reference", escH(booking.booking_ref)],
+              ["Registration", escH(booking.license_plate)],
+              ["Operator", escH(company?.name, "unassigned")],
+              ["New drop-off", `${dropDateFmt} at ${str(booking.dropoff_time, "TBC")}`],
+              ["New return", `${pickDateFmt} at ${str(booking.pickup_time, "TBC")}`],
+            ]),
+          ) +
+          emailSection(
+            noteBox("Next step", "The operator is holding the original slot. Confirm the new dates with them, or the car arrives on a day nobody is expecting it."),
+          ),
+      }),
     });
 
     await sendBookingReceipt(booking, company, true);
@@ -434,95 +451,22 @@ export async function sendReviewRequest(
 // customer to Trustpilot. The CTA is a single, full-width, unmissable button.
 
 export function buildReviewHtml(firstName: string, bookingRef: string): string {
-  const stars = "★★★★★";
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <meta name="x-apple-disable-message-reformatting">
-  <title>How was your experience?</title>
-</head>
-<body style="margin:0;padding:0;background-color:#eef2f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">Your car's home safe — a 30-second review helps another traveller park with confidence.</div>
-
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#eef2f7;">
-  <tr>
-    <td align="center" style="padding:32px 16px;">
-      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%;background-color:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 10px 30px rgba(15,23,42,0.10);">
-
-        <!-- Accent bar -->
-        <tr><td style="height:5px;background-color:#2563eb;background-image:linear-gradient(90deg,#2563eb,#3b82f6,#10b981);font-size:0;line-height:0;">&nbsp;</td></tr>
-
-        <!-- Header -->
-        <tr>
-          <td style="background-color:#0b1220;padding:34px 32px 30px;text-align:center;">
-            <p style="margin:0;font-size:24px;font-weight:900;letter-spacing:-0.5px;color:#ffffff;">AEROPARK<span style="color:#3b82f6;">DIRECT</span></p>
-            <p style="margin:7px 0 0;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#64748b;font-weight:700;">Premium Airport Parking</p>
-          </td>
-        </tr>
-
-        <!-- Body -->
-        <tr>
-          <td style="padding:38px 32px 8px;text-align:center;">
-            <p style="margin:0 0 14px;font-size:30px;">🚗 ✈️</p>
-            <h1 style="margin:0 0 12px;font-size:24px;font-weight:900;color:#0f172a;">Welcome back, ${escapeHtml(firstName)}.</h1>
-            <p style="margin:0;font-size:15px;line-height:1.6;color:#475569;">
-              Your car is home safe and your trip is complete. It would mean a great deal if you'd share how we did —
-              your feedback helps the next traveller park with total confidence.
-            </p>
-          </td>
-        </tr>
-
-        <!-- Stars -->
-        <tr>
-          <td align="center" style="padding:22px 32px 0;">
-            <div style="font-size:34px;letter-spacing:6px;color:#00b67a;line-height:1;">${stars}</div>
-            <p style="margin:10px 0 0;font-size:12px;font-weight:700;color:#64748b;">Takes about 30 seconds · verified on Trustpilot</p>
-          </td>
-        </tr>
-
-        <!-- CTA -->
-        <tr>
-          <td style="padding:24px 32px 8px;">
-            <a href="${TRUSTPILOT_REVIEW_URL}" style="display:block;text-align:center;background-color:#00b67a;color:#ffffff;text-decoration:none;padding:20px 24px;border-radius:14px;font-weight:900;font-size:17px;letter-spacing:0.3px;box-shadow:0 8px 20px rgba(0,182,122,0.35);">
-              ★ Leave a Review on Trustpilot
-            </a>
-            <p style="margin:14px 0 0;text-align:center;font-size:12px;color:#94a3b8;">
-              Or paste this link into your browser:<br>
-              <a href="${TRUSTPILOT_REVIEW_URL}" style="color:#2563eb;text-decoration:none;word-break:break-all;">${TRUSTPILOT_REVIEW_URL}</a>
-            </p>
-          </td>
-        </tr>
-
-        <!-- Soft service-recovery line -->
-        <tr>
-          <td style="padding:22px 32px 0;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;"><tr>
-              <td style="padding:18px;text-align:center;">
-                <p style="margin:0;font-size:13px;color:#475569;line-height:1.55;">
-                  Something not perfect? <a href="mailto:info@aeroparkdirect.co.uk?subject=Booking%20${encodeURIComponent(bookingRef)}" style="color:#2563eb;font-weight:700;text-decoration:none;">Tell us first</a> —
-                  we'll always try to put it right before you leave a review.
-                </p>
-              </td>
-            </tr></table>
-          </td>
-        </tr>
-
-        <!-- Footer -->
-        <tr>
-          <td style="padding:26px 32px 30px;text-align:center;">
-            <p style="margin:0 0 6px;font-size:11px;color:#94a3b8;font-weight:700;">Booking ${bookingRef} · Thank you for travelling with us</p>
-            <p style="margin:0;font-size:11px;color:#cbd5e1;">© ${new Date().getFullYear()} AeroPark Direct Ltd · Luton &amp; Heathrow</p>
-          </td>
-        </tr>
-
-      </table>
-    </td>
-  </tr>
-</table>
-</body>
-</html>`;
+  const name = firstName && firstName !== "there" ? firstName : "";
+  return emailShell({
+    title: "How was your experience?",
+    kicker: `Booking ${bookingRef}`,
+    heading: name ? `${name}, how did we go?` : "How did we go?",
+    preheader: `Your feedback on booking ${bookingRef} takes about a minute.`,
+    bodyHtml:
+      emailSection(
+        paragraph(`Your car is back with you and booking <strong>${escapeHtml(bookingRef)}</strong> is complete. Thank you for choosing AeroPark Direct.`) +
+        paragraph("We are a young company, so an honest review genuinely helps the next traveller decide which car park to trust. It takes about a minute, and we read every one.") +
+        buildEmailButton(TRUSTPILOT_REVIEW_URL, "Write a review"),
+      ) +
+      emailSection(
+        paragraph("If anything fell short, reply to this email instead and it comes straight to us. We would rather hear it from you and put it right."),
+      ),
+  });
 }
 
 // ─── SEND PROVIDER NOTIFICATION ───────────────────────────────────────────────
@@ -574,38 +518,44 @@ export async function sendProviderNotification(
     const { data, error } = await resend.emails.send({
       from:    "AeroPark Bookings <info@aeroparkdirect.co.uk>",
       to:      recipientEmail,
-      subject: `NEW BOOKING: ${booking.booking_ref} | ${str(booking.full_name)}`,
-      html: `
-        <div style="font-family:sans-serif;color:#333;max-width:600px;padding:20px;">
-          <h2 style="border-bottom:2px solid #2563eb;padding-bottom:10px;">New Parking Reservation</h2>
-          <table border="0" cellpadding="8" cellspacing="0" width="100%" style="border-collapse:collapse;">
-            <tr style="background-color:#f8fafc;"><td width="35%"><strong>Booking Ref:</strong></td><td>${booking.booking_ref}</td></tr>
-            <tr><td><strong>Status:</strong></td><td><span style="background-color:#dcfce7;color:#166534;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:bold;text-transform:uppercase;">${str(booking.status, "Confirmed")}</span></td></tr>
-            <tr style="background-color:#f8fafc;"><td><strong>Customer Name:</strong></td><td>${escH(booking.full_name)}</td></tr>
-            <tr><td><strong>Phone Number:</strong></td><td>${escH(booking.phone_number)}</td></tr>
-            <tr style="background-color:#f8fafc;"><td><strong>Car Details:</strong></td><td>${escH(booking.car_make)} (${escH(booking.car_color)})</td></tr>
-            <tr><td><strong>Registration:</strong></td><td><strong>${escH(booking.license_plate)}</strong></td></tr>
-            <tr style="background-color:#f8fafc;"><td><strong>Airport:</strong></td><td>${escH(booking.airport, "Luton Airport (LTN)")}</td></tr>
-            <tr><td><strong>Drop-off:</strong></td><td>${dropDate} at ${dropTime}</td></tr>
-            <tr style="background-color:#f8fafc;"><td><strong>Pick-up:</strong></td><td>${pickDate} at ${pickTime}</td></tr>
-            <tr><td><strong>Return Flight:</strong></td><td>${escH(booking.flight_number, "N/A")}</td></tr>
-            <tr style="background-color:#f8fafc;"><td><strong>Service Type:</strong></td><td>${escH(booking.service_type, company.name)}</td></tr>
-            <tr style="background-color:#f0fdf4;border-top:2px solid #10b981;"><td colspan="2"><strong style="color:#166534;">Payout Summary</strong></td></tr>
-            <tr style="background-color:#f0fdf4;"><td><strong>Parking Value:</strong></td><td><strong style="color:#15803d;font-size:16px;">£${parkingTotal}</strong></td></tr>
-            <tr style="background-color:#f0fdf4;"><td><strong>Our Commission Rate:</strong></td><td><strong style="color:#15803d;">${commissionPct}%</strong></td></tr>
-            <tr style="background-color:#f0fdf4;"><td><strong>Our Commission Deducted:</strong></td><td><strong style="color:#b91c1c;">−£${yourCommission.toFixed(2)}</strong></td></tr>
-            <tr style="background-color:#eff6ff;border-top:2px solid #2563eb;">
-              <td><strong>You Receive:</strong></td>
-              <td><strong style="color:#1e40af;font-size:18px;">£${operatorPayout.toFixed(2)}</strong></td>
-            </tr>
-          </table>
-          <p style="margin-top:30px;font-size:12px;color:#64748b;text-align:center;">
-            This email was generated automatically by AeroPark Direct. Please do not reply directly.
-          </p>
-        </div>
-      `,
+      replyTo: "info@aeroparkdirect.co.uk",
+      subject: `New booking ${booking.booking_ref}: ${str(booking.full_name)}, ${dropDate}`,
+      html: emailShell({
+        title: `New booking ${booking.booking_ref}`,
+        kicker: escapeHtml(company.name),
+        heading: "New parking reservation",
+        preheader: `${str(booking.full_name)}, ${escH(booking.license_plate)}, drop-off ${dropDate} at ${dropTime}.`,
+        internal: true,
+        bodyHtml:
+          emailSection(
+            paragraph(`Booking <strong>${escapeHtml(String(booking.booking_ref))}</strong> has been paid for and confirmed. Please add it to your board.`) +
+            detailTable([
+              ["Customer", escH(booking.full_name)],
+              ["Phone", escH(booking.phone_number)],
+              ["Vehicle", `${escH(booking.car_make, "")} ${escH(booking.car_color, "")}`.trim() || "Not given"],
+              ["Registration", escH(booking.license_plate)],
+              ["Airport", escH(booking.airport, "Luton Airport (LTN)")],
+              ["Terminal", escH(booking.terminal, "Not given")],
+              ["Drop-off", `${dropDate} at ${dropTime}`],
+              ["Pick-up", `${pickDate} at ${pickTime}`],
+              ["Return flight", escH(booking.flight_number, "Not given")],
+              ["Service", escH(booking.service_type, company.name)],
+            ]),
+          ) +
+          emailSection(
+            sectionHeading("Payout") +
+            detailTable([
+              ["Parking value", `£${parkingGross.toFixed(2)}`],
+              ["Our commission", `${commissionPct}%`],
+              ["Commission deducted", `-${`£${yourCommission.toFixed(2)}`}`],
+              ["You receive", `<span style="font-size:17px;">${`£${operatorPayout.toFixed(2)}`}</span>`],
+            ]),
+          ) +
+          emailSection(
+            paragraph("Questions about this booking? Reply to this email and it reaches the AeroPark Direct office."),
+          ),
+      }),
     });
-
     if (error) {
       logger.error("Resend error (sendProviderNotification):", error);
       return { success: false, error };
@@ -652,28 +602,33 @@ export async function sendCancellationAlerts(
     await resend.emails.send({
       from:    "AeroPark System <info@aeroparkdirect.co.uk>",
       to:      ["info@aeroparkdirect.co.uk"],
-      subject: `${insideWindow ? "LATE CANCELLATION" : "CANCELLED"} — ${escH(booking?.booking_ref)} (£${total})`,
-      html: `
-        <div style="font-family:sans-serif;padding:20px;max-width:600px;margin:0 auto;">
-          <h2 style="color:${insideWindow ? "#b45309" : "#dc2626"};margin-bottom:10px;">
-            ${insideWindow ? "Late cancellation — refund needs a decision" : "Refund needed"}
-          </h2>
-          <p><strong>${name}</strong> cancelled online. The booking is already marked cancelled.</p>
-          <div style="background:${insideWindow ? "#fffbeb" : "#fef2f2"};padding:20px;border-radius:10px;border:1px solid ${insideWindow ? "#fde68a" : "#fecaca"};margin-top:20px;">
-            <p style="margin:0 0 8px;"><strong>Ref:</strong> ${ref}</p>
-            <p style="margin:0 0 8px;"><strong>Amount:</strong> £${total}</p>
-            <p style="margin:0 0 8px;"><strong>Was due:</strong> ${dropDateFmt}</p>
-            <p style="margin:0 0 8px;"><strong>Operator:</strong> ${escH(company?.name, "unassigned")}</p>
-            <p style="margin:0;"><strong>Email:</strong> ${escH(booking?.email, "")}</p>
-          </div>
-          ${insideWindow
-            ? `<p style="margin-top:20px;color:#b45309;"><strong>This came in within 24 hours of drop-off.</strong>
-                 They have been told the refund is being reviewed and that you will reply
-                 within one working day. Decide, then refund in Stripe or email them.</p>`
-            : `<p style="margin-top:20px;color:#b91c1c;"><strong>Refund this in Stripe.</strong>
-                 They have been told it lands within 5 to 10 working days.</p>`}
-        </div>
-      `,
+      subject: `${insideWindow ? "LATE CANCELLATION" : "CANCELLED"} ${escH(booking?.booking_ref)}: refund £${total}`,
+      html: emailShell({
+        title: `Cancellation ${escH(booking?.booking_ref)}`,
+        kicker: insideWindow ? "Late cancellation" : "Cancellation",
+        heading: insideWindow ? "Late cancellation: the refund needs a decision" : "Cancelled: refund needed",
+        preheader: `${name} cancelled ${ref}. £${total} to refund.`,
+        internal: true,
+        bodyHtml:
+          emailSection(
+            paragraph(`<strong>${name}</strong> cancelled online. The booking is already marked cancelled.`) +
+            detailTable([
+              ["Reference", ref],
+              ["Amount", `£${total}`],
+              ["Was due", dropDateFmt],
+              ["Operator", escH(company?.name, "unassigned")],
+              ["Customer email", escH(booking?.email, "none on file")],
+            ]),
+          ) +
+          emailSection(
+            noteBox(
+              insideWindow ? "What you promised them" : "Next step",
+              insideWindow
+                ? `This came in within 24 hours of drop-off. They have been told the refund is being reviewed and that you will reply within one working day. Decide, then refund in Stripe or email them.`
+                : `Refund this in Stripe. They have been told it lands within 5 to 10 working days.`,
+            ),
+          ),
+      }),
     });
   } catch (err) {
     logger.error("sendCancellationAlerts (office) failed:", err);
@@ -688,22 +643,27 @@ export async function sendCancellationAlerts(
       await resend.emails.send({
         from:    "AeroPark Bookings <info@aeroparkdirect.co.uk>",
         to:      [providerEmail],
-        subject: `CANCELLED: ${escH(booking?.booking_ref)} | ${escH(booking?.full_name)}`,
-        html: `
-          <div style="font-family:sans-serif;color:#333;max-width:600px;padding:20px;">
-            <h2 style="border-bottom:2px solid #dc2626;padding-bottom:10px;">Booking Cancelled</h2>
-            <p>This car is <strong>no longer coming</strong>. Please free the space.</p>
-            <table border="0" cellpadding="8" cellspacing="0" width="100%" style="border-collapse:collapse;margin-top:10px;">
-              <tr style="background-color:#f8fafc;"><td width="35%"><strong>Booking Ref:</strong></td><td>${ref}</td></tr>
-              <tr><td><strong>Customer:</strong></td><td>${name}</td></tr>
-              <tr style="background-color:#f8fafc;"><td><strong>Registration:</strong></td><td><strong>${escH(booking?.license_plate)}</strong></td></tr>
-              <tr><td><strong>Car:</strong></td><td>${escH(booking?.car_make)} (${escH(booking?.car_color)})</td></tr>
-              <tr style="background-color:#f8fafc;"><td><strong>Was dropping off:</strong></td><td>${dropDateFmt} at ${str(booking?.dropoff_time, "TBC")}</td></tr>
-              <tr><td><strong>Was returning:</strong></td><td>${pickDateFmt} at ${str(booking?.pickup_time, "TBC")}</td></tr>
-            </table>
-            <p style="margin-top:20px;color:#64748b;font-size:14px;"><em>Please update your dispatch board.</em></p>
-          </div>
-        `,
+        replyTo: "info@aeroparkdirect.co.uk",
+        subject: `Cancelled ${escH(booking?.booking_ref)}: ${escH(booking?.full_name)}, ${dropDateFmt}`,
+        html: emailShell({
+          title: `Cancelled ${escH(booking?.booking_ref)}`,
+          kicker: escapeHtml(String(company?.name ?? "")),
+          heading: "Booking cancelled",
+          preheader: `${escH(booking?.license_plate)} is no longer coming on ${dropDateFmt}.`,
+          internal: true,
+          bodyHtml:
+            emailSection(
+              paragraph("This car is <strong>no longer coming</strong>. Please free the space and update your board.") +
+              detailTable([
+                ["Reference", ref],
+                ["Customer", name],
+                ["Registration", escH(booking?.license_plate)],
+                ["Vehicle", `${escH(booking?.car_make, "")} ${escH(booking?.car_color, "")}`.trim() || "Not given"],
+                ["Was dropping off", `${dropDateFmt} at ${str(booking?.dropoff_time, "TBC")}`],
+                ["Was returning", `${pickDateFmt} at ${str(booking?.pickup_time, "TBC")}`],
+              ]),
+            ),
+        }),
       });
     } catch (err) {
       logger.error("sendCancellationAlerts (operator) failed:", err);
@@ -722,34 +682,34 @@ export async function sendCancellationAlerts(
     await resend.emails.send({
       from:    "AeroPark Direct <info@aeroparkdirect.co.uk>",
       to:      [to],
+      replyTo: "info@aeroparkdirect.co.uk",
       subject: insideWindow
         ? `Booking ${booking?.booking_ref} cancelled`
-        : `Booking ${booking?.booking_ref} cancelled — refund of £${total} on its way`,
-      html: `
-        <div style="font-family:sans-serif;padding:24px;max-width:600px;margin:0 auto;color:#0f172a;">
-          <h2 style="margin:0 0 6px;">Your booking is cancelled</h2>
-          <p style="margin:0 0 20px;color:#475569;">Reference ${ref}</p>
-          <p>Hi ${escH(first, "there")},</p>
-          <p>That is done — nothing further is needed from you, and you will not be
-             charged anything more.</p>
-          ${insideWindow
-            ? `<div style="background:#fffbeb;padding:20px;border-radius:10px;border:1px solid #fde68a;margin:20px 0;">
-                 <p style="margin:0 0 8px;"><strong>About your refund</strong></p>
-                 <p style="margin:0;color:#475569;">Because this came in within 24 hours of your
-                    drop-off, your refund of £${total} is being reviewed rather than issued
-                    automatically. We will email you about it within one working day.</p>
-               </div>`
-            : `<div style="background:#f8fafc;padding:20px;border-radius:10px;border:1px solid #e2e8f0;margin:20px 0;">
-                 <p style="margin:0 0 8px;"><strong>Refund:</strong> £${total}</p>
-                 <p style="margin:0;color:#475569;">Back to the card you paid with, normally within
-                    5 to 10 working days depending on your bank.</p>
-               </div>
-               <p>If it has not arrived by then, reply to this email and we will chase it.</p>`}
-          <p style="margin-top:24px;color:#64748b;font-size:13px;">
-            AeroPark Direct &middot; info@aeroparkdirect.co.uk
-          </p>
-        </div>
-      `,
+        : `Booking ${booking?.booking_ref} cancelled: refund of £${total} on its way`,
+      html: emailShell({
+        title: "Your booking is cancelled",
+        kicker: `Booking ${escH(booking?.booking_ref)}`,
+        heading: "Your booking is cancelled",
+        preheader: insideWindow
+          ? `Reference ${ref}. We will be in touch about your refund within one working day.`
+          : `Reference ${ref}. Your refund of £${total} is on its way.`,
+        bodyHtml:
+          emailSection(
+            paragraph(`Dear ${escH(first, "customer")}, your booking <strong>${ref}</strong> has been cancelled. Nothing further is needed from you, and you will not be charged anything more.`) +
+            (insideWindow
+              ? noteBox(
+                  "About your refund",
+                  `Because this came in within 24 hours of your drop-off, your refund of £${total} is being reviewed rather than issued automatically. We will email you about it within one working day.`,
+                )
+              : noteBox(
+                  `Refund of £${total}`,
+                  "This goes back to the card you paid with, normally within 5 to 10 working days depending on your bank. If it has not arrived by then, reply to this email and we will chase it.",
+                )),
+          ) +
+          emailSection(
+            paragraph("Sorry we will not be looking after your car this time. If your plans change, you can book again at <a href=\"https://www.aeroparkdirect.co.uk\" style=\"color:#0B1120;font-weight:700;\">aeroparkdirect.co.uk</a>."),
+          ),
+      }),
     });
   } catch (err) {
     logger.error("sendCancellationAlerts (customer) failed:", err);

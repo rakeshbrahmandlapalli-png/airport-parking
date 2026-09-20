@@ -104,6 +104,93 @@ const phoneLinks = (p: ReceiptHtmlParams): string => {
   return [one(p.phone1, p.phone1Link), p.phone2 ? one(p.phone2, p.phone2Link) : ""].filter(Boolean).join("&nbsp;&nbsp;or&nbsp;&nbsp;");
 };
 
+// ── Shared shell, so every email we send looks like the same company ─────────
+
+export const emailTokens = { INK, BODY, MUTED, RULE, PAPER, FONT, SITE };
+
+/** A bordered box used for the "important, but not the main point" note. */
+export function noteBox(label: string, text: string): string {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${RULE};background-color:#F9FAFB;"><tr><td style="padding:14px 16px;">
+  <p style="margin:0 0 4px;font-family:${FONT};font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${MUTED};">${esc(label)}</p>
+  <p style="margin:0;font-family:${FONT};font-size:14px;line-height:1.6;color:${BODY};">${esc(text)}</p>
+</td></tr></table>`;
+}
+
+/** Label/value rows. Pass already-escaped values. */
+export function detailTable(pairs: Array<[string, string]>): string {
+  const rows = pairs.filter(([, v]) => v !== "" && v != null);
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows
+    .map(([k, v], i) => detailRow(k, v, i === rows.length - 1))
+    .join("")}</table>`;
+}
+
+export function emailButton(href: string, label: string): string {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="background-color:${INK};border-radius:4px;"><a href="${esc(href)}" style="display:inline-block;padding:13px 24px;font-family:${FONT};font-size:14px;font-weight:700;color:#FFFFFF;text-decoration:none;">${esc(label)}</a></td></tr></table>`;
+}
+
+export function sectionHeading(t: string): string {
+  return heading(t);
+}
+
+export function paragraph(html: string): string {
+  return `<p style="margin:0 0 14px;font-family:${FONT};font-size:14px;line-height:1.65;color:${BODY};">${html}</p>`;
+}
+
+/**
+ * The frame every AeroPark email sits in: masthead, title, body, legal footer.
+ * `internal` drops the customer-facing legal footer for admin/operator mail.
+ */
+export function emailShell(o: {
+  title: string;
+  kicker: string;
+  heading: string;
+  bodyHtml: string;
+  preheader?: string;
+  internal?: boolean;
+}): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="x-apple-disable-message-reformatting">
+<title>${esc(o.title)}</title>
+<style>@media only screen and (max-width:620px){.px{padding-left:20px!important;padding-right:20px!important}.stack{display:block!important;width:100%!important}}</style>
+</head>
+<body style="margin:0;padding:0;background-color:${PAPER};">
+${o.preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">${esc(o.preheader)}</div>` : ""}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${PAPER};">
+<tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%;background-color:#FFFFFF;border:1px solid ${RULE};">
+<tr><td class="px" style="padding:24px 36px;border-bottom:3px solid ${INK};">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+    <td style="font-family:${FONT};font-size:20px;font-weight:700;color:${INK};">AeroPark Direct</td>
+    <td align="right" style="font-family:${FONT};font-size:12px;color:${MUTED};">${esc(o.kicker)}</td>
+  </tr></table>
+</td></tr>
+<tr><td class="px" style="padding:28px 36px 0;">
+  <h1 style="margin:0 0 16px;font-family:${FONT};font-size:24px;line-height:1.25;font-weight:700;color:${INK};">${esc(o.heading)}</h1>
+</td></tr>
+${o.bodyHtml}
+<tr><td class="px" style="padding:32px 36px 28px;">
+  <div style="border-top:1px solid ${RULE};padding-top:16px;font-family:${FONT};font-size:12px;line-height:1.6;color:${MUTED};">
+    ${o.internal
+      ? "Sent automatically by the AeroPark Direct booking system."
+      : "AeroPark Direct Ltd. Registered in England and Wales, company number 17211973. Registered office: 66 Paul Street, London EC2A 4NA."}
+  </div>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+}
+
+/** Wrap content in the shell's standard left/right padding. */
+export function emailSection(inner: string): string {
+  return `<tr><td class="px" style="padding:0 36px 24px;">${inner}</td></tr>`;
+}
+
 export function renderReceiptHtml(p: ReceiptHtmlParams): string {
   const b = p.booking || {};
   const ref = esc(b.booking_ref);

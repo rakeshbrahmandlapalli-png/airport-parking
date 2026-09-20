@@ -23,6 +23,7 @@ export type MessageBooking = {
   phone_number?: string;
   booking_ref?: string;
   airport?: string;
+  terminal?: string;
   dropoff_date?: string;
   dropoff_time?: string;
   pickup_date?: string;
@@ -40,12 +41,35 @@ export type MessageBooking = {
  */
 export function toUKE164(raw: string): string {
   const p = (raw || "").replace(/[^\d+]/g, "");
-  if (p.startsWith("+")) return p;
+  if (p.startsWith("+")) {
+    // A "+" was NOT proof of a good number. A UK mobile saved as "7572463446"
+    // and later given a "+" became "+7572463446" — read as Russia (+7), which
+    // Twilio rejected on every message for that booking, forever, in silence.
+    // Russian numbers carry 10 digits after the 7; this has 9. So exactly ten
+    // digits beginning 7 is a UK mobile that lost its 44, and is repaired here.
+    const digits = p.slice(1);
+    if (/^7\d{9}$/.test(digits)) return `+44${digits}`;
+    return p;
+  }
   if (p.startsWith("00")) return `+${p.slice(2)}`;
   if (p.startsWith("44")) return `+${p}`;
   if (p.startsWith("0")) return `+44${p.slice(1)}`;
   if (/^7\d{9}$/.test(p)) return `+44${p}`;
   return `+${p}`;
+}
+
+/**
+ * Can this number actually be texted? Checked BEFORE handing anything to
+ * Twilio, so a bad number is reported against the booking instead of failing
+ * quietly on every message (19% of one month's sends died this way).
+ * UK numbers must be +44 plus ten digits; anything else needs a plausible
+ * international length.
+ */
+export function isSendableNumber(raw: string): boolean {
+  const e164 = toUKE164(raw);
+  if (!/^\+\d+$/.test(e164)) return false;
+  if (e164.startsWith("+44")) return /^\+44[1-9]\d{9}$/.test(e164);
+  return /^\+\d{8,15}$/.test(e164);
 }
 
 /** wa.me deep-link form: international digits only, no leading +. */
@@ -86,12 +110,77 @@ const shortDate = (d?: string) =>
 
 const isLutonAirport = (airport?: string) => !!airport?.toLowerCase().includes("luton");
 
-/** Operators can store two contact numbers — include both when present. */
+/** "07762569061" -> "07762 569061". Anything else is left as typed. */
+export function prettyPhone(n: string): string {
+  const d = String(n || "").replace(/\s/g, "");
+  return /^0\d{10}$/.test(d) ? `${d.slice(0, 5)} ${d.slice(5)}` : String(n || "").trim();
+}
+
+/** "UB70JH" -> "UB7 0JH". Left alone if it isn't a UK postcode. */
+export function prettyPostcode(p: string): string {
+  const raw = String(p || "").toUpperCase().replace(/\s+/g, "");
+  const m = raw.match(/^([A-Z]{1,2}\d[A-Z\d]?)(\d[A-Z]{2})$/);
+  return m ? `${m[1]} ${m[2]}` : String(p || "").trim();
+}
+
+/**
+ * Operators can store two contact numbers — include both when present, but only
+ * once. AIRLINK has the same number in both columns and was telling customers
+ * to "call 07878763005 or 07878763005".
+ */
 export function operatorPhones(company: any): string {
-  const p1 = String(company?.phone_number || "").trim();
-  const p2 = String(company?.phone_number_2 || "").trim();
-  if (p1 && p2) return `${p1} or ${p2}`;
-  return p1 || p2 || "";
+  const seen = [company?.phone_number, company?.phone_number_2]
+    .map((p) => String(p || "").trim())
+    .filter(Boolean)
+    .filter((p, i, all) => all.findIndex((q) => q.replace(/\s/g, "") === p.replace(/\s/g, "")) === i)
+    .map(prettyPhone);
+  return seen.join(" or ");
+}
+
+/**
+ * Operator instructions are stored as web copy: HTML tags, pictograms, a
+ * paragraph per terminal. Pasted straight into a text message that became 2,642
+ * characters of "<b>VEHICLE DROP OFF PROCEDURE</b><br/>" across 40 paid
+ * segments. Text messages are now built from facts instead, and this reduces
+ * any stored prose to something safe to put in one.
+ */
+export function plainText(raw: unknown): string {
+  return String(raw ?? "")
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&amp;/g, "&").replace(/&nbsp;/g, " ").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{2300}-\u{23FF}\u{FE0F}\u{200D}]/gu, "")
+    .replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[–—]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Where the customer physically goes. Meet & Greet is the booked terminal's own
+ * entry; Park & Ride is the operator's compound. Short enough for one segment.
+ */
+export function placeFor(company: any, b: MessageBooking): string {
+  const isParkRide = String(company?.category || "").toLowerCase().includes("park");
+  if (isParkRide) {
+    const addr = plainText(company?.address);
+    const pcode = plainText(company?.postcode);
+    if (addr.includes("@") || addr.length < 6) return prettyPostcode(pcode);
+    const street = addr.split(",").slice(0, 2).map((s) => s.trim()).filter(Boolean).join(", ");
+    return [street, prettyPostcode(pcode)].filter(Boolean).join(", ");
+  }
+  const t = company?.terminal_data?.[String(b.terminal ?? "").trim()];
+  return [plainText(t?.address), prettyPostcode(plainText(t?.postcode))].filter(Boolean).join(", ");
+}
+
+/**
+ * How long before arrival the operator wants the call. Read from their own
+ * wording ("call ... when you are 20 mins away"), because Park & Ride asks for
+ * 30 and Meet & Greet for 20. Falls back rather than inventing a number.
+ */
+export function callAheadMinutes(company: any, isLuton: boolean): number | null {
+  const m = plainText(arrivalText(isLuton, company)).match(/(\d{2})\s*min/i);
+  const n = m ? Number(m[1]) : NaN;
+  return n >= 5 && n <= 120 ? n : null;
 }
 
 /** Operator's on-arrival wording, airport-specific with sensible fallbacks. */
@@ -126,21 +215,33 @@ export function missingFlightBody(b: MessageBooking): string {
  */
 export function dropoffDayBody(b: MessageBooking, company: any | null): string {
   if (!company) {
-    return `AeroPark Direct: Drop-off day for ref ${b.booking_ref}. When you arrive, call ${AGENT_NUMBER} and we'll meet you to take your car. Full details are in your email.`;
+    return `AeroPark Direct: drop-off day, ref ${b.booking_ref}. When you arrive, call ${AGENT_NUMBER} and we will meet you to take your car. Full details are in your email.`;
   }
+  const mins = callAheadMinutes(company, isLutonAirport(b.airport));
   const phones = operatorPhones(company);
-  const phone = phones ? ` Call ${phones} on arrival.` : "";
-  return `AeroPark Direct: Drop-off day for ref ${b.booking_ref}. ${arrivalText(isLutonAirport(b.airport), company)}${phone} Full directions are in your email.`;
+  const place = placeFor(company, b);
+  return [
+    `AeroPark Direct: drop-off day, ref ${b.booking_ref}.`,
+    place ? `Go to ${place}.` : "",
+    phones ? `Call ${phones}${mins ? ` about ${mins} minutes before you arrive` : " when you arrive"}.` : "",
+    "Full instructions are in your confirmation email.",
+  ].filter(Boolean).join(" ");
 }
 
 /** Return morning. Same operator-aware rule as drop-off. */
 export function returnDayBody(b: MessageBooking, company: any | null): string {
   if (!company) {
-    return `AeroPark Direct: Today's your return day, ref ${b.booking_ref}. Once you've collected your luggage, call ${AGENT_NUMBER} and your car and parking ticket will be ready.`;
+    return `AeroPark Direct: return day, ref ${b.booking_ref}. Once you have collected your luggage, call ${AGENT_NUMBER} and your car and parking ticket will be ready.`;
   }
   const phones = operatorPhones(company);
-  const phone = phones ? ` Call ${phones}.` : "";
-  return `AeroPark Direct: Today's your return day, ref ${b.booking_ref}. ${returnText(isLutonAirport(b.airport), company)}${phone}`;
+  const place = placeFor(company, b);
+  return [
+    `AeroPark Direct: return day, ref ${b.booking_ref}.`,
+    phones
+      ? `Call ${phones} when you land, then again once you have your bags, so your car is ready.`
+      : "Call the number in your confirmation email when you land, then again once you have your bags.",
+    place ? `Collection: ${place}.` : "",
+  ].filter(Boolean).join(" ");
 }
 
 /** Trustpilot review request — sent the day after collection, or on demand. */
@@ -148,9 +249,16 @@ export function reviewRequestBody(b: MessageBooking): string {
   return `Hi ${firstName(b.full_name)}, thanks for parking with AeroPark Direct! We hope everything went smoothly. If you have 30 seconds, an honest review would mean a lot to us: ${REVIEW_LINK}`;
 }
 
-/** Invites a past customer to book again. Manual send only. */
+/**
+ * Invites a past customer to book again. Manual send only.
+ *
+ * This one is marketing, not a booking message. PECR allows it to an existing
+ * customer for a similar service (the "soft opt-in"), but only if every message
+ * offers a way out — hence the last line. Do not remove it, and do not send
+ * this to anyone who has not booked before.
+ */
 export function rebookBody(b: MessageBooking): string {
-  return `Hi ${firstName(b.full_name)}, great to hear from you! You can book your next trip in under a minute at www.aeroparkdirect.co.uk — your discount is applied automatically at checkout, nothing to enter. Any questions, just reply here.`;
+  return `Hi ${firstName(b.full_name)}, thanks again for parking with AeroPark Direct. You can book your next trip at www.aeroparkdirect.co.uk, and your discount is applied automatically at checkout. Reply STOP if you would rather not hear from us.`;
 }
 
 // ── Admin Message Centre catalogue ───────────────────────────────────────────
