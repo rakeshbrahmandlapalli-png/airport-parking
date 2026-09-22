@@ -112,7 +112,14 @@ function getExclusiveInstructions(booking: any) {
   return { arrival, returnInst };
 }
 
+// `fees_covered` is decided once, at booking creation, from what was actually
+// bought (see app/api/webhook/route.ts) — it survives a later reassignment to
+// a normal operator, unlike the service_type/company checks below, which stop
+// being true the moment an Exclusive booking is transferred off "AeroPark
+// Exclusive". Without it, transferring an Exclusive booking silently dropped
+// the "your barrier fee is covered" promise the customer paid for.
 const isExclusiveBooking = (booking: any, company: any) =>
+  booking?.fees_covered === true ||
   booking?.service_type?.toLowerCase().includes('exclusive') ||
   company?.name?.toLowerCase().includes('exclusive');
 
@@ -203,7 +210,8 @@ export async function POST(req: Request) {
                 <h3 style="color: #b91c1c; margin-top: 0;">AEROPARK EXCLUSIVE BOOKING</h3>
                 <p style="color: #991b1b; font-weight: bold; font-size: 16px;">
                   All barrier and terminal drop-off fees have been PRE-PAID by AeroPark Direct.<br><br>
-                  Under NO CIRCUMSTANCES should the customer be asked to pay cash or card at the barrier.
+                  Under NO CIRCUMSTANCES should the customer be asked to pay cash or card at the barrier.<br><br>
+                  PRIORITY COLLECTION: this customer paid for our premium tier — please bring their car to them first, ahead of the normal queue.
                 </p>
               </div>
               <p><strong>Customer:</strong> ${escapeHtml(booking.full_name)}</p>
@@ -249,6 +257,7 @@ export async function POST(req: Request) {
                  <ul style="margin-bottom: 0;">
                    <li><strong>Zero Hidden Fees:</strong> We have completely covered your airport barrier/drop-off charges. Do not pay them!</li>
                    <li><strong>Hand-Picked Operator:</strong> Your car is being handled by a fully insured, top-rated provider.</li>
+                   <li><strong>Priority Collection:</strong> Your car is brought to you first, ahead of the operator's normal queue.</li>
                    <li><strong>Priority Support:</strong> You have direct access to our in-house team if your flights change.</li>
                  </ul>
               </div>

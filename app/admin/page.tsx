@@ -269,7 +269,8 @@ function DashboardContent() {
         service_type: editingBooking?.service_type || "Meet & Greet",
         fast_track_count: Number(editingBooking?.fast_track_count || 0),
         attendant_commission: Number(editingBooking?.attendant_commission || 0),
-        commission_percentage: Number(editingBooking?.commission_percentage || 30)
+        commission_percentage: Number(editingBooking?.commission_percentage || 30),
+        fees_covered: !!editingBooking?.fees_covered
       }).eq('id', editingBooking.id);
 
       if (error) throw error;
@@ -1033,6 +1034,11 @@ function DashboardContent() {
               {detailRow("Partner", getCompanyName(b.company_id))}
               {detailRow("Service", b.service_type || "Meet & Greet")}
             </div>
+            {b.fees_covered && (
+              <p className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] font-bold text-amber-300 flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Fees covered by AeroPark — whichever operator holds this booking, do not send the customer the standard fee note.
+              </p>
+            )}
 
             {/* Manual transfer — assign to the best provider & email them */}
             <div className="mt-3 bg-[#131A2B] border border-white/[0.06] rounded-xl px-4 py-3">
@@ -1403,6 +1409,11 @@ function DashboardContent() {
                         {!b.company_id && (
                           <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-amber-500 mt-0.5">
                             <AlertCircle className="w-2.5 h-2.5" />needs routing
+                          </span>
+                        )}
+                        {b.fees_covered && (
+                          <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-amber-400 mt-0.5" title="Barrier/exit fee is covered by AeroPark, regardless of operator">
+                            <CheckCircle2 className="w-2.5 h-2.5" />fees covered
                           </span>
                         )}
                       </td>
@@ -2058,6 +2069,16 @@ function DashboardContent() {
                     <input type="number" step="1" min="0" max="100" value={editingBooking?.commission_percentage || 30} onChange={(e) => setEditingBooking({...editingBooking, commission_percentage: Number(e.target.value) || 30})} className={`${inputStyle} pl-12 text-emerald-400 text-xl`} />
                   </div>
                   <p className="text-[9px] text-slate-500 font-bold ml-1 leading-snug">Shown on invoice &amp; provider email. Operator keeps the rest.</p>
+                </div>
+
+                <div className="space-y-2 lg:col-span-1">
+                  <label className="text-[10px] font-black uppercase text-amber-400 block ml-1 tracking-widest">Fees Covered</label>
+                  <label className={`${inputStyle} flex items-center gap-2 cursor-pointer select-none`}>
+                    <input type="checkbox" checked={!!editingBooking?.fees_covered} onChange={(e) => setEditingBooking({...editingBooking, fees_covered: e.target.checked})} className="w-4 h-4 accent-amber-500" />
+                    <CheckCircle2 className="w-4 h-4 text-amber-500" />
+                    <span className="text-amber-300 text-[13px] font-bold">{editingBooking?.fees_covered ? "On" : "Off"}</span>
+                  </label>
+                  <p className="text-[9px] text-slate-500 font-bold ml-1 leading-snug">Barrier/exit fee is on us, whoever ends up handling the car. Set automatically for Exclusive bookings.</p>
                 </div>
               </div>
 
