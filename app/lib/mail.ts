@@ -491,6 +491,46 @@ export function buildReviewHtml(firstName: string, bookingRef: string): string {
  * The fast-track price is read live from Platform Settings (getFastTrackPrice)
  * so the parking-only figure matches the admin's configured add-on price.
  */
+export interface ProviderPayout {
+  coveredFee: number;
+  parkingGross: number;
+  commissionPct: number;
+  yourCommission: number;
+  operatorPayout: number;
+}
+
+/**
+ * What an operator is owed for a booking — the single source of truth shared
+ * by the standard provider email AND the VIP alert email, so they can never
+ * disagree on the numbers the way isExclusiveBooking once silently did.
+ *
+ * A fee-covered booking (see app/api/send/route.ts isExclusiveBooking) has
+ * already promised the customer their barrier/exit fee is paid — which the
+ * operator would otherwise have collected from them directly, in cash, at the
+ * barrier. So AeroPark owes THEM that amount instead: split it out of the
+ * commissionable parking value and pay it in full, commission-free.
+ */
+export async function computeProviderPayout(booking: any, company: any): Promise<ProviderPayout> {
+  const fastTrackCount   = Number(booking.fast_track_count || 0);
+  const fastTrackRevenue = fastTrackCount * (await getFastTrackPrice());
+  const totalPaid        = Number(booking.total_price || 0);
+  const attendantFee     = Number(booking.attendant_commission || 0);
+  const airportCode      = detectAirport(booking.airport);
+  const coveredFee       = booking.fees_covered
+    ? Number((airportCode === "LTN" ? company?.ltn_fees_amount : company?.lhr_fees_amount) || 0)
+    : 0;
+  // Use the booking's explicit commission % if the admin set one (walk-ins /
+  // payment links); otherwise fall back to the operator's own configured rate,
+  // so this email matches the financials & remittance invoice exactly.
+  const commissionPct    = booking.commission_percentage != null && booking.commission_percentage !== ""
+    ? Number(booking.commission_percentage)
+    : Number(company?.commission_rate ?? 100);
+  const parkingGross     = Math.max(0, totalPaid - fastTrackRevenue - attendantFee - coveredFee);
+  const yourCommission   = parkingGross * (commissionPct / 100);
+  const operatorPayout   = Math.max(0, parkingGross - yourCommission) + coveredFee;
+  return { coveredFee, parkingGross, commissionPct, yourCommission, operatorPayout };
+}
+
 export async function sendProviderNotification(
   booking: any,
   company: any
@@ -504,20 +544,8 @@ export async function sendProviderNotification(
     const dropDate = formatEmailDate(booking.dropoff_date);
     const pickDate = formatEmailDate(booking.pickup_date);
 
-    const fastTrackCount   = Number(booking.fast_track_count || 0);
-    const fastTrackRevenue = fastTrackCount * (await getFastTrackPrice());
-    const totalPaid        = Number(booking.total_price || 0);
-    const attendantFee     = Number(booking.attendant_commission || 0);
-    // Use the booking's explicit commission % if the admin set one (walk-ins /
-    // payment links); otherwise fall back to the operator's own configured rate,
-    // so this email matches the financials & remittance invoice exactly.
-    const commissionPct    = booking.commission_percentage != null && booking.commission_percentage !== ""
-      ? Number(booking.commission_percentage)
-      : Number(company.commission_rate ?? 100);
-    const parkingGross     = Math.max(0, totalPaid - fastTrackRevenue - attendantFee);
-    const yourCommission   = parkingGross * (commissionPct / 100);
-    const operatorPayout   = Math.max(0, parkingGross - yourCommission);
-    const parkingTotal     = parkingGross.toFixed(2);
+    const { coveredFee, parkingGross, commissionPct, yourCommission, operatorPayout } =
+      await computeProviderPayout(booking, company);
 
     // FIX: don't fall back silently to info@ — log clearly when provider has no email
     const providerEmail = company.email?.trim();
@@ -536,7 +564,7 @@ export async function sendProviderNotification(
       subject: `New booking ${booking.booking_ref}: ${str(booking.full_name)}, ${dropDate}`,
       html: emailShell({
         title: `New booking ${booking.booking_ref}`,
-        kicker: escapeHtml(company.name),
+        kicker: str(company.name, "Operator"),
         heading: "New parking reservation",
         preheader: `${str(booking.full_name)}, ${escH(booking.license_plate)}, drop-off ${dropDate} at ${dropTime}.`,
         internal: true,
@@ -560,6 +588,7 @@ export async function sendProviderNotification(
             sectionHeading("Payout") +
             detailTable([
               ["Parking value", `£${parkingGross.toFixed(2)}`],
+              ...(coveredFee > 0 ? [["Exit/barrier fee (covered by AeroPark, no commission)", `£${coveredFee.toFixed(2)}`] as [string, string]] : []),
               ["Our commission", `${commissionPct}%`],
               ["Commission deducted", `-${`£${yourCommission.toFixed(2)}`}`],
               ["You receive", `<span style="font-size:17px;">${`£${operatorPayout.toFixed(2)}`}</span>`],
@@ -661,7 +690,7 @@ export async function sendCancellationAlerts(
         subject: `Cancelled ${escH(booking?.booking_ref)}: ${escH(booking?.full_name)}, ${dropDateFmt}`,
         html: emailShell({
           title: `Cancelled ${escH(booking?.booking_ref)}`,
-          kicker: escapeHtml(String(company?.name ?? "")),
+          kicker: str(company?.name, "Operator"),
           heading: "Booking cancelled",
           preheader: `${escH(booking?.license_plate)} is no longer coming on ${dropDateFmt}.`,
           internal: true,

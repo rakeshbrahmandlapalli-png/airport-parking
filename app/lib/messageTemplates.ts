@@ -221,14 +221,15 @@ export function dropoffDayBody(b: MessageBooking, company: any | null): string {
   // Treat an operator that does not serve this booking's airport as no operator
   // at all: our own number is always better than another airport's directions.
   if (company && !operatesAt(company, detectAirport(b.airport))) company = null;
+  const greeting = `Hi ${firstName(b.full_name)}, AeroPark Direct here. It's drop-off day for ref ${b.booking_ref}.`;
   if (!company) {
-    return `AeroPark Direct: drop-off day, ref ${b.booking_ref}. When you arrive, call ${AGENT_NUMBER} and we will meet you to take your car. Full details are in your email.`;
+    return `${greeting} When you arrive, call ${AGENT_NUMBER} and we will meet you to take your car. Full details are in your email.`;
   }
   const mins = callAheadMinutes(company, isLutonAirport(b.airport));
   const phones = operatorPhones(company);
   const place = placeFor(company, b);
   return [
-    `AeroPark Direct: drop-off day, ref ${b.booking_ref}.`,
+    greeting,
     place ? `Go to ${place}.` : "",
     phones ? `Call ${phones}${mins ? ` about ${mins} minutes before you arrive` : " when you arrive"}.` : "",
     "Full instructions are in your confirmation email.",
@@ -238,13 +239,14 @@ export function dropoffDayBody(b: MessageBooking, company: any | null): string {
 /** Return morning. Same operator-aware rule as drop-off. */
 export function returnDayBody(b: MessageBooking, company: any | null): string {
   if (company && !operatesAt(company, detectAirport(b.airport))) company = null;
+  const greeting = `Hi ${firstName(b.full_name)}, AeroPark Direct here. It's return day for ref ${b.booking_ref}.`;
   if (!company) {
-    return `AeroPark Direct: return day, ref ${b.booking_ref}. Once you have collected your luggage, call ${AGENT_NUMBER} and your car and parking ticket will be ready.`;
+    return `${greeting} Once you have collected your luggage, call ${AGENT_NUMBER} and your car and parking ticket will be ready.`;
   }
   const phones = operatorPhones(company);
   const place = placeFor(company, b);
   return [
-    `AeroPark Direct: return day, ref ${b.booking_ref}.`,
+    greeting,
     phones
       ? `Call ${phones} when you land, then again once you have your bags, so your car is ready.`
       : "Call the number in your confirmation email when you land, then again once you have your bags.",
