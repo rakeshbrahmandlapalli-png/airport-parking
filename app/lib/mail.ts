@@ -347,6 +347,7 @@ export async function sendBookingReceipt(
       dropDate, pickDate, dropTime, pickTime,
       licencePlate, statusText, statusColor, statusBg,
       totalPaidStr, serviceType, flightNumber,
+      feesCovered: booking.fees_covered === true,
     };
 
     const { data, error } = await resend.emails.send({
@@ -561,7 +562,7 @@ export async function sendProviderNotification(
       from:    "AeroPark Bookings <info@aeroparkdirect.co.uk>",
       to:      recipientEmail,
       replyTo: "info@aeroparkdirect.co.uk",
-      subject: `New booking ${booking.booking_ref}: ${str(booking.full_name)}, ${dropDate}`,
+      subject: `New booking ${booking.booking_ref}: ${str(booking.full_name)}, ${dropDate}${booking.fees_covered ? " (fee pre-paid, priority)" : ""}`,
       html: emailShell({
         title: `New booking ${booking.booking_ref}`,
         kicker: str(company.name, "Operator"),
@@ -584,6 +585,9 @@ export async function sendProviderNotification(
               ["Service", escH(booking.service_type, company.name)],
             ]),
           ) +
+          (booking.fees_covered ? emailSection(
+            noteBox("Pre-paid & priority", "This customer's barrier/exit fee has been pre-paid by AeroPark Direct — do not charge them at the barrier. Please bring their car to them first, ahead of your normal queue."),
+          ) : "") +
           emailSection(
             sectionHeading("Payout") +
             detailTable([
