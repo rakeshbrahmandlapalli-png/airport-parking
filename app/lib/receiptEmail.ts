@@ -30,6 +30,10 @@ export interface ReceiptHtmlParams {
   totalPaidStr: string;
   serviceType: string;
   flightNumber: string;
+  /** Barrier/exit fee already paid by AeroPark (e.g. a transferred Exclusive
+   *  booking) — replaces the "not included" fee note with a positive one, and
+   *  overrides any fee mention baked into the operator's own instructions. */
+  feesCovered?: boolean;
 }
 
 const SITE = "https://www.aeroparkdirect.co.uk";
@@ -198,7 +202,10 @@ export function renderReceiptHtml(p: ReceiptHtmlParams): string {
   const provider = esc(String(p.company?.name || "").trim() || "AeroPark Direct");
   const airport = esc(b.airport);
   const status = p.isAmendment ? "Booking updated" : "Booking confirmed";
-  const fees = feesNote(p);
+  // A fee-covered booking's promise overrides any fee note (the operator's own
+  // structured note, and anything mentioned inline in their instructions
+  // below) — never show both a "covered" claim and a "not included" charge.
+  const fees = p.feesCovered ? "" : feesNote(p);
   const location = [p.displayAddress, p.displayPostcode].filter(Boolean).map(esc).join(", ");
 
   const lede = p.isAmendment
@@ -260,6 +267,11 @@ ${section(`<table role="presentation" width="100%" cellpadding="0" cellspacing="
 
 ${section(`${heading("Your booking")}<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${details}</table>`)}
 
+${p.feesCovered ? section(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${INK};background-color:#F9FAFB;"><tr><td style="padding:14px 16px;">
+  <p style="margin:0 0 4px;font-family:${FONT};font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${INK};">Included in your booking price</p>
+  <p style="margin:0;font-family:${FONT};font-size:14px;line-height:1.6;color:${BODY};">Your barrier/exit fee is already paid by AeroPark Direct, and your car is collected as a priority, ahead of the operator's normal queue. If a fee is mentioned anywhere below, it does not apply to you.</p>
+</td></tr></table>`) : ""}
+
 ${rule}
 ${section(`${heading("Drop-off")}
 <p style="margin:0 0 4px;font-family:${FONT};font-size:16px;font-weight:700;color:${INK};">${esc(p.dropDate)} at ${esc(p.dropTime)}</p>
@@ -304,7 +316,7 @@ ${section(`${bodyText(`<p style="margin:0;">Questions about your booking? Reply 
 export function renderReceiptText(p: ReceiptHtmlParams): string {
   const b = p.booking || {};
   const first = String(b.full_name || "").trim().split(/\s+/)[0];
-  const fees = feesNote(p);
+  const fees = p.feesCovered ? "" : feesNote(p);
   const location = [p.displayAddress, p.displayPostcode].filter(Boolean).join(", ");
   const phones = [p.phone1, p.phone2].filter(Boolean).map(fmtPhone).join(" or ");
   const provider = String(p.company?.name || "").trim() || "AeroPark Direct";
@@ -328,6 +340,11 @@ export function renderReceiptText(p: ReceiptHtmlParams): string {
     ...(p.flightNumber ? [`Return flight: ${p.flightNumber}`] : []),
     ...(b.full_name ? [`Lead passenger: ${b.full_name}`] : []),
     "",
+    ...(p.feesCovered ? [
+      "INCLUDED IN YOUR BOOKING PRICE",
+      "Your barrier/exit fee is already paid by AeroPark Direct, and your car is collected as a priority, ahead of the operator's normal queue. If a fee is mentioned anywhere below, it does not apply to you.",
+      "",
+    ] : []),
     `DROP-OFF: ${p.dropDate} at ${p.dropTime}`,
     ...(location ? [location] : []),
     htmlToText(formatInstructions(p.arrivalInstructions, p.terminalKey)),

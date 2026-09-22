@@ -1,6 +1,6 @@
 import { logger } from "@/app/lib/logger";
 import { NextResponse } from "next/server";
-import { sendBookingReceipt, sendProviderNotification, sendReviewRequest, computeProviderPayout } from "@/app/lib/mail";
+import { sendBookingReceipt, sendProviderNotification, sendReviewRequest } from "@/app/lib/mail";
 import { sendReviewRequestSMS } from "@/app/lib/twilio";
 import { Resend } from "resend";
 import { createClient } from '@supabase/supabase-js';
@@ -26,11 +26,6 @@ function escapeHtml(v: unknown): string {
     .replace(/'/g, "&#39;");
 }
 
-// Strip a phone number down to a tel:-safe value.
-function toTel(phone: unknown): string {
-  return String(phone ?? "").replace(/[^\d+]/g, "");
-}
-
 // Resolve the authoritative booking row by its reference. All customer-facing
 // mail is addressed to the email stored on this row — never an address passed
 // in the request — so this endpoint cannot be used to send branded mail to
@@ -51,65 +46,6 @@ async function loadCompany(companyId: unknown) {
   if (!id || id === "ALL" || id === "null") return null;
   const { data } = await supabase.from("companies").select("*").eq("id", id).maybeSingle();
   return data;
-}
-
-// Generates airport-specific VIP instructions for exclusive bookings.
-function getExclusiveInstructions(booking: any) {
-  const airport = (booking.airport || '').toLowerCase();
-  const service = (booking.service_type || '').toLowerCase();
-
-  let arrival = '';
-  let returnInst = '';
-
-  if (airport.includes('luton')) {
-    arrival = `
-      <ol style="padding-left: 20px;">
-        <li style="margin-bottom: 8px;">Call your dedicated VIP driver 20-30 minutes before arriving at Luton Airport.</li>
-        <li style="margin-bottom: 8px;">Follow the signs for Terminal Car Park 1 (or as directed by your driver).</li>
-        <li style="margin-bottom: 8px;">Your fully insured driver will conduct a vehicle check and take your keys.</li>
-        <li style="margin-bottom: 8px;"><strong style="color:#10b981;">VIP Perk:</strong> Do NOT pay the barrier fee! AeroPark Direct covers the £10 drop-off charge on your behalf. Simply hand over your keys and walk to check-in.</li>
-      </ol>`;
-    returnInst = `
-      <ol style="padding-left: 20px;">
-        <li style="margin-bottom: 8px;">Once you have landed and collected your luggage, call your driver.</li>
-        <li style="margin-bottom: 8px;">Walk back to the designated Meet & Greet collection point.</li>
-        <li style="margin-bottom: 8px;"><strong style="color:#10b981;">VIP Perk:</strong> Your exit barrier fee is fully covered. Just load your bags and drive home safely.</li>
-      </ol>`;
-  } else if (airport.includes('heathrow')) {
-    if (service.includes('park & ride') || service.includes('park and ride')) {
-      arrival = `
-        <ol style="padding-left: 20px;">
-          <li style="margin-bottom: 8px;">Drive to the secure compound address provided by our premium operator below.</li>
-          <li style="margin-bottom: 8px;">Check in at the reception desk and hand over your keys.</li>
-          <li style="margin-bottom: 8px;"><strong style="color:#10b981;">VIP Perk:</strong> Board the priority shuttle bus. You will be dropped right at your terminal doors in minutes.</li>
-        </ol>`;
-      returnInst = `
-        <ol style="padding-left: 20px;">
-          <li style="margin-bottom: 8px;">Once you have collected your luggage, call the shuttle dispatch number.</li>
-          <li style="margin-bottom: 8px;">Head to the designated bus stop right outside the terminal arrivals.</li>
-          <li style="margin-bottom: 8px;">The shuttle will take you straight back to the secure compound where your car is ready and waiting.</li>
-        </ol>`;
-    } else {
-      arrival = `
-        <ol style="padding-left: 20px;">
-          <li style="margin-bottom: 8px;">Call your dedicated VIP driver 20-30 minutes before reaching your Heathrow departure terminal.</li>
-          <li style="margin-bottom: 8px;">Drive directly to the Short Stay car park drop-off zone as instructed by your driver.</li>
-          <li style="margin-bottom: 8px;">Your vetted driver will inspect your vehicle and securely park it in a police-approved facility.</li>
-          <li style="margin-bottom: 8px;"><strong style="color:#10b981;">VIP Perk:</strong> Do NOT worry about the £5 Heathrow Terminal Drop-Off Charge (TDOC). AeroPark Direct automatically pays this ANPR camera fee for you.</li>
-        </ol>`;
-      returnInst = `
-        <ol style="padding-left: 20px;">
-          <li style="margin-bottom: 8px;">Once you clear customs and have your luggage, call your driver.</li>
-          <li style="margin-bottom: 8px;">Make your way to the Short Stay collection point at your terminal.</li>
-          <li style="margin-bottom: 8px;">Your driver will return your vehicle so you can head straight home.</li>
-        </ol>`;
-    }
-  } else {
-    arrival = `<p>Please call your driver 20 minutes before arrival at the airport drop-off zone.</p>`;
-    returnInst = `<p>Please call your driver once you have collected your luggage.</p>`;
-  }
-
-  return { arrival, returnInst };
 }
 
 // `fees_covered` is decided once, at booking creation, from what was actually
@@ -193,97 +129,31 @@ export async function POST(req: Request) {
     }
 
     // --- CASE 3: MANUAL PROVIDER TRIGGER (admin only, dashboard) ---
+    // One template here too (see CASE 4) — sendProviderNotification already
+    // shows the pre-paid/priority note and the covered-fee payout split for a
+    // fees_covered booking (app/lib/mail.ts), in the same plain, professional
+    // shell as every other operator email, instead of a separate red-alert one.
     if (body.manual_provider_notify && body.booking) {
       const booking = await loadBooking(body.booking?.booking_ref);
       if (!booking) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
       const company = await loadCompany(booking.company_id);
-
-      if (isExclusiveBooking(booking, company)) {
-        const payout = await computeProviderPayout(booking, company);
-        await resend.emails.send({
-          from: 'AeroPark Ops <ops@aeroparkdirect.co.uk>',
-          to: company?.email || 'info@aeroparkdirect.co.uk',
-          subject: `VIP JOB ALERT: ${escapeHtml(booking.booking_ref)} (BARRIER PRE-PAID)`,
-          html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: auto;">
-              <h2 style="color: #2563eb;">New VIP Booking Assigned</h2>
-              <div style="background: #fee2e2; border: 2px solid #ef4444; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="color: #b91c1c; margin-top: 0;">AEROPARK EXCLUSIVE BOOKING</h3>
-                <p style="color: #991b1b; font-weight: bold; font-size: 16px;">
-                  All barrier and terminal drop-off fees have been PRE-PAID by AeroPark Direct.<br><br>
-                  Under NO CIRCUMSTANCES should the customer be asked to pay cash or card at the barrier.<br><br>
-                  PRIORITY COLLECTION: this customer paid for our premium tier — please bring their car to them first, ahead of the normal queue.
-                </p>
-              </div>
-              <p><strong>Customer:</strong> ${escapeHtml(booking.full_name)}</p>
-              <p><strong>Mobile:</strong> ${escapeHtml(booking.phone_number)}</p>
-              <p><strong>Car:</strong> ${escapeHtml(booking.car_color)} ${escapeHtml(booking.car_make)} [${escapeHtml(booking.license_plate)}]</p>
-              <p><strong>Drop-off:</strong> ${escapeHtml(booking.dropoff_date)} @ ${escapeHtml(booking.dropoff_time)}</p>
-              <p><strong>Pick-up:</strong> ${escapeHtml(booking.pickup_date)} @ ${escapeHtml(booking.pickup_time)}</p>
-              <p><strong>Terminal:</strong> ${escapeHtml(booking.terminal)}</p>
-              <p><strong>Flight:</strong> ${escapeHtml(booking.flight_number)}</p>
-              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-top: 20px;">
-                <h3 style="margin-top: 0; color: #0f172a;">Payout</h3>
-                <p style="margin: 4px 0;">Parking value: <strong>£${payout.parkingGross.toFixed(2)}</strong></p>
-                ${payout.coveredFee > 0 ? `<p style="margin: 4px 0;">Exit/barrier fee (covered by AeroPark, no commission): <strong>£${payout.coveredFee.toFixed(2)}</strong></p>` : ''}
-                <p style="margin: 4px 0;">Our commission (${payout.commissionPct}%): <strong>-£${payout.yourCommission.toFixed(2)}</strong></p>
-                <p style="margin: 8px 0 0; font-size: 17px;">You receive: <strong>£${payout.operatorPayout.toFixed(2)}</strong></p>
-              </div>
-            </div>
-          `
-        });
-        return NextResponse.json({ success: true, message: "VIP Provider notification sent" });
-      }
 
       await sendProviderNotification(booking, company);
       return NextResponse.json({ success: true, message: "Manual provider notification sent" });
     }
 
     // --- CASE 4: MANUAL CUSTOMER TRIGGER (admin only, dashboard) ---
+    // One template for everyone, including fee-covered/Exclusive bookings —
+    // it already pulls the REAL assigned operator's instructions, address and
+    // phone; a separate generic "VIP" template used to paper over that with
+    // scripted text that didn't match what the operator actually does.
+    // ReceiptHtmlParams.feesCovered (set from booking.fees_covered in
+    // sendBookingReceipt) swaps the "not included" fee note for a "covered"
+    // one instead. See app/lib/receiptEmail.ts.
     if (body.manual_customer_notify && body.booking) {
       const booking = await loadBooking(body.booking?.booking_ref);
       if (!booking) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
       const company = await loadCompany(booking.company_id);
-
-      if (isExclusiveBooking(booking, company)) {
-        const inst = getExclusiveInstructions(booking);
-        const operatorName = company?.name || 'our Premium Partner network';
-        const driverPhone = company?.phone_number || company?.phone || company?.contact_number || 'See booking portal for dispatch number';
-
-        await resend.emails.send({
-          from: 'AeroPark Direct <bookings@aeroparkdirect.co.uk>',
-          to: booking.email,
-          subject: `Your VIP Driver Details - AeroPark Exclusive`,
-          html: `
-            <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: auto;">
-              <h2 style="color: #2563eb;">Your VIP Driver is Ready!</h2>
-              <p>Dear ${escapeHtml(booking.full_name)},</p>
-              <p>Your vehicle has been successfully assigned to <strong>${escapeHtml(operatorName)}</strong>, one of our fully-vetted premium partners. Here are your highly important instructions for <strong>${escapeHtml(booking.airport)}</strong>.</p>
-
-              <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;">
-                 <h3 style="margin-top: 0; color: #0f172a;">Your Exclusive Perks:</h3>
-                 <ul style="margin-bottom: 0;">
-                   <li><strong>Zero Hidden Fees:</strong> We have completely covered your airport barrier/drop-off charges. Do not pay them!</li>
-                   <li><strong>Hand-Picked Operator:</strong> Your car is being handled by a fully insured, top-rated provider.</li>
-                   <li><strong>Priority Collection:</strong> Your car is brought to you first, ahead of the operator's normal queue.</li>
-                   <li><strong>Priority Support:</strong> You have direct access to our in-house team if your flights change.</li>
-                 </ul>
-              </div>
-
-              <h3>Arrival Instructions:</h3>
-              ${inst.arrival}
-
-              <h3>Return Instructions:</h3>
-              ${inst.returnInst}
-
-              <div style="background: #e0f2fe; padding: 15px; border-radius: 8px; margin-top: 25px; border: 1px solid #bae6fd;">
-                <p style="margin: 0; font-size: 16px;"><strong>Driver Contact Number:</strong> <a href="tel:${escapeHtml(toTel(driverPhone))}">${escapeHtml(driverPhone)}</a></p>
-              </div>
-            </div>
-          `
-        });
-        return NextResponse.json({ success: true, message: "VIP Customer dispatch sent" });
-      }
 
       await sendBookingReceipt(booking, company, false);
       return NextResponse.json({ success: true, message: "Manual customer receipt sent" });
