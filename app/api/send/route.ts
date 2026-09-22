@@ -1,6 +1,6 @@
 import { logger } from "@/app/lib/logger";
 import { NextResponse } from "next/server";
-import { sendBookingReceipt, sendProviderNotification, sendReviewRequest } from "@/app/lib/mail";
+import { sendBookingReceipt, sendProviderNotification, sendReviewRequest, computeProviderPayout } from "@/app/lib/mail";
 import { sendReviewRequestSMS } from "@/app/lib/twilio";
 import { Resend } from "resend";
 import { createClient } from '@supabase/supabase-js';
@@ -199,6 +199,7 @@ export async function POST(req: Request) {
       const company = await loadCompany(booking.company_id);
 
       if (isExclusiveBooking(booking, company)) {
+        const payout = await computeProviderPayout(booking, company);
         await resend.emails.send({
           from: 'AeroPark Ops <ops@aeroparkdirect.co.uk>',
           to: company?.email || 'info@aeroparkdirect.co.uk',
@@ -221,6 +222,13 @@ export async function POST(req: Request) {
               <p><strong>Pick-up:</strong> ${escapeHtml(booking.pickup_date)} @ ${escapeHtml(booking.pickup_time)}</p>
               <p><strong>Terminal:</strong> ${escapeHtml(booking.terminal)}</p>
               <p><strong>Flight:</strong> ${escapeHtml(booking.flight_number)}</p>
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-top: 20px;">
+                <h3 style="margin-top: 0; color: #0f172a;">Payout</h3>
+                <p style="margin: 4px 0;">Parking value: <strong>£${payout.parkingGross.toFixed(2)}</strong></p>
+                ${payout.coveredFee > 0 ? `<p style="margin: 4px 0;">Exit/barrier fee (covered by AeroPark, no commission): <strong>£${payout.coveredFee.toFixed(2)}</strong></p>` : ''}
+                <p style="margin: 4px 0;">Our commission (${payout.commissionPct}%): <strong>-£${payout.yourCommission.toFixed(2)}</strong></p>
+                <p style="margin: 8px 0 0; font-size: 17px;">You receive: <strong>£${payout.operatorPayout.toFixed(2)}</strong></p>
+              </div>
             </div>
           `
         });

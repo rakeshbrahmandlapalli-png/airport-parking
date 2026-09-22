@@ -66,6 +66,8 @@ const defaultCompany = {
   on_return_ltn: "",
   ltn_fees_note: "",
   lhr_fees_note: "",
+  ltn_fees_amount: 0,
+  lhr_fees_amount: 0,
   address: "",
   postcode: "",
   map_url: "",
@@ -1530,6 +1532,9 @@ export default function AdminCompaniesPage() {
                               <label className={labelCls}>Extra Charges Note — Luton (shown to the customer)</label>
                               <input type="text" value={getField(editingCompany, newCompany, "ltn_fees_note") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "ltn_fees_note", e.target.value)} className={inputCls} placeholder="e.g. £10 barrier charge payable on collection" />
                               <p className="text-[10px] text-slate-500 font-bold leading-relaxed">Shows as an amber notice on the result card &amp; checkout. Leave BLANK for all-inclusive operators (e.g. AeroPark Exclusive) — they keep their &ldquo;No Hidden Fees&rdquo; badge.</p>
+                              <label className={`${labelCls} pt-3 block`}>Extra Charge Amount — Luton (£)</label>
+                              <input type="number" step="0.01" min="0" value={getField(editingCompany, newCompany, "ltn_fees_amount") || 0} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "ltn_fees_amount", parseFloat(e.target.value) || 0)} className={`${inputCls} !text-amber-400`} />
+                              <p className="text-[10px] text-slate-500 font-bold leading-relaxed">The real £ value of the note above. Used ONLY when a booking is fee-covered (e.g. a transferred Exclusive booking) — split out of the operator's payout and paid to them in full, with no commission taken.</p>
                             </div>
                             <ReviewSection airport="ltn" color="blue" reviews={getField(editingCompany, newCompany, "ltn_reviews") || []} onAdd={() => addReview("ltn")} onRemove={idx => removeReview("ltn", idx)} onUpdate={(idx, f, v) => updateReview("ltn", idx, f, v)} />
                           </>
@@ -1574,6 +1579,9 @@ export default function AdminCompaniesPage() {
                               <label className={labelCls}>Extra Charges Note — Heathrow (shown to the customer)</label>
                               <input type="text" value={getField(editingCompany, newCompany, "lhr_fees_note") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "lhr_fees_note", e.target.value)} className={inputCls} placeholder="e.g. ULEZ / drop-off charge not included" />
                               <p className="text-[10px] text-slate-500 font-bold leading-relaxed">Shows as an amber notice on the result card &amp; checkout. Leave BLANK for all-inclusive operators (e.g. AeroPark Exclusive) — they keep their &ldquo;No Hidden Fees&rdquo; badge.</p>
+                              <label className={`${labelCls} pt-3 block`}>Extra Charge Amount — Heathrow (£)</label>
+                              <input type="number" step="0.01" min="0" value={getField(editingCompany, newCompany, "lhr_fees_amount") || 0} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "lhr_fees_amount", parseFloat(e.target.value) || 0)} className={`${inputCls} !text-amber-400`} />
+                              <p className="text-[10px] text-slate-500 font-bold leading-relaxed">The real £ value of the note above. Used ONLY when a booking is fee-covered (e.g. a transferred Exclusive booking) — split out of the operator's payout and paid to them in full, with no commission taken.</p>
                             </div>
                             <ReviewSection airport="lhr" color="purple" reviews={getField(editingCompany, newCompany, "lhr_reviews") || []} onAdd={() => addReview("lhr")} onRemove={idx => removeReview("lhr", idx)} onUpdate={(idx, f, v) => updateReview("lhr", idx, f, v)} />
                           </>
