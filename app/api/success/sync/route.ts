@@ -42,6 +42,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ booking: existing, created: false });
     }
 
+    // Same "was this actually bought as Exclusive" signal as the webhook's
+    // primary path (app/api/webhook/route.ts) — decided once, at creation,
+    // so the fee-covered promise survives a later reassignment to a normal
+    // operator. See app/api/send/route.ts isExclusiveBooking.
+    let companyName = "";
+    if (m.company_id) {
+      const { data: comp } = await supabaseAdmin
+        .from("companies").select("name").eq("id", m.company_id).maybeSingle();
+      companyName = comp?.name || "";
+    }
+    const isExclusive = (m.service_type || "").toLowerCase().includes('exclusive') || companyName.toLowerCase().includes('exclusive');
+
     const shortId = "APD-" + Math.random().toString(36).substring(2, 8).toUpperCase();
     const newRow = {
       booking_ref:       shortId,
@@ -73,6 +85,7 @@ export async function POST(req: Request) {
       promo_code:        (m.promo_used && m.promo_used !== "None") ? m.promo_used : null,
       gclid:             m.gclid || null,
       status:            "confirmed",
+      fees_covered:      isExclusive,
     };
 
     await supabaseAdmin

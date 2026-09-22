@@ -132,6 +132,12 @@ export async function POST(req: Request) {
 
       const myRef = m.booking_ref || `APD-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
+      // Decided ONCE, at creation, from what was actually bought — not from
+      // whichever operator the booking happens to be assigned to later. An
+      // Exclusive purchase keeps its "fees covered" promise even after it's
+      // handed to a normal operator; see app/api/send/route.ts isExclusiveBooking.
+      const isExclusive = (m.service_type || "").toLowerCase().includes('exclusive') || resolvedCompany?.name?.toLowerCase().includes('exclusive');
+
       const bookingData = {
         booking_ref: myRef,
         full_name: m.full_name || "",
@@ -166,6 +172,7 @@ export async function POST(req: Request) {
             ? Number(m.commission_percentage)
             : null,
         gclid: m.gclid || null,
+        fees_covered: isExclusive,
       };
 
       const { error: upsertError } = await supabase
@@ -184,9 +191,7 @@ export async function POST(req: Request) {
       if (newBooking) {
         const webhookWon = newBooking.booking_ref === myRef;
 
-        // 🟢 VIP CONCIERGE INTERCEPT LOGIC
-        const isExclusive = newBooking.service_type?.toLowerCase().includes('exclusive') || resolvedCompany?.name?.toLowerCase().includes('exclusive');
-
+        // 🟢 VIP CONCIERGE INTERCEPT LOGIC (isExclusive computed above, before insert)
         if (webhookWon) {
           if (isExclusive) {
             // Send the holding email for VIPs (no instructions yet)
