@@ -142,7 +142,7 @@ export default function PromoBanner() {
   const slide = slides[current];
 
   return (
-    <div className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white relative shadow-md overflow-hidden">
+    <div className="w-full bg-[#1D4ED8] text-white relative shadow-md overflow-hidden">
 
       {/* ── Main content row ── */}
       <div className="flex items-center justify-center gap-2 px-10 py-2.5 min-h-[42px]">
