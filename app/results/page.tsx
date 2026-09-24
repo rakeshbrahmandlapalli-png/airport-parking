@@ -7,7 +7,7 @@ import ModifySearchModal from "@/components/ModifySearchModal";
 import { checkAvailability, getLaunchTimerConfig, type LaunchTimerConfig } from "../actions";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-  Clock, ArrowLeft, Plane, AlertCircle, Zap, CarFront, CheckCircle2, Loader2,
+  Clock, ArrowLeft, Plane, AlertCircle, CarFront, CheckCircle2, Loader2,
   Mail, Send,
 } from "lucide-react";
 import Link from "next/link";
@@ -61,20 +61,20 @@ const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffec
 // the layout never shifts ("jumps") between loading and loaded states.
 function ResultsCardSkeleton() {
   return (
-    <div className="bg-[#0F1523] border border-slate-800 rounded-2xl p-5 md:p-6 animate-pulse" aria-hidden="true">
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 animate-pulse" aria-hidden="true">
       <div className="flex items-center gap-4">
-        <div className="w-16 h-16 rounded-2xl bg-slate-800 shrink-0" />
+        <div className="w-16 h-16 rounded-2xl bg-slate-200 shrink-0" />
         <div className="flex-1 space-y-2.5">
-          <div className="h-4 w-2/5 bg-slate-800 rounded" />
-          <div className="h-3 w-1/4 bg-slate-800 rounded" />
+          <div className="h-4 w-2/5 bg-slate-200 rounded" />
+          <div className="h-3 w-1/4 bg-slate-200 rounded" />
         </div>
-        <div className="h-10 w-24 bg-slate-800 rounded-xl shrink-0" />
+        <div className="h-10 w-24 bg-slate-200 rounded-xl shrink-0" />
       </div>
       <div className="mt-5 space-y-2.5">
-        <div className="h-3 w-full bg-slate-800 rounded" />
-        <div className="h-3 w-3/4 bg-slate-800 rounded" />
+        <div className="h-3 w-full bg-slate-200 rounded" />
+        <div className="h-3 w-3/4 bg-slate-200 rounded" />
       </div>
-      <div className="mt-5 h-12 w-full bg-slate-800 rounded-xl" />
+      <div className="mt-5 h-12 w-full bg-slate-200 rounded-xl" />
     </div>
   );
 }
@@ -181,13 +181,13 @@ function EmailQuoteCard({
 
   if (status === "sent") {
     return (
-      <div className="mt-6 bg-[#0F1523] border border-emerald-700/40 rounded-3xl p-6 sm:p-7 flex items-center gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
-          <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+      <div className="mt-6 bg-white border border-emerald-200 rounded-2xl p-6 sm:p-7 flex items-center gap-4">
+        <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0">
+          <CheckCircle2 className="w-6 h-6 text-emerald-600" />
         </div>
         <div>
-          <p className="text-white font-black text-base">Quote sent — check your inbox</p>
-          <p className="text-slate-400 text-sm mt-0.5">
+          <p className="text-slate-900 font-black text-base">Quote sent — check your inbox</p>
+          <p className="text-slate-500 text-sm mt-0.5">
             We've emailed your {airport} quote. Your prices and free cancellation are held — book whenever you're ready.
           </p>
         </div>
@@ -196,16 +196,15 @@ function EmailQuoteCard({
   }
 
   return (
-    <div className="mt-6 bg-gradient-to-br from-[#0F1523] to-[#0B1220] border border-blue-900/40 rounded-3xl p-6 sm:p-7 shadow-xl relative overflow-hidden">
-      <div className="absolute -right-12 -top-12 w-40 h-40 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="mt-6 bg-white border border-blue-200 rounded-2xl p-6 sm:p-7 shadow-sm relative overflow-hidden">
       <div className="relative z-10 flex flex-col sm:flex-row sm:items-center gap-5">
         <div className="flex items-center gap-4 flex-1 min-w-0">
-          <div className="w-12 h-12 rounded-2xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center shrink-0">
-            <Mail className="w-6 h-6 text-blue-400" />
+          <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0">
+            <Mail className="w-6 h-6 text-blue-600" />
           </div>
           <div className="min-w-0">
-            <p className="text-white font-black text-base leading-tight">Not ready to book? Email me this quote</p>
-            <p className="text-slate-400 text-sm mt-0.5">
+            <p className="text-slate-900 font-black text-base leading-tight">Not ready to book? Email me this quote</p>
+            <p className="text-slate-500 text-sm mt-0.5">
               We'll send your prices and a link to pick up exactly where you left off.
             </p>
           </div>
@@ -217,7 +216,7 @@ function EmailQuoteCard({
             onChange={(e) => { setEmail(e.target.value); if (status === "error") setStatus("idle"); }}
             placeholder="your@email.com"
             autoComplete="email"
-            className="flex-1 bg-[#070B14] border border-slate-700 focus:border-blue-500 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition-colors"
+            className="flex-1 bg-slate-50 border border-slate-300 focus:border-blue-500 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 outline-none transition-colors"
           />
           <button
             type="submit"
@@ -231,7 +230,7 @@ function EmailQuoteCard({
         </form>
       </div>
       {status === "error" && (
-        <p className="relative z-10 text-rose-400 text-xs font-semibold mt-3 sm:text-right">{error}</p>
+        <p className="relative z-10 text-rose-600 text-xs font-semibold mt-3 sm:text-right">{error}</p>
       )}
     </div>
   );
@@ -591,14 +590,14 @@ function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
   // Pure client-side view transform over the engine's authoritative output.
   // "recommended" keeps the engine's pinned order; price/rating only re-sort.
   const visibleOperators = useMemo<PricedCompany[]>(
-    () => sortCompanies(processedCompanies as PricedCompany[], sortKey, isHeathrow),
-    [processedCompanies, sortKey, isHeathrow],
+    () => sortCompanies(processedCompanies as PricedCompany[], sortKey),
+    [processedCompanies, sortKey],
   );
 
   return (
     <div className="max-w-[1000px] mx-auto px-4 py-6 md:py-8">
       <div className="mb-10 mt-4">
-        <BookingStepper currentStep={stepToIndex(searchParams.get("step"))} />
+        <BookingStepper currentStep={stepToIndex(searchParams.get("step"))} theme="light" />
       </div>
 
       <SearchSummaryHeader
@@ -610,25 +609,39 @@ function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
         onEdit={onEditSearch}
       />
 
-      {/* Aero concierge bar + launch timer */}
+      {/* Aero concierge — a status line, not a notification card */}
       <div className="flex flex-col lg:flex-row gap-3 mb-8">
-        <div className="flex-1 bg-[#0F1523] border border-blue-900/30 rounded-2xl p-4 sm:p-5 flex items-center gap-4 shadow-xl relative overflow-hidden">
-          <div className="absolute -right-16 -top-16 w-48 h-48 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none" />
-          <AeroAvatar size="md" />
-          <div className="relative z-10 min-w-0">
-            <p className="text-[9px] font-black uppercase tracking-[0.18em] text-blue-400 flex items-center gap-1.5">
-              <Zap className="w-3 h-3 fill-current" /> Aero concierge · {visibleOperators.length} verified
-            </p>
-            <p className="text-white text-sm font-bold leading-snug mt-0.5">
+        <div className="flex-1 flex items-center gap-3 py-1 min-w-0">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event("aero:open-chat"))}
+            aria-label="Ask Aero a question"
+            title="Ask Aero a question"
+            className="shrink-0 rounded-xl transition-transform hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          >
+            <AeroAvatar size="sm" />
+          </button>
+          <div className="min-w-0">
+            <p className="text-slate-800 text-sm leading-snug">
+              <span className="font-bold text-blue-600 mr-1">Aero:</span>
               {visibleOperators.length > 0
-                ? `All approved & secured for your dates at ${isHeathrow ? "Heathrow" : "Luton"}.`
+                ? `${visibleOperators.length} operators available for your dates at ${isHeathrow ? "Heathrow" : "Luton"}.`
                 : "Scanning approved compounds..."}
+              {visibleOperators.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new Event("aero:open-chat"))}
+                  className="ml-2 font-semibold text-blue-600 underline-offset-2 hover:underline"
+                >
+                  Ask Aero
+                </button>
+              )}
             </p>
-            {aeroTip && <p className="text-blue-200/80 text-xs font-medium mt-1.5 leading-relaxed">{aeroTip}</p>}
+            {aeroTip && <p className="text-slate-500 text-xs font-medium mt-1 leading-relaxed">{aeroTip}</p>}
             {liveLoadingIds.size > 0 && (
-              <p className="flex items-center gap-1.5 text-[9px] font-black text-emerald-400 uppercase tracking-widest mt-1.5 animate-pulse">
+              <p className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 mt-1">
                 <Loader2 className="w-3 h-3 animate-spin" />
-                Updating live rates ({liveLoadingIds.size} remaining)...
+                Updating live rates ({liveLoadingIds.size} remaining)…
               </p>
             )}
           </div>
@@ -636,6 +649,7 @@ function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
         {timerConfig?.enabled && (
           <div className="lg:w-[300px] shrink-0">
             <LaunchTimer
+              theme="light"
               hours={timerConfig.hours}
               slotsClaimed={timerConfig.slotsClaimed}
               totalSlots={timerConfig.slotsTotal}
@@ -657,18 +671,18 @@ function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
           <ResultsCardSkeleton />
         </div>
       ) : visibleOperators.length === 0 ? (
-        <div className="text-center py-16 md:py-24 bg-[#0F1523] rounded-2xl border border-dashed border-slate-700 px-6">
+        <div className="text-center py-16 md:py-24 bg-white rounded-2xl border border-dashed border-slate-300 px-6">
           {!serviceType.toLowerCase().includes("meet") ? (
             <>
-              <div className="w-16 h-16 bg-[#1A2235] border border-slate-700 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                <Clock className="w-8 h-8 text-blue-400" />
+              <div className="w-16 h-16 bg-slate-100 border border-slate-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <Clock className="w-8 h-8 text-blue-600" />
               </div>
-              <h3 className="text-2xl font-black text-white mb-3">
+              <h3 className="text-2xl font-black text-slate-900 mb-3">
                 {serviceType.toLowerCase().includes("hotel") ? "Hotel & Parking" : "Park & Ride"} Coming Soon!
               </h3>
-              <p className="text-slate-400 text-sm max-w-lg mx-auto mb-8">
+              <p className="text-slate-500 text-sm max-w-lg mx-auto mb-8">
                 We're onboarding top operators. In the meantime, our{" "}
-                <strong className="text-white">Meet & Greet</strong> service is often the same price.
+                <strong className="text-slate-900">Meet & Greet</strong> service is often the same price.
               </p>
               <button
                 onClick={() => { const q = new URLSearchParams(searchParams.toString()); q.set("type", "meet-greet"); router.push(`/results?${q.toString()}`); }}
@@ -679,8 +693,8 @@ function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
             </>
           ) : (
             <>
-              <AlertCircle className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-              <h3 className="text-xl font-black text-white">No Active Providers Found</h3>
+              <AlertCircle className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+              <h3 className="text-xl font-black text-slate-900">No Active Providers Found</h3>
               <p className="text-slate-500 mt-2 text-sm max-w-md mx-auto">Try modifying your search dates or times.</p>
             </>
           )}
@@ -732,7 +746,7 @@ function AirportTitle() {
   const airport = searchParams.get("airport") || "Luton (LTN)";
   const code = airport.includes("Heathrow") ? "LHR" : "LTN";
   return (
-    <span className="text-sm md:text-base font-black text-white tracking-widest leading-none">{code}</span>
+    <span className="text-sm md:text-base font-black text-slate-900 tracking-widest leading-none">{code}</span>
   );
 }
 
@@ -752,17 +766,14 @@ function ResultsLayout() {
   }), [searchParams]);
 
   return (
-    <main suppressHydrationWarning className="min-h-screen bg-[#060A14] font-sans antialiased pb-24 md:pb-32 selection:bg-blue-500/30 overflow-x-hidden relative">
-      <div className="fixed inset-0 pointer-events-none z-0 flex justify-center overflow-hidden">
-        <div className="w-full max-w-[1000px] h-96 bg-blue-600/5 blur-[120px] rounded-full absolute -top-48" />
-      </div>
-      <header className="sticky top-0 z-[100] bg-[#060A14]/90 backdrop-blur-xl border-b border-white/5 h-16 md:h-20 flex items-center px-4 md:px-8 justify-between shadow-2xl">
-        <Link href="/" className="text-slate-400 hover:text-white transition-colors flex items-center gap-2 group touch-manipulation">
+    <main suppressHydrationWarning className="min-h-screen bg-slate-50 font-sans antialiased pb-24 md:pb-32 selection:bg-blue-500/30 overflow-x-hidden relative">
+      <header className="sticky top-0 z-[100] bg-white border-b border-slate-200 h-16 md:h-20 flex items-center px-4 md:px-8 justify-between shadow-sm">
+        <Link href="/" className="text-slate-500 hover:text-slate-900 transition-colors flex items-center gap-2 group touch-manipulation">
           <ArrowLeft className="w-4 h-4 md:w-5 md:h-5 lg:group-hover:-translate-x-1 transition-transform" />
           <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] hidden md:block">Home</span>
         </Link>
-        <Link href="/" className="flex items-center gap-1.5 md:gap-2 text-white font-black tracking-tighter text-xl md:text-2xl uppercase absolute left-1/2 -translate-x-1/2 touch-manipulation">
-          <Plane className="w-5 h-5 md:w-7 md:h-7 text-blue-500 rotate-45" /> AEROPARK<span className="text-blue-500">DIRECT</span>
+        <Link href="/" className="flex items-center gap-1.5 md:gap-2 text-slate-900 font-black tracking-tighter text-xl md:text-2xl uppercase absolute left-1/2 -translate-x-1/2 touch-manipulation">
+          <Plane className="w-5 h-5 md:w-7 md:h-7 text-blue-600 rotate-45" /> AEROPARK<span className="text-blue-600">DIRECT</span>
         </Link>
         <button onClick={() => setIsEditModalOpen(true)} className="text-right touch-manipulation cursor-pointer">
           <AirportTitle />
@@ -782,7 +793,7 @@ function ResultsLayout() {
 export default function ResultsPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#060A14] flex items-center justify-center font-black text-slate-400 uppercase tracking-[0.2em] text-xs">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center font-black text-slate-500 uppercase tracking-[0.2em] text-xs">
         Aero is Initializing...
       </div>
     }>

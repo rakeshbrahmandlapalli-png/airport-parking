@@ -9,7 +9,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { Send, Minus, Bot, ShieldCheck, Mail, Volume2, VolumeX, CheckCircle2, Loader2 } from "lucide-react";
+import { Send, Minus, Mail, Volume2, VolumeX, CheckCircle2, Loader2 } from "lucide-react";
 import { useChat } from "@ai-sdk/react";
 import type { Message, ToolInvocation } from "ai";
 
@@ -272,6 +272,18 @@ export default function Chatbot() {
     } catch { /* TTS unsupported — ignore */ }
   }, [messages, ttsOn, isLoading]);
 
+  // Other parts of the page (e.g. the Aero mark on the results page) can open
+  // the chat by dispatching `aero:open-chat`, so the mascot is never a dead click.
+  useEffect(() => {
+    const open = () => {
+      setIsOpen(true);
+      setShowNudge(false);
+      try { (window as any).gtag?.("event", "chat_opened", { from: "aero_mark" }); } catch {}
+    };
+    window.addEventListener("aero:open-chat", open);
+    return () => window.removeEventListener("aero:open-chat", open);
+  }, []);
+
   if (hidden) return null;
 
   const openChat = () => {
@@ -406,15 +418,12 @@ export default function Chatbot() {
             </div>
 
             <div>
-              <h3 className="text-white font-black uppercase tracking-[0.15em] text-xs flex items-center gap-2">
-                Aero Intelligence <ShieldCheck className="w-3 h-3 text-blue-400" />
+              <h3 className="text-white font-bold text-sm">
+                Aero
               </h3>
-              {/* Original "Neural Link Active" status */}
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest animate-pulse">
-                  Neural Link Active
-                </span>
-              </div>
+              <p className="text-slate-400 text-xs mt-0.5">
+                AeroPark Direct booking assistant
+              </p>
             </div>
           </div>
 
@@ -534,8 +543,8 @@ export default function Chatbot() {
             </div>
           </form>
 
-          <p className="text-center text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-4 flex items-center justify-center gap-2">
-            <Bot className="w-3 h-3" /> Powered by Aero Intelligence v3.4
+          <p className="text-center text-[11px] text-slate-400 mt-4">
+            Prices are checked live. For anything urgent, call 07868 277648.
           </p>
         </div>
       </div>

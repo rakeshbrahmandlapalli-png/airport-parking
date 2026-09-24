@@ -107,17 +107,13 @@ export interface SearchCriteria {
   isHeathrow: boolean;
 }
 
-export type SortKey = "recommended" | "price" | "rating";
+// No "rating" sort: the stored reviews were seeded placeholders, so sorting by
+// them would rank real operators on invented scores.
+export type SortKey = "recommended" | "price";
 
 // ─── Pure helpers (no React, no `any`) ─────────────────────────────────────────
 
 export const formatGBP = (n: number): string => `£${n.toFixed(2)}`;
-
-export function getAvgRating(reviews: Review[] | null | undefined): number | null {
-  if (!reviews?.length) return null;
-  const sum = reviews.reduce((acc, r) => acc + (Number(r.rating) || 0), 0);
-  return Math.round((sum / reviews.length) * 10) / 10;
-}
 
 /** Map a badge/highlight label to a representative Lucide icon. */
 export function getBadgeIcon(label: string): LucideIcon {
@@ -142,12 +138,19 @@ export function getBadgeIcon(label: string): LucideIcon {
   return Info;
 }
 
+// AeroPark's own policy, enforced by /cancel and the refund rules — true for
+// every booking whoever the operator is.
+const CANCELLATION_POLICY = "Free cancellation up to 24h before drop-off";
+
 /**
- * Build 3–4 selling-point bullets for a result card. Prefers the operator's own
- * badges (filtered to the relevant service category), then tops up with
- * brand-universal trust points so every card shows a consistent value stack.
+ * Selling points for a result card: only claims someone has actually stood
+ * behind. That is AeroPark's own cancellation policy, plus whatever badges were
+ * entered for this operator in Admin → Companies. There is deliberately NO
+ * built-in fallback list any more: it used to add "Fully insured", "SIA &
+ * DBS-vetted drivers" and similar to every operator, unverified, which is how
+ * three different companies ended up with word-for-word identical claims.
  */
-export function buildHighlights(company: Company, isMeetGreet: boolean, max = 4, feesNote?: string | null): string[] {
+export function buildHighlights(company: Company, _isMeetGreet: boolean, max = 4, feesNote?: string | null): string[] {
   // If this operator discloses an extra charge, never surface a "no hidden
   // fees" style badge — it would directly contradict the disclosure.
   const hasExtraFees = !!(feesNote && feesNote.trim());
@@ -155,20 +158,20 @@ export function buildHighlights(company: Company, isMeetGreet: boolean, max = 4,
   const fromBadges = (company.badges ?? [])
     .filter((b) => b.category === "General" || b.category === company.category)
     .map((b) => b.label.trim())
-    .filter(Boolean);
-
-  const defaults = isMeetGreet
-    ? ["SIA & DBS-vetted drivers", "Terminal drop-off & collection", "Free cancellation", "Fully insured compound"]
-    : ["Free 24/7 shuttle transfers", "Fully insured compound", "Free cancellation", "24/7 CCTV & patrols"];
+    .filter(Boolean)
+    // The universal line below already covers cancellation.
+    .filter((label) => !/cancel/i.test(label));
 
   const seen = new Set<string>();
   const out: string[] = [];
-  for (const item of [...fromBadges, ...defaults]) {
+  for (const item of [...fromBadges, CANCELLATION_POLICY]) {
     if (hasExtraFees && /hidden fee|no\s+fee|all[- ]?inclusive/i.test(item)) continue;
     const key = item.toLowerCase();
     if (!seen.has(key)) { seen.add(key); out.push(item); }
     if (out.length >= max) break;
   }
+  // Keep the policy line even if an operator has `max` badges of its own.
+  if (!out.includes(CANCELLATION_POLICY)) out[out.length - 1] = CANCELLATION_POLICY;
   return out;
 }
 
@@ -176,27 +179,13 @@ export function buildHighlights(company: Company, isMeetGreet: boolean, max = 4,
  * Apply a client-side sort to already-priced companies. "recommended" preserves
  * the engine's authoritative pinned order; other keys are pure view transforms.
  */
-export function sortCompanies(
-  companies: PricedCompany[],
-  key: SortKey,
-  isHeathrow: boolean,
-): PricedCompany[] {
+export function sortCompanies(companies: PricedCompany[], key: SortKey): PricedCompany[] {
   if (key === "recommended") return companies;
-  const copy = [...companies];
-  if (key === "price") {
-    copy.sort((a, b) => {
-      const af = a.calculatedPriceObj.final || Number.POSITIVE_INFINITY;
-      const bf = b.calculatedPriceObj.final || Number.POSITIVE_INFINITY;
-      return af - bf;
-    });
-  } else {
-    copy.sort((a, b) => {
-      const ar = getAvgRating(isHeathrow ? a.lhr_reviews : a.ltn_reviews) ?? 0;
-      const br = getAvgRating(isHeathrow ? b.lhr_reviews : b.ltn_reviews) ?? 0;
-      return br - ar;
-    });
-  }
-  return copy;
+  return [...companies].sort((a, b) => {
+    const af = a.calculatedPriceObj.final || Number.POSITIVE_INFINITY;
+    const bf = b.calculatedPriceObj.final || Number.POSITIVE_INFINITY;
+    return af - bf;
+  });
 }
 
 // ─── ADMIN AUDIT LEDGER ────────────────────────────────────────────────────────

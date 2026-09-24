@@ -5,7 +5,6 @@ import type { SortKey } from "@/app/lib/domain";
 const OPTIONS: { key: SortKey; label: string }[] = [
   { key: "recommended", label: "Recommended" },
   { key: "price", label: "Lowest price" },
-  { key: "rating", label: "Top rated" },
 ];
 
 interface FilterBarProps {
@@ -30,7 +29,7 @@ export function FilterBar({ value, onChange, count }: FilterBarProps) {
             className={`min-h-11 whitespace-nowrap rounded-xl px-4 text-[11px] font-black uppercase tracking-widest transition-colors touch-manipulation ${
               value === o.key
                 ? "bg-blue-600 text-white"
-                : "border border-slate-800 bg-[#0F1523] text-slate-400 hover:text-slate-200"
+                : "border border-slate-300 bg-white text-slate-500 hover:text-slate-900"
             }`}
           >
             {o.label}

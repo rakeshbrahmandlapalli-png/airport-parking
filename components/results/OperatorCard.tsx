@@ -4,13 +4,8 @@
 // CLS-locked price slot, skeleton (not spinner) for live-rate loading, and a
 // 56px full-width CTA. Consumes the typed PricedCompany emitted by the engine.
 
-import {
-  ChevronRight, Lock, Ban, AlertCircle, Star, ThumbsUp, Zap, Clock,
-  Sparkles, Percent,
-} from "lucide-react";
-import {
-  type PricedCompany, getAvgRating, getBadgeIcon, buildHighlights, formatGBP,
-} from "@/app/lib/domain";
+import { ChevronRight, Lock, Ban, AlertCircle, Check } from "lucide-react";
+import { type PricedCompany, buildHighlights, formatGBP } from "@/app/lib/domain";
 import { OperatorDetailPanel } from "./OperatorDetailPanel";
 
 interface OperatorCardProps {
@@ -30,12 +25,9 @@ export function OperatorCard({
   operator, duration, isHeathrow, featured = false, liveRateLoading = false,
   promo = null, onSelect,
 }: OperatorCardProps) {
-  const { original, final, source } = operator.calculatedPriceObj;
+  const { original, final } = operator.calculatedPriceObj;
 
   const isSoldOut = Boolean(isHeathrow ? operator.lhr_sold_out : operator.ltn_sold_out);
-  const isFeatured = Boolean(isHeathrow ? operator.lhr_featured : operator.ltn_featured);
-  const reviews = (isHeathrow ? operator.lhr_reviews : operator.ltn_reviews) ?? [];
-  const rating = getAvgRating(reviews);
   const isMeetGreet = (operator.category ?? "").toLowerCase().includes("meet");
   const feesNote = ((isHeathrow ? operator.lhr_fees_note : operator.ltn_fees_note) ?? "").trim();
   const highlights = buildHighlights(operator, isMeetGreet, 4, feesNote);
@@ -56,80 +48,65 @@ export function OperatorCard({
     ? Math.round(final * (1 - promo.percent) * 100) / 100
     : null;
   const perDay = duration > 0 ? final / duration : final;
-  const categoryLabel =
-    operator.category?.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) ?? "Meet & Greet";
 
   return (
     <article
-      className={`rounded-2xl overflow-hidden border bg-[#0B1120] transition-colors ${
-        featured ? "border-blue-500/40 shadow-[0_0_40px_-12px_rgba(37,99,235,0.25)]" : "border-slate-800 hover:border-slate-700"
+      className={`rounded-2xl overflow-hidden border bg-white transition-colors ${
+        featured ? "border-blue-500/60" : "border-slate-200 hover:border-slate-300"
       } ${isSoldOut ? "opacity-60 grayscale-[30%]" : ""}`}
     >
-      {featured && <div className="h-[3px] bg-gradient-to-r from-blue-600 via-indigo-500 to-emerald-500" />}
+      {featured && <div className="h-[3px] bg-blue-500" />}
 
       <div className="flex flex-col md:flex-row">
         {/* ── LEFT: identity, trust, highlights ── */}
         <div className="flex-1 p-5 md:p-7">
-          {(isFeatured || savePct > 0) && (
+          {(featured || savePct > 0) && (
             <div className="mb-3 flex flex-wrap gap-2">
-              {isFeatured ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#064E3B] px-3 py-1 text-[9px] font-black uppercase tracking-widest text-emerald-400">
-                  <Sparkles className="h-3 w-3" /> Best Weekend Value
+              {featured ? (
+                <span className="rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                  Recommended
                 </span>
               ) : savePct > 0 ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#1E3A8A] px-3 py-1 text-[9px] font-black uppercase tracking-widest text-blue-300">
-                  <Percent className="h-3 w-3" /> {savePct}% Launch Special
+                <span className="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+                  {savePct}% off right now
                 </span>
               ) : null}
             </div>
           )}
 
-          {/* Logo + name + rating */}
-          <div className="flex items-center gap-4">
+          {/* Logo + name. No star rating: the stored reviews were seeded
+              placeholders, not real customers, so no rating is shown until
+              genuine reviews exist. */}
+          {/* Clicking the operator opens their details — people click the name
+              expecting more, and a name that does nothing is a dead click. */}
+          <button
+            type="button"
+            onClick={(e) => {
+              const details = e.currentTarget.closest("article")?.querySelector("details");
+              if (details) details.open = !details.open;
+            }}
+            className="group flex w-full min-w-0 items-center gap-4 text-left"
+            aria-label={`Show details for ${operator.name}`}
+          >
             <OperatorLogo logoUrl={operator.logo_url} name={operator.name} />
-            <div className="min-w-0">
-              <h2 className="truncate text-xl font-black uppercase leading-tight tracking-tight text-white md:text-2xl">
-                {operator.name}
-              </h2>
-              {rating !== null && (
-                <div className="mt-1 flex items-center gap-1.5">
-                  <span className="flex items-center gap-0.5 text-amber-400">
-                    <Star className="h-3.5 w-3.5 fill-current" />
-                    <span className="text-sm font-black">{rating.toFixed(1)}</span>
-                  </span>
-                  <span className="text-[11px] font-bold text-slate-500">
-                    ({reviews.length} operator {reviews.length === 1 ? "review" : "reviews"})
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
+            <h2 className="min-w-0 truncate text-xl font-black uppercase leading-tight tracking-tight text-slate-900 underline-offset-4 decoration-2 group-hover:underline md:text-2xl">
+              {operator.name}
+            </h2>
+          </button>
 
-          {/* Trust badge row */}
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Pill label={categoryLabel} icon={ThumbsUp} tone="slate" />
-            {source === "api"
-              ? <Pill label="Live Rate" icon={Zap} tone="emerald" />
-              : <Pill label="Fixed Rate" icon={Clock} tone="slate" />}
-          </div>
-
-          {/* 3–4 selling-point bullets */}
-          <ul className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-            {highlights.map((point) => {
-              const Icon = getBadgeIcon(point);
-              return (
-                <li key={point} className="flex items-center gap-2 text-[13px] font-bold text-slate-300">
-                  <Icon className="h-4 w-4 shrink-0 text-emerald-400" />
-                  <span className="leading-tight">{point}</span>
-                </li>
-              );
-            })}
-          </ul>
+          {/* Selling points — one flowing line, not a spec-sheet grid */}
+          <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px] font-bold text-slate-700">
+            {highlights.map((point) => (
+              <span key={point} className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                <Check className="h-3.5 w-3.5 shrink-0 text-emerald-500" /> {point}
+              </span>
+            ))}
+          </p>
 
           {feesNote && (
-            <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-400/60 bg-amber-400/[0.16] px-3.5 py-3">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
-              <p className="text-[13px] font-bold leading-snug text-amber-50">{feesNote}</p>
+            <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-3">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+              <p className="text-[13px] font-bold leading-snug text-amber-900">{feesNote}</p>
             </div>
           )}
 
@@ -137,7 +114,7 @@ export function OperatorCard({
         </div>
 
         {/* ── RIGHT: price + CTA (CLS-locked) ── */}
-        <div className="flex shrink-0 flex-col items-center justify-center border-t border-slate-800/80 bg-[#060B14] px-6 py-6 md:w-[290px] md:border-l md:border-t-0">
+        <div className="flex shrink-0 flex-col items-center justify-center border-t border-slate-200 bg-slate-50 px-6 py-6 md:w-[290px] md:border-l md:border-t-0">
           <p className="mb-1.5 text-center text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">
             Total Stay Cost
           </p>
@@ -146,23 +123,23 @@ export function OperatorCard({
           <div className="flex min-h-[104px] w-full flex-col items-center justify-center">
             {showSkeleton && (
               <div className="w-full animate-pulse space-y-2.5" aria-hidden="true">
-                <div className="mx-auto h-10 w-32 rounded-lg bg-slate-800" />
-                <div className="mx-auto h-3 w-24 rounded bg-slate-800" />
+                <div className="mx-auto h-10 w-32 rounded-lg bg-slate-200" />
+                <div className="mx-auto h-3 w-24 rounded bg-slate-200" />
               </div>
             )}
 
             {showNA && (
               <div className="flex flex-col items-center gap-1 text-center">
-                <AlertCircle className="mb-1 h-6 w-6 text-slate-600" />
-                <p className="text-lg font-black tracking-tight text-slate-400">Unavailable</p>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-slate-600">
+                <AlertCircle className="mb-1 h-6 w-6 text-slate-400" />
+                <p className="text-lg font-black tracking-tight text-slate-500">Unavailable</p>
+                <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">
                   {isApiMode ? "Rate offline" : "No price for these dates"}
                 </p>
               </div>
             )}
 
             {isSoldOut && (
-              <p className="text-4xl font-black leading-none tracking-tighter text-slate-500 line-through">
+              <p className="text-4xl font-black leading-none tracking-tighter text-slate-400 line-through">
                 {final > 0 ? formatGBP(final) : "—"}
               </p>
             )}
@@ -174,22 +151,22 @@ export function OperatorCard({
                     operator's own original would be a third number on one card
                     and helps nobody. */}
                 {withCode !== null ? (
-                  <p className="text-sm font-bold text-slate-500 line-through">{formatGBP(final)}</p>
+                  <p className="text-sm font-bold text-slate-400 line-through">{formatGBP(final)}</p>
                 ) : isDiscounted ? (
-                  <p className="text-sm font-bold text-slate-500 line-through">{formatGBP(original)}</p>
+                  <p className="text-sm font-bold text-slate-400 line-through">{formatGBP(original)}</p>
                 ) : null}
 
-                <p className="text-[2.75rem] font-black leading-none tracking-tighter text-emerald-400">
+                <p className="text-[2.75rem] font-black leading-none tracking-tighter text-emerald-600">
                   {formatGBP(withCode ?? final)}
                 </p>
 
                 {withCode !== null && (
-                  <p className="mt-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-emerald-400">
+                  <p className="mt-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-emerald-700">
                     with code {promo!.code}
                   </p>
                 )}
 
-                <p className="mt-1.5 text-[10px] font-black uppercase tracking-[0.1em] text-slate-400">
+                <p className="mt-1.5 text-[10px] font-black uppercase tracking-[0.1em] text-slate-500">
                   Avg {formatGBP((withCode ?? final) / Math.max(1, duration))} / day
                 </p>
               </div>
@@ -203,8 +180,8 @@ export function OperatorCard({
             onClick={() => canSelect && onSelect(operator, final)}
             className={`mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-xl text-sm font-black uppercase tracking-[0.15em] transition-all touch-manipulation ${
               canSelect
-                ? "bg-[#2563EB] text-white shadow-[0_8px_24px_-6px_rgba(37,99,235,0.6)] hover:bg-blue-500 active:scale-[0.98]"
-                : "cursor-not-allowed border border-slate-700 bg-slate-800 text-slate-500"
+                ? "bg-[#2563EB] text-white shadow-[0_8px_24px_-6px_rgba(37,99,235,0.35)] hover:bg-blue-500 active:scale-[0.98]"
+                : "cursor-not-allowed border border-slate-300 bg-slate-100 text-slate-400"
             }`}
           >
             {isSoldOut ? <><Ban className="h-4 w-4" /> Sold Out</>
@@ -214,7 +191,7 @@ export function OperatorCard({
           </button>
 
           {canSelect && (
-            <p className="mt-3 flex items-center justify-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-slate-600">
+            <p className="mt-3 flex items-center justify-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-slate-400">
               <Lock className="h-3 w-3" /> Secured by Stripe
             </p>
           )}
@@ -241,20 +218,8 @@ function OperatorLogo({ logoUrl, name }: { logoUrl?: string | null; name: string
     );
   }
   return (
-    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-slate-700/50 bg-[#1A2235] text-xl font-black text-slate-400">
+    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-100 text-xl font-black text-slate-500">
       {name.charAt(0).toUpperCase()}
     </div>
-  );
-}
-
-function Pill({ label, icon: Icon, tone }: { label: string; icon: typeof ThumbsUp; tone: "slate" | "emerald" }) {
-  const tones = {
-    slate: "bg-slate-800 text-slate-300 border-slate-700",
-    emerald: "bg-emerald-500/[0.06] text-emerald-400 border-emerald-500/20",
-  } as const;
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[9px] font-black uppercase tracking-widest ${tones[tone]}`}>
-      <Icon className="h-3 w-3" /> {label}
-    </span>
   );
 }
