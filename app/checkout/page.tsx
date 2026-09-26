@@ -456,7 +456,14 @@ function CheckoutContent() {
         return m ? decodeURIComponent(m[1]) : "";
       } catch { return ""; }
     };
-    const gclid = readCookie("ap_gclid") || readCookie("ap_wbraid") || readCookie("ap_gbraid");
+    // wbraid/gbraid (iOS click ids) are tagged with their type so the upload can
+    // send them in the right field — Google rejects them in the gclid field.
+    const wbraid = readCookie("ap_wbraid");
+    const gbraid = readCookie("ap_gbraid");
+    const gclid =
+      readCookie("ap_gclid") ||
+      (wbraid ? `wbraid:${wbraid}` : "") ||
+      (gbraid ? `gbraid:${gbraid}` : "");
 
     try {
       const response = await fetch("/api/checkout", {

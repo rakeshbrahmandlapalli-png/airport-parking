@@ -24,7 +24,7 @@ import {
   CheckCircle2, AlertCircle, PlaneLanding, PlaneTakeoff,
   XCircle, ChevronDown, Download, Briefcase, Receipt, Star,
   Database, Smartphone, Wallet, Settings2, Activity, Tags,
-  Zap, PiggyBank, Link2, Copy, Mail, Send, RefreshCw
+  Zap, PiggyBank, Link2, Copy, Mail, Send, RefreshCw, Megaphone
 } from "lucide-react";
 
 function DashboardContent() {

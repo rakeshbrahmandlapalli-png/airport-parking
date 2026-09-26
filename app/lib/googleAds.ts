@@ -28,6 +28,7 @@ import { logger } from "@/app/lib/logger";
 const GOOGLE_ADS_API_VERSION = process.env.GOOGLE_ADS_API_VERSION || "v23";
 
 interface OfflineConversionInput {
+  /** Stored click id: a gclid, or "wbraid:…" / "gbraid:…". */
   gclid: string;
   value: number;
   currency?: string;
@@ -90,6 +91,20 @@ async function getAccessToken(cfg: NonNullable<ReturnType<typeof envConfig>>): P
   return json.access_token as string;
 }
 
+export type ClickIdField = "gclid" | "wbraid" | "gbraid";
+
+/**
+ * bookings.gclid holds a plain gclid, or an iOS click id tagged with its type
+ * ("wbraid:…" / "gbraid:…"). Google Ads needs each type in its own field.
+ */
+export function parseClickId(raw: string | null | undefined): { field: ClickIdField; id: string } | null {
+  const value = String(raw || "").trim();
+  if (!value) return null;
+  const m = value.match(/^(wbraid|gbraid):(.+)$/);
+  if (m) return { field: m[1] as ClickIdField, id: m[2] };
+  return { field: "gclid", id: value };
+}
+
 /** Format a Date as Google Ads requires: "yyyy-MM-dd HH:mm:ss+00:00". */
 function formatConversionDateTime(d: Date): string {
   const iso = d.toISOString();          // 2026-06-04T12:00:00.000Z
@@ -106,7 +121,8 @@ export async function reportOfflineConversion(input: OfflineConversionInput): Pr
     logger.info("[GoogleAds] Offline conversion skipped — API env vars not configured.");
     return false;
   }
-  if (!input.gclid) {
+  const clickId = parseClickId(input.gclid);
+  if (!clickId) {
     logger.info("[GoogleAds] Offline conversion skipped — no gclid on this booking.");
     return false;
   }
@@ -117,7 +133,7 @@ export async function reportOfflineConversion(input: OfflineConversionInput): Pr
     const body = {
       conversions: [
         {
-          gclid: input.gclid,
+          [clickId.field]: clickId.id,
           conversionAction: `customers/${cfg.customerId}/conversionActions/${cfg.conversionActionId}`,
           conversionDateTime: formatConversionDateTime(input.when || new Date()),
           conversionValue: Number(input.value) || 0,
