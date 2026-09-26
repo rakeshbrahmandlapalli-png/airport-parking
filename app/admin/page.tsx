@@ -1416,6 +1416,13 @@ function DashboardContent() {
                             <CheckCircle2 className="w-2.5 h-2.5" />fees covered
                           </span>
                         )}
+                        {String(b.gclid || "").trim() && (
+                          <div>
+                            <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-sky-400 mt-0.5" title="Came from a Google Ads click (click ID saved). Counts toward Ads conversions.">
+                              <Megaphone className="w-2.5 h-2.5" />from Google Ads
+                            </span>
+                          </div>
+                        )}
                       </td>
 
                       {/* ── REVENUE ── */}
