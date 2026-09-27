@@ -182,3 +182,59 @@ button:active {
   from { transform: rotate(0deg) translateX(180px) rotate(0deg); }
   to { transform: rotate(360deg) translateX(180px) rotate(-360deg); }
 }
+/* 8. ADMIN THEME — dark (default) and light.
+   The admin's colour utilities (bg-canvas, bg-panel-*, text-fg-*, and
+   bg-fg/…, border-fg/… for lines and overlays) read these variables, so one
+   attribute on the admin root switches the whole admin. Set by
+   app/admin/layout.tsx before first paint and by components/admin/ThemeToggle. */
+[data-admin-root] {
+  --admin-canvas: 11 17 32;     /* #0B1120 page */
+  --admin-panel: 15 21 35;      /* #0F1523 cards */
+  --admin-panel-2: 19 26 43;    /* #131A2B headers, raised rows */
+  --admin-panel-3: 26 34 53;    /* #1A2235 secondary buttons */
+  --admin-panel-4: 34 43 64;    /* #222B40 hover on panel-3 */
+  --admin-fg: 255 255 255;      /* headings, values */
+  --admin-fg-2: 203 213 225;    /* body text */
+  --admin-fg-3: 148 163 184;    /* labels */
+  --admin-fg-4: 124 139 161;    /* hints, meta */
+  color-scheme: dark;
+}
+
+[data-admin-root][data-admin-theme="light"] {
+  --admin-canvas: 241 245 249;  /* slate-100 */
+  --admin-panel: 255 255 255;
+  --admin-panel-2: 248 250 252; /* slate-50 */
+  --admin-panel-3: 238 242 247;
+  --admin-panel-4: 226 232 240; /* slate-200 */
+  --admin-fg: 15 23 42;         /* slate-900 */
+  --admin-fg-2: 51 65 85;       /* slate-700 */
+  --admin-fg-3: 71 85 105;      /* slate-600 */
+  --admin-fg-4: 100 116 139;    /* slate-500 */
+  color-scheme: light;
+}
+
+[data-admin-root] {
+  background-color: rgb(var(--admin-canvas));
+  color: rgb(var(--admin-fg));
+}
+
+/* Accent text is tuned for navy. On white, the same shades are too pale to
+   read, so light mode swaps them for darker ones. (Not while hovered, so a
+   hover:text-white on a filled button still wins.) */
+[data-admin-theme="light"] :is(.text-blue-300, .text-blue-400, .text-blue-500, .text-sky-300, .text-sky-400):not(:hover) { color: #1d4ed8; }
+[data-admin-theme="light"] :is(.text-emerald-300, .text-emerald-400, .text-emerald-500, .text-green-400):not(:hover) { color: #047857; }
+[data-admin-theme="light"] :is(.text-amber-200, .text-amber-300, .text-amber-400, .text-amber-500, .text-orange-400, .text-yellow-400):not(:hover) { color: #b45309; }
+[data-admin-theme="light"] :is(.text-red-200, .text-red-300, .text-red-400, .text-rose-400):not(:hover) { color: #b91c1c; }
+[data-admin-theme="light"] :is(.text-violet-300, .text-violet-400, .text-purple-300, .text-purple-400, .text-indigo-300, .text-indigo-400):not(:hover) { color: #6d28d9; }
+
+/* Autofilled fields keep the theme's colours instead of going yellow/white. */
+[data-admin-root] input:-webkit-autofill,
+[data-admin-root] input:-webkit-autofill:hover,
+[data-admin-root] input:-webkit-autofill:focus,
+[data-admin-root] textarea:-webkit-autofill,
+[data-admin-root] select:-webkit-autofill {
+  -webkit-text-fill-color: rgb(var(--admin-fg)) !important;
+  caret-color: rgb(var(--admin-fg));
+  -webkit-box-shadow: 0 0 0px 1000px rgb(var(--admin-canvas)) inset !important;
+  transition: background-color 9999s ease-in-out 0s;
+}

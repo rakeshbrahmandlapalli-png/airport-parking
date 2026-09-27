@@ -7,7 +7,7 @@ import { recordAdminAction } from "@/app/lib/audit-client";
 import { useRouter } from "next/navigation";
 import { AdminSidebar, AdminMobileNav } from "@/components/admin/AdminNav";
 import {
-  Tags, Plus, Trash2, Save, X, Power, Plane, LogOut,
+  Tags, Plus, Trash2, Save, X, Power, Plane,
   Settings2, Percent, CheckCircle2,
 } from "lucide-react";
 
@@ -115,21 +115,21 @@ export default function PromoManager() {
     return { total, active, disabled, avg };
   }, [promos]);
 
-  const inputStyle = "w-full bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white] placeholder:text-slate-500";
+  const inputStyle = "w-full bg-panel-3 border border-fg/[0.12] hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-fg font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:rgb(var(--admin-fg))] placeholder:text-fg-4";
 
   if (loading) return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0B1120] via-[#0A0E1A] to-[#0B1120] flex flex-col items-center justify-center text-white relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-canvas via-canvas to-canvas flex flex-col items-center justify-center text-fg relative overflow-hidden">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px]"></div>
       <div className="relative z-10">
         <div className="absolute inset-0 border-t-2 border-blue-500 rounded-full animate-spin"></div>
         <Plane className="w-10 h-10 text-blue-500 m-4 animate-pulse rotate-45" />
       </div>
-      <p className="font-black text-slate-400 tracking-widest uppercase text-xs mt-6 relative z-10">Loading Discounts...</p>
+      <p className="font-black text-fg-3 tracking-widest uppercase text-xs mt-6 relative z-10">Loading Discounts...</p>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0B1120] via-[#0A0E1A] to-[#0B1120] font-sans flex flex-col md:flex-row overflow-hidden text-slate-100 antialiased selection:bg-blue-600/30 relative">
+    <div className="min-h-screen bg-gradient-to-b from-canvas via-canvas to-canvas font-sans flex flex-col md:flex-row overflow-hidden text-fg antialiased selection:bg-blue-600/30 relative">
 
       {/* 🌌 AMBIENT BACKGROUND GLOW LAYERS */}
       <div className="fixed top-[-200px] left-[200px] w-[600px] h-[600px] bg-blue-600/8 rounded-full blur-[140px] pointer-events-none z-0"></div>
@@ -141,27 +141,14 @@ export default function PromoManager() {
       {/* WORKSPACE */}
       <main className="flex-1 p-4 md:p-8 lg:p-12 w-full overflow-y-auto h-screen relative pb-32 md:pb-12 custom-scrollbar z-10">
 
-        {/* MOBILE HEADER */}
-        <div className="md:hidden flex items-center justify-between mb-8 bg-[#131A2B]/80 backdrop-blur-xl p-5 rounded-3xl border border-slate-800 shadow-2xl">
-          <div className="flex items-center gap-3 font-black text-xl uppercase tracking-tighter text-white">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-500 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(37,99,235,0.5)]">
-              <Plane className="w-6 h-6 text-white rotate-45" />
-            </div>
-            OPS<span className="text-blue-500">CENTER</span>
-          </div>
-          <button onClick={() => router.push("/admin/login")} className="p-3 bg-slate-800 rounded-xl text-slate-300 hover:text-red-400 transition-colors">
-            <LogOut className="w-5 h-5" />
-          </button>
-        </div>
-
         {/* 🟢 COMMAND HERO PANEL (header + stat rail, one unit) */}
-        <div className="relative mb-8 rounded-[2rem] border border-slate-800/80 bg-gradient-to-br from-[#131A2B] to-[#0F1523] shadow-2xl overflow-hidden">
+        <div className="relative mb-8 rounded-[2rem] border border-fg/[0.08] bg-gradient-to-br from-panel-2 to-panel shadow-2xl overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/40 to-transparent"></div>
           <div className="absolute -top-24 -left-24 w-72 h-72 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none"></div>
           <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-indigo-600/10 rounded-full blur-[100px] pointer-events-none"></div>
 
           {/* ROW 1 — title */}
-          <div className="relative p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-slate-800/60">
+          <div className="relative p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-fg/[0.08]">
             <div className="flex items-center gap-5">
               <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600/30 to-blue-600/5 border border-blue-500/30 items-center justify-center shadow-[0_0_25px_rgba(37,99,235,0.3)] shrink-0">
                 <Tags className="w-7 h-7 text-blue-400" />
@@ -173,8 +160,8 @@ export default function PromoManager() {
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
                     Discount Engine
                   </div>
-                  <div className="hidden sm:block w-px h-3 bg-slate-700"></div>
-                  <div className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.2em] flex items-center gap-1.5">
+                  <div className="hidden sm:block w-px h-3 bg-panel-4"></div>
+                  <div className="text-fg-4 font-bold text-[10px] uppercase tracking-[0.2em] flex items-center gap-1.5">
                     <Tags className="w-3 h-3" /> {stats.total} voucher{stats.total === 1 ? "" : "s"}
                   </div>
                 </div>
@@ -183,22 +170,22 @@ export default function PromoManager() {
           </div>
 
           {/* ROW 2 — stat rail */}
-          <div className="relative grid grid-cols-2 lg:grid-cols-4 divide-x divide-slate-800/60">
+          <div className="relative grid grid-cols-2 lg:grid-cols-4 divide-x divide-fg/[0.08]">
             {[
               { label: "Total Codes", value: `${stats.total}`, sub: "in the engine", color: "#3b82f6", Icon: Tags },
               { label: "Active", value: `${stats.active}`, sub: "live & redeemable", color: "#10b981", Icon: CheckCircle2 },
               { label: "Disabled", value: `${stats.disabled}`, sub: "paused codes", color: "#64748b", Icon: Power },
               { label: "Avg Discount", value: `${stats.avg.toFixed(1)}%`, sub: "mean value", color: "#f59e0b", Icon: Percent },
             ].map((s, i) => (
-              <div key={i} className="p-5 md:p-6 relative group hover:bg-white/[0.02] transition-colors border-t border-slate-800/60 lg:border-t-0">
+              <div key={i} className="p-5 md:p-6 relative group hover:bg-fg/[0.02] transition-colors border-t border-fg/[0.08] lg:border-t-0">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: s.color }}>{s.label}</p>
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center border" style={{ background: `${s.color}1A`, borderColor: `${s.color}33` }}>
                     <s.Icon className="w-3.5 h-3.5" style={{ color: s.color }} />
                   </div>
                 </div>
-                <p className="text-2xl md:text-3xl font-black text-white tracking-tight tabular-nums">{s.value}</p>
-                <p className="text-[10px] font-bold text-slate-500 mt-1.5 truncate">{s.sub}</p>
+                <p className="text-2xl md:text-3xl font-black text-fg tracking-tight tabular-nums">{s.value}</p>
+                <p className="text-[10px] font-bold text-fg-4 mt-1.5 truncate">{s.sub}</p>
                 <div className="absolute bottom-0 left-0 h-0.5 w-0 group-hover:w-full transition-all duration-500" style={{ background: s.color }}></div>
               </div>
             ))}
@@ -215,19 +202,19 @@ export default function PromoManager() {
           )}
 
           {/* Create New Form */}
-          <div className="bg-[#131A2B] p-8 rounded-[2rem] border border-slate-800 shadow-xl mb-8 flex flex-col sm:flex-row gap-6 sm:items-end relative overflow-hidden">
+          <div className="bg-panel-2 p-8 rounded-[2rem] border border-fg/[0.08] shadow-xl mb-8 flex flex-col sm:flex-row gap-6 sm:items-end relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
 
             <div className="flex-1">
-              <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest mb-2">Discount Code</label>
+              <label className="text-[10px] font-black uppercase text-fg-4 block ml-1 tracking-widest mb-2">Discount Code</label>
               <input placeholder="E.g. AERO15" value={newCode} onChange={(e) => setNewCode(e.target.value.toUpperCase())} className={inputStyle} />
             </div>
             <div className="w-full sm:w-32">
-              <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest mb-2">Discount %</label>
+              <label className="text-[10px] font-black uppercase text-fg-4 block ml-1 tracking-widest mb-2">Discount %</label>
               <input type="number" placeholder="15" value={newPercent} onChange={(e) => setNewPercent(e.target.value)} className={inputStyle} />
             </div>
             <div className="flex-1">
-              <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest mb-2">Banner Message <span className="text-slate-600 normal-case tracking-normal font-bold">(optional)</span></label>
+              <label className="text-[10px] font-black uppercase text-fg-4 block ml-1 tracking-widest mb-2">Banner Message <span className="text-fg-4 normal-case tracking-normal font-bold">(optional)</span></label>
               <input placeholder="Leave blank for “Save 15% on your next booking!”" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} className={inputStyle} />
             </div>
             <button
@@ -240,9 +227,9 @@ export default function PromoManager() {
           </div>
 
           {/* Promo List */}
-          <div className="bg-[#131A2B] rounded-[2rem] border border-slate-800 overflow-hidden shadow-2xl">
+          <div className="bg-panel-2 rounded-[2rem] border border-fg/[0.08] overflow-hidden shadow-2xl">
             <table className="w-full text-left whitespace-nowrap">
-              <thead className="bg-[#0F1523] border-b border-slate-800 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">
+              <thead className="bg-panel border-b border-fg/[0.08] text-[10px] font-black uppercase text-fg-4 tracking-[0.2em]">
                 <tr>
                   <th className="px-8 py-6">Voucher Code</th>
                   <th className="px-8 py-6 text-center">Value (%)</th>
@@ -251,21 +238,21 @@ export default function PromoManager() {
                   <th className="px-8 py-6 text-right">System Controls</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-fg/[0.08]">
                 {promos.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-8 py-12 text-center text-slate-500 font-bold text-sm">
+                    <td colSpan={5} className="px-8 py-12 text-center text-fg-4 font-bold text-sm">
                       No active promotions in the database.
                     </td>
                   </tr>
                 ) : promos.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-800/30 transition-all group">
+                  <tr key={p.id} className="hover:bg-fg/[0.045] transition-all group">
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
                           <Tags className="w-5 h-5 text-blue-400" />
                         </div>
-                        <span className="font-black text-white tracking-widest">{p.code}</span>
+                        <span className="font-black text-fg tracking-widest">{p.code}</span>
                       </div>
                     </td>
 
@@ -286,14 +273,14 @@ export default function PromoManager() {
                           onChange={(e) => setEditValues({ ...editValues, message: e.target.value })}
                         />
                       ) : (
-                        <span className={`text-xs font-bold whitespace-normal ${p.message ? "text-slate-300" : "text-slate-600 italic"}`}>
+                        <span className={`text-xs font-bold whitespace-normal ${p.message ? "text-fg-2" : "text-fg-4 italic"}`}>
                           {p.message || `Save ${p.discount_percent}% on your next booking!`}
                         </span>
                       )}
                     </td>
 
                     <td className="px-8 py-6 text-center">
-                      <button onClick={() => savePromo({ ...p, is_active: !p.is_active })} className={`px-4 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mx-auto transition-all ${p.is_active ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20" : "bg-slate-800 text-slate-500 border-slate-700 hover:bg-slate-700"}`}>
+                      <button onClick={() => savePromo({ ...p, is_active: !p.is_active })} className={`px-4 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mx-auto transition-all ${p.is_active ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20" : "bg-panel-3 text-fg-4 border-fg/[0.12] hover:bg-panel-4"}`}>
                         <Power className="w-3.5 h-3.5" /> {p.is_active ? "Active" : "Disabled"}
                       </button>
                     </td>
@@ -307,8 +294,8 @@ export default function PromoManager() {
                           </>
                         ) : (
                           <>
-                            <button onClick={() => startEdit(p)} className="p-2.5 bg-[#1A2235] text-slate-300 hover:bg-blue-600 hover:text-white rounded-lg border border-slate-700 hover:border-transparent transition-all active:scale-95"><Settings2 className="w-4 h-4" /></button>
-                            <button onClick={() => deletePromo(p.id)} className="p-2.5 bg-[#1A2235] text-slate-500 hover:bg-red-500 hover:text-white rounded-lg border border-slate-700 hover:border-transparent transition-all active:scale-95"><Trash2 className="w-4 h-4" /></button>
+                            <button onClick={() => startEdit(p)} className="p-2.5 bg-panel-3 text-fg-2 hover:bg-blue-600 hover:text-white rounded-lg border border-fg/[0.12] hover:border-transparent transition-all active:scale-95"><Settings2 className="w-4 h-4" /></button>
+                            <button onClick={() => deletePromo(p.id)} className="p-2.5 bg-panel-3 text-fg-4 hover:bg-red-500 hover:text-white rounded-lg border border-fg/[0.12] hover:border-transparent transition-all active:scale-95"><Trash2 className="w-4 h-4" /></button>
                           </>
                         )}
                       </div>

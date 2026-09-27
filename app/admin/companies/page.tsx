@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { AdminSidebar, AdminMobileNav } from "@/components/admin/AdminNav";
 import {
   Search, Plus, Save, Car, Loader2, X, Trash2, MapPin,
-  PlaneTakeoff, Settings2, Building2, LogOut, Plane, Network, SlidersHorizontal, ArrowUpDown,
+  PlaneTakeoff, Settings2, Building2, Plane, Network, SlidersHorizontal, ArrowUpDown,
   Award, AlertOctagon, FileText, Download, Percent, ArrowUp, ArrowDown, ChevronDown,
   AlertCircle, Filter, Phone, Code2, Zap, Eye, EyeOff, Copy,
   Check, CheckCircle2, Calculator, RefreshCw, Info, Image as ImageIcon,
@@ -93,7 +93,7 @@ function ToastContainer({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id
           warning: <AlertOctagon className="w-4 h-4 shrink-0" />,
         };
         return (
-          <div key={t.id} className={`pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-2xl border shadow-2xl text-white text-sm font-bold max-w-sm animate-in slide-in-from-right-4 duration-300 ${styles[t.type]}`}>
+          <div key={t.id} className={`pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-2xl border shadow-2xl text-fg text-sm font-bold max-w-sm animate-in slide-in-from-right-4 duration-300 ${styles[t.type]}`}>
             {icons[t.type]}
             <span className="flex-1">{t.message}</span>
             <button onClick={() => onDismiss(t.id)} className="ml-2 opacity-70 hover:opacity-100 transition-opacity">
@@ -142,7 +142,7 @@ function CopyButton({ text }: { text: string }) {
   };
   return (
     <button type="button" onClick={copy} title="Copy to clipboard"
-      className="p-1.5 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 transition-all active:scale-95">
+      className="p-1.5 rounded-lg text-fg-4 hover:text-blue-400 hover:bg-blue-500/10 transition-all active:scale-95">
       {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
     </button>
   );
@@ -156,7 +156,7 @@ function TokenInput({ value, onChange, inputCls }: { value: string; onChange: (v
         value={value} onChange={(e) => onChange(e.target.value)} className={`${inputCls} pr-20`} />
       <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
         <CopyButton text={value} />
-        <button type="button" onClick={() => setShow(s => !s)} className="p-1.5 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 transition-all">
+        <button type="button" onClick={() => setShow(s => !s)} className="p-1.5 rounded-lg text-fg-4 hover:text-blue-400 hover:bg-blue-500/10 transition-all">
           {show ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
         </button>
       </div>
@@ -170,24 +170,24 @@ function PricingModeToggle({ value, onChange, hasToken }: {
 }) {
   const mode = value === "pivot" ? "pivot" : "api";
   return (
-    <div className="bg-[#1A2235] rounded-2xl border border-slate-700/50 overflow-hidden">
-      <div className="p-5 border-b border-slate-800">
-        <h3 className="text-sm font-black text-white flex items-center gap-2">
+    <div className="bg-panel-3 rounded-2xl border border-fg/[0.12] overflow-hidden">
+      <div className="p-5 border-b border-fg/[0.08]">
+        <h3 className="text-sm font-black text-fg flex items-center gap-2">
           <Zap className="w-4 h-4 text-amber-400" /> Pricing Source
         </h3>
-        <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-widest">
+        <p className="text-[10px] text-fg-4 font-bold mt-1 uppercase tracking-widest">
           Choose whether this provider shows LIVE API prices or your MANUAL pivot table.
         </p>
       </div>
       <div className="p-5">
-        <div className="relative grid grid-cols-2 bg-[#0F1523] rounded-xl p-1.5 border border-slate-800">
+        <div className="relative grid grid-cols-2 bg-panel rounded-xl p-1.5 border border-fg/[0.08]">
           <div className={`absolute top-1.5 bottom-1.5 w-[calc(50%-0.375rem)] rounded-lg transition-all duration-300 ${mode === "api" ? "left-1.5 bg-emerald-600 shadow-[0_0_20px_rgba(16,185,129,0.4)]" : "left-[calc(50%+0rem)] bg-blue-600 shadow-[0_0_20px_rgba(37,99,235,0.4)]"}`} />
           <button type="button" onClick={() => onChange("api")}
-            className={`relative z-10 flex items-center justify-center gap-2 py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-colors ${mode === "api" ? "text-white" : "text-slate-400 hover:text-slate-200"}`}>
+            className={`relative z-10 flex items-center justify-center gap-2 py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-colors ${mode === "api" ? "text-white" : "text-fg-3 hover:text-fg-2"}`}>
             <Zap className="w-4 h-4" /> Live API
           </button>
           <button type="button" onClick={() => onChange("pivot")}
-            className={`relative z-10 flex items-center justify-center gap-2 py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-colors ${mode === "pivot" ? "text-white" : "text-slate-400 hover:text-slate-200"}`}>
+            className={`relative z-10 flex items-center justify-center gap-2 py-3 rounded-lg text-xs font-black uppercase tracking-widest transition-colors ${mode === "pivot" ? "text-white" : "text-fg-3 hover:text-fg-2"}`}>
             <Calculator className="w-4 h-4" /> Pivot Table
           </button>
         </div>
@@ -253,36 +253,36 @@ function PricePreviewCalc({ company, markupPercent }: { company: any, markupPerc
   const afterMarkup = afterModifier * (1 + markupPercent / 100);
   const hasData = rawBase > 0;
   return (
-    <div className="bg-[#0A101D] border border-blue-500/20 rounded-2xl p-5 mt-4">
+    <div className="bg-canvas border border-blue-500/20 rounded-2xl p-5 mt-4">
       <h4 className="text-blue-400 font-black text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
         <Calculator className="w-4 h-4" /> Price Simulator (Pivot-Based)
       </h4>
       <div className="flex flex-wrap gap-3 mb-4">
         <div className="flex items-center gap-2">
-          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Days</label>
+          <label className="text-[10px] font-black text-fg-4 uppercase tracking-widest">Days</label>
           <input type="number" min={1} max={32} value={days} onChange={e => setDays(Math.max(1, Math.min(32, parseInt(e.target.value) || 1)))}
-            className="w-16 bg-[#1A2235] border border-slate-700 rounded-lg px-3 py-2 text-sm font-black text-white outline-none focus:border-blue-500 text-center" />
+            className="w-16 bg-panel-3 border border-fg/[0.12] rounded-lg px-3 py-2 text-sm font-black text-fg outline-none focus:border-blue-500 text-center" />
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Airport</label>
+          <label className="text-[10px] font-black text-fg-4 uppercase tracking-widest">Airport</label>
           <select value={airport} onChange={e => setAirport(e.target.value as "ltn" | "lhr")}
-            className="bg-[#1A2235] border border-slate-700 rounded-lg px-3 py-2 text-sm font-black text-white outline-none focus:border-blue-500">
+            className="bg-panel-3 border border-fg/[0.12] rounded-lg px-3 py-2 text-sm font-black text-fg outline-none focus:border-blue-500">
             <option value="ltn">LTN</option><option value="lhr">LHR</option>
           </select>
         </div>
       </div>
       {!hasData ? (
-        <p className="text-[11px] text-slate-500 italic">No pivot data set. Enter prices in the Luton/Heathrow Ops tabs.</p>
+        <p className="text-[11px] text-fg-4 italic">No pivot data set. Enter prices in the Luton/Heathrow Ops tabs.</p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
           {[
-            { label: "Base (Pivot)", value: rawBase, color: "text-slate-300" },
+            { label: "Base (Pivot)", value: rawBase, color: "text-fg-2" },
             { label: `After ${surcharge}% Surcharge`, value: afterSurcharge, color: "text-amber-400" },
             { label: `After ${modifier}x Modifier`, value: afterModifier, color: "text-blue-400" },
             { label: `Final + ${markupPercent}% Markup`, value: afterMarkup, color: "text-emerald-400", bold: true },
           ].map(({ label, value, color, bold }) => (
-            <div key={label} className="bg-[#131A2B] p-3 rounded-xl border border-slate-800">
-              <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">{label}</p>
+            <div key={label} className="bg-panel-2 p-3 rounded-xl border border-fg/[0.08]">
+              <p className="text-[9px] font-black uppercase tracking-widest text-fg-4 mb-1">{label}</p>
               <p className={`font-black tracking-tighter ${color} ${bold ? "text-xl" : "text-lg"}`}>£{value.toFixed(2)}</p>
             </div>
           ))}
@@ -327,16 +327,16 @@ function ApiDiagnosticPanel({ token, company, markupPercent = 10 }: { token: str
       <p className="text-[10px] text-emerald-500/70 font-bold mb-4">Ping the gateway with this token and see exactly what comes back.</p>
       <div className="flex flex-wrap gap-3 mb-4">
         <div>
-          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">Drop-off Date</label>
-          <input type="date" value={dropDate} onChange={e => setDropDate(e.target.value)} className="bg-[#1A2235] border border-slate-700 rounded-lg px-3 py-2 text-xs font-bold text-white outline-none focus:border-emerald-500 [color-scheme:dark]" />
+          <label className="text-[9px] font-black text-fg-4 uppercase tracking-widest block mb-1">Drop-off Date</label>
+          <input type="date" value={dropDate} onChange={e => setDropDate(e.target.value)} className="bg-panel-3 border border-fg/[0.12] rounded-lg px-3 py-2 text-xs font-bold text-fg outline-none focus:border-emerald-500 " />
         </div>
         <div>
-          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">Pick-up Date</label>
-          <input type="date" value={pickDate} onChange={e => setPickDate(e.target.value)} className="bg-[#1A2235] border border-slate-700 rounded-lg px-3 py-2 text-xs font-bold text-white outline-none focus:border-emerald-500 [color-scheme:dark]" />
+          <label className="text-[9px] font-black text-fg-4 uppercase tracking-widest block mb-1">Pick-up Date</label>
+          <input type="date" value={pickDate} onChange={e => setPickDate(e.target.value)} className="bg-panel-3 border border-fg/[0.12] rounded-lg px-3 py-2 text-xs font-bold text-fg outline-none focus:border-emerald-500 " />
         </div>
         <div className="flex items-end">
           <button type="button" onClick={run} disabled={loading || !token}
-            className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg text-xs font-black uppercase tracking-widest transition-all shadow-md active:scale-95">
+            className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-panel-4 disabled:text-fg-4 text-white rounded-lg text-xs font-black uppercase tracking-widest transition-all shadow-md active:scale-95">
             {loading ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Pinging...</> : <><Zap className="w-3.5 h-3.5" /> Run Test</>}
           </button>
         </div>
@@ -346,28 +346,28 @@ function ApiDiagnosticPanel({ token, company, markupPercent = 10 }: { token: str
         <div className="space-y-3 mt-3">
           <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border ${result.ok ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-red-500/10 text-red-400 border-red-500/20"}`}>
             {result.ok ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
-            HTTP {result.status} · {result.ok ? "Success" : "Failed"}<span className="text-slate-500 font-bold">· {dropDate} → {pickDate}</span>
+            HTTP {result.status} · {result.ok ? "Success" : "Failed"}<span className="text-fg-4 font-bold">· {dropDate} → {pickDate}</span>
           </div>
           {rawApiPrice != null && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
-                { label: "API Raw Price", value: rawApiPrice, color: "text-slate-300" },
+                { label: "API Raw Price", value: rawApiPrice, color: "text-fg-2" },
                 { label: `+${surcharge}% Surcharge`, value: rawApiPrice * (1 + surcharge / 100), color: "text-amber-400" },
                 { label: `×${modifier} Modifier`, value: rawApiPrice * (1 + surcharge / 100) * modifier, color: "text-blue-400" },
                 { label: `+${markupPercent}% Markup → Final`, value: finalPrice!, color: "text-emerald-400", bold: true },
               ].map(({ label, value, color, bold }) => (
-                <div key={label} className="bg-[#0A101D] border border-slate-800 rounded-xl p-3">
-                  <p className="text-[8px] font-black uppercase tracking-widest text-slate-600 mb-1">{label}</p>
+                <div key={label} className="bg-canvas border border-fg/[0.08] rounded-xl p-3">
+                  <p className="text-[8px] font-black uppercase tracking-widest text-fg-4 mb-1">{label}</p>
                   <p className={`font-black tracking-tighter ${color} ${bold ? "text-xl" : "text-sm"}`}>£{value.toFixed(2)}</p>
                 </div>
               ))}
             </div>
           )}
           <details>
-            <summary className="text-[10px] font-black uppercase tracking-widest text-slate-500 cursor-pointer hover:text-slate-300 transition-colors flex items-center gap-1.5">
+            <summary className="text-[10px] font-black uppercase tracking-widest text-fg-4 cursor-pointer hover:text-fg-2 transition-colors flex items-center gap-1.5">
               <ChevronDown className="w-3.5 h-3.5" /> Raw Gateway Response
             </summary>
-            <pre className="mt-2 p-4 bg-[#060A14] border border-slate-800 rounded-xl text-[10px] font-mono text-emerald-400 overflow-x-auto max-h-48 whitespace-pre-wrap">
+            <pre className="mt-2 p-4 bg-[#060A14] border border-fg/[0.08] rounded-xl text-[10px] font-mono text-emerald-400 overflow-x-auto max-h-48 whitespace-pre-wrap">
               {JSON.stringify(result.data ?? result.error, null, 2)}
             </pre>
           </details>
@@ -390,10 +390,10 @@ function CompanyQuickStats({ company }: { company: any }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
       {stats.map(s => (
-        <div key={s.label} className="bg-[#0A101D] border border-slate-800 rounded-xl p-4 text-center">
-          <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">{s.label}</p>
+        <div key={s.label} className="bg-canvas border border-fg/[0.08] rounded-xl p-4 text-center">
+          <p className="text-[9px] font-black uppercase tracking-widest text-fg-4 mb-1">{s.label}</p>
           <p className={`text-2xl font-black tracking-tighter ${s.color}`}>{s.value}</p>
-          <p className="text-[9px] text-slate-600 font-bold mt-0.5">{s.sub}</p>
+          <p className="text-[9px] text-fg-4 font-bold mt-0.5">{s.sub}</p>
         </div>
       ))}
     </div>
@@ -431,25 +431,25 @@ function RowApiChecker({ company, markupPercent }: { company: any; markupPercent
   if (!company.api_token) return null;
   return (
     <td colSpan={7} className="px-0 pb-0 pt-0">
-      <div className="border-t border-slate-800/60">
+      <div className="border-t border-fg/[0.08]">
         <button type="button" onClick={() => setOpen(o => !o)}
           className="w-full flex items-center gap-2 px-8 py-2.5 text-[9px] font-black uppercase tracking-widest text-emerald-500/70 hover:text-emerald-400 hover:bg-emerald-500/5 transition-all">
           <Network className="w-3 h-3" /> Check Live API Rate
           <ChevronDown className={`w-3 h-3 ml-auto transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
         </button>
         {open && (
-          <div className="px-8 pb-6 pt-3 bg-[#0A101D]/60 border-t border-emerald-500/10 animate-in fade-in duration-200">
+          <div className="px-8 pb-6 pt-3 bg-canvas/60 border-t border-emerald-500/10 animate-in fade-in duration-200">
             <div className="flex flex-wrap items-end gap-3 mb-4">
               <div>
-                <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest block mb-1">Drop-off</label>
-                <input type="date" value={dropDate} onChange={e => setDropDate(e.target.value)} className="bg-[#1A2235] border border-slate-700 rounded-lg px-3 py-2 text-xs font-bold text-white outline-none focus:border-emerald-500 [color-scheme:dark]" />
+                <label className="text-[8px] font-black text-fg-4 uppercase tracking-widest block mb-1">Drop-off</label>
+                <input type="date" value={dropDate} onChange={e => setDropDate(e.target.value)} className="bg-panel-3 border border-fg/[0.12] rounded-lg px-3 py-2 text-xs font-bold text-fg outline-none focus:border-emerald-500 " />
               </div>
               <div>
-                <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest block mb-1">Pick-up</label>
-                <input type="date" value={pickDate} min={dropDate} onChange={e => setPickDate(e.target.value)} className="bg-[#1A2235] border border-slate-700 rounded-lg px-3 py-2 text-xs font-bold text-white outline-none focus:border-emerald-500 [color-scheme:dark]" />
+                <label className="text-[8px] font-black text-fg-4 uppercase tracking-widest block mb-1">Pick-up</label>
+                <input type="date" value={pickDate} min={dropDate} onChange={e => setPickDate(e.target.value)} className="bg-panel-3 border border-fg/[0.12] rounded-lg px-3 py-2 text-xs font-bold text-fg outline-none focus:border-emerald-500 " />
               </div>
               <button type="button" onClick={run} disabled={loading}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-md">
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-panel-4 disabled:text-fg-4 text-white rounded-lg text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-md">
                 {loading ? <><Loader2 className="w-3 h-3 animate-spin" /> Pinging...</> : <><Zap className="w-3 h-3" /> Ping</>}
               </button>
             </div>
@@ -457,28 +457,28 @@ function RowApiChecker({ company, markupPercent }: { company: any; markupPercent
               <div className="space-y-3">
                 <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border ${result.ok ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-red-500/10 text-red-400 border-red-500/20"}`}>
                   {result.ok ? <CheckCircle2 className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
-                  HTTP {result.status} · {result.ok ? "OK" : "Failed"}<span className="text-slate-500 font-bold ml-1">{dropDate} → {pickDate}</span>
+                  HTTP {result.status} · {result.ok ? "OK" : "Failed"}<span className="text-fg-4 font-bold ml-1">{dropDate} → {pickDate}</span>
                 </div>
                 {rawApiPrice != null ? (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {[
-                      { label: "API Raw", value: rawApiPrice, color: "text-slate-300" },
+                      { label: "API Raw", value: rawApiPrice, color: "text-fg-2" },
                       { label: `+${surcharge}% Surcharge`, value: rawApiPrice * (1 + surcharge / 100), color: "text-amber-400" },
                       { label: `×${modifier} Modifier`, value: rawApiPrice * (1 + surcharge / 100) * modifier, color: "text-blue-400" },
                       { label: `+${markupPercent}% → Final`, value: finalPrice!, color: "text-emerald-400", bold: true },
                     ].map(({ label, value, color, bold }) => (
-                      <div key={label} className="bg-[#0F1523] border border-slate-800 rounded-xl p-3">
-                        <p className="text-[8px] font-black uppercase tracking-widest text-slate-600 mb-1">{label}</p>
+                      <div key={label} className="bg-panel border border-fg/[0.08] rounded-xl p-3">
+                        <p className="text-[8px] font-black uppercase tracking-widest text-fg-4 mb-1">{label}</p>
                         <p className={`font-black tracking-tighter ${color} ${bold ? "text-lg" : "text-sm"}`}>£{value.toFixed(2)}</p>
                       </div>
                     ))}
                   </div>
                 ) : result.ok ? <p className="text-[10px] text-amber-400 font-bold">No parking_price found in response. Check raw output below.</p> : null}
                 <details>
-                  <summary className="text-[9px] font-black uppercase tracking-widest text-slate-600 cursor-pointer hover:text-slate-400 transition-colors flex items-center gap-1.5">
+                  <summary className="text-[9px] font-black uppercase tracking-widest text-fg-4 cursor-pointer hover:text-fg-3 transition-colors flex items-center gap-1.5">
                     <ChevronDown className="w-3 h-3" /> Raw Response
                   </summary>
-                  <pre className="mt-2 p-3 bg-[#060A14] border border-slate-800 rounded-xl text-[9px] font-mono text-emerald-400 overflow-x-auto max-h-36 whitespace-pre-wrap">
+                  <pre className="mt-2 p-3 bg-[#060A14] border border-fg/[0.08] rounded-xl text-[9px] font-mono text-emerald-400 overflow-x-auto max-h-36 whitespace-pre-wrap">
                     {JSON.stringify(result.data ?? result.error, null, 2)}
                   </pre>
                 </details>
@@ -496,10 +496,10 @@ function CompanyLogo({ logoUrl, name }: { logoUrl: string; name: string }) {
   const [imgError, setImgError] = useState(false);
   useEffect(() => { setImgError(false); }, [logoUrl]);
   if (logoUrl && !imgError) {
-    return <img src={logoUrl} alt={name} className="w-11 h-11 rounded-xl object-contain bg-white p-1.5 border border-slate-700/50 shrink-0" onError={() => setImgError(true)} />;
+    return <img src={logoUrl} alt={name} className="w-11 h-11 rounded-xl object-contain bg-white p-1.5 border border-fg/[0.12] shrink-0" onError={() => setImgError(true)} />;
   }
   return (
-    <div className="w-11 h-11 rounded-xl bg-[#1A2235] border border-slate-700/50 flex items-center justify-center font-black text-lg text-slate-400 shrink-0 group-hover:text-blue-500 group-hover:border-blue-500/50 transition-all">
+    <div className="w-11 h-11 rounded-xl bg-panel-3 border border-fg/[0.12] flex items-center justify-center font-black text-lg text-fg-3 shrink-0 group-hover:text-blue-500 group-hover:border-blue-500/50 transition-all">
       {name.charAt(0)}
     </div>
   );
@@ -512,25 +512,25 @@ function ReviewSection({ airport, color, reviews, onAdd, onRemove, onUpdate }: {
 }) {
   const accent = color === "blue" ? "bg-blue-600 hover:bg-blue-500" : "bg-purple-600 hover:bg-purple-500";
   const ring = color === "blue" ? "focus:ring-blue-500/50" : "focus:ring-purple-500/50";
-  const inputCls = `w-full bg-[#1A2235] text-white rounded-xl px-4 py-3 text-sm font-bold border border-slate-700/50 outline-none focus:ring-2 ${ring} transition-all placeholder:text-slate-500 [-webkit-text-fill-color:#fff] caret-white`;
+  const inputCls = `w-full bg-panel-3 text-fg rounded-xl px-4 py-3 text-sm font-bold border border-fg/[0.12] outline-none focus:ring-2 ${ring} transition-all placeholder:text-fg-4 [-webkit-text-fill-color:#fff] caret-white`;
   return (
-    <div className="pt-8 border-t border-slate-800 mt-6">
+    <div className="pt-8 border-t border-fg/[0.08] mt-6">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-white font-black text-xl uppercase tracking-widest">{airport.toUpperCase()} Reviews <span className="text-slate-600 ml-2">({reviews.length})</span></h3>
-        <button type="button" onClick={onAdd} className={`px-5 py-3 ${accent} text-white rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all shadow-lg`}>+ Add Review</button>
+        <h3 className="text-fg font-black text-xl uppercase tracking-widest">{airport.toUpperCase()} Reviews <span className="text-fg-4 ml-2">({reviews.length})</span></h3>
+        <button type="button" onClick={onAdd} className={`px-5 py-3 ${accent} text-fg rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all shadow-lg`}>+ Add Review</button>
       </div>
       <div className="space-y-6">
         {reviews.map((rev, idx) => (
-          <div key={rev.id} className="bg-[#0F1523] p-6 rounded-2xl border border-slate-700/50 relative">
-            <button type="button" onClick={() => onRemove(idx)} className="absolute top-6 right-6 p-2 text-slate-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+          <div key={rev.id} className="bg-panel p-6 rounded-2xl border border-fg/[0.12] relative">
+            <button type="button" onClick={() => onRemove(idx)} className="absolute top-6 right-6 p-2 text-fg-4 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 pr-10">
-              <div className="space-y-1"><label className="text-[9px] font-black uppercase text-slate-500 tracking-widest block ml-1">Author</label><input value={rev.author || ""} onChange={e => onUpdate(idx, "author", e.target.value)} className={inputCls} /></div>
-              <div className="space-y-1"><label className="text-[9px] font-black uppercase text-slate-500 tracking-widest block ml-1">Rating</label><div className="relative"><select value={rev.rating || 5} onChange={e => onUpdate(idx, "rating", parseInt(e.target.value) || 5)} className={`${inputCls} appearance-none cursor-pointer !text-amber-400 [-webkit-text-fill-color:#fbbf24]`}>{[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} Stars</option>)}</select><ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" /></div></div>
-              <div className="space-y-1"><label className="text-[9px] font-black uppercase text-slate-500 tracking-widest block ml-1">Source</label><div className="relative"><select value={rev.source || "Trustpilot"} onChange={e => onUpdate(idx, "source", e.target.value)} className={`${inputCls} appearance-none cursor-pointer`}><option value="Trustpilot">Trustpilot</option><option value="Google">Google</option><option value="Internal">Internal</option></select><ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" /></div></div>
-              <div className="space-y-1"><label className="text-[9px] font-black uppercase text-slate-500 tracking-widest block ml-1">Date</label><input type="date" value={rev.date || ""} onChange={e => onUpdate(idx, "date", e.target.value)} className={`${inputCls} cursor-pointer [color-scheme:dark]`} /></div>
+              <div className="space-y-1"><label className="text-[9px] font-black uppercase text-fg-4 tracking-widest block ml-1">Author</label><input value={rev.author || ""} onChange={e => onUpdate(idx, "author", e.target.value)} className={inputCls} /></div>
+              <div className="space-y-1"><label className="text-[9px] font-black uppercase text-fg-4 tracking-widest block ml-1">Rating</label><div className="relative"><select value={rev.rating || 5} onChange={e => onUpdate(idx, "rating", parseInt(e.target.value) || 5)} className={`${inputCls} appearance-none cursor-pointer !text-amber-400 [-webkit-text-fill-color:#fbbf24]`}>{[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} Stars</option>)}</select><ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none" /></div></div>
+              <div className="space-y-1"><label className="text-[9px] font-black uppercase text-fg-4 tracking-widest block ml-1">Source</label><div className="relative"><select value={rev.source || "Trustpilot"} onChange={e => onUpdate(idx, "source", e.target.value)} className={`${inputCls} appearance-none cursor-pointer`}><option value="Trustpilot">Trustpilot</option><option value="Google">Google</option><option value="Internal">Internal</option></select><ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none" /></div></div>
+              <div className="space-y-1"><label className="text-[9px] font-black uppercase text-fg-4 tracking-widest block ml-1">Date</label><input type="date" value={rev.date || ""} onChange={e => onUpdate(idx, "date", e.target.value)} className={`${inputCls} cursor-pointer `} /></div>
             </div>
-            <div className="space-y-1 mb-4"><label className="text-[9px] font-black uppercase text-slate-500 tracking-widest block ml-1">Comment</label><textarea value={rev.comment || ""} onChange={e => onUpdate(idx, "comment", e.target.value)} className={`${inputCls} resize-none leading-relaxed`} rows={3} /></div>
-            <label className="flex items-center gap-2 cursor-pointer w-fit group"><input type="checkbox" checked={!!rev.verified} onChange={e => onUpdate(idx, "verified", e.target.checked)} className="w-4 h-4 rounded border-slate-700 bg-[#1A2235] accent-emerald-500 cursor-pointer" /><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest group-hover:text-emerald-400 transition-colors">Verified Booking</span></label>
+            <div className="space-y-1 mb-4"><label className="text-[9px] font-black uppercase text-fg-4 tracking-widest block ml-1">Comment</label><textarea value={rev.comment || ""} onChange={e => onUpdate(idx, "comment", e.target.value)} className={`${inputCls} resize-none leading-relaxed`} rows={3} /></div>
+            <label className="flex items-center gap-2 cursor-pointer w-fit group"><input type="checkbox" checked={!!rev.verified} onChange={e => onUpdate(idx, "verified", e.target.checked)} className="w-4 h-4 rounded border-fg/[0.12] bg-panel-3 accent-emerald-500 cursor-pointer" /><span className="text-[10px] font-bold text-fg-3 uppercase tracking-widest group-hover:text-emerald-400 transition-colors">Verified Booking</span></label>
           </div>
         ))}
       </div>
@@ -628,8 +628,6 @@ export default function AdminCompaniesPage() {
     if (error) logger.error("fetchFinancials:", error);
     setFetchingFinancials(false);
   }
-
-  const handleLogout = async () => { await supabase.auth.signOut(); router.push("/admin/login"); };
 
   const doClose = () => {
     setEditingCompany(null); setShowAddModal(false); setModalTab("general");
@@ -948,20 +946,20 @@ export default function AdminCompaniesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#060A14] flex flex-col items-center justify-center text-white">
+      <div className="min-h-screen bg-[#060A14] flex flex-col items-center justify-center text-fg">
         <Plane className="w-10 h-10 text-blue-500 animate-pulse rotate-45" />
-        <p className="font-black text-slate-400 tracking-widest uppercase text-xs mt-6">Initializing Network Hub...</p>
+        <p className="font-black text-fg-3 tracking-widest uppercase text-xs mt-6">Initializing Network Hub...</p>
       </div>
     );
   }
 
-  const inputCls = "w-full bg-[#1A2235] text-white border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-slate-500 [-webkit-text-fill-color:#fff] caret-white [&:-webkit-autofill]:[-webkit-text-fill-color:#fff] [&:-webkit-autofill]:[transition:background-color_9999s_ease-in-out_0s] [&:-webkit-autofill]:[box-shadow:0_0_0px_1000px_#1A2235_inset!important]";
-  const labelCls = "text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest mb-2";
-  const filterSelectCls = "w-full appearance-none bg-[#1A2235] text-slate-300 border border-slate-700/50 hover:border-blue-500/50 rounded-xl py-4 pl-10 pr-9 text-[10px] sm:text-xs font-black uppercase tracking-widest outline-none cursor-pointer transition-all";
-  const textareaCls = "w-full bg-[#1A2235] text-white border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-slate-500 leading-relaxed [-webkit-text-fill-color:#fff] caret-white [&:-webkit-autofill]:[-webkit-text-fill-color:#fff] [&:-webkit-autofill]:[box-shadow:0_0_0px_1000px_#1A2235_inset!important]";
+  const inputCls = "w-full bg-panel-3 text-fg border border-fg/[0.12] hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-fg-4 [-webkit-text-fill-color:#fff] caret-white [&:-webkit-autofill]:[-webkit-text-fill-color:#fff] [&:-webkit-autofill]:[transition:background-color_9999s_ease-in-out_0s] [&:-webkit-autofill]:[box-shadow:0_0_0px_1000px_#1A2235_inset!important]";
+  const labelCls = "text-[10px] font-black uppercase text-fg-4 block ml-1 tracking-widest mb-2";
+  const filterSelectCls = "w-full appearance-none bg-panel-3 text-fg-2 border border-fg/[0.12] hover:border-blue-500/50 rounded-xl py-4 pl-10 pr-9 text-[10px] sm:text-xs font-black uppercase tracking-widest outline-none cursor-pointer transition-all";
+  const textareaCls = "w-full bg-panel-3 text-fg border border-fg/[0.12] hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-fg-4 leading-relaxed [-webkit-text-fill-color:#fff] caret-white [&:-webkit-autofill]:[-webkit-text-fill-color:#fff] [&:-webkit-autofill]:[box-shadow:0_0_0px_1000px_#1A2235_inset!important]";
 
   return (
-    <div className="dark-ui min-h-screen bg-gradient-to-b from-[#0B1120] via-[#0A0E1A] to-[#0B1120] font-sans flex flex-col md:flex-row overflow-hidden text-slate-100 selection:bg-blue-600/30 selection:text-white antialiased relative">
+    <div className="dark-ui min-h-screen bg-gradient-to-b from-canvas via-canvas to-canvas font-sans flex flex-col md:flex-row overflow-hidden text-fg selection:bg-blue-600/30 selection:text-white antialiased relative">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       {/* 🌌 AMBIENT BACKGROUND GLOW LAYERS */}
@@ -971,20 +969,20 @@ export default function AdminCompaniesPage() {
 
       {confirmState && (
         <div className="fixed inset-0 bg-[#060A14]/90 backdrop-blur-sm z-[400] flex items-center justify-center p-4">
-          <div className="bg-[#0F1523] border border-slate-800 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-panel border border-fg/[0.08] w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-7">
               <div className="flex items-start gap-4">
                 <div className={`w-11 h-11 shrink-0 rounded-xl flex items-center justify-center border ${confirmState.danger ? "bg-red-500/10 border-red-500/20 text-red-400" : "bg-blue-500/10 border-blue-500/20 text-blue-400"}`}>
                   <AlertCircle className="w-6 h-6" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-black text-white tracking-tight">{confirmState.title}</h3>
-                  <p className="text-sm font-medium text-slate-400 mt-1.5 leading-relaxed">{confirmState.body}</p>
+                  <h3 className="text-lg font-black text-fg tracking-tight">{confirmState.title}</h3>
+                  <p className="text-sm font-medium text-fg-3 mt-1.5 leading-relaxed">{confirmState.body}</p>
                 </div>
               </div>
             </div>
-            <div className="px-7 py-5 bg-[#131A2B] border-t border-slate-800 flex gap-3 justify-end">
-              <button onClick={() => setConfirmState(null)} className="px-5 py-3 text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-white transition-colors">Cancel</button>
+            <div className="px-7 py-5 bg-panel-2 border-t border-fg/[0.08] flex gap-3 justify-end">
+              <button onClick={() => setConfirmState(null)} className="px-5 py-3 text-fg-3 font-bold text-xs uppercase tracking-widest hover:text-fg transition-colors">Cancel</button>
               <button
                 onClick={() => { const fn = confirmState.onConfirm; setConfirmState(null); fn(); }}
                 className={`px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest text-white transition-all active:scale-95 ${confirmState.danger ? "bg-red-600 hover:bg-red-500 shadow-[0_8px_16px_-4px_rgba(220,38,38,0.4)]" : "bg-blue-600 hover:bg-blue-500 shadow-[0_8px_16px_-4px_rgba(37,99,235,0.4)]"}`}
@@ -999,22 +997,14 @@ export default function AdminCompaniesPage() {
       <AdminSidebar />
 
       <main className="flex-1 p-4 md:p-8 lg:p-12 w-full overflow-y-auto h-screen relative pb-32 md:pb-12 z-10">
-        <div className="md:hidden flex items-center justify-between mb-8 bg-[#131A2B]/80 backdrop-blur-xl p-5 rounded-3xl border border-slate-800 shadow-2xl">
-          <div className="flex items-center gap-3 font-black text-xl uppercase tracking-tighter text-white">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/30"><Plane className="w-6 h-6 text-white rotate-45" /></div>
-            OPS<span className="text-blue-500">CENTER</span>
-          </div>
-          <button onClick={handleLogout} className="p-3 bg-slate-800 rounded-xl text-slate-300 hover:text-red-400 transition-colors"><LogOut className="w-5 h-5" /></button>
-        </div>
-
         {/* 🟢 COMMAND HERO PANEL (header + live stat rail, one unit) */}
-        <div className="relative mb-8 rounded-[2rem] border border-slate-800/80 bg-gradient-to-br from-[#131A2B] to-[#0F1523] shadow-2xl overflow-hidden">
+        <div className="relative mb-8 rounded-[2rem] border border-fg/[0.08] bg-gradient-to-br from-panel-2 to-panel shadow-2xl overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/40 to-transparent"></div>
           <div className="absolute -top-24 -left-24 w-72 h-72 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none"></div>
           <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-indigo-600/10 rounded-full blur-[100px] pointer-events-none"></div>
 
           {/* ROW 1 — title + actions */}
-          <div className="relative p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-slate-800/60">
+          <div className="relative p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-fg/[0.08]">
             <div className="flex items-center gap-5">
               <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600/30 to-blue-600/5 border border-blue-500/30 items-center justify-center shadow-[0_0_25px_rgba(37,99,235,0.3)] shrink-0">
                 <Network className="w-7 h-7 text-blue-400" />
@@ -1022,7 +1012,7 @@ export default function AdminCompaniesPage() {
               <div>
                 <h1 className="text-3xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-white via-white to-blue-200 bg-clip-text text-transparent">Partner Network</h1>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mt-2">
-                  <span className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.2em]">{filteredAndSortedCompanies.length} of {totalPartners} shown</span>
+                  <span className="text-fg-4 font-bold text-[10px] uppercase tracking-[0.2em]">{filteredAndSortedCompanies.length} of {totalPartners} shown</span>
                   {needsAttentionCount > 0 && (
                     <button onClick={() => setOnlyIssues((v) => !v)} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg uppercase tracking-widest text-[9px] font-black border transition-all ${onlyIssues ? "bg-amber-500 text-white border-amber-400" : "bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20"}`}>
                       <AlertOctagon className="w-3 h-3" /> {needsAttentionCount} need{needsAttentionCount === 1 ? "s" : ""} attention
@@ -1032,33 +1022,33 @@ export default function AdminCompaniesPage() {
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 shrink-0">
-              <button onClick={runApiHealth} disabled={healthChecking} className="px-6 py-3.5 bg-[#1A2235]/80 backdrop-blur-sm hover:bg-[#1A2235] border border-emerald-500/30 hover:border-emerald-500/50 text-emerald-400 rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-3 shadow-md disabled:opacity-50">
+              <button onClick={runApiHealth} disabled={healthChecking} className="px-6 py-3.5 bg-panel-3/80 backdrop-blur-sm hover:bg-panel-3 border border-emerald-500/30 hover:border-emerald-500/50 text-emerald-400 rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-3 shadow-md disabled:opacity-50">
                 {healthChecking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Network className="w-4 h-4" />} Check API Health
               </button>
               <button onClick={() => { setModalTab("general"); setShowAddModal(true); }} className="px-6 py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-3 shadow-[0_10px_30px_-5px_rgba(37,99,235,0.5)] hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-fg/0 via-fg/20 to-fg/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                 <Plus className="w-5 h-5" /> Onboard Partner
               </button>
             </div>
           </div>
 
           {/* ROW 2 — live stat rail */}
-          <div className="relative grid grid-cols-2 lg:grid-cols-4 divide-x divide-slate-800/60">
+          <div className="relative grid grid-cols-2 lg:grid-cols-4 divide-x divide-fg/[0.08]">
             {[
               { label: "Total Network", value: totalPartners, sub: "partners", color: "#3b82f6", Icon: Network },
               { label: "LTN Active", value: ltnCoverage, sub: "live at Luton", color: "#10b981", Icon: Car },
               { label: "LHR Active", value: lhrCoverage, sub: "live at Heathrow", color: "#6366f1", Icon: PlaneTakeoff },
               { label: "Live API", value: apiCount, sub: "API pricing", color: "#f59e0b", Icon: Zap },
             ].map((s, i) => (
-              <div key={i} className="p-5 md:p-6 relative group hover:bg-white/[0.02] transition-colors border-t border-slate-800/60 lg:border-t-0">
+              <div key={i} className="p-5 md:p-6 relative group hover:bg-fg/[0.02] transition-colors border-t border-fg/[0.08] lg:border-t-0">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: s.color }}>{s.label}</p>
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center border" style={{ background: `${s.color}1A`, borderColor: `${s.color}33` }}>
                     <s.Icon className="w-3.5 h-3.5" style={{ color: s.color }} />
                   </div>
                 </div>
-                <p className="text-2xl md:text-3xl font-black text-white tracking-tight tabular-nums">{s.value}</p>
-                <p className="text-[10px] font-bold text-slate-500 mt-1.5 truncate">{s.sub}</p>
+                <p className="text-2xl md:text-3xl font-black text-fg tracking-tight tabular-nums">{s.value}</p>
+                <p className="text-[10px] font-bold text-fg-4 mt-1.5 truncate">{s.sub}</p>
                 <div className="absolute bottom-0 left-0 h-0.5 w-0 group-hover:w-full transition-all duration-500" style={{ background: s.color }}></div>
               </div>
             ))}
@@ -1069,83 +1059,83 @@ export default function AdminCompaniesPage() {
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] pointer-events-none" />
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
             <div>
-              <h2 className="text-xl font-black text-white flex items-center gap-2"><Zap className="w-5 h-5 text-blue-400" /> Master Price Modifier</h2>
-              <p className="text-xs text-slate-400 mt-1 font-bold">Apply a global multiplier across ALL operators at once.</p>
+              <h2 className="text-xl font-black text-fg flex items-center gap-2"><Zap className="w-5 h-5 text-blue-400" /> Master Price Modifier</h2>
+              <p className="text-xs text-fg-3 mt-1 font-bold">Apply a global multiplier across ALL operators at once.</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {[0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3].map(v => (
-                <button key={v} type="button" onClick={() => masterUpdate(v)} className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all active:scale-95 border ${v === 1 ? "bg-slate-800 text-white border-slate-700 hover:bg-slate-700" : v < 1 ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" : "bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20"}`}>{v === 1 ? "BASE" : `${v > 1 ? "+" : ""}${Math.round((v - 1) * 100)}%`}</button>
+                <button key={v} type="button" onClick={() => masterUpdate(v)} className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all active:scale-95 border ${v === 1 ? "bg-panel-3 text-fg border-fg/[0.12] hover:bg-panel-4" : v < 1 ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" : "bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20"}`}>{v === 1 ? "BASE" : `${v > 1 ? "+" : ""}${Math.round((v - 1) * 100)}%`}</button>
               ))}
-              <button onClick={fetchCompanies} title="Refresh" className="p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white hover:bg-slate-700 transition-all active:scale-95"><RefreshCw className="w-4 h-4" /></button>
+              <button onClick={fetchCompanies} title="Refresh" className="p-2.5 bg-panel-3 border border-fg/[0.12] rounded-xl text-fg-3 hover:text-fg hover:bg-panel-4 transition-all active:scale-95"><RefreshCw className="w-4 h-4" /></button>
             </div>
           </div>
         </div>
 
-        <div className="bg-[#131A2B] rounded-[2rem] border border-slate-800 shadow-lg p-4 mb-8 flex flex-col xl:flex-row gap-4">
+        <div className="bg-panel-2 rounded-[2rem] border border-fg/[0.08] shadow-lg p-4 mb-8 flex flex-col xl:flex-row gap-4">
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 z-10 pointer-events-none" />
-            <input type="text" autoComplete="off" placeholder="Search partners..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-[#1A2235] text-white border border-slate-700/50 hover:border-blue-500/50 rounded-xl py-4 pl-12 pr-10 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-slate-500 [-webkit-text-fill-color:#fff] caret-white" />
-            {searchTerm && <button onClick={() => setSearchTerm("")} className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-slate-700 transition-colors"><X className="w-4 h-4 text-slate-400" /></button>}
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-4 z-10 pointer-events-none" />
+            <input type="text" autoComplete="off" placeholder="Search partners..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-panel-3 text-fg border border-fg/[0.12] hover:border-blue-500/50 rounded-xl py-4 pl-12 pr-10 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-fg-4 [-webkit-text-fill-color:#fff] caret-white" />
+            {searchTerm && <button onClick={() => setSearchTerm("")} className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-panel-4 transition-colors"><X className="w-4 h-4 text-fg-3" /></button>}
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 w-full xl:w-auto shrink-0">
             <div className="relative">
-              <SlidersHorizontal className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 z-10 pointer-events-none" />
+              <SlidersHorizontal className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 z-10 pointer-events-none" />
               <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className={`${filterSelectCls} ${categoryFilter !== "ALL" ? "text-blue-400" : ""}`}><option value="ALL">All Services</option><option value="meet-greet">Meet &amp; Greet</option><option value="park-ride">Park &amp; Ride</option><option value="hotel">Hotel Parking</option></select>
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none" />
             </div>
             <div className="relative">
-              <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 z-10 pointer-events-none" />
+              <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 z-10 pointer-events-none" />
               <select value={airportFilter} onChange={e => setAirportFilter(e.target.value)} className={`${filterSelectCls} ${airportFilter !== "ALL" ? "text-blue-400" : ""}`}><option value="ALL">All Airports</option><option value="LTN">Luton (LTN)</option><option value="LHR">Heathrow (LHR)</option></select>
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none" />
             </div>
             <div className="relative">
-              <AlertCircle className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 z-10 pointer-events-none" />
+              <AlertCircle className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 z-10 pointer-events-none" />
               <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className={`${filterSelectCls} ${statusFilter !== "ALL" ? "text-blue-400" : ""}`}><option value="ALL">Any Status</option><option value="ACTIVE">Active Only</option><option value="OFFLINE">Offline</option></select>
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none" />
             </div>
             <div className="relative">
-              <Network className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 z-10 pointer-events-none" />
+              <Network className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 z-10 pointer-events-none" />
               <select value={apiFilter} onChange={e => setApiFilter(e.target.value)} className={`${filterSelectCls} ${apiFilter !== "ALL" ? "text-amber-400" : ""}`}><option value="ALL">All Pricing</option><option value="API">Live API</option><option value="MANUAL">Pivot/Manual</option></select>
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none" />
             </div>
             {activeFilterCount > 0 ? (
-              <button onClick={() => { setCategoryFilter("ALL"); setAirportFilter("ALL"); setStatusFilter("ALL"); setApiFilter("ALL"); setSearchTerm(""); }} className="flex items-center justify-center gap-1.5 w-full bg-[#1A2235] border border-red-500/30 text-red-400 hover:bg-red-500/10 rounded-xl py-4 text-[10px] font-black uppercase tracking-widest transition-all"><X className="w-4 h-4" /> Clear</button>
+              <button onClick={() => { setCategoryFilter("ALL"); setAirportFilter("ALL"); setStatusFilter("ALL"); setApiFilter("ALL"); setSearchTerm(""); }} className="flex items-center justify-center gap-1.5 w-full bg-panel-3 border border-red-500/30 text-red-400 hover:bg-red-500/10 rounded-xl py-4 text-[10px] font-black uppercase tracking-widest transition-all"><X className="w-4 h-4" /> Clear</button>
             ) : (
-              <div className="flex items-center justify-center gap-1.5 w-full bg-[#1A2235] border border-slate-700/50 text-slate-500 rounded-xl py-4 text-[10px] font-black uppercase tracking-widest opacity-40 cursor-not-allowed"><Filter className="w-4 h-4" /> Filters</div>
+              <div className="flex items-center justify-center gap-1.5 w-full bg-panel-3 border border-fg/[0.12] text-fg-4 rounded-xl py-4 text-[10px] font-black uppercase tracking-widest opacity-40 cursor-not-allowed"><Filter className="w-4 h-4" /> Filters</div>
             )}
           </div>
         </div>
 
         {/* VIEW TOGGLE + SORT */}
         <div className="flex items-center justify-between gap-3 mb-5 px-1">
-          <div className="flex items-center bg-[#1A2235]/80 border border-slate-800 rounded-xl p-1">
-            <button onClick={() => setViewMode("cards")} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${viewMode === "cards" ? "bg-blue-600 text-white shadow-md" : "text-slate-400 hover:text-white"}`}><Building2 className="w-3.5 h-3.5" /> Cards</button>
-            <button onClick={() => setViewMode("table")} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${viewMode === "table" ? "bg-blue-600 text-white shadow-md" : "text-slate-400 hover:text-white"}`}><SlidersHorizontal className="w-3.5 h-3.5" /> Table</button>
+          <div className="flex items-center bg-panel-3/80 border border-fg/[0.08] rounded-xl p-1">
+            <button onClick={() => setViewMode("cards")} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${viewMode === "cards" ? "bg-blue-600 text-white shadow-md" : "text-fg-3 hover:text-white"}`}><Building2 className="w-3.5 h-3.5" /> Cards</button>
+            <button onClick={() => setViewMode("table")} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${viewMode === "table" ? "bg-blue-600 text-white shadow-md" : "text-fg-3 hover:text-white"}`}><SlidersHorizontal className="w-3.5 h-3.5" /> Table</button>
           </div>
           <div className="relative">
-            <ArrowUpDown className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 z-10 pointer-events-none" />
+            <ArrowUpDown className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 z-10 pointer-events-none" />
             <select
               value={`${sortBy}:${sortOrder}`}
               onChange={(e) => { const [f, o] = e.target.value.split(":"); setSortBy(f); setSortOrder(o as "asc" | "desc"); }}
-              className="appearance-none bg-[#1A2235]/80 border border-slate-800 hover:border-blue-500/40 rounded-xl py-2.5 pl-10 pr-9 text-[10px] font-black uppercase tracking-widest text-slate-300 outline-none cursor-pointer transition-all focus:ring-2 focus:ring-blue-500/40"
+              className="appearance-none bg-panel-3/80 border border-fg/[0.08] hover:border-blue-500/40 rounded-xl py-2.5 pl-10 pr-9 text-[10px] font-black uppercase tracking-widest text-fg-2 outline-none cursor-pointer transition-all focus:ring-2 focus:ring-blue-500/40"
             >
-              <option value="name:asc" className="bg-[#1A2235]">Name A → Z</option>
-              <option value="name:desc" className="bg-[#1A2235]">Name Z → A</option>
-              <option value="luton_price:desc" className="bg-[#1A2235]">LTN Price High → Low</option>
-              <option value="luton_price:asc" className="bg-[#1A2235]">LTN Price Low → High</option>
-              <option value="commission_rate:desc" className="bg-[#1A2235]">Commission High → Low</option>
-              <option value="commission_rate:asc" className="bg-[#1A2235]">Commission Low → High</option>
+              <option value="name:asc" className="bg-panel-3">Name A → Z</option>
+              <option value="name:desc" className="bg-panel-3">Name Z → A</option>
+              <option value="luton_price:desc" className="bg-panel-3">LTN Price High → Low</option>
+              <option value="luton_price:asc" className="bg-panel-3">LTN Price Low → High</option>
+              <option value="commission_rate:desc" className="bg-panel-3">Commission High → Low</option>
+              <option value="commission_rate:asc" className="bg-panel-3">Commission Low → High</option>
             </select>
-            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none" />
           </div>
         </div>
 
         {/* 🟢 CARD GRID VIEW */}
         {viewMode === "cards" && (
           filteredAndSortedCompanies.length === 0 ? (
-            <div className="bg-[#131A2B]/70 backdrop-blur-xl rounded-3xl border border-slate-800 py-32 flex flex-col items-center justify-center opacity-50 px-6 text-center mb-24">
-              <Search className="w-12 h-12 text-slate-500 mb-4" />
-              <p className="text-xl font-black uppercase tracking-[0.3em] text-white">No Partners Match</p>
+            <div className="bg-panel-2/70 backdrop-blur-xl rounded-3xl border border-fg/[0.08] py-32 flex flex-col items-center justify-center opacity-50 px-6 text-center mb-24">
+              <Search className="w-12 h-12 text-fg-4 mb-4" />
+              <p className="text-xl font-black uppercase tracking-[0.3em] text-fg">No Partners Match</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-5 mb-24">
@@ -1155,14 +1145,14 @@ export default function AdminCompaniesPage() {
                 const health = apiHealth[c.id];
                 return (
                   <div key={c.id} onClick={() => openEditModal(c)}
-                    className={`group bg-gradient-to-br from-[#131A2B] to-[#0F1523] rounded-3xl border border-slate-800/80 hover:border-blue-500/40 shadow-xl hover:shadow-[0_20px_50px_-15px_rgba(59,130,246,0.25)] transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col hover:-translate-y-1 ${!c.is_active ? "opacity-60" : ""}`}>
+                    className={`group bg-gradient-to-br from-panel-2 to-panel rounded-3xl border border-fg/[0.08] hover:border-blue-500/40 shadow-xl hover:shadow-[0_20px_50px_-15px_rgba(59,130,246,0.25)] transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col hover:-translate-y-1 ${!c.is_active ? "opacity-60" : ""}`}>
                     <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
 
                     {/* HEAD */}
                     <div className="p-5 flex items-start gap-4">
                       <CompanyLogo logoUrl={c.logo_url} name={c.name} />
                       <div className="min-w-0 flex-1">
-                        <h3 className="text-base font-black text-white truncate group-hover:text-blue-400 transition-colors">{c.name}</h3>
+                        <h3 className="text-base font-black text-fg truncate group-hover:text-blue-400 transition-colors">{c.name}</h3>
                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                           <span className="text-[9px] font-black text-blue-400 tracking-widest uppercase bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">{c.category?.replace("-", " ")}</span>
                           {issues.length > 0 && (
@@ -1177,20 +1167,20 @@ export default function AdminCompaniesPage() {
                     <div className="px-5 pb-4 space-y-3 flex-1" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-2 flex-wrap">
                         <button onClick={() => togglePricingMode(c)} title={isApiMode ? "Switch to Pivot pricing" : "Switch to Live API pricing"} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black border uppercase tracking-widest transition-all ${isApiMode ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" : "bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20"}`}>{isApiMode ? <><Zap className="w-3 h-3" /> API</> : <><Calculator className="w-3 h-3" /> Pivot</>}</button>
-                        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black border uppercase tracking-widest ${(c.price_modifier || 1) === 1 ? "border-slate-700 bg-slate-800 text-slate-400" : c.price_modifier < 1 ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400" : "border-rose-500/20 bg-rose-500/10 text-rose-400"}`}><Zap className="w-3 h-3" />{(c.price_modifier || 1) === 1 ? "BASE" : `${c.price_modifier > 1 ? "+" : ""}${Math.round(((c.price_modifier || 1) - 1) * 100)}%`}</div>
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black border border-slate-700 bg-slate-800 text-slate-300 uppercase tracking-widest"><Percent className="w-3 h-3" />{c.commission_rate || 15}% comm</div>
+                        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black border uppercase tracking-widest ${(c.price_modifier || 1) === 1 ? "border-fg/[0.12] bg-panel-3 text-fg-3" : c.price_modifier < 1 ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400" : "border-rose-500/20 bg-rose-500/10 text-rose-400"}`}><Zap className="w-3 h-3" />{(c.price_modifier || 1) === 1 ? "BASE" : `${c.price_modifier > 1 ? "+" : ""}${Math.round(((c.price_modifier || 1) - 1) * 100)}%`}</div>
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black border border-fg/[0.12] bg-panel-3 text-fg-2 uppercase tracking-widest"><Percent className="w-3 h-3" />{c.commission_rate || 15}% comm</div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2.5">
-                        <div className="bg-[#1A2235]/60 border border-slate-800 rounded-xl px-3 py-2.5">
+                        <div className="bg-panel-3/60 border border-fg/[0.08] rounded-xl px-3 py-2.5">
                           <p className="text-[8px] font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1"><Car className="w-3 h-3" /> Luton</p>
-                          <p className="text-sm font-black text-white mt-1">{c.operates_at_luton ? (isApiMode && c.api_token ? <span className="text-emerald-400 text-[10px] uppercase tracking-widest">LIVE</span> : `£${Number(c.luton_price || 0).toFixed(2)}`) : <span className="text-slate-600">—</span>}{c.ltn_sold_out && <span className="text-red-400 text-[8px] ml-1.5 uppercase">Sold out</span>}</p>
-                          <p className="text-[9px] text-slate-500 font-bold mt-0.5">{c.operates_at_luton ? `★ ${getAvgRating(c.ltn_reviews)} · ${c.ltn_reviews?.length || 0} rev` : "not active"}</p>
+                          <p className="text-sm font-black text-fg mt-1">{c.operates_at_luton ? (isApiMode && c.api_token ? <span className="text-emerald-400 text-[10px] uppercase tracking-widest">LIVE</span> : `£${Number(c.luton_price || 0).toFixed(2)}`) : <span className="text-fg-4">—</span>}{c.ltn_sold_out && <span className="text-red-400 text-[8px] ml-1.5 uppercase">Sold out</span>}</p>
+                          <p className="text-[9px] text-fg-4 font-bold mt-0.5">{c.operates_at_luton ? `★ ${getAvgRating(c.ltn_reviews)} · ${c.ltn_reviews?.length || 0} rev` : "not active"}</p>
                         </div>
-                        <div className="bg-[#1A2235]/60 border border-slate-800 rounded-xl px-3 py-2.5">
+                        <div className="bg-panel-3/60 border border-fg/[0.08] rounded-xl px-3 py-2.5">
                           <p className="text-[8px] font-black uppercase tracking-widest text-indigo-400 flex items-center gap-1"><PlaneTakeoff className="w-3 h-3" /> Heathrow</p>
-                          <p className="text-sm font-black text-white mt-1">{c.operates_at_heathrow ? (isApiMode && c.api_token ? <span className="text-emerald-400 text-[10px] uppercase tracking-widest">LIVE</span> : `£${Number(c.heathrow_price || 0).toFixed(2)}`) : <span className="text-slate-600">—</span>}{c.lhr_sold_out && <span className="text-red-400 text-[8px] ml-1.5 uppercase">Sold out</span>}</p>
-                          <p className="text-[9px] text-slate-500 font-bold mt-0.5">{c.operates_at_heathrow ? `★ ${getAvgRating(c.lhr_reviews)} · ${c.lhr_reviews?.length || 0} rev` : "not active"}</p>
+                          <p className="text-sm font-black text-fg mt-1">{c.operates_at_heathrow ? (isApiMode && c.api_token ? <span className="text-emerald-400 text-[10px] uppercase tracking-widest">LIVE</span> : `£${Number(c.heathrow_price || 0).toFixed(2)}`) : <span className="text-fg-4">—</span>}{c.lhr_sold_out && <span className="text-red-400 text-[8px] ml-1.5 uppercase">Sold out</span>}</p>
+                          <p className="text-[9px] text-fg-4 font-bold mt-0.5">{c.operates_at_heathrow ? `★ ${getAvgRating(c.lhr_reviews)} · ${c.lhr_reviews?.length || 0} rev` : "not active"}</p>
                         </div>
                       </div>
 
@@ -1203,13 +1193,13 @@ export default function AdminCompaniesPage() {
                     </div>
 
                     {/* FOOTER */}
-                    <div className="px-4 py-3.5 border-t border-slate-800 bg-[#0F1523]/60 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                      <button onClick={() => quickToggle(c, "ltn_sold_out")} title={c.ltn_sold_out ? "Mark LTN Available" : "Mark LTN Sold Out"} className={`px-2.5 py-1.5 rounded-lg text-[8px] font-black border uppercase transition-all ${c.ltn_sold_out ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-slate-800 text-slate-500 border-slate-700 hover:border-red-500/30 hover:text-red-400"}`}>{c.ltn_sold_out ? "LTN 🔴" : "LTN ✓"}</button>
-                      <button onClick={() => quickToggle(c, "lhr_sold_out")} title={c.lhr_sold_out ? "Mark LHR Available" : "Mark LHR Sold Out"} className={`px-2.5 py-1.5 rounded-lg text-[8px] font-black border uppercase transition-all ${c.lhr_sold_out ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-slate-800 text-slate-500 border-slate-700 hover:border-red-500/30 hover:text-red-400"}`}>{c.lhr_sold_out ? "LHR 🔴" : "LHR ✓"}</button>
+                    <div className="px-4 py-3.5 border-t border-fg/[0.08] bg-panel/60 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                      <button onClick={() => quickToggle(c, "ltn_sold_out")} title={c.ltn_sold_out ? "Mark LTN Available" : "Mark LTN Sold Out"} className={`px-2.5 py-1.5 rounded-lg text-[8px] font-black border uppercase transition-all ${c.ltn_sold_out ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-panel-3 text-fg-4 border-fg/[0.12] hover:border-red-500/30 hover:text-red-400"}`}>{c.ltn_sold_out ? "LTN 🔴" : "LTN ✓"}</button>
+                      <button onClick={() => quickToggle(c, "lhr_sold_out")} title={c.lhr_sold_out ? "Mark LHR Available" : "Mark LHR Sold Out"} className={`px-2.5 py-1.5 rounded-lg text-[8px] font-black border uppercase transition-all ${c.lhr_sold_out ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-panel-3 text-fg-4 border-fg/[0.12] hover:border-red-500/30 hover:text-red-400"}`}>{c.lhr_sold_out ? "LHR 🔴" : "LHR ✓"}</button>
                       <div className="flex-1"></div>
-                      <button onClick={() => openEditModal(c)} className="p-2.5 bg-[#1A2235] text-slate-300 hover:bg-blue-600 hover:text-white rounded-lg border border-slate-700 hover:border-transparent transition-all active:scale-95" title="Configure"><Settings2 className="w-4 h-4" /></button>
-                      <button onClick={() => duplicateCompany(c)} className="p-2.5 bg-[#1A2235] text-slate-500 hover:bg-indigo-600 hover:text-white rounded-lg border border-slate-700 hover:border-transparent transition-all active:scale-95" title="Duplicate"><Copy className="w-4 h-4" /></button>
-                      <button onClick={() => handleDelete(c.id, c.name)} className="p-2.5 bg-[#1A2235] text-slate-500 hover:bg-red-500 hover:text-white rounded-lg border border-slate-700 hover:border-transparent transition-all active:scale-95" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => openEditModal(c)} className="p-2.5 bg-panel-3 text-fg-2 hover:bg-blue-600 hover:text-white rounded-lg border border-fg/[0.12] hover:border-transparent transition-all active:scale-95" title="Configure"><Settings2 className="w-4 h-4" /></button>
+                      <button onClick={() => duplicateCompany(c)} className="p-2.5 bg-panel-3 text-fg-4 hover:bg-indigo-600 hover:text-white rounded-lg border border-fg/[0.12] hover:border-transparent transition-all active:scale-95" title="Duplicate"><Copy className="w-4 h-4" /></button>
+                      <button onClick={() => handleDelete(c.id, c.name)} className="p-2.5 bg-panel-3 text-fg-4 hover:bg-red-500 hover:text-white rounded-lg border border-fg/[0.12] hover:border-transparent transition-all active:scale-95" title="Delete"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </div>
                 );
@@ -1220,37 +1210,37 @@ export default function AdminCompaniesPage() {
 
         {/* 🟢 TABLE VIEW */}
         {viewMode === "table" && (
-        <div className="bg-[#131A2B] rounded-3xl border border-slate-800 overflow-hidden shadow-2xl mb-24">
+        <div className="bg-panel-2 rounded-3xl border border-fg/[0.08] overflow-hidden shadow-2xl mb-24">
           <div className="overflow-x-auto min-h-[400px]">
             <table className="w-full text-left whitespace-nowrap">
-              <thead className="bg-[#0F1523] border-b border-slate-800">
-                <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-                  <th className="px-8 py-6 cursor-pointer hover:text-white" onClick={() => toggleSort("name")}>Partner Profile <SortIcon field="name" sortBy={sortBy} sortOrder={sortOrder} /></th>
+              <thead className="bg-panel border-b border-fg/[0.08]">
+                <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-fg-4">
+                  <th className="px-8 py-6 cursor-pointer hover:text-fg" onClick={() => toggleSort("name")}>Partner Profile <SortIcon field="name" sortBy={sortBy} sortOrder={sortOrder} /></th>
                   <th className="px-6 py-6 text-center">Status</th>
                   <th className="px-6 py-6 text-center">Pricing</th>
                   <th className="px-6 py-6 text-center">Sold Out</th>
                   <th className="px-6 py-6 text-center">Modifier</th>
-                  <th className="px-6 py-6 text-right cursor-pointer hover:text-white" onClick={() => toggleSort("luton_price")}>LTN <SortIcon field="luton_price" sortBy={sortBy} sortOrder={sortOrder} /></th>
+                  <th className="px-6 py-6 text-right cursor-pointer hover:text-fg" onClick={() => toggleSort("luton_price")}>LTN <SortIcon field="luton_price" sortBy={sortBy} sortOrder={sortOrder} /></th>
                   <th className="px-6 py-6 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-fg/[0.08]">
                 {filteredAndSortedCompanies.length === 0 ? (
-                  <tr><td colSpan={7} className="py-32 text-center"><div className="flex flex-col items-center justify-center opacity-40"><Search className="w-12 h-12 text-slate-500 mb-4" /><p className="text-xl font-black uppercase tracking-[0.3em] text-white">No Partners Match</p></div></td></tr>
+                  <tr><td colSpan={7} className="py-32 text-center"><div className="flex flex-col items-center justify-center opacity-40"><Search className="w-12 h-12 text-fg-4 mb-4" /><p className="text-xl font-black uppercase tracking-[0.3em] text-fg">No Partners Match</p></div></td></tr>
                 ) : filteredAndSortedCompanies.map(c => {
                   const isApiMode = c.pricing_mode !== "pivot";
                   return (
                   <React.Fragment key={c.id}>
-                    <tr className={`transition-all group hover:bg-slate-800/30 ${!c.is_active ? "opacity-50 grayscale" : ""}`}>
+                    <tr className={`transition-all group hover:bg-fg/[0.045] ${!c.is_active ? "opacity-50 grayscale" : ""}`}>
                       <td className="px-8 py-6">
                         <div className="flex items-center gap-4">
                           <CompanyLogo logoUrl={c.logo_url} name={c.name} />
                           <div>
-                            <p className="font-bold text-white text-sm group-hover:text-blue-400 transition-colors tracking-tight">{c.name}</p>
+                            <p className="font-bold text-fg text-sm group-hover:text-blue-400 transition-colors tracking-tight">{c.name}</p>
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <span className="text-[9px] font-black text-blue-400 tracking-widest uppercase bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">{c.category?.replace("-", " ")}</span>
                             </div>
-                            <div className="flex items-center gap-3 text-[10px] font-bold text-slate-400 mt-1.5">
+                            <div className="flex items-center gap-3 text-[10px] font-bold text-fg-3 mt-1.5">
                               {c.operates_at_luton && <span className={c.ltn_featured ? "text-amber-400" : ""}><Car className="w-3 h-3 inline mr-0.5" /> {getAvgRating(c.ltn_reviews)}</span>}
                               {c.operates_at_heathrow && <span className={c.lhr_featured ? "text-amber-400" : ""}><PlaneTakeoff className="w-3 h-3 inline mr-0.5" /> {getAvgRating(c.lhr_reviews)}</span>}
                             </div>
@@ -1267,28 +1257,28 @@ export default function AdminCompaniesPage() {
                       </td>
                       <td className="px-6 py-6 text-center">
                         <div className="flex items-center justify-center gap-1.5">
-                          <button title={c.ltn_sold_out ? "Mark LTN Available" : "Mark LTN Sold Out"} onClick={() => quickToggle(c, "ltn_sold_out")} className={`px-2 py-1.5 rounded-lg text-[8px] font-black border uppercase transition-all ${c.ltn_sold_out ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-slate-800 text-slate-500 border-slate-700 hover:border-red-500/30 hover:text-red-400"}`}>{c.ltn_sold_out ? "LTN 🔴" : "LTN ✓"}</button>
-                          <button title={c.lhr_sold_out ? "Mark LHR Available" : "Mark LHR Sold Out"} onClick={() => quickToggle(c, "lhr_sold_out")} className={`px-2 py-1.5 rounded-lg text-[8px] font-black border uppercase transition-all ${c.lhr_sold_out ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-slate-800 text-slate-500 border-slate-700 hover:border-red-500/30 hover:text-red-400"}`}>{c.lhr_sold_out ? "LHR 🔴" : "LHR ✓"}</button>
+                          <button title={c.ltn_sold_out ? "Mark LTN Available" : "Mark LTN Sold Out"} onClick={() => quickToggle(c, "ltn_sold_out")} className={`px-2 py-1.5 rounded-lg text-[8px] font-black border uppercase transition-all ${c.ltn_sold_out ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-panel-3 text-fg-4 border-fg/[0.12] hover:border-red-500/30 hover:text-red-400"}`}>{c.ltn_sold_out ? "LTN 🔴" : "LTN ✓"}</button>
+                          <button title={c.lhr_sold_out ? "Mark LHR Available" : "Mark LHR Sold Out"} onClick={() => quickToggle(c, "lhr_sold_out")} className={`px-2 py-1.5 rounded-lg text-[8px] font-black border uppercase transition-all ${c.lhr_sold_out ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-panel-3 text-fg-4 border-fg/[0.12] hover:border-red-500/30 hover:text-red-400"}`}>{c.lhr_sold_out ? "LHR 🔴" : "LHR ✓"}</button>
                         </div>
                       </td>
                       <td className="px-6 py-6 text-center">
-                        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black border ${(c.price_modifier || 1) === 1 ? "border-slate-700 bg-slate-800 text-slate-400" : c.price_modifier < 1 ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400" : "border-rose-500/20 bg-rose-500/10 text-rose-400"}`}>
+                        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black border ${(c.price_modifier || 1) === 1 ? "border-fg/[0.12] bg-panel-3 text-fg-3" : c.price_modifier < 1 ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400" : "border-rose-500/20 bg-rose-500/10 text-rose-400"}`}>
                           <Zap className="w-3.5 h-3.5" />{(c.price_modifier || 1) === 1 ? "BASE" : `${c.price_modifier > 1 ? "+" : ""}${Math.round(((c.price_modifier || 1) - 1) * 100)}%`}
                         </div>
                       </td>
                       <td className="px-6 py-6 text-right">
-                        {c.operates_at_luton ? <span className="font-black text-white text-base tracking-tighter">{isApiMode && c.api_token ? <span className="text-emerald-400 text-[10px] font-black uppercase tracking-widest">LIVE</span> : `£${Number(c.luton_price || 0).toFixed(2)}`}</span> : <span className="text-slate-600 text-xs">—</span>}
+                        {c.operates_at_luton ? <span className="font-black text-fg text-base tracking-tighter">{isApiMode && c.api_token ? <span className="text-emerald-400 text-[10px] font-black uppercase tracking-widest">LIVE</span> : `£${Number(c.luton_price || 0).toFixed(2)}`}</span> : <span className="text-fg-4 text-xs">—</span>}
                       </td>
                       <td className="px-6 py-6 text-right">
                         <div className="flex items-center justify-end gap-1.5 opacity-30 group-hover:opacity-100 transition-all">
-                          <button onClick={() => openEditModal(c)} className="p-2.5 bg-[#1A2235] text-slate-300 hover:bg-blue-600 hover:text-white rounded-lg border border-slate-700 hover:border-transparent transition-all active:scale-95" title="Configure"><Settings2 className="w-4 h-4" /></button>
-                          <button onClick={() => duplicateCompany(c)} className="p-2.5 bg-[#1A2235] text-slate-500 hover:bg-indigo-600 hover:text-white rounded-lg border border-slate-700 hover:border-transparent transition-all active:scale-95" title="Duplicate"><Copy className="w-4 h-4" /></button>
-                          <button onClick={() => handleDelete(c.id, c.name)} className="p-2.5 bg-[#1A2235] text-slate-500 hover:bg-red-500 hover:text-white rounded-lg border border-slate-700 hover:border-transparent transition-all active:scale-95" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                          <button onClick={() => openEditModal(c)} className="p-2.5 bg-panel-3 text-fg-2 hover:bg-blue-600 hover:text-white rounded-lg border border-fg/[0.12] hover:border-transparent transition-all active:scale-95" title="Configure"><Settings2 className="w-4 h-4" /></button>
+                          <button onClick={() => duplicateCompany(c)} className="p-2.5 bg-panel-3 text-fg-4 hover:bg-indigo-600 hover:text-white rounded-lg border border-fg/[0.12] hover:border-transparent transition-all active:scale-95" title="Duplicate"><Copy className="w-4 h-4" /></button>
+                          <button onClick={() => handleDelete(c.id, c.name)} className="p-2.5 bg-panel-3 text-fg-4 hover:bg-red-500 hover:text-white rounded-lg border border-fg/[0.12] hover:border-transparent transition-all active:scale-95" title="Delete"><Trash2 className="w-4 h-4" /></button>
                         </div>
                       </td>
                     </tr>
                     {isApiMode && c.api_token && (
-                      <tr className="bg-[#0A101D]/40"><RowApiChecker company={c} markupPercent={markupPercent} /></tr>
+                      <tr className="bg-canvas/40"><RowApiChecker company={c} markupPercent={markupPercent} /></tr>
                     )}
                   </React.Fragment>
                 )})}
@@ -1302,19 +1292,19 @@ export default function AdminCompaniesPage() {
       <AdminMobileNav action={{ label: "Add operator", Icon: Plus, onClick: () => { setModalTab("general"); setShowAddModal(true); } }} />
 
       {(editingCompany || showAddModal) && (
-        <div className="fixed inset-0 bg-[#0B1120]/95 backdrop-blur-sm z-[300] flex items-center justify-center p-4 sm:p-8 overflow-hidden">
-          <div className="bg-[#0F1523] border border-slate-800 w-full max-w-5xl rounded-[2rem] max-h-[95vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="pt-8 px-8 border-b border-slate-800 bg-[#131A2B] shrink-0 relative overflow-hidden">
+        <div className="fixed inset-0 bg-canvas/95 backdrop-blur-sm z-[300] flex items-center justify-center p-4 sm:p-8 overflow-hidden">
+          <div className="bg-panel border border-fg/[0.08] w-full max-w-5xl rounded-[2rem] max-h-[95vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="pt-8 px-8 border-b border-fg/[0.08] bg-panel-2 shrink-0 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-600" />
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <div className="flex items-center gap-3">
-                    <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">{editingCompany ? "Configure Partner" : "Onboard Partner"}</h2>
+                    <h2 className="text-2xl sm:text-3xl font-black text-fg tracking-tight">{editingCompany ? "Configure Partner" : "Onboard Partner"}</h2>
                     {hasUnsavedChanges && <span className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 border border-amber-500/30 rounded-lg text-[9px] font-black uppercase tracking-widest text-amber-400"><AlertCircle className="w-3 h-3" /> Unsaved</span>}
                   </div>
-                  {editingCompany && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-1.5"><Settings2 className="w-3.5 h-3.5 text-blue-500" /> ID: {editingCompany.id?.substring(0, 8)}<CopyButton text={editingCompany.id} /></p>}
+                  {editingCompany && <p className="text-[10px] font-bold text-fg-3 uppercase tracking-widest mt-1 flex items-center gap-1.5"><Settings2 className="w-3.5 h-3.5 text-blue-500" /> ID: {editingCompany.id?.substring(0, 8)}<CopyButton text={editingCompany.id} /></p>}
                 </div>
-                <button onClick={closeModal} className="p-3 bg-[#1A2235] rounded-xl text-slate-400 hover:text-white hover:bg-red-500/20 transition-colors border border-slate-700/50"><X className="w-5 h-5" /></button>
+                <button onClick={closeModal} className="p-3 bg-panel-3 rounded-xl text-fg-3 hover:text-fg hover:bg-red-500/20 transition-colors border border-fg/[0.12]"><X className="w-5 h-5" /></button>
               </div>
               {editingCompany && <CompanyQuickStats company={editingCompany} />}
               <div className="flex gap-8 overflow-x-auto pb-px">
@@ -1325,7 +1315,7 @@ export default function AdminCompaniesPage() {
                   { key: "terminals", label: "LHR Terminals", Icon: MapPin },
                   ...(editingCompany ? [{ key: "financials", label: "Invoices & Ledgers", Icon: FileText }] : []),
                 ].map(({ key, label, Icon }) => (
-                  <button key={key} onClick={() => setModalTab(key as any)} className={`pb-4 text-[10px] font-black uppercase tracking-widest border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${modalTab === key ? key === "financials" ? "border-emerald-500 text-emerald-400" : "border-blue-500 text-blue-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}><Icon className="w-3.5 h-3.5" /> {label}</button>
+                  <button key={key} onClick={() => setModalTab(key as any)} className={`pb-4 text-[10px] font-black uppercase tracking-widest border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${modalTab === key ? key === "financials" ? "border-emerald-500 text-emerald-400" : "border-blue-500 text-blue-400" : "border-transparent text-fg-4 hover:text-fg-2"}`}><Icon className="w-3.5 h-3.5" /> {label}</button>
                 ))}
               </div>
             </div>
@@ -1336,7 +1326,7 @@ export default function AdminCompaniesPage() {
                   <div className="flex-1 overflow-y-auto p-8">
 
                     {modalTab === "general" && (
-                      <div className="space-y-8 text-white">
+                      <div className="space-y-8 text-fg">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-2">
                             <label className={labelCls}>Brand Name</label>
@@ -1345,18 +1335,18 @@ export default function AdminCompaniesPage() {
                           <div className="space-y-2">
                             <label className={labelCls}><Network className="w-3.5 h-3.5 inline mr-1 text-emerald-500" /> Live API Token (Optional)</label>
                             <TokenInput value={getField(editingCompany, newCompany, "api_token") || ""} onChange={v => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "api_token", v)} inputCls={inputCls} />
-                            <p className="text-[10px] text-slate-500 font-bold">Used only when Pricing Source is set to Live API.</p>
+                            <p className="text-[10px] text-fg-4 font-bold">Used only when Pricing Source is set to Live API.</p>
                           </div>
                         </div>
 
                         <PricingModeToggle value={getField(editingCompany, newCompany, "pricing_mode") || "api"} onChange={(v) => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "pricing_mode", v)} hasToken={!!getField(editingCompany, newCompany, "api_token")} />
 
-                        <div className="bg-[#1A2235] p-6 rounded-2xl border border-slate-700/50">
-                          <h3 className="text-sm font-black text-white mb-2 flex items-center gap-2"><Zap className="w-4 h-4 text-amber-400" /> Custom Price Modifier</h3>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-4">Per-operator multiplier applied on top of any price source.</p>
+                        <div className="bg-panel-3 p-6 rounded-2xl border border-fg/[0.12]">
+                          <h3 className="text-sm font-black text-fg mb-2 flex items-center gap-2"><Zap className="w-4 h-4 text-amber-400" /> Custom Price Modifier</h3>
+                          <p className="text-[10px] text-fg-3 font-bold uppercase tracking-widest mb-4">Per-operator multiplier applied on top of any price source.</p>
                           <div className="flex flex-wrap gap-2">
                             {[0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3].map(v => (
-                              <button key={v} type="button" onClick={() => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "price_modifier", v)} className={`px-4 py-2 rounded-xl text-xs font-black transition-all border ${(getField(editingCompany, newCompany, "price_modifier") || 1.0) === v ? "bg-blue-600 text-white border-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.4)]" : "bg-[#0F1523] text-slate-400 border-slate-700/50 hover:border-slate-500 hover:text-white"}`}>{v === 1 ? "BASE (0%)" : `${v > 1 ? "+" : ""}${Math.round((v - 1) * 100)}%`}</button>
+                              <button key={v} type="button" onClick={() => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "price_modifier", v)} className={`px-4 py-2 rounded-xl text-xs font-black transition-all border ${(getField(editingCompany, newCompany, "price_modifier") || 1.0) === v ? "bg-blue-600 text-white border-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.4)]" : "bg-panel text-fg-3 border-fg/[0.12] hover:border-fg/25 hover:text-white"}`}>{v === 1 ? "BASE (0%)" : `${v > 1 ? "+" : ""}${Math.round((v - 1) * 100)}%`}</button>
                             ))}
                           </div>
                         </div>
@@ -1367,11 +1357,11 @@ export default function AdminCompaniesPage() {
 
                         {getField(editingCompany, newCompany, "pricing_mode") === "pivot" && <PricePreviewCalc company={editingCompany || newCompany} markupPercent={markupPercent} />}
 
-                        <div className="bg-[#1A2235] p-6 rounded-2xl border border-slate-700/50">
-                          <h3 className="text-sm font-black text-white mb-4">Manage Badges</h3>
+                        <div className="bg-panel-3 p-6 rounded-2xl border border-fg/[0.12]">
+                          <h3 className="text-sm font-black text-fg mb-4">Manage Badges</h3>
                           <div className="flex gap-2 mb-4">
                             <input id="new-badge-label" className={inputCls} placeholder="e.g. £10 FEE EXCLUDED" />
-                            <select id="new-badge-cat" className="bg-[#0F1523] border border-slate-700 text-white rounded-xl px-4 text-xs font-bold outline-none shrink-0"><option value="General">General</option><option value="meet-greet">Meet &amp; Greet</option><option value="park-ride">Park &amp; Ride</option><option value="hotel">Hotel</option></select>
+                            <select id="new-badge-cat" className="bg-panel border border-fg/[0.12] text-fg rounded-xl px-4 text-xs font-bold outline-none shrink-0"><option value="General">General</option><option value="meet-greet">Meet &amp; Greet</option><option value="park-ride">Park &amp; Ride</option><option value="hotel">Hotel</option></select>
                             <button type="button" onClick={() => { const label = (document.getElementById("new-badge-label") as HTMLInputElement).value; const category = (document.getElementById("new-badge-cat") as HTMLSelectElement).value; handleAddBadge(label, category); (document.getElementById("new-badge-label") as HTMLInputElement).value = ""; }} className="bg-blue-600 px-6 rounded-xl text-white font-black hover:bg-blue-500 transition-colors shrink-0">+</button>
                           </div>
                           <div className="flex flex-wrap gap-2">
@@ -1386,35 +1376,35 @@ export default function AdminCompaniesPage() {
                             <label className={labelCls}>Service Category</label>
                             <div className="relative">
                               <select value={getField(editingCompany, newCompany, "category") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "category", e.target.value)} className={filterSelectCls}><option value="meet-greet">Meet &amp; Greet</option><option value="park-ride">Park &amp; Ride</option><option value="hotel">Hotel Parking</option></select>
-                              <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                              <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none" />
                             </div>
                           </div>
                           <div className="space-y-2">
                             <label className={labelCls}><ImageIcon className="w-3 h-3 inline mr-1 text-blue-500" /> Logo URL</label>
                             <input type="text" autoComplete="off" placeholder="https://..." value={getField(editingCompany, newCompany, "logo_url") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "logo_url", e.target.value)} className={inputCls} />
-                            {getField(editingCompany, newCompany, "logo_url") && <div className="mt-2 flex items-center gap-3"><CompanyLogo logoUrl={getField(editingCompany, newCompany, "logo_url")} name={getField(editingCompany, newCompany, "name") || "?"} /><p className="text-[10px] text-slate-500 font-bold">Logo preview</p></div>}
+                            {getField(editingCompany, newCompany, "logo_url") && <div className="mt-2 flex items-center gap-3"><CompanyLogo logoUrl={getField(editingCompany, newCompany, "logo_url")} name={getField(editingCompany, newCompany, "name") || "?"} /><p className="text-[10px] text-fg-4 font-bold">Logo preview</p></div>}
                           </div>
                           <div className="space-y-2">
                             <label className={labelCls}><Percent className="w-3 h-3 inline mr-1 text-emerald-500" /> Commission Cut (%)</label>
                             <input required type="number" step="0.1" min="0" max="100" value={getField(editingCompany, newCompany, "commission_rate") || 0} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "commission_rate", parseFloat(e.target.value) || 0)} className={`${inputCls} !text-xl !text-emerald-400 [-webkit-text-fill-color:#34d399]`} />
-                            <div className="mt-2 h-1 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full transition-all" style={{ width: `${Math.min(getField(editingCompany, newCompany, "commission_rate") || 0, 100)}%` }} /></div>
+                            <div className="mt-2 h-1 bg-panel-3 rounded-full overflow-hidden"><div className="h-full bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full transition-all" style={{ width: `${Math.min(getField(editingCompany, newCompany, "commission_rate") || 0, 100)}%` }} /></div>
                           </div>
                           <div className="space-y-2">
                             <label className={labelCls}><Zap className="w-3 h-3 inline mr-1 text-amber-500" /> Dynamic Surcharge (%)</label>
                             <input type="number" step="0.5" min="0" value={getField(editingCompany, newCompany, "dynamic_surcharge_percent") || 0} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "dynamic_surcharge_percent", parseFloat(e.target.value) || 0)} className={`${inputCls} !text-xl !text-amber-400 [-webkit-text-fill-color:#fbbf24]`} />
-                            <p className="text-[10px] text-slate-500 font-bold mt-1 leading-relaxed">Adds a % on top of the API base price to separate providers with same token. e.g. APD = 4% above base.</p>
+                            <p className="text-[10px] text-fg-4 font-bold mt-1 leading-relaxed">Adds a % on top of the API base price to separate providers with same token. e.g. APD = 4% above base.</p>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-6 pt-4 border-t border-slate-800/80">
+                        <div className="grid grid-cols-1 gap-6 pt-4 border-t border-fg/[0.08]">
                           <div className="space-y-2">
                             <label className={labelCls}><Phone className="w-3.5 h-3.5 inline mr-1 text-emerald-500" /> Operator Email (receives booking jobs)</label>
                             <input type="email" autoComplete="off" placeholder="bookings@provider.co.uk" value={getField(editingCompany, newCompany, "email") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "email", e.target.value)} className={inputCls} />
-                            <p className="text-[10px] text-slate-500 font-bold leading-relaxed">New booking notifications for this provider are sent here. If left blank, they fall back to info@aeroparkdirect.co.uk.</p>
+                            <p className="text-[10px] text-fg-4 font-bold leading-relaxed">New booking notifications for this provider are sent here. If left blank, they fall back to info@aeroparkdirect.co.uk.</p>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-800/80">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-fg/[0.08]">
                           <div className="space-y-2">
                             <label className={labelCls}><Phone className="w-3.5 h-3.5 inline mr-1 text-amber-500" /> Dispatch Phone 1</label>
                             <input type="text" autoComplete="off" placeholder="07700..." value={getField(editingCompany, newCompany, "phone_number") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "phone_number", e.target.value)} className={inputCls} />
@@ -1425,7 +1415,7 @@ export default function AdminCompaniesPage() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-slate-800/80">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-fg/[0.08]">
                           <div className="space-y-2 md:col-span-2">
                             <label className={labelCls}><MapPin className="w-3.5 h-3.5 inline mr-1 text-emerald-500" /> Physical Address</label>
                             <input type="text" autoComplete="off" value={getField(editingCompany, newCompany, "address") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "address", e.target.value)} className={inputCls} />
@@ -1439,7 +1429,7 @@ export default function AdminCompaniesPage() {
                           <label className={labelCls}><MapPin className="w-3.5 h-3.5 inline mr-1 text-emerald-500" /> Google Map Embed URL</label>
                           <input type="text" autoComplete="off" placeholder="http://..." value={getField(editingCompany, newCompany, "map_url") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "map_url", e.target.value)} className={inputCls} />
                         </div>
-                        <div className="space-y-2 pt-4 border-t border-slate-800">
+                        <div className="space-y-2 pt-4 border-t border-fg/[0.08]">
                           <label className={labelCls}><Code2 className="w-3.5 h-3.5 inline mr-1 text-blue-500" /> Marketing Overview (HTML Support)</label>
                           <textarea rows={4} value={getField(editingCompany, newCompany, "overview") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "overview", e.target.value)} className={textareaCls} placeholder="Highlight key selling points..." />
                           <p className="text-[10px] text-blue-500 font-bold uppercase tracking-widest">Use &lt;br/&gt; for line breaks, &lt;b&gt;text&lt;/b&gt; for bold.</p>
@@ -1448,12 +1438,12 @@ export default function AdminCompaniesPage() {
                     )}
 
                     {modalTab === "terminals" && (
-                      <div className="space-y-6 text-white">
-                        <div className="bg-[#131A2B] p-6 rounded-2xl border border-slate-800 mb-4"><h3 className="text-lg font-black text-white mb-2">Heathrow Terminal Maps &amp; Addresses</h3><p className="text-xs text-slate-400">Injected into customer confirmation emails based on terminal selected at checkout.</p></div>
+                      <div className="space-y-6 text-fg">
+                        <div className="bg-panel-2 p-6 rounded-2xl border border-fg/[0.08] mb-4"><h3 className="text-lg font-black text-fg mb-2">Heathrow Terminal Maps &amp; Addresses</h3><p className="text-xs text-fg-3">Injected into customer confirmation emails based on terminal selected at checkout.</p></div>
                         {(["T2", "T3", "T4", "T5"] as const).map(term => {
                           const tData = getField(editingCompany, newCompany, "terminal_data")?.[term] || defaultCompany.terminal_data[term];
                           return (
-                            <div key={term} className="bg-[#131A2B] p-6 rounded-2xl border border-slate-800">
+                            <div key={term} className="bg-panel-2 p-6 rounded-2xl border border-fg/[0.08]">
                               <h4 className="text-blue-400 font-black mb-4 flex items-center gap-2"><MapPin className="w-4 h-4" /> {term} Details</h4>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2"><label className={labelCls}>Meeting Address</label><input type="text" className={inputCls} value={tData?.address || ""} onChange={e => updateTerminalField(term, "address", e.target.value)} /></div>
@@ -1467,45 +1457,45 @@ export default function AdminCompaniesPage() {
                     )}
 
                     {modalTab === "ltn" && (
-                      <div className="space-y-8 text-white">
+                      <div className="space-y-8 text-fg">
                         {(getField(editingCompany, newCompany, "pricing_mode") || "api") === "api" && (
                           <div className="px-5 py-4 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl flex items-center gap-3"><Zap className="w-4 h-4 text-emerald-400 shrink-0" /><p className="text-[11px] font-bold text-emerald-400">This company is in <b>Live API</b> mode — these pivot prices are NOT used. Switch to Pivot mode in General Info to use them.</p></div>
                         )}
-                        <div className="bg-[#131A2B] p-6 rounded-2xl border border-slate-800">
+                        <div className="bg-panel-2 p-6 rounded-2xl border border-fg/[0.08]">
                           <label className="flex items-center gap-6 cursor-pointer">
-                            <div className="flex-1"><p className="text-white font-black text-lg">Operates at Luton Airport?</p><p className="text-slate-500 text-xs mt-1">Enable to show in LTN search results.</p></div>
+                            <div className="flex-1"><p className="text-fg font-black text-lg">Operates at Luton Airport?</p><p className="text-fg-4 text-xs mt-1">Enable to show in LTN search results.</p></div>
                             <input type="checkbox" checked={!!getField(editingCompany, newCompany, "operates_at_luton")} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "operates_at_luton", e.target.checked)} className="accent-blue-500 w-6 h-6 cursor-pointer" />
                           </label>
                         </div>
                         {getField(editingCompany, newCompany, "operates_at_luton") && (
                           <>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-slate-800 pb-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-fg/[0.08] pb-8">
                               <div className="space-y-2"><label className={labelCls}>Day 1: Starting Price (£)</label><input type="number" step="0.01" value={getField(editingCompany, newCompany, "luton_price") || 0} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "luton_price", parseFloat(e.target.value) || 0)} className={`${inputCls} !text-2xl !text-blue-400 [-webkit-text-fill-color:#60a5fa]`} /></div>
                               <div className="flex flex-col gap-3 pt-6">
-                                <button type="button" onClick={() => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "ltn_sold_out", !getField(editingCompany, newCompany, "ltn_sold_out"))} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border transition-all flex items-center justify-center gap-2 ${getField(editingCompany, newCompany, "ltn_sold_out") ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-[#1A2235] text-slate-400 border-slate-700/50 hover:border-slate-600"}`}><AlertOctagon className="w-3.5 h-3.5" /> Mark Sold Out</button>
-                                <button type="button" onClick={() => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "ltn_featured", !getField(editingCompany, newCompany, "ltn_featured"))} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border transition-all flex items-center justify-center gap-2 ${getField(editingCompany, newCompany, "ltn_featured") ? "bg-amber-500/20 text-amber-400 border-amber-500/30" : "bg-[#1A2235] text-slate-400 border-slate-700/50 hover:border-slate-600"}`}><Award className="w-3.5 h-3.5" /> Featured Provider</button>
+                                <button type="button" onClick={() => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "ltn_sold_out", !getField(editingCompany, newCompany, "ltn_sold_out"))} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border transition-all flex items-center justify-center gap-2 ${getField(editingCompany, newCompany, "ltn_sold_out") ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-panel-3 text-fg-3 border-fg/[0.12] hover:border-fg/[0.18]"}`}><AlertOctagon className="w-3.5 h-3.5" /> Mark Sold Out</button>
+                                <button type="button" onClick={() => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "ltn_featured", !getField(editingCompany, newCompany, "ltn_featured"))} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border transition-all flex items-center justify-center gap-2 ${getField(editingCompany, newCompany, "ltn_featured") ? "bg-amber-500/20 text-amber-400 border-amber-500/30" : "bg-panel-3 text-fg-3 border-fg/[0.12] hover:border-fg/[0.18]"}`}><Award className="w-3.5 h-3.5" /> Featured Provider</button>
                               </div>
                             </div>
                             <div className="pt-2">
-                              <p className="text-sm font-black text-white mb-1">Pivot Points (Manual Pricing)</p>
-                              <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-5">Exact TOTAL PRICE at specific durations. Engine interpolates between them.</p>
+                              <p className="text-sm font-black text-fg mb-1">Pivot Points (Manual Pricing)</p>
+                              <p className="text-[10px] text-fg-4 uppercase tracking-widest font-bold mb-5">Exact TOTAL PRICE at specific durations. Engine interpolates between them.</p>
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 {[{ label: "Day 2 Total", key: "ltn_day2_price" }, { label: "Day 5 Total", key: "ltn_day5_price" }, { label: "Day 8 Total", key: "ltn_day8_price" }, { label: "Day 11 Total", key: "ltn_day11_price" }, { label: "Day 14 Total", key: "ltn_day14_price" }, { label: "Day 17 Total", key: "ltn_day17_price" }, { label: "Day 22 Total", key: "ltn_day22_price" }, { label: "Day 32 Total", key: "ltn_day32_price" }].map(pivot => (
                                   <div key={pivot.key} className="space-y-2"><label className={labelCls}>{pivot.label} (£)</label><input type="number" step="0.01" value={getField(editingCompany, newCompany, pivot.key) || 0} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, pivot.key, parseFloat(e.target.value) || 0)} className={`${inputCls} !py-3 !text-emerald-400 [-webkit-text-fill-color:#34d399]`} /></div>
                                 ))}
                               </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8 border-t border-slate-800">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8 border-t border-fg/[0.08]">
                               <div className="space-y-2"><label className={labelCls}>Arrival Instructions (HTML)</label><textarea rows={5} value={getField(editingCompany, newCompany, "on_arrival_ltn") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "on_arrival_ltn", e.target.value)} className={textareaCls} /></div>
                               <div className="space-y-2"><label className={labelCls}>Return Instructions (HTML)</label><textarea rows={5} value={getField(editingCompany, newCompany, "on_return_ltn") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "on_return_ltn", e.target.value)} className={textareaCls} /></div>
                             </div>
-                            <div className="space-y-2 pt-6 border-t border-slate-800">
+                            <div className="space-y-2 pt-6 border-t border-fg/[0.08]">
                               <label className={labelCls}>Extra Charges Note — Luton (shown to the customer)</label>
                               <input type="text" value={getField(editingCompany, newCompany, "ltn_fees_note") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "ltn_fees_note", e.target.value)} className={inputCls} placeholder="e.g. £10 barrier charge payable on collection" />
-                              <p className="text-[10px] text-slate-500 font-bold leading-relaxed">Shows as an amber notice on the result card &amp; checkout. Leave BLANK for all-inclusive operators (e.g. AeroPark Exclusive) — they keep their &ldquo;No Hidden Fees&rdquo; badge.</p>
+                              <p className="text-[10px] text-fg-4 font-bold leading-relaxed">Shows as an amber notice on the result card &amp; checkout. Leave BLANK for all-inclusive operators (e.g. AeroPark Exclusive) — they keep their &ldquo;No Hidden Fees&rdquo; badge.</p>
                               <label className={`${labelCls} pt-3 block`}>Extra Charge Amount — Luton (£)</label>
                               <input type="number" step="0.01" min="0" value={getField(editingCompany, newCompany, "ltn_fees_amount") || 0} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "ltn_fees_amount", parseFloat(e.target.value) || 0)} className={`${inputCls} !text-amber-400`} />
-                              <p className="text-[10px] text-slate-500 font-bold leading-relaxed">The real £ value of the note above. Used ONLY when a booking is fee-covered (e.g. a transferred Exclusive booking) — split out of the operator's payout and paid to them in full, with no commission taken.</p>
+                              <p className="text-[10px] text-fg-4 font-bold leading-relaxed">The real £ value of the note above. Used ONLY when a booking is fee-covered (e.g. a transferred Exclusive booking) — split out of the operator's payout and paid to them in full, with no commission taken.</p>
                             </div>
                             <ReviewSection airport="ltn" color="blue" reviews={getField(editingCompany, newCompany, "ltn_reviews") || []} onAdd={() => addReview("ltn")} onRemove={idx => removeReview("ltn", idx)} onUpdate={(idx, f, v) => updateReview("ltn", idx, f, v)} />
                           </>
@@ -1514,45 +1504,45 @@ export default function AdminCompaniesPage() {
                     )}
 
                     {modalTab === "lhr" && (
-                      <div className="space-y-8 text-white">
+                      <div className="space-y-8 text-fg">
                         {(getField(editingCompany, newCompany, "pricing_mode") || "api") === "api" && (
                           <div className="px-5 py-4 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl flex items-center gap-3"><Zap className="w-4 h-4 text-emerald-400 shrink-0" /><p className="text-[11px] font-bold text-emerald-400">This company is in <b>Live API</b> mode — these pivot prices are NOT used. Switch to Pivot mode in General Info to use them.</p></div>
                         )}
-                        <div className="bg-[#131A2B] p-6 rounded-2xl border border-slate-800">
+                        <div className="bg-panel-2 p-6 rounded-2xl border border-fg/[0.08]">
                           <label className="flex items-center gap-6 cursor-pointer">
-                            <div className="flex-1"><p className="text-white font-black text-lg">Operates at Heathrow Airport?</p><p className="text-slate-500 text-xs mt-1">Enable to show in LHR search results.</p></div>
+                            <div className="flex-1"><p className="text-fg font-black text-lg">Operates at Heathrow Airport?</p><p className="text-fg-4 text-xs mt-1">Enable to show in LHR search results.</p></div>
                             <input type="checkbox" checked={!!getField(editingCompany, newCompany, "operates_at_heathrow")} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "operates_at_heathrow", e.target.checked)} className="accent-purple-500 w-6 h-6 cursor-pointer" />
                           </label>
                         </div>
                         {getField(editingCompany, newCompany, "operates_at_heathrow") && (
                           <>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-slate-800 pb-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-fg/[0.08] pb-8">
                               <div className="space-y-2"><label className={labelCls}>Day 1: Starting Price (£)</label><input type="number" step="0.01" value={getField(editingCompany, newCompany, "heathrow_price") || 0} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "heathrow_price", parseFloat(e.target.value) || 0)} className={`${inputCls} !text-2xl !text-purple-400 [-webkit-text-fill-color:#c084fc]`} /></div>
                               <div className="flex flex-col gap-3 pt-6">
-                                <button type="button" onClick={() => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "lhr_sold_out", !getField(editingCompany, newCompany, "lhr_sold_out"))} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border transition-all flex items-center justify-center gap-2 ${getField(editingCompany, newCompany, "lhr_sold_out") ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-[#1A2235] text-slate-400 border-slate-700/50 hover:border-slate-600"}`}><AlertOctagon className="w-3.5 h-3.5" /> Mark Sold Out</button>
-                                <button type="button" onClick={() => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "lhr_featured", !getField(editingCompany, newCompany, "lhr_featured"))} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border transition-all flex items-center justify-center gap-2 ${getField(editingCompany, newCompany, "lhr_featured") ? "bg-amber-500/20 text-amber-400 border-amber-500/30" : "bg-[#1A2235] text-slate-400 border-slate-700/50 hover:border-slate-600"}`}><Award className="w-3.5 h-3.5" /> Featured Provider</button>
+                                <button type="button" onClick={() => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "lhr_sold_out", !getField(editingCompany, newCompany, "lhr_sold_out"))} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border transition-all flex items-center justify-center gap-2 ${getField(editingCompany, newCompany, "lhr_sold_out") ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-panel-3 text-fg-3 border-fg/[0.12] hover:border-fg/[0.18]"}`}><AlertOctagon className="w-3.5 h-3.5" /> Mark Sold Out</button>
+                                <button type="button" onClick={() => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "lhr_featured", !getField(editingCompany, newCompany, "lhr_featured"))} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border transition-all flex items-center justify-center gap-2 ${getField(editingCompany, newCompany, "lhr_featured") ? "bg-amber-500/20 text-amber-400 border-amber-500/30" : "bg-panel-3 text-fg-3 border-fg/[0.12] hover:border-fg/[0.18]"}`}><Award className="w-3.5 h-3.5" /> Featured Provider</button>
                               </div>
                             </div>
                             <div className="pt-2">
-                              <p className="text-sm font-black text-white mb-1">Pivot Points</p>
-                              <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-5">Exact TOTAL PRICE at specific durations.</p>
+                              <p className="text-sm font-black text-fg mb-1">Pivot Points</p>
+                              <p className="text-[10px] text-fg-4 uppercase tracking-widest font-bold mb-5">Exact TOTAL PRICE at specific durations.</p>
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 {[{ label: "Day 2 Total", key: "lhr_day2_price" }, { label: "Day 5 Total", key: "lhr_day5_price" }, { label: "Day 8 Total", key: "lhr_day8_price" }, { label: "Day 11 Total", key: "lhr_day11_price" }, { label: "Day 14 Total", key: "lhr_day14_price" }, { label: "Day 17 Total", key: "lhr_day17_price" }, { label: "Day 22 Total", key: "lhr_day22_price" }, { label: "Day 32 Total", key: "lhr_day32_price" }].map(pivot => (
                                   <div key={pivot.key} className="space-y-2"><label className={labelCls}>{pivot.label} (£)</label><input type="number" step="0.01" value={getField(editingCompany, newCompany, pivot.key) || 0} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, pivot.key, parseFloat(e.target.value) || 0)} className={`${inputCls} !py-3 !text-emerald-400 [-webkit-text-fill-color:#34d399]`} /></div>
                                 ))}
                               </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8 border-t border-slate-800">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8 border-t border-fg/[0.08]">
                               <div className="space-y-2"><label className={labelCls}>Arrival Instructions (HTML)</label><textarea rows={5} value={getField(editingCompany, newCompany, "on_arrival_lhr") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "on_arrival_lhr", e.target.value)} className={textareaCls} /></div>
                               <div className="space-y-2"><label className={labelCls}>Return Instructions (HTML)</label><textarea rows={5} value={getField(editingCompany, newCompany, "on_return_lhr") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "on_return_lhr", e.target.value)} className={textareaCls} /></div>
                             </div>
-                            <div className="space-y-2 pt-6 border-t border-slate-800">
+                            <div className="space-y-2 pt-6 border-t border-fg/[0.08]">
                               <label className={labelCls}>Extra Charges Note — Heathrow (shown to the customer)</label>
                               <input type="text" value={getField(editingCompany, newCompany, "lhr_fees_note") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "lhr_fees_note", e.target.value)} className={inputCls} placeholder="e.g. ULEZ / drop-off charge not included" />
-                              <p className="text-[10px] text-slate-500 font-bold leading-relaxed">Shows as an amber notice on the result card &amp; checkout. Leave BLANK for all-inclusive operators (e.g. AeroPark Exclusive) — they keep their &ldquo;No Hidden Fees&rdquo; badge.</p>
+                              <p className="text-[10px] text-fg-4 font-bold leading-relaxed">Shows as an amber notice on the result card &amp; checkout. Leave BLANK for all-inclusive operators (e.g. AeroPark Exclusive) — they keep their &ldquo;No Hidden Fees&rdquo; badge.</p>
                               <label className={`${labelCls} pt-3 block`}>Extra Charge Amount — Heathrow (£)</label>
                               <input type="number" step="0.01" min="0" value={getField(editingCompany, newCompany, "lhr_fees_amount") || 0} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "lhr_fees_amount", parseFloat(e.target.value) || 0)} className={`${inputCls} !text-amber-400`} />
-                              <p className="text-[10px] text-slate-500 font-bold leading-relaxed">The real £ value of the note above. Used ONLY when a booking is fee-covered (e.g. a transferred Exclusive booking) — split out of the operator's payout and paid to them in full, with no commission taken.</p>
+                              <p className="text-[10px] text-fg-4 font-bold leading-relaxed">The real £ value of the note above. Used ONLY when a booking is fee-covered (e.g. a transferred Exclusive booking) — split out of the operator's payout and paid to them in full, with no commission taken.</p>
                             </div>
                             <ReviewSection airport="lhr" color="purple" reviews={getField(editingCompany, newCompany, "lhr_reviews") || []} onAdd={() => addReview("lhr")} onRemove={idx => removeReview("lhr", idx)} onUpdate={(idx, f, v) => updateReview("lhr", idx, f, v)} />
                           </>
@@ -1561,9 +1551,9 @@ export default function AdminCompaniesPage() {
                     )}
                   </div>
 
-                  <div className="bg-[#131A2B] p-8 shrink-0 border-t border-slate-800">
+                  <div className="bg-panel-2 p-8 shrink-0 border-t border-fg/[0.08]">
                     <div className="flex gap-3">
-                      <button type="button" onClick={closeModal} className="px-6 py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-black uppercase tracking-[0.2em] text-xs transition-all border border-slate-700">Cancel</button>
+                      <button type="button" onClick={closeModal} className="px-6 py-4 bg-panel-3 hover:bg-panel-4 text-fg-2 rounded-xl font-black uppercase tracking-[0.2em] text-xs transition-all border border-fg/[0.12]">Cancel</button>
                       <button type="submit" disabled={isSaving} className="flex-1 bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-black uppercase tracking-[0.2em] text-xs text-white shadow-[0_10px_20px_-5px_rgba(37,99,235,0.4)] transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3">{isSaving ? <><Loader2 className="animate-spin w-4 h-4" /> Syncing Network...</> : <><Save className="w-4 h-4" /> Save &amp; Deploy Partner</>}</button>
                     </div>
                   </div>
@@ -1571,7 +1561,7 @@ export default function AdminCompaniesPage() {
               ) : (
                 <div className="p-8 space-y-8">
                   {fetchingFinancials ? (
-                    <div className="py-20 flex flex-col items-center justify-center text-slate-500"><Loader2 className="w-10 h-10 animate-spin mb-4 text-emerald-500" /><p className="font-black text-[10px] uppercase tracking-[0.3em]">Compiling Ledgers...</p></div>
+                    <div className="py-20 flex flex-col items-center justify-center text-fg-4"><Loader2 className="w-10 h-10 animate-spin mb-4 text-emerald-500" /><p className="font-black text-[10px] uppercase tracking-[0.3em]">Compiling Ledgers...</p></div>
                   ) : (
                     <>
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 bg-emerald-500/10 border border-emerald-500/20 p-8 rounded-3xl">
@@ -1579,20 +1569,20 @@ export default function AdminCompaniesPage() {
                         <button onClick={downloadInvoiceCSV} className="w-full sm:w-auto px-6 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2"><Download className="w-4 h-4" /> Export CSV Invoice</button>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                        {[{ label: "Total Gross Collected", value: `£${calcGross().toFixed(2)}`, color: "text-white" }, { label: `Aero Cut (${editingCompany?.commission_rate || 15}%)`, value: `£${calcAeroCut().toFixed(2)}`, color: "text-blue-400" }, { label: "Payout Outstanding", value: `£${calcPayout().toFixed(2)}`, color: "text-emerald-400" }].map(({ label, value, color }) => (
-                          <div key={label} className="bg-[#1A2235] p-8 rounded-3xl border border-slate-700/50"><p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">{label}</p><p className={`text-3xl font-black tracking-tighter tabular-nums ${color}`}>{value}</p></div>
+                        {[{ label: "Total Gross Collected", value: `£${calcGross().toFixed(2)}`, color: "text-fg" }, { label: `Aero Cut (${editingCompany?.commission_rate || 15}%)`, value: `£${calcAeroCut().toFixed(2)}`, color: "text-blue-400" }, { label: "Payout Outstanding", value: `£${calcPayout().toFixed(2)}`, color: "text-emerald-400" }].map(({ label, value, color }) => (
+                          <div key={label} className="bg-panel-3 p-8 rounded-3xl border border-fg/[0.12]"><p className="text-[9px] font-black uppercase tracking-[0.2em] text-fg-4 mb-2">{label}</p><p className={`text-3xl font-black tracking-tighter tabular-nums ${color}`}>{value}</p></div>
                         ))}
                       </div>
-                      <div className="border border-slate-800 rounded-3xl overflow-hidden bg-[#131A2B]">
-                        <div className="p-6 border-b border-slate-800 bg-[#0F1523]"><h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Recent Ledger History</h4></div>
+                      <div className="border border-fg/[0.08] rounded-3xl overflow-hidden bg-panel-2">
+                        <div className="p-6 border-b border-fg/[0.08] bg-panel"><h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-fg-3">Recent Ledger History</h4></div>
                         <div className="overflow-x-auto">
                           <table className="w-full text-left whitespace-nowrap">
-                            <thead><tr className="border-b border-slate-800 text-[9px] font-black uppercase tracking-[0.2em] text-slate-500"><th className="px-8 py-5">Reference</th><th className="px-8 py-5">Type</th><th className="px-8 py-5">Gross</th><th className="px-8 py-5">Aero Fee</th><th className="px-8 py-5">Partner Clear</th></tr></thead>
-                            <tbody className="divide-y divide-slate-800/50">
+                            <thead><tr className="border-b border-fg/[0.08] text-[9px] font-black uppercase tracking-[0.2em] text-fg-4"><th className="px-8 py-5">Reference</th><th className="px-8 py-5">Type</th><th className="px-8 py-5">Gross</th><th className="px-8 py-5">Aero Fee</th><th className="px-8 py-5">Partner Clear</th></tr></thead>
+                            <tbody className="divide-y divide-fg/[0.08]">
                               {companyBookings.slice(0, 15).map((b) => { const gross = Number(b.total_price || 0); const aeroCut = gross * ((editingCompany?.commission_rate || 15) / 100); return (
-                                <tr key={b.id} className="hover:bg-white/[0.02]"><td className="px-8 py-4 flex items-center gap-1"><span className="text-xs font-bold text-white">{b.booking_ref}</span><CopyButton text={b.booking_ref} /></td><td className="px-8 py-4 text-[10px] font-black uppercase text-slate-500 tracking-widest">{b.service_type || "Meet & Greet"}</td><td className="px-8 py-4 text-xs font-bold text-slate-400">£{gross.toFixed(2)}</td><td className="px-8 py-4 text-xs font-bold text-blue-400">£{aeroCut.toFixed(2)}</td><td className="px-8 py-4 text-xs font-black text-emerald-400">£{(gross - aeroCut).toFixed(2)}</td></tr>
+                                <tr key={b.id} className="hover:bg-fg/[0.02]"><td className="px-8 py-4 flex items-center gap-1"><span className="text-xs font-bold text-fg">{b.booking_ref}</span><CopyButton text={b.booking_ref} /></td><td className="px-8 py-4 text-[10px] font-black uppercase text-fg-4 tracking-widest">{b.service_type || "Meet & Greet"}</td><td className="px-8 py-4 text-xs font-bold text-fg-3">£{gross.toFixed(2)}</td><td className="px-8 py-4 text-xs font-bold text-blue-400">£{aeroCut.toFixed(2)}</td><td className="px-8 py-4 text-xs font-black text-emerald-400">£{(gross - aeroCut).toFixed(2)}</td></tr>
                               ); })}
-                              {companyBookings.length === 0 && <tr><td colSpan={5} className="px-8 py-10 text-center text-slate-500 text-xs font-bold">No completed bookings found.</td></tr>}
+                              {companyBookings.length === 0 && <tr><td colSpan={5} className="px-8 py-10 text-center text-fg-4 text-xs font-bold">No completed bookings found.</td></tr>}
                             </tbody>
                           </table>
                         </div>

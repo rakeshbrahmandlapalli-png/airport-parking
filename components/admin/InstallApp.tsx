@@ -63,14 +63,14 @@ export function InstallApp({ className = "" }: { className?: string }) {
           type="button"
           onClick={() => setShowIosHelp((v) => !v)}
           aria-expanded={showIosHelp}
-          className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/[0.04] hover:text-white"
+          className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-fg-2 hover:bg-fg/[0.04] hover:text-fg"
         >
-          <Download className="w-4 h-4 text-slate-500" aria-hidden="true" /> Install app
+          <Download className="w-4 h-4 text-fg-4" aria-hidden="true" /> Install app
         </button>
         {showIosHelp && (
-          <p className="mx-3 mt-1 mb-2 rounded-lg bg-white/[0.04] p-3 text-sm text-slate-300 leading-relaxed">
+          <p className="mx-3 mt-1 mb-2 rounded-lg bg-fg/[0.04] p-3 text-sm text-fg-2 leading-relaxed">
             In Safari, tap <Share className="inline w-4 h-4 -mt-0.5" aria-label="Share" /> Share, then{" "}
-            <span className="font-medium text-white">Add to Home Screen</span>. AP Admin will open full screen from your
+            <span className="font-medium text-fg">Add to Home Screen</span>. AP Admin will open full screen from your
             home screen.
           </p>
         )}
@@ -88,9 +88,9 @@ export function InstallApp({ className = "" }: { className?: string }) {
         setDeferred(null);
         setMode("hidden");
       }}
-      className={`w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/[0.04] hover:text-white ${className}`}
+      className={`w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-fg-2 hover:bg-fg/[0.04] hover:text-fg ${className}`}
     >
-      <Download className="w-4 h-4 text-slate-500" aria-hidden="true" /> Install app
+      <Download className="w-4 h-4 text-fg-4" aria-hidden="true" /> Install app
     </button>
   );
 }

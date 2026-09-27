@@ -18,6 +18,22 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+// Applies the saved theme (components/admin/ThemeToggle.tsx) before the page
+// paints, so light mode never flashes dark first. Runs inline as the root's
+// first child, before the rest of the admin is parsed.
+const THEME_SCRIPT = `(function(){try{
+var root=document.currentScript.parentElement;
+var pref=localStorage.getItem("ap-admin-theme")||"dark";
+var light=pref==="light"||(pref==="auto"&&window.matchMedia("(prefers-color-scheme: light)").matches);
+root.setAttribute("data-admin-theme",light?"light":"dark");
+var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",light?"#F1F5F9":"#0B1120");
+}catch(e){}})();`;
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return (
+    <div data-admin-root="" data-admin-theme="dark" suppressHydrationWarning className="min-h-screen">
+      <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      {children}
+    </div>
+  );
 }
