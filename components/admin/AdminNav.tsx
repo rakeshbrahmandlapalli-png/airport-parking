@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Logo from "@/components/site/Logo";
 import { supabase } from "@/app/lib/supabase";
+import { InstallApp } from "./InstallApp";
 
 // One navigation for every admin page. Each page used to carry its own copy of
 // the sidebar and the mobile bar, in two different styles, and some pages
@@ -70,6 +71,7 @@ export function AdminSidebar({ unreadMessages = 0 }: { unreadMessages?: number }
       </nav>
 
       <div className="p-3 space-y-0.5 border-t border-white/[0.06]">
+        <InstallApp />
         <Link href="/" target="_blank" className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-400 hover:bg-white/[0.04] hover:text-white">
           <ExternalLink className="w-4 h-4 text-slate-500" aria-hidden="true" /> View website
         </Link>
@@ -180,6 +182,7 @@ export function AdminMobileNav({
               );
             })}
             <div className="mt-2 pt-2 border-t border-white/10">
+              <InstallApp />
               <Link href="/" target="_blank" className="flex items-center gap-3 rounded-lg px-3 py-3 text-base text-slate-300">
                 <ExternalLink className="w-5 h-5 text-slate-500" aria-hidden="true" /> View website
               </Link>
