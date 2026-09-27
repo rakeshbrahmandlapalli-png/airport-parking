@@ -378,7 +378,7 @@ export default function SettingsPage() {
     </div>
   );
 
-  const inputCls = "w-full bg-canvas border border-fg/[0.06] hover:border-fg/15 rounded-lg px-4 py-3 text-lg font-black text-fg outline-none focus:ring-1 focus:ring-blue-500/40 focus:border-blue-500/40 transition-colors shadow-[0_0_0_1000px_#0B1120_inset] [-webkit-text-fill-color:rgb(var(--admin-fg))]";
+  const inputCls = "w-full bg-canvas border border-fg/[0.06] hover:border-fg/15 rounded-lg px-4 py-3 text-lg font-black text-fg outline-none focus:ring-1 focus:ring-blue-500/40 focus:border-blue-500/40 transition-colors [-webkit-text-fill-color:rgb(var(--admin-fg))]";
   const labelCls = "text-[10px] font-semibold uppercase text-fg-4 block ml-0.5 tracking-[0.15em] mb-2";
   const sectionHeader = "p-5 md:p-6 border-b border-fg/[0.06] flex items-center gap-3";
 
@@ -488,7 +488,7 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
                   aria-pressed={markupEnabled}
                   className={`relative w-16 h-8 rounded-full transition-colors duration-300 shrink-0 focus:outline-none focus:ring-4 focus:ring-blue-500/30 ${markupEnabled ? "bg-blue-600" : "bg-panel-4"}`}
                 >
-                  <span className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-300 flex items-center justify-center ${markupEnabled ? "translate-x-8" : "translate-x-0"}`}>
+                  <span className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-transform duration-300 flex items-center justify-center ${markupEnabled ? "translate-x-8" : "translate-x-0"}`}>
                     {markupEnabled ? <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" /> : <AlertCircle className="w-3.5 h-3.5 text-fg-3" />}
                   </span>
                 </button>
@@ -516,7 +516,7 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
                   <div className="flex items-center gap-3 mb-3">
                     <span className="text-fg-4 font-bold text-sm shrink-0">API base: £</span>
                     <input type="number" step="0.01" value={previewBase} onChange={e => setPreviewBase(Number(e.target.value) || 0)}
-                      className="w-28 bg-canvas border border-fg/[0.06] rounded-lg px-3 py-2 text-sm font-black text-fg outline-none focus:border-blue-500/40 [-webkit-text-fill-color:rgb(var(--admin-fg))] shadow-[0_0_0_1000px_#0B1120_inset]" />
+                      className="w-28 bg-canvas border border-fg/[0.06] rounded-lg px-3 py-2 text-sm font-black text-fg outline-none focus:border-blue-500/40 [-webkit-text-fill-color:rgb(var(--admin-fg))]" />
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-fg-3 text-sm font-bold">After {markupPercent}% markup:</span>
@@ -611,7 +611,7 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
                   aria-pressed={autoSurgeEnabled}
                   className={`relative w-16 h-8 rounded-full transition-colors duration-300 shrink-0 focus:outline-none focus:ring-4 focus:ring-orange-500/30 ${autoSurgeEnabled ? "bg-orange-600" : "bg-panel-4"}`}
                 >
-                  <span className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-300 flex items-center justify-center ${autoSurgeEnabled ? "translate-x-8" : "translate-x-0"}`}>
+                  <span className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-transform duration-300 flex items-center justify-center ${autoSurgeEnabled ? "translate-x-8" : "translate-x-0"}`}>
                     {autoSurgeEnabled ? <CheckCircle2 className="w-3.5 h-3.5 text-orange-600" /> : <AlertCircle className="w-3.5 h-3.5 text-fg-3" />}
                   </span>
                 </button>
@@ -656,7 +656,7 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
                             )}
                             className={`relative w-14 h-7 rounded-full transition-colors duration-300 shrink-0 focus:outline-none focus:ring-4 focus:ring-orange-500/30 ${on ? "bg-orange-600" : "bg-panel-4"}`}
                           >
-                            <span className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-300 ${on ? "translate-x-7" : "translate-x-0"}`} />
+                            <span className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform duration-300 ${on ? "translate-x-7" : "translate-x-0"}`} />
                           </button>
                         </div>
                       );

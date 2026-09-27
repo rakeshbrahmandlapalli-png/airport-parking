@@ -99,8 +99,7 @@ export default function MessagesPage() {
 
 
   if (loading && messages.length === 0) return (
-    <div className="min-h-screen bg-gradient-to-b from-canvas via-canvas to-canvas flex flex-col items-center justify-center text-fg relative overflow-hidden">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px]"></div>
+    <div className="min-h-screen bg-canvas flex flex-col items-center justify-center text-fg relative overflow-hidden">
       <div className="relative z-10">
         <div className="absolute inset-0 border-t-2 border-blue-500 rounded-full animate-spin"></div>
         <MessageCircle className="w-10 h-10 text-blue-500 m-4 animate-pulse" />
@@ -110,10 +109,8 @@ export default function MessagesPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-canvas via-canvas to-canvas font-sans flex flex-col md:flex-row overflow-hidden text-fg antialiased selection:bg-blue-600/30 relative">
+    <div className="min-h-screen bg-canvas font-sans flex flex-col md:flex-row overflow-hidden text-fg antialiased selection:bg-blue-600/30 relative">
 
-      <div className="fixed top-[-200px] left-[200px] w-[600px] h-[600px] bg-blue-600/8 rounded-full blur-[140px] pointer-events-none z-0"></div>
-      <div className="fixed bottom-[-200px] right-[100px] w-[500px] h-[500px] bg-indigo-600/8 rounded-full blur-[140px] pointer-events-none z-0"></div>
 
       <AdminSidebar unreadMessages={stats.unread} />
 
@@ -121,15 +118,14 @@ export default function MessagesPage() {
       <main className="flex-1 p-4 md:p-8 lg:p-12 w-full overflow-y-auto h-screen relative pb-32 md:pb-12 custom-scrollbar z-10">
 
         {/* HEADER */}
-        <div className="relative mb-8 rounded-[2rem] border border-fg/[0.08] bg-gradient-to-br from-panel-2 to-panel shadow-2xl overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/40 to-transparent"></div>
+        <div className="relative mb-8 rounded-xl border border-fg/[0.08] bg-panel overflow-hidden">
           <div className="relative p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="flex items-center gap-5">
-              <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600/30 to-blue-600/5 border border-blue-500/30 items-center justify-center shrink-0">
+              <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-blue-600/10 border border-blue-500/30 items-center justify-center shrink-0">
                 <MessageCircle className="w-7 h-7 text-blue-400" />
               </div>
               <div>
-                <h1 className="text-3xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-white via-white to-blue-200 bg-clip-text text-transparent">Messages</h1>
+                <h1 className="text-3xl md:text-4xl font-black tracking-tight text-fg">Messages</h1>
                 <p className="text-fg-3 font-bold text-[10px] uppercase tracking-[0.2em] mt-2">
                   Every SMS sent and received · live from Twilio
                 </p>
@@ -200,7 +196,7 @@ export default function MessagesPage() {
         {/* LIST */}
         <div className="space-y-3 mb-24">
           {visible.length === 0 && !loading && (
-            <div className="bg-panel-2 border border-fg/[0.08] rounded-3xl p-16 text-center">
+            <div className="bg-panel-2 border border-fg/[0.08] rounded-xl p-16 text-center">
               <Inbox className="w-10 h-10 text-fg-4 mx-auto mb-4" />
               <p className="text-fg-3 font-bold text-sm">
                 {messages.length === 0 ? "No SMS activity yet." : "Nothing matches this filter."}
