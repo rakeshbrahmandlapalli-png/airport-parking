@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { rateLimit, getClientIp } from "@/app/lib/rateLimit";
+import { findOwnedBooking } from "@/app/lib/manageBooking";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,13 +35,7 @@ export async function POST(req: Request) {
 
   try {
     // Re-verify ownership (ref + name) before mutating anything.
-    const { data: match } = await supabaseAdmin
-      .from("bookings")
-      .select("id")
-      .eq("booking_ref", ref)
-      .ilike("full_name", `%${fullName}%`)
-      .limit(1)
-      .maybeSingle();
+    const match = await findOwnedBooking(supabaseAdmin, ref, fullName, "id");
 
     if (!match) {
       return NextResponse.json({ error: "Reservation not found." }, { status: 404 });

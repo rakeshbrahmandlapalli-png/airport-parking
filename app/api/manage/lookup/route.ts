@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { rateLimit, getClientIp } from "@/app/lib/rateLimit";
+import { findOwnedBooking, isInsideFreeWindow, publicBooking, publicCompany } from "@/app/lib/manageBooking";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,18 +35,8 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { data: rows, error } = await supabaseAdmin
-      .from("bookings")
-      .select("*")
-      .eq("booking_ref", ref)
-      .ilike("full_name", `%${fullName}%`)
-      .order("created_at", { ascending: false })
-      .limit(1);
+    const booking = await findOwnedBooking(supabaseAdmin, ref, fullName);
 
-    if (error) throw error;
-    const booking = rows && rows.length ? rows[0] : null;
-
-    // Generic message — never reveal whether the ref or the name was the mismatch.
     if (!booking) {
       return NextResponse.json({ error: "Reservation not found. Please check your details and try again." }, { status: 404 });
     }
@@ -54,13 +45,19 @@ export async function POST(req: Request) {
     if (booking.company_id) {
       const { data: c } = await supabaseAdmin
         .from("companies")
-        .select("*")
+        .select("name, phone_number, phone_number_2, on_arrival, on_arrival_ltn, on_arrival_lhr, on_return, on_return_ltn, on_return_lhr")
         .eq("id", booking.company_id)
         .maybeSingle();
       company = c || null;
     }
 
-    return NextResponse.json({ booking, company });
+    // Only what the page shows. insideFreeWindow lets the cancel page say what
+    // will happen to the money BEFORE the customer confirms.
+    return NextResponse.json({
+      booking: publicBooking(booking),
+      company: publicCompany(company),
+      insideFreeWindow: isInsideFreeWindow(booking),
+    });
   } catch {
     return NextResponse.json({ error: "We couldn't reach the booking service. Please try again." }, { status: 500 });
   }

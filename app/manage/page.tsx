@@ -1,15 +1,13 @@
 "use client";
 
 import { logger } from "@/app/lib/logger";
-import { useState, useEffect } from "react";
-import {
-  Loader2, ArrowRight, Printer, User, CheckCircle2, Car, PlaneTakeoff, Search, AlertCircle, Edit2,
-  XCircle, Phone, Info
-} from "lucide-react";
+import { useState } from "react";
+import { Loader2, Printer, AlertCircle, Phone, Pencil } from "lucide-react";
 import Link from "next/link";
 import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
 import { sanitizeHtml } from "../lib/sanitizeHtml";
+import { COMPANY } from "../lib/company";
 
 // Parse YYYY-MM-DD as a LOCAL date (avoids the UTC midnight day-shift bug).
 function parseLocalDate(dateStr: string): Date {
@@ -23,14 +21,27 @@ function parseLocalDate(dateStr: string): Date {
 
 function formatDate(dateStr: string) {
   return parseLocalDate(dateStr).toLocaleDateString("en-GB", {
-    day: "numeric", month: "short", year: "numeric",
+    weekday: "short", day: "numeric", month: "short", year: "numeric",
   });
 }
+
+const STATUS: Record<string, { label: string; cls: string }> = {
+  pending:   { label: "Awaiting payment", cls: "bg-amber-50 text-amber-800 border-amber-200" },
+  confirmed: { label: "Confirmed",        cls: "bg-emerald-50 text-emerald-800 border-emerald-200" },
+  parked:    { label: "Car parked",       cls: "bg-blue-50 text-blue-800 border-blue-200" },
+  completed: { label: "Completed",        cls: "bg-slate-100 text-slate-700 border-slate-200" },
+  cancelled: { label: "Cancelled",        cls: "bg-red-50 text-red-700 border-red-200" },
+};
+
+const inputCls = "w-full h-12 rounded-lg border border-slate-300 bg-white px-3.5 text-base text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 shadow-[0_0_0_1000px_#ffffff_inset] [-webkit-text-fill-color:#0f172a] placeholder:[-webkit-text-fill-color:#94a3b8]";
+const labelCls = "block text-sm font-medium text-slate-700 mb-1.5";
 
 export default function ManageBooking() {
   const [ref, setRef] = useState("");
   const [fullName, setFullName] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [booking, setBooking] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [company, setCompany] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -38,6 +49,7 @@ export default function ManageBooking() {
   const [isEditingFlight, setIsEditingFlight] = useState(false);
   const [newFlightNum, setNewFlightNum] = useState("");
   const [flightUpdateLoading, setFlightUpdateLoading] = useState(false);
+  const [flightError, setFlightError] = useState("");
 
   const findBooking = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,22 +69,23 @@ export default function ManageBooking() {
       const result = await res.json();
 
       if (!res.ok || !result.booking) {
-        setError(result.error || "Reservation not found. Please try again with different details.");
+        setError(result.error || "We couldn't find that booking. Please check your details and try again.");
       } else {
         setBooking(result.booking);
         setNewFlightNum(result.booking.flight_number || "");
         if (result.company) setCompany(result.company);
       }
-    } catch (err: any) {
+    } catch (err) {
       logger.error("Search Error:", err);
-      setError("An error occurred while connecting to the booking service.");
+      setError("We couldn't reach the booking service. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleUpdateFlight = async () => {
-    if (!newFlightNum.trim() || newFlightNum === booking.flight_number) {
+    setFlightError("");
+    if (!newFlightNum.trim() || newFlightNum.toUpperCase() === booking.flight_number) {
       setIsEditingFlight(false);
       return;
     }
@@ -102,17 +115,22 @@ export default function ManageBooking() {
 
       setBooking({ ...booking, flight_number: newFlightNum.toUpperCase() });
       setIsEditingFlight(false);
-    } catch (err: any) {
-      alert("Failed to update flight details.");
+    } catch (err) {
+      setFlightError(err instanceof Error && err.message !== "Update failed" ? err.message : "We couldn't update your flight number. Please try again.");
     } finally {
       setFlightUpdateLoading(false);
     }
   };
 
+  const status = STATUS[String(booking?.status || "").toLowerCase()] ?? null;
+  const canCancel = booking && !["cancelled", "completed"].includes(String(booking.status || "").toLowerCase());
+  const isLuton = String(booking?.airport || "").toLowerCase().includes("luton");
+  const phones = [company?.phone_number, company?.phone_number_2].filter(Boolean) as string[];
+
   return (
     <>
       <SiteHeader />
-        <main className="min-h-screen bg-slate-50 py-12 md:py-20 px-4 md:px-6 font-sans selection:bg-blue-200">
+      <main className="min-h-[60vh] bg-slate-50 py-10 md:py-16 px-4 md:px-6 font-sans text-slate-900">
 
         <style>{`
           @media print {
@@ -122,254 +140,208 @@ export default function ManageBooking() {
               position: absolute; left: 0; top: 0; width: 100%;
               background-color: white !important;
             }
-            #print-section p, #print-section span, #print-section h2, #print-section h3, #print-section div { color: black !important; }
+            #print-section p, #print-section span, #print-section h2, #print-section h3, #print-section div, #print-section dd, #print-section dt { color: black !important; }
             .print\\:hidden, .print-hidden { display: none !important; }
             .print\\:block { display: block !important; }
           }
         `}</style>
 
-        <div className="max-w-2xl mx-auto relative z-10 w-full">
+        <div className="max-w-2xl mx-auto w-full">
           {!booking ? (
-            <div className="bg-white rounded-[2rem] md:rounded-[3rem] p-6 md:p-12 shadow-xl border border-slate-100 text-center relative overflow-hidden print-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-[80px] pointer-events-none"></div>
+            <div className="bg-white rounded-xl border border-slate-200 p-6 md:p-8 print-hidden">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Manage your booking</h1>
+              <p className="mt-2 text-slate-600">
+                Enter your booking reference and the lead passenger&apos;s name. Both are in your confirmation email.
+              </p>
 
-              <div className="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center mb-8 mx-auto shadow-lg shadow-blue-200 relative z-10">
-                <Search className="w-8 h-8" />
-              </div>
-              <h1 className="text-2xl md:text-3xl font-black text-slate-900 mb-2 uppercase tracking-tight relative z-10">Manage Trip</h1>
-              <p className="text-slate-500 font-bold text-xs md:text-sm mb-10 relative z-10">Provide either your reference or name to continue.</p>
-
-              <form onSubmit={findBooking} className="space-y-5 text-left relative z-10">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest ml-1 text-blue-600">Reference Number</label>
+              <form onSubmit={findBooking} className="mt-6 space-y-4">
+                <div>
+                  <label htmlFor="manage-ref" className={labelCls}>Booking reference</label>
                   <input
-                    type="text" placeholder="APD-XXXXXX" autoComplete="off"
-                    className="w-full p-4 md:p-5 bg-slate-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900 border border-transparent focus:bg-white uppercase shadow-[0_0_0_1000px_#f8fafc_inset] [-webkit-text-fill-color:#0f172a]"
+                    id="manage-ref" type="text" placeholder="e.g. APD-ABC123" autoComplete="off" required
+                    className={`${inputCls} uppercase placeholder:normal-case`}
                     value={ref}
                     onChange={(e) => setRef(e.target.value.toUpperCase())}
                   />
                 </div>
-
-                <div className="relative py-2 flex items-center">
-                  <div className="flex-grow border-t border-slate-100"></div>
-                  <span className="flex-shrink mx-4 text-[9px] font-black text-slate-300 uppercase tracking-widest">OR</span>
-                  <div className="flex-grow border-t border-slate-100"></div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
+                <div>
+                  <label htmlFor="manage-name" className={labelCls}>Lead passenger name</label>
                   <input
-                    type="text" placeholder="Enter name used for booking" autoComplete="off"
-                    className="w-full p-4 md:p-5 bg-slate-50 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-900 border border-transparent focus:bg-white shadow-[0_0_0_1000px_#f8fafc_inset] [-webkit-text-fill-color:#0f172a]"
+                    id="manage-name" type="text" autoComplete="name" required
+                    className={inputCls}
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                   />
+                  <p className="mt-1.5 text-sm text-slate-500">Your surname is enough.</p>
                 </div>
 
                 {error && (
-                  <div className="p-4 bg-red-50 rounded-xl border border-red-100 flex items-center gap-3">
-                    <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
-                    <p className="text-red-600 text-xs font-bold leading-relaxed">{error}</p>
-                  </div>
+                  <p role="alert" className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" /> {error}
+                  </p>
                 )}
 
                 <button
                   type="submit"
-                  disabled={loading || (!ref.trim() && !fullName.trim())}
-                  className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-[0.2em] hover:bg-blue-500 transition-all flex items-center justify-center gap-3 mt-6 disabled:opacity-50 disabled:bg-slate-300 active:scale-95"
+                  disabled={loading || !ref.trim() || fullName.trim().length < 2}
+                  className="w-full h-12 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-semibold flex items-center justify-center gap-2"
                 >
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Access My Booking <ArrowRight className="w-4 h-4" /></>}
+                  {loading ? <><Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" /> Finding your booking…</> : "Find my booking"}
                 </button>
               </form>
+
+              <p className="mt-6 text-sm text-slate-500">
+                Want to cancel? <Link href="/cancel" className="text-slate-700 underline underline-offset-4">Cancel a booking</Link>.
+                Can&apos;t find your reference? Call {COMPANY.phoneDisplay} or email{" "}
+                <a href={`mailto:${COMPANY.email}`} className="text-slate-700 underline underline-offset-4">{COMPANY.email}</a>.
+              </p>
             </div>
           ) : (
-            <div id="print-section" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
-              <div className="bg-white rounded-[2rem] md:rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden">
-
-                <div className="p-6 md:p-10 bg-slate-900 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600 print-hidden"></div>
-                  <div className="relative z-10 w-full flex justify-between items-center">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1 print-hidden">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                        <p className="text-blue-400 font-black text-[10px] uppercase tracking-[0.3em]">Booking Active</p>
-                      </div>
-                      <h2 className="text-3xl md:text-5xl font-black tracking-tighter font-mono text-white print:text-black">{booking.booking_ref}</h2>
-                    </div>
-                    {/* Always offered, never hidden. This button used to disappear
-                        inside 24 hours and be replaced by "Contact Support" — which
-                        is the dead end that produced a Letter Before Action, because
-                        the phone went unanswered. The 24-hour rule decides the
-                        REFUND, not whether someone may cancel, and that is now
-                        handled on the cancel page and in the API. */}
-                    <div className="print-hidden">
-                      <Link href={`/cancel?ref=${booking.booking_ref}`} className="px-4 py-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/20 rounded-lg text-xs font-black uppercase tracking-wider transition-all">
-                        Cancel Booking
-                      </Link>
-                    </div>
+            <div id="print-section" className="space-y-4 w-full">
+              <section className="bg-white rounded-xl border border-slate-200">
+                <div className="p-5 md:p-7 border-b border-slate-200 flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm text-slate-500">Booking reference</p>
+                    <h1 className="mt-0.5 text-2xl md:text-3xl font-bold tracking-tight font-mono">{booking.booking_ref}</h1>
                   </div>
+                  {status && (
+                    <span className={`rounded-md border px-2.5 py-1 text-sm font-medium ${status.cls}`}>{status.label}</span>
+                  )}
                 </div>
 
-                <div className="p-6 md:p-10 space-y-8">
-                  <div className="bg-slate-50 rounded-[2rem] p-6 border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-5">
-                    <div className="flex items-center gap-5">
-                      <div className="w-14 h-14 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
-                        <PlaneTakeoff className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest mb-0.5">Location</p>
-                        <p className="text-xl font-black text-slate-900 tracking-tight">{booking.airport}</p>
-                        <p className="text-blue-600 font-black text-sm">{booking.terminal}</p>
-                      </div>
-                    </div>
-
-                    <div className="pl-0 md:pl-6 md:border-l border-slate-200 w-full md:w-auto">
-                      <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest mb-1 flex items-center justify-between">
-                        Return Flight Number
-                        {!isEditingFlight && (
-                          <button onClick={() => setIsEditingFlight(true)} className="text-blue-600 hover:text-blue-800 flex items-center gap-1 print-hidden">
-                            <Edit2 className="w-3 h-3" /> Edit
+                <dl className="divide-y divide-slate-100">
+                  <Row label="Parking">
+                    {booking.service_type || "Airport parking"}{company?.name ? ` with ${company.name}` : ""}
+                  </Row>
+                  <Row label="Airport">
+                    {booking.airport}{booking.terminal ? `, ${booking.terminal}` : ""}
+                  </Row>
+                  <Row label="Drop-off">
+                    {formatDate(booking.dropoff_date)}{booking.dropoff_time ? `, ${booking.dropoff_time}` : ""}
+                  </Row>
+                  <Row label="Pick-up">
+                    {formatDate(booking.pickup_date)}{booking.pickup_time ? `, ${booking.pickup_time}` : ""}
+                  </Row>
+                  <Row label="Return flight">
+                    {isEditingFlight ? (
+                      <span className="flex flex-wrap items-center gap-2 print-hidden">
+                        <label htmlFor="flight-edit" className="sr-only">Return flight number</label>
+                        <input
+                          id="flight-edit" type="text" value={newFlightNum}
+                          onChange={(e) => setNewFlightNum(e.target.value.toUpperCase())}
+                          className="h-10 w-36 rounded-lg border border-slate-300 px-3 text-base uppercase placeholder:normal-case shadow-[0_0_0_1000px_#ffffff_inset] [-webkit-text-fill-color:#0f172a] placeholder:[-webkit-text-fill-color:#94a3b8]"
+                          placeholder="e.g. EZY123"
+                        />
+                        <button type="button" onClick={handleUpdateFlight} disabled={flightUpdateLoading} className="h-10 px-3.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold inline-flex items-center gap-1.5">
+                          {flightUpdateLoading && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />} Save
+                        </button>
+                        <button type="button" onClick={() => { setIsEditingFlight(false); setFlightError(""); setNewFlightNum(booking.flight_number || ""); }} className="h-10 px-3.5 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                          Cancel
+                        </button>
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-3">
+                        {booking.flight_number || <span className="text-slate-500">Not added</span>}
+                        {canCancel && (
+                          <button type="button" onClick={() => setIsEditingFlight(true)} className="inline-flex items-center gap-1 text-sm font-medium text-blue-700 hover:underline underline-offset-4 print-hidden">
+                            <Pencil className="w-3.5 h-3.5" aria-hidden="true" /> {booking.flight_number ? "Change" : "Add"}
                           </button>
                         )}
-                      </p>
-                      {isEditingFlight ? (
-                        <div className="flex items-center gap-2 mt-1 print-hidden">
-                          <input
-                            type="text" value={newFlightNum}
-                            onChange={(e) => setNewFlightNum(e.target.value)}
-                            className="p-2 text-sm border border-slate-300 rounded-lg font-bold w-32 uppercase shadow-[0_0_0_1000px_#ffffff_inset] [-webkit-text-fill-color:#0f172a]"
-                            placeholder="e.g. EZY123"
-                          />
-                          <button onClick={handleUpdateFlight} disabled={flightUpdateLoading} className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                            {flightUpdateLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                          </button>
-                          <button onClick={() => setIsEditingFlight(false)} className="p-2 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300">
-                            <XCircle className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <p className="text-xl font-black text-slate-900 tracking-tight">{booking.flight_number || "Not Provided"}</p>
-                      )}
+                      </span>
+                    )}
+                    {flightError && <span role="alert" className="block mt-1.5 text-sm text-red-600">{flightError}</span>}
+                  </Row>
+                  <Row label="Lead passenger">{booking.full_name}</Row>
+                  <Row label="Car">
+                    <span className="font-mono uppercase">{booking.license_plate}</span>
+                    {booking.car_make ? <span className="text-slate-600">, {booking.car_make}</span> : null}
+                  </Row>
+                  <Row label="Total paid">
+                    <span className="font-semibold tabular-nums">£{Number(booking.total_price).toFixed(2)}</span>
+                  </Row>
+                </dl>
+              </section>
+
+              {phones.length > 0 && (
+                <section className="bg-white rounded-xl border border-slate-200 p-5 md:p-7">
+                  <h2 className="text-lg font-semibold">Your operator{company?.name ? `: ${company.name}` : ""}</h2>
+                  <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <Phone className="w-4 h-4 text-slate-400" aria-hidden="true" />
+                    {phones.map((ph) => (
+                      <a key={ph} href={`tel:${ph.replace(/\s+/g, "")}`} className="font-medium text-slate-900 hover:underline underline-offset-4">{ph}</a>
+                    ))}
+                  </p>
+                  <p className="mt-2 text-sm text-slate-600">Call them on the day, or if you need to change your dates.</p>
+                </section>
+              )}
+
+              {/* Printed only: the instructions to have in hand on the day. */}
+              <section className="hidden print:block rounded-xl border border-slate-200 p-6">
+                <h2 className="font-bold mb-4">Arrival and return instructions</h2>
+                {company ? (
+                  <div className="space-y-4 text-sm">
+                    <div>
+                      <p className="font-semibold mb-1">On arrival</p>
+                      <div
+                        className="whitespace-pre-wrap"
+                        dangerouslySetInnerHTML={{
+                          __html: sanitizeHtml(isLuton
+                            ? (company.on_arrival_ltn || company.on_arrival || "See your confirmation email.")
+                            : (company.on_arrival_lhr || company.on_arrival || "See your confirmation email."))
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <p className="font-semibold mb-1">On return</p>
+                      <div
+                        className="whitespace-pre-wrap"
+                        dangerouslySetInnerHTML={{
+                          __html: sanitizeHtml(isLuton
+                            ? (company.on_return_ltn || company.on_return || "See your confirmation email.")
+                            : (company.on_return_lhr || company.on_return || "See your confirmation email."))
+                        }}
+                      />
                     </div>
                   </div>
+                ) : (
+                  <p className="text-sm">See your confirmation email for drop-off and pick-up instructions.</p>
+                )}
+              </section>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
-                    <div className="space-y-6">
-                      <div>
-                        <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest mb-2 flex items-center gap-2">
-                          <User className="w-3.5 h-3.5 text-blue-500" /> Lead Passenger
-                        </p>
-                        <p className="text-xl font-black text-slate-900 tracking-tight">{booking.full_name}</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest mb-2 flex items-center gap-2">
-                          <Car className="w-3.5 h-3.5 text-blue-500" /> Vehicle Registered
-                        </p>
-                        <p className="text-xl font-black text-slate-900 tracking-tight uppercase">{booking.license_plate}</p>
-                        <p className="text-sm font-bold text-slate-500">{booking.car_make}</p>
-                      </div>
-                    </div>
+              {/* Dates are NOT changed here.
+                  The operator holds the car and the yard space, so they are the
+                  only ones who can say whether a different date is possible.
+                  Letting the customer move a date on this page and take payment
+                  for it created bookings the operator had never agreed to.
+                  Everything routes to them; we are the last resort, not the
+                  first. */}
+              {canCancel && (
+                <section className="print-hidden bg-white rounded-xl border border-slate-200 p-5 md:p-7">
+                  <h2 className="text-lg font-semibold">Need to change your dates?</h2>
+                  <p className="mt-2 text-slate-600 leading-relaxed">
+                    Call your operator on the number {phones.length > 0 ? "above" : "in your confirmation email"}. They hold
+                    your space, so they&apos;re the only ones who can arrange a change or an extension. If you can&apos;t reach
+                    them, email <a href={`mailto:${COMPANY.email}`} className="text-slate-900 underline underline-offset-4">{COMPANY.email}</a>{" "}
+                    and we&apos;ll step in.
+                  </p>
+                </section>
+              )}
 
-                    <div className="bg-slate-50 p-6 md:p-8 rounded-[2rem] border border-slate-100 flex flex-col justify-center items-start md:items-end">
-                      <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest mb-2">Total Paid</p>
-                      <p className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter">£{Number(booking.total_price).toFixed(2)}</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-0 border-2 border-slate-100 rounded-[2.5rem] overflow-hidden">
-                    <div className="p-4 md:p-8 bg-white border-r-2 border-slate-100">
-                      <p className="text-[9px] font-black text-blue-600 uppercase tracking-[0.2em] mb-2">Drop-off</p>
-                      <p className="text-sm md:text-lg font-black text-slate-900">{formatDate(booking.dropoff_date)}</p>
-                      <p className="text-xl md:text-2xl font-black text-slate-900 mt-1">{booking.dropoff_time || "12:00"}</p>
-                    </div>
-                    <div className="p-4 md:p-8 bg-slate-50/50 flex flex-col items-end">
-                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Pick-up</p>
-                      <p className="text-sm md:text-lg font-black text-slate-900 text-right">{formatDate(booking.pickup_date)}</p>
-                      <p className="text-xl md:text-2xl font-black text-slate-900 mt-1">{booking.pickup_time || "12:00"}</p>
-                    </div>
-                  </div>
-
-                  <div className="mt-8 bg-blue-50/50 border border-blue-100 rounded-[2rem] p-6 hidden print:block mb-8">
-                    <h3 className="font-black text-blue-900 mb-4 flex items-center gap-2"><Info className="w-5 h-5" /> Arrival & Return Instructions</h3>
-                    <div className="space-y-4">
-                      {company ? (
-                        <>
-                          <div>
-                            <p className="text-xs font-black text-blue-800 uppercase tracking-wider mb-1">Company Contact</p>
-                            <p className="text-lg font-bold text-slate-900">
-                              {company.phone_number || "Check Confirmation Email"}
-                              {company.phone_number_2 ? ` / ${company.phone_number_2}` : ""}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs font-black text-blue-800 uppercase tracking-wider mb-1">On Arrival</p>
-                            <div
-                              className="text-sm text-slate-700 whitespace-pre-wrap"
-                              dangerouslySetInnerHTML={{
-                                __html: sanitizeHtml(booking.airport?.toLowerCase().includes("luton")
-                                  ? (company.on_arrival_ltn || company.on_arrival || "Refer to confirmation email")
-                                  : (company.on_arrival_lhr || company.on_arrival || "Refer to confirmation email"))
-                              }}
-                            />
-                          </div>
-                          <div>
-                            <p className="text-xs font-black text-blue-800 uppercase tracking-wider mb-1">On Return</p>
-                            <div
-                              className="text-sm text-slate-700 whitespace-pre-wrap"
-                              dangerouslySetInnerHTML={{
-                                __html: sanitizeHtml(booking.airport?.toLowerCase().includes("luton")
-                                  ? (company.on_return_ltn || company.on_return || "Refer to confirmation email")
-                                  : (company.on_return_lhr || company.on_return || "Refer to confirmation email"))
-                              }}
-                            />
-                          </div>
-                        </>
-                      ) : (
-                        <p className="text-sm text-slate-700">Please refer to your confirmation email for specific drop-off and pick-up instructions.</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Dates are NOT changed here.
-                      The operator holds the car and the yard space, so they are the
-                      only ones who can say whether a different date is possible.
-                      Letting the customer move a date on this page and take payment
-                      for it created bookings the operator had never agreed to.
-                      Everything routes to them; we are the last resort, not the
-                      first. */}
-                  <div className="print-hidden bg-slate-50 border border-slate-200 rounded-[2rem] p-6">
-                    <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center shrink-0">
-                        <Phone className="w-5 h-5 text-slate-500" />
-                      </div>
-                      <div>
-                        <h3 className="font-black text-slate-900 tracking-tight mb-1">
-                          Need to change your dates?
-                        </h3>
-                        <p className="text-sm text-slate-600 leading-relaxed">
-                          Please call your operator directly on the number in your
-                          confirmation email. They hold your space, so they are the
-                          only ones who can arrange a change or an extension.
-                        </p>
-                        <p className="text-sm text-slate-500 leading-relaxed mt-3">
-                          If you cannot reach them, email{" "}
-                          <a href="mailto:info@aeroparkdirect.co.uk" className="text-blue-600 font-bold hover:underline">
-                            info@aeroparkdirect.co.uk
-                          </a>{" "}
-                          and we will step in.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print-hidden w-full">
-                <button onClick={() => window.print()} className="w-full py-5 bg-white border border-slate-200 text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3">
-                  <Printer className="w-4 h-4" /> Print PDF Voucher
+              <div className="flex flex-col sm:flex-row gap-3 print-hidden">
+                <button type="button" onClick={() => window.print()} className="h-11 px-5 rounded-lg border border-slate-300 bg-white text-sm font-semibold text-slate-900 hover:bg-slate-50 inline-flex items-center justify-center gap-2">
+                  <Printer className="w-4 h-4" aria-hidden="true" /> Print booking
                 </button>
-                <button onClick={() => { setBooking(null); setCompany(null); setRef(""); setFullName(""); }} className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest">
-                  Lookup Another
+                {/* Always offered while the booking is live. This button used to
+                    disappear inside 24 hours and be replaced by "Contact Support",
+                    the dead end that produced a Letter Before Action. The 24-hour
+                    rule decides the REFUND, not whether someone may cancel. */}
+                {canCancel && (
+                  <Link href={`/cancel?ref=${booking.booking_ref}`} className="h-11 px-5 rounded-lg border border-red-200 bg-white text-sm font-semibold text-red-700 hover:bg-red-50 inline-flex items-center justify-center">
+                    Cancel booking
+                  </Link>
+                )}
+                <button type="button" onClick={() => { setBooking(null); setCompany(null); setRef(""); setFullName(""); setIsEditingFlight(false); setFlightError(""); }} className="sm:ml-auto h-11 px-5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900">
+                  Look up another booking
                 </button>
               </div>
             </div>
@@ -378,5 +350,14 @@ export default function ManageBooking() {
       </main>
       <SiteFooter />
     </>
+  );
+}
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="px-5 md:px-7 py-3.5 grid grid-cols-[120px_1fr] sm:grid-cols-[160px_1fr] gap-3">
+      <dt className="text-sm text-slate-500 pt-0.5">{label}</dt>
+      <dd className="text-slate-900 min-w-0 break-words">{children}</dd>
+    </div>
   );
 }
