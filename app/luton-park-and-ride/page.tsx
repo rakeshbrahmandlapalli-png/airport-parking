@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
 import HomePage from "../page";
 
+// Park & Ride at Luton isn't live yet (the service picker shows it as "Coming
+// Soon"). This page keeps the search term honest: it explains the service,
+// says when it's not bookable, and points to what is.
 export const metadata: Metadata = {
-  title: "Luton Park & Ride Parking | Secure Off-Airport — AeroPark Direct",
+  title: "Luton Airport Park & Ride: Coming Soon | AeroPark Direct",
   description:
-    "Park & Ride at Luton Airport (LTN). Park at the operator's site and take a quick transfer to the terminal. Fully insured, free cancellation. Book in under 60 seconds.",
+    "Park & Ride at Luton Airport (LTN) is coming soon to AeroPark Direct. Until then, book Meet & Greet at Luton: drive to the terminal car park, hand over your keys and fly.",
   alternates: { canonical: "https://www.aeroparkdirect.co.uk/luton-park-and-ride" },
   openGraph: {
-    title: "Luton Park & Ride Parking | Secure Off-Airport",
+    title: "Luton Airport Park & Ride: Coming Soon",
     description:
-      "Secure, fully insured Park & Ride at Luton Airport (LTN). Park at the operator's site and ride to the terminal. Free cancellation, great value.",
+      "Park & Ride at Luton Airport is coming soon. Meet & Greet at Luton is available to book now.",
     url: "https://www.aeroparkdirect.co.uk/luton-park-and-ride",
     type: "website",
   },
@@ -21,32 +24,25 @@ export default function LutonParkAndRidePage() {
       preset={{
         airportDefault: "Luton (LTN)",
         seoSchema: { path: "/luton-park-and-ride", name: "Luton Park & Ride Parking", serviceType: "Park & Ride airport parking", areaServed: "Luton Airport (LTN)" },
-        h1Top: "Luton Park & Ride Parking",
-        h1Highlight: "Made Simple.",
+        h1Top: "Luton Airport Park & Ride is",
+        h1Highlight: "coming soon",
         intro:
-          "Park & Ride at Luton Airport (LTN). Park your own car at the operator's site and take a short, frequent transfer to the terminal. The best-value way to park at Luton. Fully insured, free cancellation.",
+          "We're adding Park & Ride operators at Luton Airport soon. Until then, you can book Meet & Greet at Luton: drive to the terminal car park, hand over your keys and walk to check-in.",
         seoBlock: {
-          eyebrow: "Luton Airport Park & Ride Guide",
-          heading: "Park & Ride at",
-          highlight: "Luton Airport",
+          eyebrow: "Luton Airport Park & Ride",
+          heading: "Park & Ride at Luton is coming soon",
           paragraphs: [
-            "Park & Ride is the most cost-effective way to park at Luton Airport (LTN). You drive to a secure off-airport compound, park your own car, and hop on a short, frequent shuttle to the terminal — usually a few minutes away. It is the natural choice when you want a keen price and you don't mind a quick transfer.",
-            "It is also the sensible alternative to Luton's official Mid Stay and Long Term car parks. You get the same drive-park-ride pattern, but through an operator we list, often at a better price, with clear transfer times so you know exactly when you'll reach the terminal.",
-            "Every Park & Ride operator we list for Luton is fully insured, and we check its compound before it goes live. On your return, transfers run to meet arriving flights so you're not left waiting. Search your dates above for a live Luton Park & Ride price in under a minute, with free cancellation up to 24 hours before drop-off. If you'd rather skip the transfer entirely, our Meet & Greet option lets you drive straight to the terminal instead.",
-          ],
-          highlights: [
-            { stat: "£", label: "The best-value way to park at Luton. Keen Park & Ride prices." },
-            { stat: "24h", label: "Free cancellation up to 24 hours before drop-off." },
-            { stat: "60s", label: "Compare insured Luton operators and book. No account needed." },
+            "Park & Ride is usually the lowest-cost way to park at an airport. You drive to the operator's site, park your own car and take a short transfer to the terminal, then the transfer brings you back to your car when you return.",
+            "We're adding Park & Ride operators at Luton Airport, and we'll list them here once we've checked their compounds. Every operator we list is insured.",
+            "In the meantime, Meet & Greet is available at Luton now. You drive to Terminal Car Park 1, hand your keys to a driver and walk to departures, with free cancellation up to 24 hours before drop-off. If you're flying from Heathrow, Park & Ride is available there today.",
           ],
         },
         faqs: [
-          { q: "How does Park & Ride work at Luton Airport?", a: "You drive to a secure off-airport compound near Luton, park your own car, and take a short shuttle transfer to the terminal. On your return, you ride back to the compound and collect your car. Transfers run frequently and are included in the price." },
-          { q: "How long is the transfer to the Luton terminal?", a: "Transfer times depend on the operator and compound location, but are typically a short ride of a few minutes. The exact transfer details are shown before you book and confirmed in your booking." },
-          { q: "Is Park & Ride cheaper than Meet & Greet at Luton?", a: "Usually, yes. Park & Ride is the lower-cost option because you park your own car and take a transfer, rather than handing your keys over at the terminal. If you'd prefer to skip the transfer, Meet & Greet is the premium alternative." },
-          { q: "What happens if my flight back to Luton is delayed?", a: "Transfers are scheduled around arriving flights, and your car is waiting in the compound regardless of when you land. There's no extra charge for a delayed return outside your control." },
-          { q: "Is my car insured and secure while I'm away?", a: "Yes. Every Park & Ride operator we list for Luton is fully insured, and we check its compound before we list it. You can see which operator will look after your car before you pay, and their contact details are in your confirmation email." },
-          { q: "Can I cancel my Luton Park & Ride booking?", a: "You can cancel at any time from the Manage Booking page — free of charge up to 24 hours before your drop-off time. Inside 24 hours the booking still cancels, and we review the refund and come back to you within one working day. To change your dates, please call your parking operator on the number in your confirmation email — they hold your space, so they are the only ones who can arrange it." },
+          { q: "Can I book Park & Ride at Luton now?", a: "Not yet. We're adding Park & Ride operators at Luton soon. You can book Meet & Greet at Luton today, or Park & Ride at Heathrow." },
+          { q: "How will Park & Ride work at Luton?", a: "You'll drive to the operator's site near the airport, park your own car and take a transfer to the terminal. On your return, the transfer takes you back to your car." },
+          { q: "Is Park & Ride cheaper than Meet & Greet?", a: "Usually, yes, because you park the car yourself and take a transfer. Meet & Greet costs a little more but saves the transfer: you drive to the terminal and hand over your keys." },
+          { q: "How does Meet & Greet at Luton work?", a: "Drive to Terminal Car Park 1, go to the Meet & Greet meeting point given in your confirmation email, and hand your keys to the driver. When you land, your car is brought back to you there." },
+          { q: "Can I cancel a Luton booking?", a: "Yes. Cancel free of charge from the Manage booking page up to 24 hours before your drop-off time. Inside 24 hours the booking still cancels, and we review the refund and come back to you within one working day." },
         ],
       }}
     />
