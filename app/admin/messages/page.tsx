@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AdminSidebar, AdminMobileNav } from "@/components/admin/AdminNav";
 import {
-  MessageCircle, RefreshCw, Search, ArrowDownLeft, ArrowUpRight, AlertCircle, Inbox,
+  AlertCircle, ArrowDownLeft, ArrowUpRight, Inbox, Loader2, RefreshCw, Search,
 } from "lucide-react";
 
 type Msg = {
@@ -99,174 +99,148 @@ export default function MessagesPage() {
 
 
   if (loading && messages.length === 0) return (
-    <div className="min-h-screen bg-canvas flex flex-col items-center justify-center text-fg relative overflow-hidden">
-      <div className="relative z-10">
-        <div className="absolute inset-0 border-t-2 border-blue-500 rounded-full animate-spin"></div>
-        <MessageCircle className="w-10 h-10 text-blue-500 m-4 animate-pulse" />
-      </div>
-      <p className="font-black text-fg-3 tracking-widest uppercase text-xs mt-6 relative z-10">Loading Messages...</p>
+    <div className="min-h-screen bg-canvas flex flex-col items-center justify-center text-fg">
+      <Loader2 className="w-6 h-6 text-fg-3 animate-spin" aria-hidden="true" />
+      <p className="text-sm text-fg-3 mt-3">Loading messages…</p>
     </div>
   );
 
+  const when = (iso: string | null) =>
+    iso ? new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
+
   return (
-    <div className="min-h-screen bg-canvas font-sans flex flex-col md:flex-row overflow-hidden text-fg antialiased selection:bg-blue-600/30 relative">
-
-
+    <div className="min-h-screen bg-canvas font-sans flex flex-col md:flex-row overflow-hidden text-fg antialiased">
       <AdminSidebar unreadMessages={stats.unread} />
 
-      {/* WORKSPACE */}
-      <main className="flex-1 p-4 md:p-8 lg:p-12 w-full overflow-y-auto h-screen relative pb-32 md:pb-12 custom-scrollbar z-10">
-
-        {/* HEADER */}
-        <div className="relative mb-8 rounded-xl border border-fg/[0.08] bg-panel overflow-hidden">
-          <div className="relative p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <div className="flex items-center gap-5">
-              <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-blue-600/10 border border-blue-500/30 items-center justify-center shrink-0">
-                <MessageCircle className="w-7 h-7 text-blue-400" />
-              </div>
+      <main className="flex-1 p-4 md:p-8 w-full overflow-y-auto h-screen pb-32 md:pb-10 custom-scrollbar">
+        <div className="max-w-4xl">
+          {/* HEADER + STATS */}
+          <div className="mb-6 rounded-xl border border-fg/[0.08] bg-panel overflow-hidden">
+            <div className="p-5 md:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-fg/[0.08]">
               <div>
-                <h1 className="text-3xl md:text-4xl font-black tracking-tight text-fg">Messages</h1>
-                <p className="text-fg-3 font-bold text-[10px] uppercase tracking-[0.2em] mt-2">
-                  Every SMS sent and received · live from Twilio
-                </p>
+                <h1 className="text-2xl font-semibold text-fg">Messages</h1>
+                <p className="mt-1 text-sm text-fg-3">Every text message sent to and received from customers.</p>
               </div>
-            </div>
-            <button onClick={fetchMessages} className="px-5 py-3.5 bg-panel-3/80 hover:bg-panel-3 border border-fg/[0.12] text-fg-2 rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-2 shrink-0">
-              <RefreshCw className={`w-4 h-4 text-blue-400 ${loading ? "animate-spin" : ""}`} /> Refresh
-            </button>
-          </div>
-        </div>
-
-        {/* KPIs */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-          {[
-            { label: "Total", value: `${stats.total}`, tone: "text-fg" },
-            { label: "New Replies", value: `${stats.unread}`, tone: stats.unread > 0 ? "text-emerald-400" : "text-fg" },
-            { label: "Received", value: `${stats.inbound}`, tone: "text-fg" },
-            { label: "Failed", value: `${stats.failed}`, tone: stats.failed > 0 ? "text-red-400" : "text-fg" },
-            { label: "Twilio Spend", value: `£${stats.spend.toFixed(2)}`, tone: "text-fg" },
-          ].map((k) => (
-            <div key={k.label} className="bg-panel-2 border border-fg/[0.08] rounded-2xl px-5 py-4">
-              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-fg-4">{k.label}</p>
-              <p className={`text-xl font-black mt-1 tabular-nums tracking-tight ${k.tone}`}>{k.value}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* CONTROLS */}
-        <div className="flex flex-col md:flex-row gap-3 mb-6">
-          <div className="flex flex-wrap gap-2">
-            {([
-              { id: "all", label: "All" },
-              { id: "inbound", label: "Received" },
-              { id: "outbound", label: "Sent" },
-              { id: "failed", label: "Failed" },
-            ] as { id: Filter; label: string }[]).map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setFilter(f.id)}
-                className={`px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
-                  filter === f.id
-                    ? "bg-blue-600 border-blue-500 text-white"
-                    : "bg-panel-2 border-fg/[0.08] text-fg-3 hover:text-fg hover:border-fg/[0.12]"
-                }`}
-              >
-                {f.label}
+              <button type="button" onClick={fetchMessages} disabled={loading}
+                className="px-4 py-2.5 bg-fg/[0.04] hover:bg-fg/[0.08] border border-fg/10 text-fg-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 shrink-0 disabled:opacity-60">
+                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} aria-hidden="true" /> Refresh
               </button>
-            ))}
-          </div>
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search name, reference, number or message text…"
-              className="w-full bg-panel-2 border border-fg/[0.08] hover:border-blue-500/50 rounded-xl py-3 pl-11 pr-4 text-sm text-fg font-medium outline-none focus:ring-2 focus:ring-blue-500/40 transition-all placeholder:text-fg-4"
-            />
-          </div>
-        </div>
-
-        {error && (
-          <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400 text-xs font-bold flex items-start gap-3">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* LIST */}
-        <div className="space-y-3 mb-24">
-          {visible.length === 0 && !loading && (
-            <div className="bg-panel-2 border border-fg/[0.08] rounded-xl p-16 text-center">
-              <Inbox className="w-10 h-10 text-fg-4 mx-auto mb-4" />
-              <p className="text-fg-3 font-bold text-sm">
-                {messages.length === 0 ? "No SMS activity yet." : "Nothing matches this filter."}
-              </p>
             </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-fg/[0.08]">
+              {[
+                { label: "New replies", value: `${stats.unread}`, tone: stats.unread > 0 ? "text-emerald-400" : "text-fg" },
+                { label: "Received", value: `${stats.inbound}`, tone: "text-fg" },
+                { label: "Failed to send", value: `${stats.failed}`, tone: stats.failed > 0 ? "text-red-400" : "text-fg" },
+                { label: "SMS cost", value: `£${stats.spend.toFixed(2)}`, tone: "text-fg" },
+              ].map((k) => (
+                <div key={k.label} className="p-4 md:p-5 border-t border-fg/[0.08] sm:border-t-0">
+                  <p className="text-sm text-fg-3">{k.label}</p>
+                  <p className={`mt-1 text-xl font-semibold tabular-nums ${k.tone}`}>{k.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* FILTERS + SEARCH */}
+          <div className="flex flex-col sm:flex-row gap-2.5 mb-5">
+            <div role="group" aria-label="Show" className="flex items-center bg-fg/[0.05] rounded-lg p-1 self-start">
+              {([
+                { id: "all", label: "All" },
+                { id: "inbound", label: "Received" },
+                { id: "outbound", label: "Sent" },
+                { id: "failed", label: "Failed" },
+              ] as { id: Filter; label: string }[]).map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setFilter(f.id)}
+                  aria-pressed={filter === f.id}
+                  className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+                    filter === f.id ? "bg-panel text-fg font-medium shadow-sm ring-1 ring-fg/10" : "text-fg-3 hover:text-fg"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none" aria-hidden="true" />
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search name, reference, number or text"
+                aria-label="Search messages"
+                className="w-full bg-panel border border-fg/[0.08] hover:border-fg/15 rounded-lg py-2.5 pl-10 pr-4 text-base md:text-sm text-fg outline-none focus:ring-1 focus:ring-blue-500/40 transition-colors placeholder:text-fg-4"
+              />
+            </div>
+          </div>
+
+          {error && (
+            <p role="alert" className="mb-5 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" /> {error}
+            </p>
           )}
 
-          {visible.map((m) => {
-            const failed = ["failed", "undelivered"].includes(m.status);
-            const inbound = m.direction === "inbound";
-            return (
-              <div
-                key={m.sid}
-                className={`rounded-2xl border p-5 transition-colors ${
-                  isNew(m)
-                    ? "bg-emerald-500/[0.07] border-emerald-500/40"
-                    : inbound
-                    ? "bg-panel-2 border-fg/[0.12]"
-                    : failed
-                    ? "bg-red-500/[0.04] border-red-500/25"
-                    : "bg-panel-2 border-fg/[0.08]"
-                }`}
-              >
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
-                      inbound ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" : "bg-blue-500/10 border-blue-500/30 text-blue-400"
-                    }`}>
-                      {inbound ? <ArrowDownLeft className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-bold text-fg text-sm truncate">
-                        {m.customerName || m.counterparty}
-                        {isNew(m) && (
-                          <span className="ml-2 text-[8px] font-black uppercase tracking-widest bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/30 align-middle">New</span>
-                        )}
-                      </p>
-                      <p className="text-[10px] font-bold text-fg-4 uppercase tracking-wider truncate">
-                        {m.bookingRef ? `${m.bookingRef} · ` : ""}{m.counterparty}
-                        {!m.bookingRef && " · not matched to a booking"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className={`text-[9px] font-black uppercase tracking-widest ${failed ? "text-red-400" : inbound ? "text-emerald-400" : "text-fg-4"}`}>
-                      {inbound ? "Received" : m.status}
-                    </p>
-                    <p className="text-[10px] font-bold text-fg-4 tabular-nums">
-                      {m.sentAt ? new Date(m.sentAt).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"}
-                      {m.segments > 1 ? ` · ${m.segments} parts` : ""}
-                    </p>
-                  </div>
-                </div>
-
-                <p className="text-sm text-fg-2 leading-relaxed whitespace-pre-wrap">{m.body}</p>
-
-                {failed && m.errorMessage && (
-                  <p className="text-red-400 text-[11px] font-bold mt-3 flex items-start gap-2">
-                    <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" /> {m.errorMessage}
-                  </p>
-                )}
-
-                {m.bookingRef && (
-                  <Link href={`/admin?search=${encodeURIComponent(m.bookingRef)}`} className="inline-flex items-center gap-1.5 mt-3 text-[10px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300">
-                    Open booking →
-                  </Link>
-                )}
+          {/* LIST */}
+          <div className="rounded-xl border border-fg/[0.08] bg-panel divide-y divide-fg/[0.06] mb-10">
+            {visible.length === 0 && !loading && (
+              <div className="px-6 py-14 text-center">
+                <Inbox className="w-6 h-6 text-fg-4 mx-auto mb-3" aria-hidden="true" />
+                <p className="text-sm text-fg-3">
+                  {messages.length === 0 ? "No text messages yet." : "No messages match."}
+                </p>
               </div>
-            );
-          })}
+            )}
+
+            {visible.map((m) => {
+              const failed = ["failed", "undelivered"].includes(m.status);
+              const inbound = m.direction === "inbound";
+              const fresh = isNew(m);
+              return (
+                <div key={m.sid} className={`p-4 md:p-5 ${fresh ? "bg-emerald-500/[0.06]" : ""}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <span className={`mt-0.5 w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${inbound ? "bg-emerald-500/10 text-emerald-400" : "bg-fg/[0.06] text-fg-3"}`}
+                        title={inbound ? "Received" : "Sent"}>
+                        {inbound ? <ArrowDownLeft className="w-4 h-4" aria-hidden="true" /> : <ArrowUpRight className="w-4 h-4" aria-hidden="true" />}
+                        <span className="sr-only">{inbound ? "Received" : "Sent"}</span>
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-fg truncate">
+                          {m.customerName || m.counterparty}
+                          {fresh && <span className="ml-2 align-middle rounded bg-emerald-500/15 px-1.5 py-0.5 text-xs font-medium text-emerald-400">New</span>}
+                        </p>
+                        <p className="text-xs text-fg-4 truncate tabular-nums">
+                          {m.bookingRef ? <span className="font-mono">{m.bookingRef}</span> : "No booking found"} · {m.counterparty}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-xs text-fg-3 tabular-nums">{when(m.sentAt)}</p>
+                      <p className={`text-xs capitalize ${failed ? "text-red-400" : "text-fg-4"}`}>
+                        {inbound ? "received" : m.status}{m.segments > 1 ? ` · ${m.segments} parts` : ""}
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="mt-2.5 pl-10 text-sm text-fg-2 leading-relaxed whitespace-pre-wrap break-words">{m.body}</p>
+
+                  {failed && m.errorMessage && (
+                    <p className="mt-2 pl-10 text-sm text-red-400 flex items-start gap-1.5">
+                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" /> {m.errorMessage}
+                    </p>
+                  )}
+
+                  {m.bookingRef && (
+                    <Link href={`/admin?search=${encodeURIComponent(m.bookingRef)}`} className="mt-2 ml-10 inline-block text-sm text-blue-400 hover:underline underline-offset-4">
+                      Open booking
+                    </Link>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </main>
 
