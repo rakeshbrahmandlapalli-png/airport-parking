@@ -32,7 +32,7 @@ export default function HeathrowTerminal3ParkingPage() {
           paragraphs: [
             "Terminal 3 is the Heathrow base for Virgin Atlantic and Emirates, along with American Airlines, Cathay Pacific and other long-haul carriers, so it sees a steady flow of holiday and business travellers heading off on longer trips. The official T3 short-stay car park is convenient but expensive, and the cheaper long-stay options put you on a shuttle bus with your luggage.",
             "Meet & Greet skips that. You drive straight to the T3 departures forecourt, a driver takes your keys, and your car is parked in a secure compound while you fly. When you land at T3 you walk out to a waiting car rather than looking for a bus stop.",
-            "Every operator we list for Terminal 3 is fully insured, and you can see who will look after your car before you pay. Add your return flight number when you book so the operator knows when you're due back. Search your dates above for a live T3 price in under a minute, with free cancellation up to 24 hours before drop-off.",
+            "Every operator we list for Terminal 3 is fully insured, and we check its compound before it goes live. Add your return flight number when you book so the operator knows when you're due back. Search your dates above for a live T3 price in under a minute, with free cancellation up to 24 hours before drop-off.",
           ],
           highlights: [
             { stat: "T3", label: "Drive straight to T3 departures. No shuttle, no car park trek." },
@@ -45,7 +45,7 @@ export default function HeathrowTerminal3ParkingPage() {
           { q: "Which airlines use Heathrow Terminal 3?", a: "Terminal 3 is home to Virgin Atlantic and Emirates, plus American Airlines, Cathay Pacific, Qantas and other long-haul carriers. Always check your airline's terminal on your booking before you travel." },
           { q: "How much does Meet & Greet parking cost at Terminal 3?", a: "It depends on your dates, length of stay and operator, and is typically below the official T3 short-stay rate. Enter your dates above for an exact live price — it takes under 10 seconds." },
           { q: "What if my flight back to T3 is delayed?", a: "Your operator tracks your inbound flight. If you land late, your car is still brought to Terminal 3 ready for you, with no extra charge for the delay." },
-          { q: "Is my car insured and secure while I'm away?", a: "Yes. Every operator we list for Terminal 3 is fully insured. You can see which operator will look after your car before you pay, and their contact details are in your confirmation email." },
+          { q: "Is my car insured and secure while I'm away?", a: "Yes. Every operator we list for Terminal 3 is fully insured, and we check its compound before we list it. You can see which operator will look after your car before you pay, and their contact details are in your confirmation email." },
           { q: "Can I cancel my Heathrow Terminal 3 parking booking?", a: "You can cancel at any time from the Manage Booking page — free of charge up to 24 hours before your drop-off time. Inside 24 hours the booking still cancels, and we review the refund and come back to you within one working day. To change your dates, please call your parking operator on the number in your confirmation email — they hold your space, so they are the only ones who can arrange it." },
         ],
       }}

@@ -22,9 +22,10 @@ const daysBetween = (a: string, b: string) => { if (!a || !b) return 0; return M
 const inputCls = "w-full h-12 rounded-lg border border-slate-300 bg-white px-3 text-base text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20";
 const labelCls = "block text-sm font-medium text-slate-700 mb-1.5";
 
-// Only claims we can stand behind. Check with the business before adding more.
+// Only claims the business has confirmed: insured operators, compounds checked
+// before listing. Check with the business before adding more.
 const TRUST = [
-  "Insured operators at both airports",
+  "Insured operators, with every compound checked before we list it",
   "Free cancellation up to 24 hours before drop-off",
   "Card payments handled securely by Stripe",
 ];
@@ -36,7 +37,7 @@ const AIRPORTS = [
 
 const BENEFITS = [
   { Icon: Car,          title: "Drop off at the terminal", desc: "With Meet & Greet you drive to the terminal and hand your keys to a driver. No shuttle bus." },
-  { Icon: ShieldCheck,  title: "Insured operators",        desc: "Every operator we list is insured, and you can see who is looking after your car before you pay." },
+  { Icon: ShieldCheck,  title: "Checked, insured operators", desc: "We check every compound before we list it, and every operator we list is insured. You can see who is looking after your car before you pay." },
   { Icon: CheckCircle2, title: "Free cancellation",        desc: "Cancel free of charge up to 24 hours before drop-off from the Manage booking page." },
   { Icon: PlaneTakeoff, title: "Your return flight on file", desc: "Add your return flight number when you book so your operator knows when you are due back." },
   { Icon: CreditCard,   title: "Secure payment",           desc: "Card payments go through Stripe. We never see or store your card details." },
@@ -236,7 +237,7 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
     { q: "What is Meet & Greet airport parking?",                       a: "Meet & Greet is a premium service where a professional driver meets you at the terminal drop-off zone, parks your car securely while you fly, and returns it on your arrival. No shuttle buses, no long walks — drive straight to departures." },
     { q: "Is airport parking at Heathrow available through AeroPark?", a: "Yes — we offer Meet & Greet and Park & Ride at Heathrow across all terminals (T2, T3, T4, T5). Search your dates above to compare available operators and prices." },
     { q: "What happens if my return flight is delayed?",                a: "Add your return flight number when you book so your operator knows when you are due back. If you are delayed, call the operator on the number in your confirmation email." },
-    { q: "Who looks after my car?",                                     a: "The operator you choose looks after your car for the whole trip, and every operator we list is insured. You can see who the operator is before you pay, and their contact details are in your confirmation email." },
+    { q: "Who looks after my car?",                                     a: "The operator you choose looks after your car for the whole trip. Every operator we list is insured, and we check their compound before we list them. You can see who the operator is before you pay, and their contact details are in your confirmation email." },
     { q: "Can I cancel or modify my airport parking booking?",          a: "You can cancel at any time from the Manage Booking page — free of charge up to 24 hours before your drop-off time. Inside 24 hours the booking still cancels, and we review the refund and come back to you within one working day. To change your dates, please call your parking operator on the number in your confirmation email — they hold your space, so they are the only ones who can arrange it." },
   ];
 
