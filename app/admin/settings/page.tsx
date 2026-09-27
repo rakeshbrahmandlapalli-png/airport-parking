@@ -1010,7 +1010,7 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
                         key={r.booking_ref}
                         ok={!!r.ok}
                         label={`${r.booking_ref} · £${Number(r.value).toFixed(2)} · ${new Date(r.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`}
-                        note={r.duplicate ? "already counted" : r.ok ? "sent" : String(r.error || "failed").slice(0, 160)}
+                        note={r.duplicate ? "already counted" : r.ok ? "sent" : String(r.error || "failed")}
                       />
                     ))}
                   </div>
@@ -1109,14 +1109,14 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
 // Single pass/fail row used by the Conversion Tracking diagnostic.
 function StatusRow({ ok, label, note }: { ok: boolean; label: string; note?: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 bg-[#0B1120] border border-white/[0.06] rounded-lg px-4 py-2.5">
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 bg-[#0B1120] border border-white/[0.06] rounded-lg px-4 py-2.5">
       <div className="flex items-center gap-2.5 min-w-0">
         {ok
           ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           : <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />}
         <span className="text-[12px] font-bold text-slate-200 truncate">{label}</span>
       </div>
-      {note && <span className={`text-[11px] font-bold shrink-0 ${ok ? "text-emerald-400/80" : "text-red-400/80"}`}>{note}</span>}
+      {note && <span className={`text-[11px] font-bold break-words min-w-0 ${ok ? "text-emerald-400/80 shrink-0" : "text-red-400/80"}`}>{note}</span>}
     </div>
   );
 }

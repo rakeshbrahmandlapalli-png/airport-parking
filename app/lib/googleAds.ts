@@ -115,6 +115,30 @@ function formatConversionDateTime(d: Date): string {
   return iso.slice(0, 19).replace("T", " ") + "+00:00";
 }
 
+/**
+ * Google Ads errors arrive as a nested JSON body. Pull out the part a person
+ * can act on ("ACTION_NOT_PERMITTED: The Google Cloud project is only approved
+ * for use with test accounts…") instead of showing raw, truncated JSON.
+ */
+export function readableGoogleAdsError(status: number, text: string): string {
+  try {
+    const body = JSON.parse(text);
+    const first = body?.error?.details?.[0]?.errors?.[0];
+    if (first?.message) {
+      const code = first.errorCode ? Object.values(first.errorCode)[0] : "";
+      return `${code ? `${code}: ` : ""}${first.message}`.slice(0, 500);
+    }
+    if (body?.error?.message) return `HTTP ${status}: ${body.error.message}`.slice(0, 500);
+  } catch { /* not JSON — fall through */ }
+  return `HTTP ${status}: ${text}`.slice(0, 500);
+}
+
+const TEST_ONLY_ACCESS = /only approved for use with test accounts|DEVELOPER_TOKEN_NOT_APPROVED/i;
+const TEST_ONLY_HINT =
+  "Your Google Ads API access is approved for test accounts only, so Google rejects uploads to your real account. " +
+  "Apply for Basic access in Google Ads → Tools → API Center (Google usually replies within a few working days). " +
+  "Until it's approved, download the Conversions CSV and upload it in Google Ads → Goals → Conversions → Uploads.";
+
 export interface ConversionUploadResult {
   ok: boolean;
   /** Google already holds a conversion for this order id — counted before, nothing to do. */
@@ -175,7 +199,7 @@ export async function reportOfflineConversion(input: OfflineConversionInput): Pr
 
     if (!res.ok) {
       logger.error(`[GoogleAds] uploadClickConversions HTTP ${res.status}: ${text}`);
-      return { ok: false, error: `HTTP ${res.status}: ${text.slice(0, 500)}` };
+      return { ok: false, error: readableGoogleAdsError(res.status, text) };
     }
 
     // partialFailureError is surfaced in the 200 body, not the status code.
@@ -354,10 +378,14 @@ export async function checkGoogleAdsSetup(): Promise<GoogleAdsCheckResult> {
     const text = await res.text();
 
     if (!res.ok) {
-      const hint = /PERMISSION_DENIED|USER_PERMISSION_DENIED|does not have permission/i.test(text)
+      // Test-only access also comes back as PERMISSION_DENIED, so check it first:
+      // no account-access change fixes it.
+      const hint = TEST_ONLY_ACCESS.test(text)
+        ? TEST_ONLY_HINT
+        : /PERMISSION_DENIED|USER_PERMISSION_DENIED|does not have permission/i.test(text)
         ? permissionHint()
         : googleAdsErrorHint(text);
-      return { ...base, accessibleCustomers, oauth: { ok: true }, api: { ok: false, error: text.slice(0, 400) }, ready: false, hints: [hint] };
+      return { ...base, accessibleCustomers, oauth: { ok: true }, api: { ok: false, error: readableGoogleAdsError(res.status, text) }, ready: false, hints: [hint] };
     }
 
     let parsed: any;
