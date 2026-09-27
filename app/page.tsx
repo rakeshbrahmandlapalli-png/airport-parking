@@ -3,7 +3,6 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useMemo } from "react";
 import AeroFeature, { AeroAvatar } from "@/components/AeroFeature";
 import { supabase } from "./lib/supabase";
-import { getLaunchTimerConfig } from "./actions";
 import {
   AlertCircle, ArrowRight, Car, Check, CheckCircle2, ChevronDown, CreditCard,
   Loader2, MapPin, Mic, PlaneTakeoff, Search, ShieldCheck,
@@ -83,10 +82,6 @@ export type HomePreset = {
 
 export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
   const router = useRouter();
-  // Founding-member offer text comes from Admin → Settings → Launch Timer
-  // (timer_benefit_value), e.g. "20% Off+5% Lifetime Discount". Split on "+"
-  // into highlighted segments. Null until loaded so we never flash a stale %.
-  const [foundingOffer, setFoundingOffer] = useState<string | null>(null);
   const [now,              setNow]              = useState<Date | null>(null);
   const [isMapOpen,        setIsMapOpen]        = useState(false);
   const [isPriceMatchOpen, setIsPriceMatchOpen] = useState(false);
@@ -110,7 +105,6 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
     setNow(today);
     setDropoffDate(addDays(today, 1));
     setPickupDate(addDays(today, 8));
-    getLaunchTimerConfig().then((c) => setFoundingOffer(c.benefitValue)).catch(() => {});
 
     const timer = setInterval(() => setNow(new Date()), 60000);
     return () => { clearInterval(timer); };
@@ -291,12 +285,7 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
                   </li>
                 ))}
               </ul>
-              {foundingOffer && (
-                <p className="mt-6 md:mt-8 text-sm text-slate-400">
-                  Founding customer offer: <span className="text-white font-medium">{foundingOffer.split("+").map((s) => s.trim()).filter(Boolean).join(" + ")}</span>
-                </p>
-              )}
-              <p className="mt-2 text-sm text-slate-400">
+              <p className="mt-6 md:mt-8 text-sm text-slate-400">
                 Questions before you book? Call <a href={COMPANY.phoneHref} className="text-white font-medium hover:underline underline-offset-4">{COMPANY.phoneDisplay}</a>
               </p>
             </div>

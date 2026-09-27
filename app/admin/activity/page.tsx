@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { supabase } from "@/app/lib/supabase";
 import { AdminActivityFeed } from "@/components/admin/AdminActivityFeed";
-import { ArrowLeft, Plane } from "lucide-react";
+import { AdminSidebar, AdminMobileNav } from "@/components/admin/AdminNav";
 
 export default function AdminActivityPage() {
   const router = useRouter();
@@ -20,31 +19,25 @@ export default function AdminActivityPage() {
 
   if (!ready) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#060A14] text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">
-        Loading ledger…
+      <div className="flex min-h-screen items-center justify-center bg-[#0B1120] text-sm text-slate-400">
+        Loading…
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#060A14] text-white antialiased">
-      <header className="sticky top-0 z-20 border-b border-white/5 bg-[#060A14]/90">
-        <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-4">
-          <Link
-            href="/admin"
-            className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 transition-colors hover:text-white"
-          >
-            <ArrowLeft className="h-4 w-4" /> Ops Center
-          </Link>
-          <span className="flex items-center gap-2 text-sm font-black uppercase tracking-tighter">
-            <Plane className="h-4 w-4 rotate-45 text-blue-500" /> Activity Ledger
-          </span>
+    <div className="min-h-screen bg-[#0B1120] text-white antialiased flex flex-col md:flex-row">
+      <AdminSidebar />
+      <main className="flex-1 min-w-0 px-4 md:px-8 py-6 md:py-10 pb-28 md:pb-10">
+        <div className="mx-auto max-w-3xl">
+          <h1 className="text-2xl font-bold tracking-tight">Activity log</h1>
+          <p className="mt-1 text-sm text-slate-400">Every change made in admin, newest first.</p>
+          <div className="mt-6">
+            <AdminActivityFeed limit={100} />
+          </div>
         </div>
-      </header>
-
-      <div className="mx-auto max-w-3xl px-4 py-8">
-        <AdminActivityFeed limit={100} />
-      </div>
-    </main>
+      </main>
+      <AdminMobileNav />
+    </div>
   );
 }

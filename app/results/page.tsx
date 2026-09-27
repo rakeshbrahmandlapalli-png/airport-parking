@@ -4,7 +4,7 @@ import { logger } from "@/app/lib/logger";
 import { AeroAvatar } from "@/components/AeroFeature";
 import BookingStepper from "@/components/BookingStepper";
 import ModifySearchModal from "@/components/ModifySearchModal";
-import { checkAvailability, getLaunchTimerConfig, type LaunchTimerConfig } from "../actions";
+import { checkAvailability } from "../actions";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Clock, ArrowLeft, Phone, AlertCircle, CarFront, CheckCircle2, Loader2,
@@ -232,7 +232,6 @@ function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
   // layout effect below (post-hydration, pre-paint) so back-nav stays flash-free.
   const [companies,     setCompanies]     = useState<any[]>([]);
   const [settings,      setSettings]      = useState<PricingSettings>(DEFAULT_SETTINGS);
-  const [timerConfig,   setTimerConfig]   = useState<LaunchTimerConfig | null>(null);
   const [loading,       setLoading]       = useState(true);
 
   const [livePrices,     setLivePrices]     = useState<Record<string, number | null>>({});
@@ -298,7 +297,6 @@ function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
       setLivePrices(cached.livePrices || {});
       setLiveLoadingIds(new Set());
       setLoading(false);
-      getLaunchTimerConfig().then(setTimerConfig).catch(() => {});
 
       // STALE-WHILE-REVALIDATE — render the cached snapshot instantly (no flash),
       // then silently refresh the company records + pricing settings. This is a
@@ -488,7 +486,6 @@ function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
         }
 
         checkAvailability(airport, dropoff, pickup).catch(() => {});
-        getLaunchTimerConfig().then((cfg) => { if (!signal.aborted) setTimerConfig(cfg); }).catch(() => {});
 
       } catch (e) {
         if (!signal.aborted) { logger.error("loadResults error:", e); setLoading(false); }
@@ -630,11 +627,6 @@ function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
             <p className="flex items-center gap-1.5 text-slate-500 mt-1">
               <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
               Getting live prices from {liveLoadingIds.size} {liveLoadingIds.size === 1 ? "operator" : "operators"}…
-            </p>
-          )}
-          {timerConfig?.enabled && timerConfig.benefitValue && (
-            <p className="text-slate-500 mt-1">
-              Founding customer offer: <span className="font-medium text-slate-800">{timerConfig.benefitValue.split("+").map((x) => x.trim()).filter(Boolean).join(" + ")}</span>
             </p>
           )}
         </div>
