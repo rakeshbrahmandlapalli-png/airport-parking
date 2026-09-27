@@ -36,7 +36,7 @@ export default function SiteFooter() {
               <Logo tone="dark" className="h-8 w-auto" />
             </Link>
             <p className="text-sm leading-relaxed max-w-xs">
-              Meet &amp; Greet and Park &amp; Ride parking at Luton and Heathrow airports.
+              Meet &amp; Greet at Luton and Heathrow, and Park &amp; Ride at Heathrow.
             </p>
             <div className="text-sm space-y-1">
               <p>

@@ -18,7 +18,7 @@ export const HEATHROW_LINKS: NavLink[] = [
 export const LUTON_LINKS: NavLink[] = [
   { label: "Luton Airport Parking", href: "/luton-airport-parking" },
   { label: "Meet & Greet", href: "/luton-meet-and-greet" },
-  { label: "Park & Ride", href: "/luton-park-and-ride" },
+  { label: "Park & Ride (coming soon)", href: "/luton-park-and-ride" },
 ];
 
 export const MAIN_LINKS: NavLink[] = [

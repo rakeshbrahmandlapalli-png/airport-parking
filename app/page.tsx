@@ -281,7 +281,7 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
                 {preset?.h1Top ?? "Airport Parking"} {(preset?.h1Highlight ?? "Made Simple.").replace(/\.$/, "")}
               </h1>
               <p className="mt-4 md:mt-5 text-base md:text-lg text-slate-300 leading-relaxed max-w-xl">
-                {preset?.intro ?? "Meet & Greet and Park & Ride at Luton and Heathrow airports. Drive to the terminal, hand over your keys, and fly."}
+                {preset?.intro ?? "Meet & Greet at Luton and Heathrow, and Park & Ride at Heathrow. Drive to the terminal, hand over your keys, and fly."}
               </p>
               <ul className="mt-6 md:mt-8 space-y-3 text-slate-200">
                 {TRUST.map((t) => (
