@@ -2095,12 +2095,11 @@ function DashboardContent() {
 
       {/* --- 🟢 MESSAGE CENTRE --- */}
       {msgBooking && (
-        <div className="fixed inset-0 bg-canvas/95 backdrop-blur-sm z-[300] flex items-start md:items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-panel border border-fg/[0.08] w-full max-w-3xl rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 my-8">
+        <div className="fixed inset-0 bg-canvas/95 z-[300] flex items-start md:items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-panel border border-fg/[0.08] w-full max-w-3xl rounded-xl overflow-hidden animate-in zoom-in-95 duration-200 my-8">
 
             {/* Header */}
             <div className="p-6 border-b border-fg/[0.08] flex justify-between items-center bg-panel-2 relative">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-emerald-500"></div>
               <div>
                 <h2 className="text-xl font-semibold text-fg tracking-tight flex items-center gap-2">
                   <MessageCircle className="w-5 h-5 text-blue-400" /> Message Centre
@@ -2262,7 +2261,7 @@ function DashboardContent() {
       {/* --- 🟢 CONFIRM DIALOG --- */}
       {confirmState && (
         <div className="fixed inset-0 bg-[#060A14]/80 z-[400] flex items-center justify-center p-4">
-          <div className="bg-panel border border-fg/10 w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-panel border border-fg/10 w-full max-w-md rounded-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-7">
               <div className="flex items-start gap-4">
                 <div className={`w-11 h-11 shrink-0 rounded-xl flex items-center justify-center border ${confirmState.danger ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-blue-500/10 border-blue-500/20 text-blue-400'}`}>
@@ -2292,7 +2291,7 @@ function DashboardContent() {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-xl border shadow-xl bg-panel-2 animate-in slide-in-from-right-8 duration-300 max-w-sm ${
+            className={`pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-xl border bg-panel-2 animate-in slide-in-from-right-8 duration-300 max-w-sm ${
               t.type === 'success' ? 'border-emerald-500/30 text-emerald-300'
               : t.type === 'error' ? 'border-red-500/30 text-red-300'
               : 'border-blue-500/30 text-blue-300'

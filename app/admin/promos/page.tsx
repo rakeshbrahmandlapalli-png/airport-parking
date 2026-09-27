@@ -115,11 +115,10 @@ export default function PromoManager() {
     return { total, active, disabled, avg };
   }, [promos]);
 
-  const inputStyle = "w-full bg-panel-3 border border-fg/[0.12] hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-fg font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:rgb(var(--admin-fg))] placeholder:text-fg-4";
+  const inputStyle = "w-full bg-panel-3 border border-fg/[0.12] hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-fg font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all [-webkit-text-fill-color:rgb(var(--admin-fg))] placeholder:text-fg-4";
 
   if (loading) return (
-    <div className="min-h-screen bg-gradient-to-b from-canvas via-canvas to-canvas flex flex-col items-center justify-center text-fg relative overflow-hidden">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px]"></div>
+    <div className="min-h-screen bg-canvas flex flex-col items-center justify-center text-fg relative overflow-hidden">
       <div className="relative z-10">
         <div className="absolute inset-0 border-t-2 border-blue-500 rounded-full animate-spin"></div>
         <Plane className="w-10 h-10 text-blue-500 m-4 animate-pulse rotate-45" />
@@ -129,12 +128,8 @@ export default function PromoManager() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-canvas via-canvas to-canvas font-sans flex flex-col md:flex-row overflow-hidden text-fg antialiased selection:bg-blue-600/30 relative">
+    <div className="min-h-screen bg-canvas font-sans flex flex-col md:flex-row overflow-hidden text-fg antialiased selection:bg-blue-600/30 relative">
 
-      {/* 🌌 AMBIENT BACKGROUND GLOW LAYERS */}
-      <div className="fixed top-[-200px] left-[200px] w-[600px] h-[600px] bg-blue-600/8 rounded-full blur-[140px] pointer-events-none z-0"></div>
-      <div className="fixed bottom-[-200px] right-[100px] w-[500px] h-[500px] bg-indigo-600/8 rounded-full blur-[140px] pointer-events-none z-0"></div>
-      <div className="fixed top-[40%] right-[30%] w-[400px] h-[400px] bg-emerald-600/5 rounded-full blur-[120px] pointer-events-none z-0"></div>
 
       <AdminSidebar />
 
@@ -142,22 +137,19 @@ export default function PromoManager() {
       <main className="flex-1 p-4 md:p-8 lg:p-12 w-full overflow-y-auto h-screen relative pb-32 md:pb-12 custom-scrollbar z-10">
 
         {/* 🟢 COMMAND HERO PANEL (header + stat rail, one unit) */}
-        <div className="relative mb-8 rounded-[2rem] border border-fg/[0.08] bg-gradient-to-br from-panel-2 to-panel shadow-2xl overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/40 to-transparent"></div>
-          <div className="absolute -top-24 -left-24 w-72 h-72 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none"></div>
-          <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-indigo-600/10 rounded-full blur-[100px] pointer-events-none"></div>
+        <div className="relative mb-8 rounded-xl border border-fg/[0.08] bg-panel overflow-hidden">
 
           {/* ROW 1 — title */}
           <div className="relative p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-fg/[0.08]">
             <div className="flex items-center gap-5">
-              <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600/30 to-blue-600/5 border border-blue-500/30 items-center justify-center shadow-[0_0_25px_rgba(37,99,235,0.3)] shrink-0">
+              <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-blue-600/10 border border-blue-500/30 items-center justify-center shrink-0">
                 <Tags className="w-7 h-7 text-blue-400" />
               </div>
               <div>
-                <h1 className="text-3xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-white via-white to-blue-200 bg-clip-text text-transparent">Promo Manager</h1>
+                <h1 className="text-3xl md:text-4xl font-black tracking-tight text-fg">Promo Manager</h1>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
                   <div className="text-emerald-400 font-bold text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     Discount Engine
                   </div>
                   <div className="hidden sm:block w-px h-3 bg-panel-4"></div>
@@ -202,8 +194,7 @@ export default function PromoManager() {
           )}
 
           {/* Create New Form */}
-          <div className="bg-panel-2 p-8 rounded-[2rem] border border-fg/[0.08] shadow-xl mb-8 flex flex-col sm:flex-row gap-6 sm:items-end relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
+          <div className="bg-panel-2 p-8 rounded-xl border border-fg/[0.08] mb-8 flex flex-col sm:flex-row gap-6 sm:items-end relative overflow-hidden">
 
             <div className="flex-1">
               <label className="text-[10px] font-black uppercase text-fg-4 block ml-1 tracking-widest mb-2">Discount Code</label>
@@ -220,14 +211,14 @@ export default function PromoManager() {
             <button
               disabled={!newCode || !newPercent}
               onClick={() => savePromo({ code: newCode, discount_percent: Number(newPercent), is_active: true, message: newMessage.trim() || null })}
-              className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600 px-8 py-4 rounded-xl font-black text-sm text-white shadow-[0_10px_20px_-5px_rgba(37,99,235,0.4)] transition-all active:scale-95 flex items-center justify-center gap-2"
+              className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600 px-8 py-4 rounded-xl font-black text-sm text-white transition-all active:scale-95 flex items-center justify-center gap-2"
             >
               <Plus className="w-5 h-5" /> Generate
             </button>
           </div>
 
           {/* Promo List */}
-          <div className="bg-panel-2 rounded-[2rem] border border-fg/[0.08] overflow-hidden shadow-2xl">
+          <div className="bg-panel-2 rounded-xl border border-fg/[0.08] overflow-hidden">
             <table className="w-full text-left whitespace-nowrap">
               <thead className="bg-panel border-b border-fg/[0.08] text-[10px] font-black uppercase text-fg-4 tracking-[0.2em]">
                 <tr>

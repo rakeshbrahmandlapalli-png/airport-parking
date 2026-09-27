@@ -564,8 +564,7 @@ function FinancialsContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-canvas via-canvas to-canvas flex flex-col items-center justify-center text-fg relative overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-emerald-600/10 rounded-full blur-[120px]"></div>
+      <div className="min-h-screen bg-canvas flex flex-col items-center justify-center text-fg relative overflow-hidden">
         <div className="relative z-10">
           <div className="absolute inset-0 border-t-2 border-emerald-500 rounded-full animate-spin"></div>
           <PiggyBank className="w-10 h-10 text-emerald-500 m-4 animate-pulse" />
@@ -575,16 +574,12 @@ function FinancialsContent() {
     );
   }
 
-  const card = "bg-panel-2 border rounded-[2rem] p-8 relative overflow-hidden shadow-xl";
+  const card = "bg-panel-2 border rounded-xl p-8 relative overflow-hidden";
   const dateInputCls = "bg-panel-2 border border-fg/[0.12] hover:border-blue-500/50 rounded-xl py-3 px-4 text-xs font-bold text-fg outline-none focus:ring-2 focus:ring-blue-500/50 transition-all  [-webkit-text-fill-color:rgb(var(--admin-fg))]";
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-canvas via-canvas to-canvas font-sans flex flex-col md:flex-row overflow-hidden text-fg antialiased selection:bg-blue-600/30 relative">
+    <div className="min-h-screen bg-canvas font-sans flex flex-col md:flex-row overflow-hidden text-fg antialiased selection:bg-blue-600/30 relative">
 
-      {/* 🌌 AMBIENT BACKGROUND GLOW LAYERS */}
-      <div className="fixed top-[-200px] left-[200px] w-[600px] h-[600px] bg-emerald-600/8 rounded-full blur-[140px] pointer-events-none z-0"></div>
-      <div className="fixed bottom-[-200px] right-[100px] w-[500px] h-[500px] bg-blue-600/8 rounded-full blur-[140px] pointer-events-none z-0"></div>
-      <div className="fixed top-[40%] right-[30%] w-[400px] h-[400px] bg-indigo-600/5 rounded-full blur-[120px] pointer-events-none z-0"></div>
 
       <AdminSidebar />
 
@@ -592,21 +587,18 @@ function FinancialsContent() {
       <main className="flex-1 p-4 md:p-8 lg:p-12 w-full overflow-y-auto h-screen relative pb-32 md:pb-12 custom-scrollbar z-10">
 
         {/* 🟢 COMMAND HERO PANEL (header + controls, one unit) */}
-        <div className="relative mb-8 rounded-[2rem] border border-fg/[0.08] bg-gradient-to-br from-panel-2 to-panel shadow-2xl overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent"></div>
-          <div className="absolute -top-24 -left-24 w-72 h-72 bg-emerald-600/10 rounded-full blur-[100px] pointer-events-none"></div>
-          <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none"></div>
+        <div className="relative mb-8 rounded-xl border border-fg/[0.08] bg-panel overflow-hidden">
 
           <div className="relative p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="flex items-center gap-5">
-              <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-600/30 to-emerald-600/5 border border-emerald-500/30 items-center justify-center shadow-[0_0_25px_rgba(16,185,129,0.3)] shrink-0">
+              <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-emerald-600/10 border border-emerald-500/30 items-center justify-center shrink-0">
                 <PiggyBank className="w-7 h-7 text-emerald-400" />
               </div>
               <div>
-                <h1 className="text-3xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-white via-white to-emerald-200 bg-clip-text text-transparent">Financial Ledger</h1>
+                <h1 className="text-3xl md:text-4xl font-black tracking-tight text-fg">Financial Ledger</h1>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
                   <div className="text-emerald-400 font-bold text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     Real-Time P&amp;L
                   </div>
                   <div className="hidden sm:block w-px h-3 bg-panel-4"></div>
@@ -622,7 +614,7 @@ function FinancialsContent() {
                 <div className="relative">
                   <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none z-10" />
                   <select value={range} onChange={(e) => setRange(e.target.value as RangeKey)}
-                    className="w-full appearance-none bg-panel-3/80 backdrop-blur-sm border border-fg/[0.12] hover:border-emerald-500/50 rounded-xl py-3.5 pl-10 pr-10 text-[10px] font-black uppercase tracking-widest text-fg-2 outline-none cursor-pointer transition-all focus:ring-2 focus:ring-emerald-500/40">
+                    className="w-full appearance-none bg-panel-3/80 border border-fg/[0.12] hover:border-emerald-500/50 rounded-xl py-3.5 pl-10 pr-10 text-[10px] font-black uppercase tracking-widest text-fg-2 outline-none cursor-pointer transition-all focus:ring-2 focus:ring-emerald-500/40">
                     <option value="all" className="bg-panel-3">All Time</option>
                     <option value="today" className="bg-panel-3">Today</option>
                     <option value="week" className="bg-panel-3">Last 7 Days</option>
@@ -632,12 +624,11 @@ function FinancialsContent() {
                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none" />
                 </div>
                 <button onClick={exportCSV} disabled={isCustomIncomplete}
-                  className="px-5 py-3.5 bg-panel-3/80 backdrop-blur-sm hover:bg-panel-3 disabled:opacity-40 disabled:cursor-not-allowed border border-fg/[0.12] hover:border-fg/[0.18] text-fg-2 rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-2 shadow-md">
+                  className="px-5 py-3.5 bg-panel-3/80 hover:bg-panel-3 disabled:opacity-40 disabled:cursor-not-allowed border border-fg/[0.12] hover:border-fg/[0.18] text-fg-2 rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-2">
                   <Download className="w-4 h-4 text-blue-400" /> Export P&amp;L
                 </button>
                 <button onClick={() => setShowInvoiceModal(true)}
-                  className="px-5 py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-2 shadow-[0_10px_30px_-5px_rgba(16,185,129,0.5)] hover:-translate-y-0.5 relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-fg/0 via-fg/20 to-fg/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                  className="px-5 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-2 relative overflow-hidden group">
                   <FileText className="w-4 h-4" /> Generate Invoice
                 </button>
               </div>
@@ -696,7 +687,7 @@ function FinancialsContent() {
           </div>
 
           {/* 🟢 MODIFIED: True Net Profit (Subtracts Expenses) */}
-          <div className="bg-gradient-to-br from-emerald-900/30 to-panel-2 border border-emerald-500/40 rounded-[2rem] p-8 relative overflow-hidden shadow-xl group">
+          <div className="bg-emerald-900/10 border border-emerald-500/40 rounded-xl p-8 relative overflow-hidden group">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 mb-3 flex items-center gap-2"><TrendingUp className="w-4 h-4"/> True Net Profit</p>
             <p className="text-3xl font-black text-emerald-400 tracking-tight tabular-nums drop-shadow">£{totals.trueNet.toFixed(2)}</p>
             <TrendingUp className="w-20 h-20 text-emerald-500/10 absolute -right-4 -bottom-4 group-hover:scale-110 transition-transform" />
@@ -704,7 +695,7 @@ function FinancialsContent() {
         </div>
 
         {/* STRIPE PAYOUT BRIDGE */}
-        <div className="bg-gradient-to-r from-[#635BFF]/10 to-indigo-900/20 border border-[#635BFF]/30 p-8 rounded-3xl mb-12 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden">
+        <div className="bg-[#635BFF]/10 border border-[#635BFF]/30 p-8 rounded-xl mb-12 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
            <div className="absolute top-0 right-0 w-64 h-64 bg-[#635BFF]/10 rounded-full blur-3xl pointer-events-none"></div>
            <div className="relative z-10">
              <h3 className="text-2xl font-black text-fg flex items-center gap-3 tracking-tight"><DollarSign className="text-[#635BFF]"/> Payout Routing</h3>
@@ -714,7 +705,7 @@ function FinancialsContent() {
            </div>
            <button
              onClick={() => window.open('https://dashboard.stripe.com/settings/payouts', '_blank')}
-             className="relative z-10 px-8 py-4 bg-[#635BFF] hover:bg-[#5851e5] text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-[0_10px_20px_-5px_rgba(99,91,255,0.4)] hover:-translate-y-1 transition-all flex items-center gap-2 shrink-0"
+             className="relative z-10 px-8 py-4 bg-[#635BFF] hover:bg-[#5851e5] text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 shrink-0"
            >
              <ExternalLink className="w-4 h-4" /> Configure Payouts
            </button>
@@ -737,7 +728,7 @@ function FinancialsContent() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
           {/* FAST TRACK STRIP */}
-          <div className="bg-gradient-to-r from-amber-500/10 to-transparent border border-amber-500/20 rounded-2xl p-6 flex items-center gap-5 relative overflow-hidden">
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-6 flex items-center gap-5 relative overflow-hidden">
             <div className="absolute -left-4 -top-4 w-24 h-24 bg-amber-500/10 blur-2xl rounded-full"></div>
             <div className="w-12 h-12 bg-amber-500/20 border border-amber-500/30 rounded-xl flex items-center justify-center shrink-0 relative z-10">
               <Zap className="w-6 h-6 text-amber-400" />
@@ -749,7 +740,7 @@ function FinancialsContent() {
           </div>
 
           {/* 🟢 ATTENDANT FEES STRIP (pass-through, never profit) */}
-          <div className="bg-gradient-to-r from-violet-500/10 to-transparent border border-violet-500/20 rounded-2xl p-6 flex items-center gap-5 relative overflow-hidden">
+          <div className="bg-violet-500/10 border border-violet-500/20 rounded-2xl p-6 flex items-center gap-5 relative overflow-hidden">
             <div className="absolute -left-4 -top-4 w-24 h-24 bg-violet-500/10 blur-2xl rounded-full"></div>
             <div className="w-12 h-12 bg-violet-500/20 border border-violet-500/30 rounded-xl flex items-center justify-center shrink-0 relative z-10">
               <HandCoins className="w-6 h-6 text-violet-400" />
@@ -763,7 +754,7 @@ function FinancialsContent() {
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-12">
           {/* BY OPERATOR */}
-          <div className="bg-panel-2 rounded-3xl border border-fg/[0.08] overflow-hidden shadow-2xl flex flex-col">
+          <div className="bg-panel-2 rounded-xl border border-fg/[0.08] overflow-hidden flex flex-col">
             <div className="p-6 border-b border-fg/[0.08] bg-panel">
               <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-fg-3 flex items-center gap-2"><Building2 className="w-4 h-4"/> Profit By Operator</h4>
             </div>
@@ -811,10 +802,10 @@ function FinancialsContent() {
           </div>
 
           {/* 🟢 NEW: OPERATING EXPENSES & SUBSCRIPTIONS */}
-          <div className="bg-panel-2 rounded-3xl border border-fg/[0.08] overflow-hidden shadow-2xl flex flex-col">
+          <div className="bg-panel-2 rounded-xl border border-fg/[0.08] overflow-hidden flex flex-col">
             <div className="p-6 border-b border-fg/[0.08] bg-panel flex items-center justify-between">
               <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-fg-3 flex items-center gap-2"><Receipt className="w-4 h-4"/> OpEx & Subscriptions</h4>
-              <button onClick={() => setShowExpenseModal(true)} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg transition-colors shadow-md">
+              <button onClick={() => setShowExpenseModal(true)} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg transition-colors">
                 <Plus className="w-3 h-3" /> Add Expense
               </button>
             </div>
@@ -862,7 +853,7 @@ function FinancialsContent() {
         </div>
 
         {/* PER-BOOKING LEDGER */}
-        <div className="bg-panel-2 rounded-3xl border border-fg/[0.08] overflow-hidden shadow-2xl mb-24">
+        <div className="bg-panel-2 rounded-xl border border-fg/[0.08] overflow-hidden mb-24">
           <div className="p-6 border-b border-fg/[0.08] bg-panel">
             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-fg-3 flex items-center gap-2"><LayoutDashboard className="w-4 h-4"/> Booking-Level Ledger ({computed.length})</h4>
           </div>
@@ -911,10 +902,9 @@ function FinancialsContent() {
 
       {/* 🟢 NEW: INVOICE / REMITTANCE GENERATOR MODAL */}
       {showInvoiceModal && (
-        <div className="fixed inset-0 bg-canvas/95 backdrop-blur-sm z-[300] flex items-start md:items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-panel border border-fg/[0.08] w-full max-w-4xl rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 my-8">
+        <div className="fixed inset-0 bg-canvas/95 z-[300] flex items-start md:items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-panel border border-fg/[0.08] w-full max-w-4xl rounded-xl overflow-hidden animate-in zoom-in-95 duration-200 my-8">
             <div className="p-6 border-b border-fg/[0.08] flex justify-between items-center bg-panel-2 relative">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-green-500"></div>
               <div>
                 <h2 className="text-xl font-black text-fg tracking-tight flex items-center gap-2"><FileText className="w-5 h-5 text-emerald-400" /> Provider Remittance</h2>
                 <p className="text-[10px] font-bold text-fg-3 uppercase tracking-widest mt-1">What You Owe · By Date Range</p>
@@ -973,7 +963,7 @@ function FinancialsContent() {
               </div>
 
               {/* SUMMARY BAR */}
-              <div className="bg-gradient-to-r from-emerald-900/30 to-panel-2 border border-emerald-500/40 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="bg-emerald-900/10 border border-emerald-500/40 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Total Owed to {invoice.operatorLabel}</p>
                   <p className="text-[11px] font-bold text-fg-3 mt-1">{invoice.count} booking{invoice.count === 1 ? "" : "s"} · {invoice.periodLabel}</p>
@@ -1023,7 +1013,7 @@ function FinancialsContent() {
                   <Download className="w-4 h-4 text-blue-400" /> CSV
                 </button>
                 <button onClick={printInvoice} disabled={invoice.lines.length === 0}
-                  className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 shadow-[0_10px_20px_-5px_rgba(16,185,129,0.4)]">
+                  className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2">
                   <Printer className="w-4 h-4" /> Print / Save PDF
                 </button>
               </div>
@@ -1034,10 +1024,9 @@ function FinancialsContent() {
 
       {/* 🟢 NEW: ADD EXPENSE MODAL */}
       {showExpenseModal && (
-        <div className="fixed inset-0 bg-canvas/95 backdrop-blur-sm z-[300] flex items-center justify-center p-4 overflow-hidden">
-          <div className="bg-panel border border-fg/[0.08] w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-canvas/95 z-[300] flex items-center justify-center p-4 overflow-hidden">
+          <div className="bg-panel border border-fg/[0.08] w-full max-w-lg rounded-xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-fg/[0.08] flex justify-between items-center bg-panel-2 relative">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-rose-500 to-red-500"></div>
               <div>
                 <h2 className="text-xl font-black text-fg tracking-tight">Log Expense</h2>
                 <p className="text-[10px] font-bold text-fg-3 uppercase tracking-widest mt-1">Operating Costs & Subscriptions</p>
@@ -1093,7 +1082,7 @@ function FinancialsContent() {
 
               <div className="pt-6 border-t border-fg/[0.08] flex gap-4 mt-8">
                  <button type="button" onClick={() => setShowExpenseModal(false)} className="px-6 py-4 text-fg-3 font-bold text-xs hover:text-fg transition-colors">Cancel</button>
-                 <button type="submit" disabled={isSaving} className="flex-1 bg-rose-600 hover:bg-rose-500 py-4 rounded-xl font-bold text-sm text-white shadow-md transition-all flex items-center justify-center gap-2 active:scale-95">
+                 <button type="submit" disabled={isSaving} className="flex-1 bg-rose-600 hover:bg-rose-500 py-4 rounded-xl font-bold text-sm text-white transition-all flex items-center justify-center gap-2 active:scale-95">
                   {isSaving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4"/>} Save Expense
                 </button>
               </div>
