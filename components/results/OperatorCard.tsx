@@ -51,15 +51,13 @@ export function OperatorCard({
 
   return (
     <article
-      className={`rounded-2xl overflow-hidden border bg-white transition-colors ${
-        featured ? "border-blue-500/60" : "border-slate-200 hover:border-slate-300"
+      className={`rounded-xl overflow-hidden border bg-white transition-colors ${
+        featured ? "border-blue-600" : "border-slate-200 hover:border-slate-300"
       } ${isSoldOut ? "opacity-60 grayscale-[30%]" : ""}`}
     >
-      {featured && <div className="h-[3px] bg-blue-500" />}
-
       <div className="flex flex-col md:flex-row">
         {/* ── LEFT: identity, trust, highlights ── */}
-        <div className="flex-1 p-5 md:p-7">
+        <div className="flex-1 min-w-0 p-5 md:p-6">
           {(featured || savePct > 0) && (
             <div className="mb-3 flex flex-wrap gap-2">
               {featured ? (
@@ -85,89 +83,91 @@ export function OperatorCard({
               const details = e.currentTarget.closest("article")?.querySelector("details");
               if (details) details.open = !details.open;
             }}
-            className="group flex w-full min-w-0 items-center gap-4 text-left"
+            className="group flex w-full min-w-0 items-center gap-3 md:gap-4 text-left"
             aria-label={`Show details for ${operator.name}`}
           >
             <OperatorLogo logoUrl={operator.logo_url} name={operator.name} />
-            <h2 className="min-w-0 truncate text-xl font-black uppercase leading-tight tracking-tight text-slate-900 underline-offset-4 decoration-2 group-hover:underline md:text-2xl">
+            <h2 className="min-w-0 text-lg font-semibold leading-snug text-slate-900 underline-offset-4 group-hover:underline md:text-xl">
               {operator.name}
             </h2>
           </button>
 
           {/* Selling points — one flowing line, not a spec-sheet grid */}
-          <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px] font-bold text-slate-700">
+          <ul className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-slate-700">
             {highlights.map((point) => (
-              <span key={point} className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                <Check className="h-3.5 w-3.5 shrink-0 text-emerald-500" /> {point}
-              </span>
+              <li key={point} className="inline-flex items-start gap-1.5">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" /> {point}
+              </li>
             ))}
-          </p>
+          </ul>
 
-          {feesNote && (
-            <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-3">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-              <p className="text-[13px] font-bold leading-snug text-amber-900">{feesNote}</p>
-            </div>
-          )}
 
           <OperatorDetailPanel operator={operator} isHeathrow={isHeathrow} />
+
+          {/* Mandatory extra fees stay visible next to the price (UK drip-pricing
+              rules), below the instructions link rather than above it. */}
+          {feesNote && (
+            <p className="mt-3 flex items-start gap-1.5 text-sm leading-snug text-amber-800">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden="true" />
+              <span><span className="font-semibold">Paid on the day:</span> {feesNote}</span>
+            </p>
+          )}
         </div>
 
         {/* ── RIGHT: price + CTA (CLS-locked) ── */}
-        <div className="flex shrink-0 flex-col items-center justify-center border-t border-slate-200 bg-slate-50 px-6 py-6 md:w-[290px] md:border-l md:border-t-0">
-          <p className="mb-1.5 text-center text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">
-            Total Stay Cost
+        <div className="flex shrink-0 flex-col justify-center border-t border-slate-200 bg-slate-50 px-5 py-5 md:w-[260px] md:border-l md:border-t-0 md:px-6">
+          <p className="text-sm text-slate-500">
+            Total for {duration} {duration === 1 ? "day" : "days"}
           </p>
 
           {/* Fixed-height slot prevents layout shift across all states */}
-          <div className="flex min-h-[104px] w-full flex-col items-center justify-center">
+          <div className="flex min-h-[84px] w-full flex-col justify-center">
             {showSkeleton && (
               <div className="w-full animate-pulse space-y-2.5" aria-hidden="true">
-                <div className="mx-auto h-10 w-32 rounded-lg bg-slate-200" />
-                <div className="mx-auto h-3 w-24 rounded bg-slate-200" />
+                <div className="h-9 w-32 rounded-md bg-slate-200" />
+                <div className="h-3 w-24 rounded bg-slate-200" />
               </div>
             )}
 
             {showNA && (
-              <div className="flex flex-col items-center gap-1 text-center">
-                <AlertCircle className="mb-1 h-6 w-6 text-slate-400" />
-                <p className="text-lg font-black tracking-tight text-slate-500">Unavailable</p>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">
-                  {isApiMode ? "Rate offline" : "No price for these dates"}
+              <div>
+                <p className="text-lg font-semibold text-slate-500">Not available</p>
+                <p className="text-sm text-slate-500">
+                  {isApiMode ? "We couldn't get a price just now." : "No price for these dates."}
                 </p>
               </div>
             )}
 
             {isSoldOut && (
-              <p className="text-4xl font-black leading-none tracking-tighter text-slate-400 line-through">
+              <p className="text-3xl font-bold leading-none text-slate-400 line-through">
                 {final > 0 ? formatGBP(final) : "—"}
               </p>
             )}
 
             {showPrice && (
-              <div className="flex flex-col items-center text-center">
+              <div className="flex flex-col">
                 {/* With a code live, the struck price is the one they pay
                     WITHOUT it — that is the saving they are being shown. The
                     operator's own original would be a third number on one card
                     and helps nobody. */}
                 {withCode !== null ? (
-                  <p className="text-sm font-bold text-slate-400 line-through">{formatGBP(final)}</p>
+                  <p className="text-sm text-slate-500 line-through">{formatGBP(final)}</p>
                 ) : isDiscounted ? (
-                  <p className="text-sm font-bold text-slate-400 line-through">{formatGBP(original)}</p>
+                  <p className="text-sm text-slate-500 line-through">{formatGBP(original)}</p>
                 ) : null}
 
-                <p className="text-[2.75rem] font-black leading-none tracking-tighter text-emerald-600">
+                <p className="text-3xl font-bold leading-tight tabular-nums text-slate-900">
                   {formatGBP(withCode ?? final)}
                 </p>
 
                 {withCode !== null && (
-                  <p className="mt-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-emerald-700">
+                  <p className="mt-1 self-start rounded-md bg-emerald-50 px-2 py-0.5 text-sm font-medium text-emerald-800">
                     with code {promo!.code}
                   </p>
                 )}
 
-                <p className="mt-1.5 text-[10px] font-black uppercase tracking-[0.1em] text-slate-500">
-                  Avg {formatGBP((withCode ?? final) / Math.max(1, duration))} / day
+                <p className="mt-1 text-sm text-slate-500 tabular-nums">
+                  {formatGBP((withCode ?? final) / Math.max(1, duration))} a day
                 </p>
               </div>
             )}
@@ -178,21 +178,21 @@ export function OperatorCard({
             type="button"
             disabled={!canSelect}
             onClick={() => canSelect && onSelect(operator, final)}
-            className={`mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-xl text-sm font-black uppercase tracking-[0.15em] transition-all touch-manipulation ${
+            className={`mt-4 flex h-12 w-full items-center justify-center gap-1.5 rounded-lg text-base font-semibold touch-manipulation ${
               canSelect
-                ? "bg-[#2563EB] text-white shadow-[0_8px_24px_-6px_rgba(37,99,235,0.35)] hover:bg-blue-500 active:scale-[0.98]"
-                : "cursor-not-allowed border border-slate-300 bg-slate-100 text-slate-400"
+                ? "bg-blue-600 text-white hover:bg-blue-700"
+                : "cursor-not-allowed border border-slate-300 bg-white text-slate-400"
             }`}
           >
-            {isSoldOut ? <><Ban className="h-4 w-4" /> Sold Out</>
+            {isSoldOut ? <><Ban className="h-4 w-4" aria-hidden="true" /> Sold out</>
               : showSkeleton ? "Checking rate…"
-              : showNA ? <><AlertCircle className="h-4 w-4" /> Unavailable</>
-              : <>Select <ChevronRight className="h-4 w-4" /></>}
+              : showNA ? "Not available"
+              : <>Select <ChevronRight className="h-4 w-4" aria-hidden="true" /></>}
           </button>
 
           {canSelect && (
-            <p className="mt-3 flex items-center justify-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-slate-400">
-              <Lock className="h-3 w-3" /> Secured by Stripe
+            <p className="mt-2 flex items-center justify-center gap-1.5 text-xs text-slate-500">
+              <Lock className="h-3 w-3" aria-hidden="true" /> Secure card payment by Stripe
             </p>
           )}
         </div>
@@ -212,13 +212,13 @@ function OperatorLogo({ logoUrl, name }: { logoUrl?: string | null; name: string
         alt={name}
         width={64}
         height={64}
-        className="h-16 w-16 shrink-0 rounded-2xl bg-white object-contain"
+        className="h-12 w-12 md:h-14 md:w-14 shrink-0 rounded-lg border border-slate-100 bg-white object-contain"
         onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
       />
     );
   }
   return (
-    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-100 text-xl font-black text-slate-500">
+    <div className="flex h-12 w-12 md:h-14 md:w-14 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-100 text-lg font-semibold text-slate-500">
       {name.charAt(0).toUpperCase()}
     </div>
   );
