@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getAdminUser } from "@/app/lib/adminAuth";
+import { parseClickId } from "@/app/lib/googleAds";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Admin-only export of paid bookings as a Google Ads "Conversions from clicks"
@@ -60,7 +61,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Could not load bookings." }, { status: 500 });
   }
 
-  const rows = (data || []).filter((b) => String(b.gclid || "").trim().length > 0);
+  // The "Google Click ID" column only takes real gclids; iOS wbraid/gbraid ids
+  // would be rejected, so they're left to the API upload.
+  const rows = (data || []).filter((b) => parseClickId(b.gclid)?.field === "gclid");
 
   const lines: string[] = [];
   lines.push(`Parameters:TimeZone=${TIMEZONE}`);

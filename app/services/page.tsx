@@ -1,44 +1,28 @@
 "use client";
 
 import { 
-  Plane, 
   MapPin, 
   Clock, 
   ShieldCheck, 
   Key, 
   ArrowRight, 
-  User, 
-  CheckCircle2, 
   AlertCircle,
   CarFront,
   Luggage,
   Briefcase
 } from "lucide-react";
 import Link from "next/link";
+import SiteHeader from "@/components/site/SiteHeader";
+import SiteFooter from "@/components/site/SiteFooter";
 
 export default function ServicesPage() {
   return (
-    <main className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-blue-600 selection:text-white overflow-x-hidden">
+    <main className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-blue-600 selection:text-white overflow-x-clip">
       
-      {/* 1. PREMIUM NAVBAR */}
-      <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-2xl border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-blue-600 font-black tracking-tighter text-xl uppercase z-50 hover:scale-105 transition-transform group">
-            <Plane className="w-6 h-6 rotate-45 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform" /> AEROPARK<span className="text-slate-900">DIRECT</span>
-          </Link>
-          <div className="flex items-center gap-6">
-            <Link href="/" className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-600 transition-colors hidden sm:block">
-              Back to Search
-            </Link>
-            <Link href="/manage" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white bg-slate-900 px-6 py-3 rounded-xl hover:bg-blue-600 shadow-lg shadow-slate-900/20 transition-all duration-300 active:scale-95">
-              <User className="w-4 h-4" /> Manage Booking
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <SiteHeader />
 
       {/* 2. PAGE HERO */}
-      <section className="relative pt-40 pb-24 px-6 bg-white overflow-hidden border-b border-slate-200">
+      <section className="relative pt-20 pb-24 px-6 bg-white overflow-hidden border-b border-slate-200">
         {/* Decorative Background Elements */}
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03]"></div>
         <div className="absolute -top-32 -left-32 w-96 h-96 bg-blue-500/10 rounded-full blur-[100px] pointer-events-none"></div>
@@ -185,19 +169,7 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      {/* 4. FOOTER */}
-      <footer className="bg-slate-950 py-16 px-6 border-t border-slate-900 mt-10">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
-           <Link href="/" className="flex items-center gap-2 text-white font-black text-xl uppercase tracking-tighter">
-             <Plane className="w-6 h-6 text-blue-500 rotate-45" />AeroPark<span className="text-blue-500">DIRECT</span>
-           </Link>
-           <div className="text-slate-500 font-bold text-[10px] uppercase tracking-widest flex items-center gap-6">
-             <Link href="/services" className="hover:text-white transition-colors">Services</Link>
-             <Link href="/manage" className="hover:text-white transition-colors">Manage Booking</Link>
-             <span>© {new Date().getFullYear()} AeroPark Direct</span>
-           </div>
-        </div>
-      </footer>
+      <SiteFooter />
 
     </main>
   );

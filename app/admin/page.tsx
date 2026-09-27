@@ -24,7 +24,7 @@ import {
   CheckCircle2, AlertCircle, PlaneLanding, PlaneTakeoff,
   XCircle, ChevronDown, Download, Briefcase, Receipt, Star,
   Database, Smartphone, Wallet, Settings2, Activity, Tags,
-  Zap, PiggyBank, Link2, Copy, Mail, Send, RefreshCw
+  Zap, PiggyBank, Link2, Copy, Mail, Send, RefreshCw, Megaphone
 } from "lucide-react";
 
 function DashboardContent() {
@@ -1415,6 +1415,13 @@ function DashboardContent() {
                           <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-amber-400 mt-0.5" title="Barrier/exit fee is covered by AeroPark, regardless of operator">
                             <CheckCircle2 className="w-2.5 h-2.5" />fees covered
                           </span>
+                        )}
+                        {String(b.gclid || "").trim() && (
+                          <div>
+                            <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-sky-400 mt-0.5" title="Came from a Google Ads click (click ID saved). Counts toward Ads conversions.">
+                              <Megaphone className="w-2.5 h-2.5" />from Google Ads
+                            </span>
+                          </div>
                         )}
                       </td>
 

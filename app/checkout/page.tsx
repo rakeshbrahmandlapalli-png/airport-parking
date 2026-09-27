@@ -4,6 +4,7 @@ import { logger } from "@/app/lib/logger";
 import { Suspense, useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { FunnelHeader, FunnelFooter, funnelSlotClass } from "@/components/site/FunnelChrome";
 import { supabase } from "../lib/supabase";
 import { useLivePromo } from "../lib/useLivePromo";
 import {
@@ -16,18 +17,22 @@ import {
 } from "../lib/pricing";
 import BookingStepper from "@/components/BookingStepper";
 import ModifySearchModal from "@/components/ModifySearchModal";
+import { AeroAvatar } from "@/components/AeroFeature";
 import {
-  ShieldCheck, ArrowLeft, Loader2, CarFront, User,
-  PlaneTakeoff, Plane, Lock, CreditCard, Calendar,
-  Sparkles, Tag, AlertCircle, CheckCircle2, Coffee, Zap, Star,
-  Settings2, Footprints, ChevronDown, AlertTriangle, Clock,
+  ArrowLeft, Loader2, Lock, CreditCard, AlertCircle, CheckCircle2, Coffee, Zap, ChevronDown, AlertTriangle,
 } from "lucide-react";
 
 // ─── STYLES ───────────────────────────────────────────────────────────────────
 
-const lightInputCls = "w-full bg-white border border-slate-200 hover:border-blue-400 rounded-xl px-5 py-4 text-sm font-bold text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all touch-manipulation shadow-[0_0_0_1000px_#ffffff_inset] [-webkit-text-fill-color:#0f172a]";
-const yellowInputCls = "w-full bg-[#fde047] border-2 border-yellow-400 rounded-xl px-5 py-4 font-black text-slate-900 text-xl md:text-2xl text-center uppercase tracking-[0.2em] focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all placeholder:text-yellow-600/50 shadow-[0_0_0_1000px_#fde047_inset] [-webkit-text-fill-color:#0f172a] touch-manipulation";
-const darkInputCls = "w-full bg-[#131A2B] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm font-bold text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 outline-none transition-all shadow-[0_0_0_1000px_#131A2B_inset] [-webkit-text-fill-color:white]";
+const lightInputCls = "w-full h-12 bg-white border border-slate-300 rounded-lg px-3.5 text-base text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 outline-none touch-manipulation shadow-[0_0_0_1000px_#ffffff_inset] [-webkit-text-fill-color:#0f172a]";
+// UK number-plate yellow, so the registration field is recognisable at a glance.
+const plateInputCls = "w-full h-14 bg-[#fde047] border border-yellow-500 rounded-lg px-4 text-xl font-bold text-slate-900 text-center uppercase tracking-[0.15em] focus:border-blue-600 focus:ring-2 focus:ring-blue-600/30 outline-none placeholder:text-yellow-700/50 shadow-[0_0_0_1000px_#fde047_inset] [-webkit-text-fill-color:#0f172a] touch-manipulation";
+const darkInputCls = "w-full h-11 bg-white/5 border border-white/15 rounded-lg px-3 text-base text-white placeholder:text-slate-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/30 outline-none shadow-[0_0_0_1000px_#141b2d_inset] [-webkit-text-fill-color:white]";
+const labelCls = "block text-sm font-medium text-slate-700 mb-1.5";
+const errorInputCls = "border-red-500 focus:border-red-500 focus:ring-red-500/20";
+const errorTextCls = "mt-1.5 text-sm text-red-600";
+const chipCls = "rounded-md bg-white/10 px-2 py-1 text-slate-200";
+const payButtonCls = "w-full h-14 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 disabled:text-slate-100 text-white font-semibold text-base rounded-lg flex items-center justify-center gap-2 touch-manipulation";
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -40,33 +45,18 @@ const formatDate = (dateString: string | null) => {
   });
 };
 
-// ─── AERO AVATAR ──────────────────────────────────────────────────────────────
+// ─── CARD BRANDS ──────────────────────────────────────────────────────────────
 
-function AeroAvatar({
-  size = "md",
-  state = "idle",
-  onClick,
-}: {
-  size?: "sm" | "md" | "lg" | "xl";
-  state?: "idle" | "scanning" | "success";
-  onClick?: () => void;
-}) {
-  const sizeClasses = { sm: "w-8 h-8 rounded-lg", md: "w-14 h-14 rounded-2xl", lg: "w-20 h-20 rounded-3xl", xl: "w-32 h-32 rounded-2xl" };
-  const gap = { sm: "gap-1", md: "gap-1.5", lg: "gap-2", xl: "gap-3" };
-  const eyeSize = { sm: "w-1 h-2.5", md: "w-1.5 h-4", lg: "w-2 h-6", xl: "w-3.5 h-10" };
+function CardBrands({ dark = false }: { dark?: boolean }) {
   return (
-    <div
-      onClick={onClick}
-      className={`relative flex items-center justify-center shrink-0 ${sizeClasses[size]} ${onClick ? "cursor-pointer hover:scale-105 active:scale-95 transition-transform" : ""}`}
-    >
-      <div className={`absolute inset-0 bg-blue-500/40 blur-xl ${state === "scanning" ? "animate-pulse scale-125" : "animate-pulse scale-105"}`} />
-      <div className={`relative w-full h-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-[0_0_25px_rgba(37,99,235,0.5)] overflow-hidden ${sizeClasses[size]} transition-all duration-300`}>
-        <div className={`absolute left-0 w-full h-[2px] bg-white/90 shadow-[0_0_15px_white] z-20 transition-opacity duration-300 ${state === "scanning" ? "opacity-100 animate-scan" : "opacity-0"}`} />
-        <div className={`flex ${gap[size]} z-10 items-center justify-center`}>
-          <div className={`${eyeSize[size]} bg-white rounded-full shadow-[0_0_15px_rgba(255,255,255,1)]`} />
-          <div className={`${eyeSize[size]} bg-white rounded-full shadow-[0_0_15px_rgba(255,255,255,1)]`} />
-        </div>
-      </div>
+    <div className={`flex items-center gap-2 flex-wrap ${dark ? "" : "justify-center"}`}>
+      <span className={`text-sm ${dark ? "text-slate-400" : "text-slate-500"}`}>We accept</span>
+      <span className="inline-flex items-center justify-center bg-[#1a1f71] px-2.5 rounded text-white font-bold text-[10px] tracking-wider italic h-6 leading-none">VISA</span>
+      <span className="inline-flex items-center justify-center bg-white border border-slate-200 px-2 rounded h-6" aria-label="Mastercard">
+        <span className="block w-3.5 h-3.5 rounded-full bg-[#eb001b]" />
+        <span className="block w-3.5 h-3.5 rounded-full bg-[#f79e1b] -ml-1.5 opacity-90" />
+      </span>
+      <span className="inline-flex items-center justify-center bg-[#007bc1] px-2.5 rounded text-white font-bold text-[10px] tracking-wider h-6 leading-none">AMEX</span>
     </div>
   );
 }
@@ -83,34 +73,30 @@ function PriceMismatchBanner({
   onDecline: () => void;
 }) {
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[500] flex items-center justify-center p-6">
-      <div className="bg-[#0F1523] border border-amber-500/30 rounded-2xl p-8 max-w-md w-full">
-        <div className="flex items-center gap-4 mb-5">
-          <div className="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center shrink-0">
-            <AlertTriangle className="w-6 h-6 text-amber-400" />
-          </div>
-          <div>
-            <h3 className="text-white font-black text-lg">Price Updated</h3>
-            <p className="text-amber-400 text-xs font-bold uppercase tracking-widest">Live rate change detected</p>
-          </div>
+    <div role="dialog" aria-modal="true" aria-labelledby="price-changed-heading" className="fixed inset-0 bg-slate-900/60 z-[500] flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl p-6 max-w-md w-full">
+        <div className="flex items-center gap-3">
+          <AlertTriangle className="w-6 h-6 text-amber-500 shrink-0" aria-hidden="true" />
+          <h3 id="price-changed-heading" className="text-lg font-semibold text-slate-900">The price has changed</h3>
         </div>
-        <p className="text-slate-300 text-sm font-bold leading-relaxed mb-6">
-          The live price has changed since you loaded this page. The correct price is now{" "}
-          <span className="text-white font-black text-lg">£{serverPrice.toFixed(2)}</span>.
-          Would you like to continue with the updated price?
+        <p className="mt-3 text-slate-600 leading-relaxed">
+          The price for your dates changed after this page loaded. It is now{" "}
+          <span className="font-semibold text-slate-900">£{serverPrice.toFixed(2)}</span>. Do you want to continue at this price?
         </p>
-        <div className="flex gap-3">
+        <div className="mt-6 flex gap-3">
           <button
+            type="button"
             onClick={onDecline}
-            className="flex-1 py-3 rounded-xl bg-slate-800 text-slate-300 font-black text-xs uppercase tracking-widest hover:bg-slate-700 transition-colors border border-slate-700"
+            className="flex-1 h-11 rounded-lg border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50"
           >
-            Go Back
+            Go back
           </button>
           <button
+            type="button"
             onClick={onAccept}
-            className="flex-1 py-3 rounded-xl bg-blue-600 text-white font-black text-xs uppercase tracking-widest hover:bg-blue-500 transition-colors shadow-lg shadow-blue-600/30"
+            className="flex-1 h-11 rounded-lg bg-blue-600 hover:bg-blue-700 text-sm font-semibold text-white"
           >
-            Accept &amp; Pay £{serverPrice.toFixed(2)}
+            Pay £{serverPrice.toFixed(2)}
           </button>
         </div>
       </div>
@@ -262,7 +248,6 @@ function CheckoutContent() {
   const [discount,         setDiscount]         = useState({ active: false, code: "", percent: 0 });
   const [promoMessage,     setPromoMessage]     = useState("");
   const [isPromoError,     setIsPromoError]     = useState(false);
-  const [aeroClicks,       setAeroClicks]       = useState(0);
   const [isVerifyingPromo, setIsVerifyingPromo] = useState(false);
 
   // ── Validation errors (NEW) ──────────────────────────────────────────────────
@@ -272,16 +257,6 @@ function CheckoutContent() {
     if (airport.toLowerCase().includes("luton")) setTerminal("Main Terminal");
     else if (airport.toLowerCase().includes("heathrow")) setTerminal("Terminal 2");
   }, [airport]);
-
-  // FIX: guard against applying loyalty discount if already manually discounted
-  useEffect(() => {
-    if (aiData.isFrequentFlyer && !discount.active) {
-      setDiscount({ active: true, code: "AERO VIP", percent: 0.15 });
-      setPromoMessage(aiData.loyaltyMessage || "Loyalty recognised! 15% discount auto-applied.");
-      setIsPromoError(false);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aiData.isFrequentFlyer, aiData.loyaltyMessage]);
 
   // ── Promo handler ────────────────────────────────────────────────────────────
   const handleApplyPromo = async (e: React.FormEvent, override?: string) => {
@@ -335,19 +310,6 @@ function CheckoutContent() {
     if (!livePromo || discount.active) return;
     setPromoInput(livePromo.code);
     handleApplyPromo({ preventDefault() {} } as unknown as React.FormEvent, livePromo.code);
-  };
-
-  const handleAeroClick = () => {
-    if (discount.active && discount.percent >= 0.03) return;
-    const newClicks = aeroClicks + 1;
-    setAeroClicks(newClicks);
-    if (newClicks === 3) {
-      setDiscount({ active: true, code: "AERO3", percent: 0.03 });
-      setPromoMessage("Secret Aero Discount Unlocked! 3% off.");
-      setIsPromoError(false);
-      setPromoInput("AERO3");
-      setAeroClicks(0);
-    }
   };
 
   // ── Pricing ──────────────────────────────────────────────────────────────────
@@ -456,7 +418,14 @@ function CheckoutContent() {
         return m ? decodeURIComponent(m[1]) : "";
       } catch { return ""; }
     };
-    const gclid = readCookie("ap_gclid") || readCookie("ap_wbraid") || readCookie("ap_gbraid");
+    // wbraid/gbraid (iOS click ids) are tagged with their type so the upload can
+    // send them in the right field — Google rejects them in the gclid field.
+    const wbraid = readCookie("ap_wbraid");
+    const gbraid = readCookie("ap_gbraid");
+    const gclid =
+      readCookie("ap_gclid") ||
+      (wbraid ? `wbraid:${wbraid}` : "") ||
+      (gbraid ? `gbraid:${gbraid}` : "");
 
     try {
       const response = await fetch("/api/checkout", {
@@ -546,8 +515,10 @@ function CheckoutContent() {
 
   const hasDateIssue = dropDate && pickDate && bookingDays <= 0;
 
+  const feesNote = ((airport.includes("Heathrow") ? company?.lhr_fees_note : company?.ltn_fees_note) ?? "").trim();
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-12 relative z-10 animate-in fade-in duration-500">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 md:py-10 relative z-10">
 
       {/* Price mismatch modal */}
       {mismatchServerPrice !== null && (
@@ -558,46 +529,10 @@ function CheckoutContent() {
         />
       )}
 
-      {/* AERO SECURE BANNER */}
-      <div className="max-w-3xl mx-auto mb-8 bg-[#0F1523] border border-white/[0.06] rounded-2xl p-4 md:p-6 flex items-center gap-5">
-        <AeroAvatar state="idle" size="md" onClick={handleAeroClick} />
-        <div className="relative z-10">
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400 mb-1.5 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4" /> Aero Secure Checkout
-          </p>
-          <p className="text-sm md:text-base text-slate-300 font-medium">
-            {aiData.isFrequentFlyer
-              ? "Welcome back! I've automatically applied your loyalty discount."
-              : "Aero has securely locked your rate. Complete your details below."}
-          </p>
-        </div>
-      </div>
-
-      {/* Date issue warning */}
-      {hasDateIssue && (
-        <div className="max-w-3xl mx-auto mb-6 bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex items-center gap-3">
-          <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
-          <p className="text-sm font-bold text-red-400">
-            Pick-up date must be after drop-off date. Please{" "}
-            <button onClick={() => setIsEditModalOpen(true)} className="underline hover:text-red-300 transition-colors">
-              modify your search
-            </button>
-            .
-          </p>
-        </div>
-      )}
-
-      {/* Payment-level error */}
-      {fieldErrors._payment && (
-        <div className="max-w-3xl mx-auto mb-6 bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
-          <p className="text-sm font-bold text-red-400">{fieldErrors._payment}</p>
-        </div>
-      )}
-
-      <div className="mb-10">
+      <div className="mb-6 md:mb-8">
         <BookingStepper
           currentStep={searchParams.get("step") === "payment" ? 3 : 2}
+          theme="light"
           clickableSteps={true}
           onStepClick={(step) => {
             if (step === 1) router.push(`/results?${searchParams.toString()}`);
@@ -605,9 +540,33 @@ function CheckoutContent() {
         />
       </div>
 
-      <div className="flex flex-col-reverse lg:flex-row gap-8 md:gap-10 items-start">
-        <div className="flex-1 w-full">
-          <form id="checkout-form" onSubmit={handlePayment} noValidate className="space-y-6 md:space-y-8">
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">Complete your booking</h1>
+        <p className="mt-2 text-slate-600">Fill in your details, then pay by card on the next page, which is run by Stripe.</p>
+      </div>
+
+      {/* Date issue warning */}
+      {hasDateIssue && (
+        <div role="alert" className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 flex items-start gap-3 text-sm text-red-700">
+          <AlertTriangle className="w-5 h-5 shrink-0" aria-hidden="true" />
+          <p>
+            Pick-up must be after drop-off. Please{" "}
+            <button type="button" onClick={() => setIsEditModalOpen(true)} className="font-semibold underline underline-offset-4">change your dates</button>.
+          </p>
+        </div>
+      )}
+
+      {/* Payment-level error */}
+      {fieldErrors._payment && (
+        <div role="alert" className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 flex items-start gap-3 text-sm text-red-700">
+          <AlertCircle className="w-5 h-5 shrink-0" aria-hidden="true" />
+          <p>{fieldErrors._payment}</p>
+        </div>
+      )}
+
+      <div className="flex flex-col-reverse lg:flex-row gap-6 md:gap-8 items-start">
+        <div className="flex-1 w-full min-w-0">
+          <form id="checkout-form" onSubmit={handlePayment} noValidate className="space-y-6">
 
             {/*
               ── Live price confirmation status ────────────────────────────────
@@ -620,206 +579,161 @@ function CheckoutContent() {
               role="status"
               aria-live="polite"
               className={[
-                "flex items-center gap-3 rounded-xl px-4 py-3.5 border",
+                "flex items-center gap-3 rounded-lg px-4 py-3 border",
                 "transition-[opacity,background-color,border-color] duration-300",
                 priceResolving
-                  ? "bg-blue-500/10 border-blue-500/20 opacity-100"
+                  ? "bg-blue-50 border-blue-200 opacity-100"
                   : "bg-transparent border-transparent opacity-0 pointer-events-none select-none",
               ].join(" ")}
             >
-              <Loader2
-                className={`w-4 h-4 text-blue-400 shrink-0 ${priceResolving ? "animate-spin" : ""}`}
-              />
-              <p className="text-blue-400 text-xs font-bold leading-snug">
-                Confirming your live rate — the Pay button will unlock in a moment.
-              </p>
+              <Loader2 className={`w-4 h-4 text-blue-700 shrink-0 ${priceResolving ? "animate-spin" : ""}`} aria-hidden="true" />
+              <p className="text-sm text-blue-800">Confirming the price for your dates. The pay button will be ready in a moment.</p>
             </div>
 
-            {/* Unified details card — Contact + Vehicle & Flight (one container) */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-
-            {/* 1. Contact Information */}
-            <div className="p-6 md:p-8">
-              <div className="flex items-center gap-4 mb-8 pb-6 border-b border-slate-100">
-                <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center shrink-0">
-                  <User className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">1. Contact Information</h2>
-                  <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Lead Passenger Details</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
-                <div className="md:col-span-2">
-                  <label htmlFor="fullName" className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Full Name</label>
-                  <input
-                    id="fullName" required type="text"
-                    value={fullName} onChange={e => setFullName(e.target.value)}
-                    className={`${lightInputCls} ${fieldErrors.fullName ? "border-red-400 focus:border-red-400" : ""}`}
-                    placeholder="Enter your full name"
-                  />
-                  {fieldErrors.fullName && <p className="text-red-500 text-xs font-bold mt-1.5 ml-1">{fieldErrors.fullName}</p>}
-                </div>
-                <div>
-                  <label htmlFor="email" className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Email Address</label>
-                  <input
-                    id="email" required type="email"
-                    value={email} onChange={e => setEmail(e.target.value)}
-                    className={`${lightInputCls} ${fieldErrors.email ? "border-red-400 focus:border-red-400" : ""}`}
-                    placeholder="email@example.com"
-                  />
-                  {fieldErrors.email && <p className="text-red-500 text-xs font-bold mt-1.5 ml-1">{fieldErrors.email}</p>}
-                </div>
-                <div>
-                  <label htmlFor="phone" className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Mobile Number</label>
-                  <input
-                    id="phone" required type="tel"
-                    value={phone} onChange={e => setPhone(e.target.value)}
-                    className={`${lightInputCls} ${fieldErrors.phone ? "border-red-400 focus:border-red-400" : ""}`}
-                    placeholder="Enter your mobile number"
-                  />
-                  {fieldErrors.phone && <p className="text-red-500 text-xs font-bold mt-1.5 ml-1">{fieldErrors.phone}</p>}
-                </div>
-              </div>
-            </div>
-
-            {/* divider between the two grouped sections */}
-            <div className="border-t border-slate-100" />
-
-            {/* 2. Vehicle & Flight Details */}
-            <div className="p-6 md:p-8">
-              <div className="flex items-center gap-4 mb-8 pb-6 border-b border-slate-100">
-                <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center shrink-0">
-                  <CarFront className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">2. Vehicle & Flight Details</h2>
-                  <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">So we know who to look for</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6 mb-6">
-                <div>
-                  <label htmlFor="terminal" className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Departure Terminal</label>
-                  <div className="relative">
-                    <select
-                      id="terminal"
-                      value={terminal} onChange={e => setTerminal(e.target.value)}
-                      className={`${lightInputCls} appearance-none cursor-pointer pr-10`}
-                    >
-                      {airport.toLowerCase().includes("luton") ? (
-                        <option value="Main Terminal">Main Terminal</option>
-                      ) : company?.terminal_data && Object.keys(company.terminal_data).length > 0 ? (
-                        Object.keys(company.terminal_data).map((t: string) => (
-                          <option key={t} value={t}>{t}</option>
-                        ))
-                      ) : (
-                        <>
-                          <option value="Terminal 2">Terminal 2</option>
-                          <option value="Terminal 3">Terminal 3</option>
-                          <option value="Terminal 4">Terminal 4</option>
-                          <option value="Terminal 5">Terminal 5</option>
-                        </>
-                      )}
-                    </select>
-                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
-                  </div>
-                </div>
-                <div>
-                  <label htmlFor="flightNumber" className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Return Flight No. (Optional)</label>
-                  <input
-                    id="flightNumber" type="text"
-                    value={flightNumber} onChange={e => setFlightNumber(e.target.value.toUpperCase())}
-                    className={`${lightInputCls} uppercase placeholder:normal-case`}
-                    placeholder="e.g. EZY123"
-                  />
-                  <p className="text-[10px] text-slate-400 font-bold mt-1.5 ml-1">
-                    Helps us track your inbound flight for timely collection.
-                  </p>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
-                <div className="md:col-span-3">
-                  <label htmlFor="registration" className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Registration Plate</label>
-                  <input
-                    id="registration" required type="text"
-                    value={registration} onChange={e => setRegistration(e.target.value.toUpperCase())}
-                    className={`${yellowInputCls} ${fieldErrors.registration ? "border-red-400" : ""}`}
-                    placeholder="ENTER PLATE"
-                  />
-                  {fieldErrors.registration && <p className="text-red-500 text-xs font-bold mt-1.5 ml-1">{fieldErrors.registration}</p>}
-                </div>
-                <div className="md:col-span-2">
-                  <label htmlFor="carMake" className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Make &amp; Model</label>
-                  <input
-                    id="carMake" required type="text"
-                    value={carMake} onChange={e => setCarMake(e.target.value)}
-                    className={`${lightInputCls} ${fieldErrors.carMake ? "border-red-400 focus:border-red-400" : ""}`}
-                    placeholder="Enter make and model"
-                  />
-                  {fieldErrors.carMake && <p className="text-red-500 text-xs font-bold mt-1.5 ml-1">{fieldErrors.carMake}</p>}
-                </div>
-                <div>
-                  <label htmlFor="carColor" className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Color</label>
-                  <input
-                    id="carColor" type="text"
-                    value={carColor} onChange={e => setCarColor(e.target.value)}
-                    className={lightInputCls}
-                    placeholder="Enter color"
-                  />
-                </div>
-              </div>
-            </div>
-            </div>
-
-            {/* AERO ADD-ONS */}
-            <div className="bg-white p-6 md:p-10 rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/50">
-              <div className="flex items-center justify-between mb-8 pb-6 border-b border-slate-100">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center shrink-0">
-                    <Sparkles className="w-6 h-6 text-blue-600" />
+            <section aria-labelledby="details-heading" className="bg-white rounded-xl border border-slate-200">
+              <div className="p-5 md:p-7">
+                <h2 id="details-heading" className="text-lg md:text-xl font-semibold text-slate-900">Your details</h2>
+                <p className="mt-1 text-sm text-slate-500">We&apos;ll send your confirmation to this email address.</p>
+                <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+                  <div className="md:col-span-2">
+                    <label htmlFor="fullName" className={labelCls}>Full name</label>
+                    <input
+                      id="fullName" required type="text" autoComplete="name"
+                      value={fullName} onChange={e => setFullName(e.target.value)}
+                      className={`${lightInputCls} ${fieldErrors.fullName ? errorInputCls : ""}`}
+                    />
+                    {fieldErrors.fullName && <p className={errorTextCls}>{fieldErrors.fullName}</p>}
                   </div>
                   <div>
-                    <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Enhance Your Trip</h2>
-                    <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Aero Add-ons · Optional</p>
+                    <label htmlFor="email" className={labelCls}>Email</label>
+                    <input
+                      id="email" required type="email" autoComplete="email"
+                      value={email} onChange={e => setEmail(e.target.value)}
+                      className={`${lightInputCls} ${fieldErrors.email ? errorInputCls : ""}`}
+                    />
+                    {fieldErrors.email && <p className={errorTextCls}>{fieldErrors.email}</p>}
+                  </div>
+                  <div>
+                    <label htmlFor="phone" className={labelCls}>Mobile number</label>
+                    <input
+                      id="phone" required type="tel" autoComplete="tel"
+                      value={phone} onChange={e => setPhone(e.target.value)}
+                      className={`${lightInputCls} ${fieldErrors.phone ? errorInputCls : ""}`}
+                    />
+                    {fieldErrors.phone && <p className={errorTextCls}>{fieldErrors.phone}</p>}
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className="border-t border-slate-200 p-5 md:p-7">
+                <h2 className="text-lg md:text-xl font-semibold text-slate-900">Car and flight</h2>
+                <p className="mt-1 text-sm text-slate-500">So the driver knows which car to look for and when you&apos;re back.</p>
+                <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+                  <div>
+                    <label htmlFor="terminal" className={labelCls}>Departure terminal</label>
+                    <div className="relative">
+                      <select
+                        id="terminal"
+                        value={terminal} onChange={e => setTerminal(e.target.value)}
+                        className={`${lightInputCls} appearance-none cursor-pointer pr-10`}
+                      >
+                        {airport.toLowerCase().includes("luton") ? (
+                          <option value="Main Terminal">Main Terminal</option>
+                        ) : company?.terminal_data && Object.keys(company.terminal_data).length > 0 ? (
+                          Object.keys(company.terminal_data).map((t: string) => (
+                            <option key={t} value={t}>{t}</option>
+                          ))
+                        ) : (
+                          <>
+                            <option value="Terminal 2">Terminal 2</option>
+                            <option value="Terminal 3">Terminal 3</option>
+                            <option value="Terminal 4">Terminal 4</option>
+                            <option value="Terminal 5">Terminal 5</option>
+                          </>
+                        )}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" aria-hidden="true" />
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="flightNumber" className={labelCls}>
+                      Return flight number <span className="font-normal text-slate-400">(optional)</span>
+                    </label>
+                    <input
+                      id="flightNumber" type="text"
+                      value={flightNumber} onChange={e => setFlightNumber(e.target.value.toUpperCase())}
+                      className={`${lightInputCls} uppercase placeholder:normal-case`}
+                      placeholder="e.g. EZY123"
+                    />
+                    <p className="mt-1.5 text-sm text-slate-500">So your operator knows when you&apos;re due back.</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label htmlFor="registration" className={labelCls}>Registration</label>
+                    <input
+                      id="registration" required type="text"
+                      value={registration} onChange={e => setRegistration(e.target.value.toUpperCase())}
+                      className={`${plateInputCls} ${fieldErrors.registration ? "border-red-500" : ""}`}
+                      placeholder="AB12 CDE"
+                    />
+                    {fieldErrors.registration && <p className={errorTextCls}>{fieldErrors.registration}</p>}
+                  </div>
+                  <div>
+                    <label htmlFor="carMake" className={labelCls}>Make and model</label>
+                    <input
+                      id="carMake" required type="text"
+                      value={carMake} onChange={e => setCarMake(e.target.value)}
+                      className={`${lightInputCls} ${fieldErrors.carMake ? errorInputCls : ""}`}
+                      placeholder="e.g. Ford Focus"
+                    />
+                    {fieldErrors.carMake && <p className={errorTextCls}>{fieldErrors.carMake}</p>}
+                  </div>
+                  <div>
+                    <label htmlFor="carColor" className={labelCls}>
+                      Colour <span className="font-normal text-slate-400">(optional)</span>
+                    </label>
+                    <input
+                      id="carColor" type="text"
+                      value={carColor} onChange={e => setCarColor(e.target.value)}
+                      className={lightInputCls}
+                    />
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section aria-labelledby="extras-heading" className="bg-white rounded-xl border border-slate-200 p-5 md:p-7">
+              <h2 id="extras-heading" className="text-lg md:text-xl font-semibold text-slate-900">Extras <span className="text-sm font-normal text-slate-500">(optional)</span></h2>
+
+              <div className="mt-5 space-y-3">
                 {/* Fast Track Security — live */}
-                <div className={`p-5 rounded-xl border transition-colors ${fastTrackCount > 0 ? "border-amber-400 bg-amber-50/40" : "bg-white border-slate-200 hover:border-slate-300"}`}>
+                <div className={`rounded-lg border p-4 ${fastTrackCount > 0 ? "border-blue-600 bg-blue-50/50" : "border-slate-200"}`}>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${fastTrackCount > 0 ? "bg-amber-500" : "bg-amber-50"}`}>
-                        <Zap className={`w-6 h-6 ${fastTrackCount > 0 ? "text-white" : "text-amber-500"}`} />
-                      </div>
+                    <div className="flex items-center gap-3">
+                      <Zap className="w-5 h-5 text-slate-500 shrink-0" aria-hidden="true" />
                       <div>
-                        <p className="font-black text-slate-900 text-base md:text-lg tracking-tight">Fast Track Security</p>
-                        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mt-0.5">Skip the airport queues</p>
+                        <p className="font-semibold text-slate-900">Fast Track security</p>
+                        <p className="text-sm text-slate-500">Skip the main security queue</p>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto border-t border-slate-100 sm:border-0 pt-4 sm:pt-0">
-                      <div className="text-left sm:text-right">
-                        <span className="block font-black text-xl text-slate-900 tabular-nums">+£{fastTrackUnitCost.toFixed(2)}</span>
-                        <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-widest">Per Person</span>
-                      </div>
-                      <div className="flex items-center bg-slate-100 rounded-xl p-1 shrink-0">
+                    <div className="flex items-center justify-between sm:justify-end gap-5">
+                      <p className="text-sm text-slate-600"><span className="font-semibold text-slate-900 tabular-nums">£{fastTrackUnitCost.toFixed(2)}</span> per person</p>
+                      <div className="flex items-center rounded-lg border border-slate-300 shrink-0">
                         <button
                           type="button"
                           onClick={() => setFastTrackCount(n => Math.max(0, n - 1))}
                           disabled={fastTrackCount === 0}
-                          aria-label="Remove fast track"
-                          className={`w-10 h-10 rounded-lg flex items-center justify-center font-black text-lg transition-colors ${fastTrackCount > 0 ? "bg-white text-slate-700 shadow-sm hover:text-amber-600" : "text-slate-400 cursor-not-allowed"}`}
+                          aria-label="Remove one Fast Track pass"
+                          className="w-10 h-10 flex items-center justify-center text-lg text-slate-700 hover:bg-slate-100 disabled:text-slate-300 disabled:hover:bg-transparent rounded-l-lg"
                         >
                           &minus;
                         </button>
-                        <span className="font-black text-lg w-10 text-center text-slate-900 tabular-nums" aria-live="polite">{fastTrackCount}</span>
+                        <span className="w-9 text-center font-semibold text-slate-900 tabular-nums" aria-live="polite">{fastTrackCount}</span>
                         <button
                           type="button"
                           onClick={() => setFastTrackCount(n => Math.min(9, n + 1))}
                           disabled={fastTrackCount >= 9}
-                          aria-label="Add fast track"
-                          className="w-10 h-10 rounded-lg bg-white text-slate-700 font-black text-lg shadow-sm hover:text-amber-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          aria-label="Add one Fast Track pass"
+                          className="w-10 h-10 flex items-center justify-center text-lg text-slate-700 hover:bg-slate-100 disabled:text-slate-300 rounded-r-lg"
                         >
                           +
                         </button>
@@ -829,443 +743,255 @@ function CheckoutContent() {
                 </div>
 
                 {/* VIP Airport Lounge — coming soon */}
-                <div className="p-5 rounded-xl border border-slate-200 bg-slate-50/60">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-slate-200">
-                        <Coffee className="w-6 h-6 text-slate-400" />
-                      </div>
-                      <div>
-                        <p className="font-black text-slate-500 text-base md:text-lg tracking-tight">VIP Airport Lounge</p>
-                        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">Relax before your flight</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-end w-full sm:w-auto border-t border-slate-100 sm:border-0 pt-4 sm:pt-0">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-widest">
-                        <Clock className="w-3.5 h-3.5" /> Coming Soon
-                      </span>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <Coffee className="w-5 h-5 text-slate-400 shrink-0" aria-hidden="true" />
+                    <div>
+                      <p className="font-semibold text-slate-500">Airport lounge</p>
+                      <p className="text-sm text-slate-400">Relax before your flight</p>
                     </div>
                   </div>
+                  <span className="text-sm text-slate-500 shrink-0">Coming soon</span>
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* 3. SECURE PAYMENT */}
-            <div className="bg-white p-6 md:p-10 rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/50 relative overflow-hidden">
-              <div className="flex items-center justify-between mb-8 pb-6 border-b border-slate-100">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center shrink-0">
-                    <ShieldCheck className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">3. Secure Payment</h2>
-                    <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Bank-Level SSL via Stripe</p>
-                  </div>
-                </div>
-                <div className="hidden sm:flex items-center gap-1.5 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-emerald-100 shadow-sm">
-                  <Lock className="w-3.5 h-3.5" /> Secure
-                </div>
-              </div>
-              <div className="bg-blue-50 p-6 md:p-8 rounded-2xl border border-blue-100 flex items-center gap-5">
-                <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-md shrink-0">
-                  <CreditCard className="w-6 h-6 text-blue-600" />
-                </div>
-                <p className="text-sm md:text-base font-bold text-blue-900 leading-relaxed">
-                  You will be redirected to <span className="text-blue-600 font-black">Stripe</span> to complete your payment securely. We never store your card details on our servers.
-                </p>
-              </div>
-            </div>
+            <section aria-labelledby="payment-heading" className="bg-white rounded-xl border border-slate-200 p-5 md:p-7">
+              <h2 id="payment-heading" className="text-lg md:text-xl font-semibold text-slate-900">Payment</h2>
+              <p className="mt-2 flex items-start gap-3 text-slate-600 leading-relaxed">
+                <CreditCard className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" aria-hidden="true" />
+                <span>When you press Pay you&apos;ll go to Stripe&apos;s secure payment page. We never see or store your card details.</span>
+              </p>
+            </section>
 
             {/* MOBILE PAY BUTTON */}
-            <div className="block lg:hidden mt-6 pb-8 space-y-4">
-              {/* ── Mobile trust strip ──────────────────────────────────────
-                  Placed immediately above the pay button — the point of highest
-                  hesitation — to reduce abandonment from uncertainty.          */}
-              <div className="flex items-center justify-center gap-2 text-emerald-600">
-                <CheckCircle2 className="w-4 h-4 shrink-0" />
-                <p className="text-xs font-black leading-snug">
-                  Free cancellation up to 24h before drop-off
-                </p>
-              </div>
-              <div className="flex items-center justify-center gap-2 flex-wrap">
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                  We accept:
-                </span>
-                {/* Visa */}
-                <span className="inline-flex items-center justify-center bg-[#1a1f71] px-2.5 py-1 rounded text-white font-black text-[10px] tracking-wider italic h-6 leading-none">
-                  VISA
-                </span>
-                {/* Mastercard — overlapping red/amber circles on white card */}
-                <span className="inline-flex items-center justify-center bg-white border border-slate-200 px-2 rounded h-6">
-                  <span className="block w-3.5 h-3.5 rounded-full bg-[#eb001b]" />
-                  <span className="block w-3.5 h-3.5 rounded-full bg-[#f79e1b] -ml-1.5 opacity-90" />
-                </span>
-                {/* Amex */}
-                <span className="inline-flex items-center justify-center bg-[#007bc1] px-2.5 py-1 rounded text-white font-black text-[10px] tracking-wider h-6 leading-none">
-                  AMEX
-                </span>
-              </div>
-              {/* ── Pay button ─────────────────────────────────────────────── */}
+            <div className="block lg:hidden space-y-3 pb-4">
+              {/* Trust strip right above the pay button — the point of highest hesitation. */}
+              <p className="flex items-center justify-center gap-2 text-sm text-emerald-700">
+                <CheckCircle2 className="w-4 h-4 shrink-0" aria-hidden="true" />
+                Free cancellation up to 24 hours before drop-off
+              </p>
+              <CardBrands />
               <button
                 type="submit" form="checkout-form" disabled={isProcessing || !!hasDateIssue || priceResolving}
-                className="w-full h-16 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white font-black text-base rounded-2xl flex items-center justify-center gap-3 active:scale-[0.99] transition-colors uppercase tracking-widest touch-manipulation"
+                className={payButtonCls}
               >
                 {isProcessing
-                  ? <><Loader2 className="w-5 h-5 animate-spin" /> Preparing...</>
+                  ? <><Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" /> Preparing payment…</>
                   : priceResolving
-                  ? <><Loader2 className="w-5 h-5 animate-spin" /> Confirming price…</>
-                  : <><Lock className="w-5 h-5" /> Pay £{finalTotal.toFixed(2)}</>}
+                  ? <><Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" /> Confirming price…</>
+                  : <><Lock className="w-5 h-5" aria-hidden="true" /> Pay £{finalTotal.toFixed(2)}</>}
               </button>
-              <p className="text-center text-[10px] text-slate-400 font-bold px-2 leading-relaxed">
-                By clicking &ldquo;Pay&rdquo;, you accept our{" "}
-                <Link href="/terms" target="_blank" className="text-blue-400 underline hover:text-blue-500">Terms &amp; Conditions</Link>.
+              <p className="text-center text-sm text-slate-500">
+                By paying you accept our{" "}
+                <Link href="/terms" target="_blank" className="text-slate-700 underline underline-offset-4">terms and conditions</Link>.
               </p>
             </div>
           </form>
         </div>
 
         {/* SIDEBAR */}
-        <aside className="w-full lg:w-[400px] xl:w-[420px] lg:sticky lg:top-28">
-          <div className="bg-[#0B1120] rounded-2xl border border-slate-800 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.6)] overflow-hidden text-white relative">
-            <div className="absolute top-0 left-0 w-full h-1 bg-blue-500" />
-            <div className="p-8 md:p-10">
-              {/*
-                ── Mobile-only compact price header ───────────────────────────
-                flex-col-reverse renders the sidebar ABOVE the form on mobile,
-                but the £XX.XX total is item 8 within the sidebar content.
-                This block surfaces the price as the FIRST thing a mobile user
-                sees — hidden on lg+ where the full breakdown is always visible.
-              */}
-              <div className="lg:hidden mb-6 pb-6 border-b border-slate-800">
-                <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-3">
-                  Your Booking Summary
-                </p>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-0.5">
-                      {airport}
-                    </p>
-                    <p className="font-black text-white text-base leading-tight truncate">
-                      {company ? company.name : (urlName || type)}
-                    </p>
-                    <p className="text-slate-500 text-xs font-bold mt-1">
-                      {bookingDays}&nbsp;{bookingDays === 1 ? "day" : "days"}&nbsp;&middot;&nbsp;
-                      {formatDate(dropDate)}&nbsp;&rarr;&nbsp;{formatDate(pickDate)}
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">
-                      Total Due
-                    </p>
-                    {priceResolving ? (
-                      <span className="flex items-center justify-end gap-1.5 text-blue-400 font-black text-lg">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Checking…</span>
-                      </span>
-                    ) : (
-                      <p className="text-3xl font-black text-blue-400 tracking-tighter leading-none">
-                        £{finalTotal.toFixed(2)}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center mb-8">
-                <h3 className="text-2xl font-black tracking-tight">Order Summary</h3>
+        <aside className="w-full lg:w-[380px] lg:sticky lg:top-24">
+          <div className="bg-[#0B1120] rounded-xl text-white">
+            <div className="p-5 md:p-7">
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="text-lg font-semibold">Your booking</h2>
                 <button
+                  type="button"
                   onClick={() => setIsEditModalOpen(true)}
-                  className="text-[9px] font-black uppercase text-blue-400 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500 hover:text-white px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm"
+                  className="text-sm font-medium text-slate-300 hover:text-white underline underline-offset-4"
                 >
-                  <Settings2 className="w-3.5 h-3.5" /> Modify
+                  Change
                 </button>
               </div>
 
-              {aiData.aeroTip && (
-                <div className="mb-8 bg-blue-500/10 border border-blue-500/20 rounded-2xl p-5 relative overflow-hidden group">
-                  <div className="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform">
-                    <Sparkles className="w-16 h-16 text-blue-400" />
-                  </div>
-                  <div className="flex gap-4 items-start relative z-10">
-                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-900/40">
-                      <Sparkles className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-1">Aero Intelligence</p>
-                      <p className="text-xs font-bold text-blue-100 leading-relaxed italic">&ldquo;{aiData.aeroTip}&rdquo;</p>
-                    </div>
-                  </div>
+              <div className="mt-5 pb-5 border-b border-white/10">
+                <p className="text-sm text-slate-400">{airport}</p>
+                <p className="mt-0.5 text-lg font-semibold leading-snug">{company ? company.name : (urlName || type)}</p>
+              </div>
+
+              <dl className="py-5 space-y-3 border-b border-white/10 text-sm">
+                <div className="flex justify-between gap-4">
+                  <dt className="text-slate-400">Drop-off</dt>
+                  <dd className="text-right">{formatDate(dropDate)}, {dropTime || "time to confirm"}</dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-slate-400">Pick-up</dt>
+                  <dd className="text-right">{formatDate(pickDate)}, {pickTime || "time to confirm"}</dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-slate-400">Length of stay</dt>
+                  <dd className="text-right">{bookingDays} {bookingDays === 1 ? "day" : "days"}</dd>
+                </div>
+              </dl>
+
+              {/* What Aero picked up from the shopper's own search. These describe
+                  the trip, not the operator. */}
+              {(aiData.aeroTip || aiData.hasPet || (aiData.ulezRisk && airport.includes("Heathrow")) || aiData.hasOversizedLuggage || aiData.isCorporate || aiData.isLastMinute) && (
+                <div className="py-5 border-b border-white/10">
+                  <p className="flex items-center gap-2 text-sm font-semibold">
+                    <AeroAvatar className="w-5 h-5" /> From your Aero search
+                  </p>
+                  {aiData.aeroTip && <p className="mt-2 text-sm text-slate-300 leading-relaxed">{aiData.aeroTip}</p>}
+                  <ul className="mt-3 flex flex-wrap gap-2 text-xs">
+                    {aiData.hasPet && <li className={chipCls}>Travelling with a pet</li>}
+                    {aiData.ulezRisk && airport.includes("Heathrow") && <li className={chipCls}>ULEZ charge may apply</li>}
+                    {aiData.hasOversizedLuggage && <li className={chipCls}>Large luggage</li>}
+                    {aiData.isCorporate && <li className={chipCls}>Business trip</li>}
+                    {aiData.isLastMinute && <li className={chipCls}>Last-minute booking</li>}
+                  </ul>
                 </div>
               )}
-
-              <div className="flex flex-wrap gap-2.5 mb-8 border-b border-slate-800 pb-8">
-                <div className="bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-[0_0_15px_rgba(37,99,235,0.15)]">
-                  <Sparkles className="w-3.5 h-3.5 fill-current" /> Aero Verified
-                </div>
-                {aiData.hasPet && (
-                  <div className="bg-purple-500/10 text-purple-400 border border-purple-500/20 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5" /> Pet Friendly
-                  </div>
-                )}
-                {aiData.ulezRisk && airport.includes("Heathrow") && (
-                  <div className="bg-red-500/10 text-red-400 border border-red-500/20 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                    <AlertCircle className="w-3.5 h-3.5" /> ULEZ Alert
-                  </div>
-                )}
-                {aiData.hasOversizedLuggage && (
-                  <div className="bg-orange-500/10 text-orange-400 border border-orange-500/20 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                    <Footprints className="w-3.5 h-3.5" /> Large Luggage
-                  </div>
-                )}
-                {aiData.isCorporate && (
-                  <div className="bg-slate-800 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Business / VAT
-                  </div>
-                )}
-                {aiData.isLastMinute && (
-                  <div className="bg-rose-500/10 text-rose-400 border border-rose-500/20 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 animate-pulse">
-                    <Zap className="w-3.5 h-3.5" /> High Demand
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center gap-5 mb-8 pb-8 border-b border-slate-800">
-                <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-500/20">
-                  <PlaneTakeoff className="w-7 h-7 text-white" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">{airport}</p>
-                  <p className="font-black text-xl leading-tight tracking-tight">{company ? company.name : (urlName || type)}</p>
-                </div>
-              </div>
-
-              <div className="space-y-5 mb-8 pb-8 border-b border-slate-800">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3 text-slate-400">
-                    <Calendar className="w-4 h-4 text-blue-500" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Drop-off</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="block text-sm font-bold text-white">{formatDate(dropDate)}</span>
-                    <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{dropTime || "Time TBD"}</span>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3 text-slate-400">
-                    <Calendar className="w-4 h-4 text-blue-500" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Pick-up</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="block text-sm font-bold text-white">{formatDate(pickDate)}</span>
-                    <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{pickTime || "Time TBD"}</span>
-                  </div>
-                </div>
-              </div>
 
               {/* Promo Code */}
-              {!aiData.isFrequentFlyer && (
-                <div className="bg-[#131A2B] border border-slate-800 rounded-2xl p-5 mb-8">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
-                    <Tag className="w-4 h-4" /> Have a Promo Code?
-                  </label>
-                  {/* A code is being advertised and they have not used it. Say
-                      so plainly, and let them apply it in one tap - they saw
-                      this price struck through on the results page. */}
-                  {livePromo && !discount.active && (
-                    <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
-                      <p className="text-xs font-bold text-amber-300 leading-relaxed">
-                        You have not used your {Math.round(livePromo.percent * 100)}% code yet.
-                        Apply <span className="font-black tracking-wider">{livePromo.code}</span> before
-                        you pay, or you will be charged the full price.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={applyLivePromo}
-                        disabled={isVerifyingPromo}
-                        className="mt-3 w-full rounded-lg bg-amber-500 px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-slate-900 transition-colors hover:bg-amber-400 disabled:opacity-60 active:scale-[0.98]"
-                      >
-                        {isVerifyingPromo ? "Applying…" : `Apply ${livePromo.code} — save ${Math.round(livePromo.percent * 100)}%`}
-                      </button>
-                    </div>
-                  )}
+              <div className="py-5 border-b border-white/10">
+                <label htmlFor="promo-code" className="text-sm font-medium text-slate-300">Promo code</label>
+                {/* A code is being advertised and they have not used it. Say
+                    so plainly, and let them apply it in one tap - they saw
+                    this price struck through on the results page. */}
+                {livePromo && !discount.active && (
+                  <div className="mt-2 mb-3 rounded-lg border border-amber-400/40 bg-amber-400/10 p-3">
+                    <p className="text-sm text-amber-100 leading-relaxed">
+                      You haven&apos;t used your {Math.round(livePromo.percent * 100)}% code yet. Apply{" "}
+                      <span className="font-semibold">{livePromo.code}</span> before you pay, or you&apos;ll be charged the full price.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={applyLivePromo}
+                      disabled={isVerifyingPromo}
+                      className="mt-2.5 w-full h-10 rounded-lg bg-amber-400 hover:bg-amber-300 text-sm font-semibold text-slate-900 disabled:opacity-60"
+                    >
+                      {isVerifyingPromo ? "Applying…" : `Apply ${livePromo.code} and save ${Math.round(livePromo.percent * 100)}%`}
+                    </button>
+                  </div>
+                )}
 
-                  <form onSubmit={handleApplyPromo} className="flex gap-3">
-                    <input
-                      type="text"
-                      value={promoInput}
-                      onChange={e => setPromoInput(e.target.value)}
-                      placeholder="Enter code"
-                      disabled={discount.active || isVerifyingPromo}
-                      className={`${darkInputCls} flex-1 uppercase`}
-                    />
-                    {!discount.active ? (
-                      <button
-                        type="submit" disabled={isVerifyingPromo}
-                        className="bg-slate-800 hover:bg-blue-600 disabled:bg-slate-700 text-white px-5 shrink-0 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors active:scale-95 shadow-sm flex items-center justify-center min-w-[80px]"
-                      >
-                        {isVerifyingPromo ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply"}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => { setDiscount({ active: false, code: "", percent: 0 }); setPromoInput(""); setPromoMessage(""); }}
-                        className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-5 shrink-0 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors active:scale-95 shadow-sm min-w-[80px]"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </form>
-                  {promoMessage && (
-                    <div className={`mt-4 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 ${isPromoError ? "text-red-400" : "text-emerald-400"}`}>
-                      {isPromoError
-                        ? <AlertCircle className="w-4 h-4 shrink-0" />
-                        : <CheckCircle2 className="w-4 h-4 shrink-0" />}
-                      <span className="leading-tight">{promoMessage}</span>
-                    </div>
+                <form onSubmit={handleApplyPromo} className="mt-2 flex gap-2">
+                  <input
+                    id="promo-code"
+                    type="text"
+                    value={promoInput}
+                    onChange={e => setPromoInput(e.target.value)}
+                    disabled={discount.active || isVerifyingPromo}
+                    className={`${darkInputCls} flex-1 min-w-0 uppercase`}
+                  />
+                  {!discount.active ? (
+                    <button
+                      type="submit" disabled={isVerifyingPromo}
+                      className="h-11 px-4 shrink-0 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-semibold flex items-center justify-center min-w-[72px]"
+                    >
+                      {isVerifyingPromo ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply"}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => { setDiscount({ active: false, code: "", percent: 0 }); setPromoInput(""); setPromoMessage(""); }}
+                      className="h-11 px-4 shrink-0 rounded-lg border border-white/20 hover:bg-white/10 text-sm font-medium min-w-[72px]"
+                    >
+                      Remove
+                    </button>
                   )}
-                </div>
-              )}
-
-              {aiData.isFrequentFlyer && (
-                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6 mb-8 text-center">
-                  <Star className="w-8 h-8 text-emerald-400 mx-auto mb-3" />
-                  <p className="text-emerald-400 font-black text-xs uppercase tracking-widest">VIP Loyalty Active</p>
-                  <p className="text-emerald-500/80 font-bold text-[11px] mt-2">{promoMessage}</p>
-                </div>
-              )}
+                </form>
+                {promoMessage && (
+                  <p className={`mt-2 flex items-center gap-2 text-sm ${isPromoError ? "text-red-300" : "text-emerald-300"}`}>
+                    {isPromoError
+                      ? <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
+                      : <CheckCircle2 className="w-4 h-4 shrink-0" aria-hidden="true" />}
+                    {promoMessage}
+                  </p>
+                )}
+              </div>
 
               {/* Price breakdown */}
-              <div className="space-y-4 mb-10">
-                <div className="flex justify-between text-sm text-slate-400 font-bold">
-                  <span>Parking Rate ({bookingDays} {bookingDays === 1 ? "day" : "days"})</span>
-                  <div className="text-right">
+              <dl className="py-5 space-y-2.5 text-sm">
+                <div className="flex justify-between gap-4">
+                  <dt className="text-slate-300">Parking ({bookingDays} {bookingDays === 1 ? "day" : "days"})</dt>
+                  <dd className="text-right tabular-nums">
                     {priceResolving ? (
-                      <span className="inline-block h-4 w-16 rounded bg-slate-700/60 animate-pulse align-middle" />
+                      <span className="inline-block h-4 w-16 rounded bg-white/10 animate-pulse align-middle" />
                     ) : (
                       <>
                         {isDiscounted && (
-                          <span className="text-xs text-slate-500 line-through block mb-0.5">£{priceData.original.toFixed(2)}</span>
+                          <span className="block text-xs text-slate-500 line-through">£{priceData.original.toFixed(2)}</span>
                         )}
-                        <span className={`font-black ${discount.active ? "text-slate-500 line-through" : isDiscounted ? "text-emerald-400" : "text-white"}`}>
+                        <span className={discount.active ? "text-slate-500 line-through" : isDiscounted ? "text-emerald-300" : ""}>
                           £{priceData.final.toFixed(2)}
                         </span>
                       </>
                     )}
-                  </div>
+                  </dd>
                 </div>
                 {discount.active && (
-                  <div className="flex justify-between text-sm text-emerald-400 font-bold">
-                    <span>Promo ({discount.code})</span>
-                    <span className="font-black">- £{discountAmount.toFixed(2)}</span>
+                  <div className="flex justify-between gap-4 text-emerald-300">
+                    <dt>Promo ({discount.code})</dt>
+                    <dd className="tabular-nums">&minus;£{discountAmount.toFixed(2)}</dd>
                   </div>
                 )}
                 {wantsLounge && (
-                  <div className="flex justify-between text-sm text-indigo-400 font-bold">
-                    <span>VIP Lounge Access</span>
-                    <span className="font-black">+ £{LOUNGE_PRICE.toFixed(2)}</span>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-slate-300">Airport lounge</dt>
+                    <dd className="tabular-nums">£{LOUNGE_PRICE.toFixed(2)}</dd>
                   </div>
                 )}
                 {fastTrackCount > 0 && (
-                  <div className="flex justify-between text-sm text-amber-400 font-bold">
-                    <span>Fast Track Security ({fastTrackCount}x)</span>
-                    <span className="font-black">+ £{totalFastTrackCost.toFixed(2)}</span>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-slate-300">Fast Track security &times; {fastTrackCount}</dt>
+                    <dd className="tabular-nums">£{totalFastTrackCost.toFixed(2)}</dd>
                   </div>
                 )}
-                <div className="flex justify-between text-sm text-slate-400 font-bold pt-4 border-t border-slate-800">
-                  <span>Taxes &amp; Airport Fees</span>
-                  <span className="text-emerald-500 font-black uppercase tracking-widest text-[10px]">Included</span>
-                </div>
-              </div>
+                {feesNote && (
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-slate-300">Airport fee</dt>
+                    <dd className="text-right text-amber-200">Paid on the day, see below</dd>
+                  </div>
+                )}
+              </dl>
 
-              <div className="flex flex-col items-end mb-8">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Total Due Today</span>
+              <div className="pt-4 border-t border-white/10 flex items-end justify-between gap-4">
+                <span className="text-sm text-slate-300">Total to pay now</span>
                 {priceResolving ? (
-                  <span className="flex items-center gap-2 text-blue-400 text-lg font-black tracking-tight">
-                    <Loader2 className="w-5 h-5 animate-spin" /> Confirming live price…
+                  <span className="flex items-center gap-2 text-slate-300">
+                    <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> Confirming…
                   </span>
                 ) : (
-                  <span className="text-5xl font-black tracking-tighter text-blue-400 tabular-nums">
-                    £{finalTotal.toFixed(2)}
-                  </span>
+                  <span className="text-3xl font-bold tabular-nums">£{finalTotal.toFixed(2)}</span>
                 )}
               </div>
 
-              {/*
-                ── Desktop trust strip ─────────────────────────────────────────
-                Placed immediately above the Pay button — the point of highest
-                hesitation on desktop — to close the trust gap before commit.
-                Uses Mastercard overlapping-circle motif on white background
-                (recognisable without the wordmark; works on the dark sidebar).
-              */}
-              <div className="hidden lg:flex flex-col gap-3 mb-6">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <p className="text-[11px] font-black text-emerald-400 leading-snug">
-                    Free cancellation up to 24h before drop-off
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                    We accept:
-                  </span>
-                  {/* Visa */}
-                  <span className="inline-flex items-center justify-center bg-[#1a1f71] px-2.5 py-1 rounded text-white font-black text-[10px] tracking-wider italic h-6 leading-none">
-                    VISA
-                  </span>
-                  {/* Mastercard — white card keeps circles legible on dark sidebar */}
-                  <span className="inline-flex items-center justify-center bg-white border border-slate-200 px-2 rounded h-6">
-                    <span className="block w-3.5 h-3.5 rounded-full bg-[#eb001b]" />
-                    <span className="block w-3.5 h-3.5 rounded-full bg-[#f79e1b] -ml-1.5 opacity-90" />
-                  </span>
-                  {/* Amex */}
-                  <span className="inline-flex items-center justify-center bg-[#007bc1] px-2.5 py-1 rounded text-white font-black text-[10px] tracking-wider h-6 leading-none">
-                    AMEX
-                  </span>
-                </div>
-              </div>
-
-              <div className="hidden lg:block">
+              <div className="hidden lg:block mt-6 space-y-3">
+                <p className="flex items-center gap-2 text-sm text-emerald-300">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" aria-hidden="true" />
+                  Free cancellation up to 24 hours before drop-off
+                </p>
+                <CardBrands dark />
                 <button
                   type="submit" form="checkout-form"
                   disabled={isProcessing || !!hasDateIssue || priceResolving}
-                  className="w-full h-16 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:border disabled:border-slate-700 disabled:text-slate-500 text-white font-black text-lg rounded-2xl flex items-center justify-center gap-3 active:scale-[0.99] transition-colors uppercase tracking-widest touch-manipulation"
+                  className={payButtonCls}
                 >
                   {isProcessing
-                    ? <><Loader2 className="w-6 h-6 animate-spin" /> Processing...</>
+                    ? <><Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" /> Preparing payment…</>
                     : priceResolving
-                    ? <><Loader2 className="w-6 h-6 animate-spin" /> Confirming price…</>
-                    : <><Lock className="w-5 h-5" /> Pay Securely — £{finalTotal.toFixed(2)}</>}
+                    ? <><Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" /> Confirming price…</>
+                    : <><Lock className="w-5 h-5" aria-hidden="true" /> Pay £{finalTotal.toFixed(2)}</>}
                 </button>
-                <p className="text-center text-[10px] text-slate-500 mt-4 font-bold px-2 leading-relaxed">
-                  By clicking &ldquo;Pay Securely&rdquo;, you accept our{" "}
-                  <Link href="/terms" target="_blank" className="text-blue-400 underline hover:text-blue-300">Terms &amp; Conditions</Link>.
+                <p className="text-center text-sm text-slate-400">
+                  By paying you accept our{" "}
+                  <Link href="/terms" target="_blank" className="text-slate-200 underline underline-offset-4">terms and conditions</Link>.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="mt-6 flex flex-col gap-4">
-            {((airport.includes("Heathrow") ? company?.lhr_fees_note : company?.ltn_fees_note) ?? "").trim() && (
-              <div className="bg-amber-400/[0.16] rounded-2xl p-5 border border-amber-400/60 flex items-start gap-3 shadow-[0_0_0_1px_rgba(251,191,36,0.15)]">
-                <AlertCircle className="w-5 h-5 text-amber-300 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-[11px] font-black text-amber-300 uppercase tracking-[0.12em] mb-1">Payable on collection</p>
-                  <p className="text-sm font-bold text-amber-50 leading-relaxed">{(airport.includes("Heathrow") ? company?.lhr_fees_note : company?.ltn_fees_note)}</p>
-                </div>
-              </div>
-            )}
-            <div className="bg-[#0F1523] rounded-2xl p-6 border border-white/[0.06] flex items-start gap-4">
-              <div className="w-10 h-10 bg-emerald-500/10 text-emerald-400 rounded-xl flex items-center justify-center flex-shrink-0">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
+          {feesNote && (
+            <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" aria-hidden="true" />
               <div>
-                <p className="text-sm font-black text-white tracking-tight mb-1.5">Aero Booking Guarantee</p>
-                <p className="text-xs font-bold text-slate-400 leading-relaxed">
-                  Free cancellation up to <span className="text-blue-400">24 hours</span> before your drop-off. Encrypted by Stripe.
-                </p>
+                <p className="text-sm font-semibold text-amber-900">Payable on the day</p>
+                <p className="mt-1 text-sm text-amber-900 leading-relaxed">{feesNote}</p>
               </div>
             </div>
-          </div>
+          )}
         </aside>
       </div>
 
@@ -1322,26 +1048,26 @@ export default function CheckoutPage() {
   return (
     <main
       suppressHydrationWarning
-      className="min-h-[100dvh] bg-[#F8FAFC] font-sans antialiased pb-24 selection:bg-blue-200 selection:text-blue-900 overflow-x-hidden relative"
+      className="min-h-[100dvh] bg-[#F8FAFC] font-sans antialiased selection:bg-blue-200 selection:text-blue-900 overflow-x-clip relative"
     >
-      <header className="sticky top-0 z-[100] bg-[#0A101D] border-b border-white/[0.06]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 md:h-20 flex items-center justify-between">
-          <Link href="/results" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group touch-manipulation">
-            <ArrowLeft className="w-4 h-4 md:w-5 md:h-5 lg:group-hover:-translate-x-1 transition-transform" />
-            <span className="text-[10px] font-black uppercase tracking-widest hidden md:block">Back to Packages</span>
+      <FunnelHeader
+        left={
+          <Link href="/results" className={funnelSlotClass}>
+            <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Back to results</span>
           </Link>
-          <Link href="/" className="flex items-center gap-1.5 md:gap-2 text-white font-black tracking-tighter text-lg md:text-xl uppercase absolute left-1/2 -translate-x-1/2 touch-manipulation">
-            <Plane className="w-5 h-5 md:w-6 md:h-6 text-blue-500 rotate-45" /> AEROPARK<span className="text-blue-500">DIRECT</span>
-          </Link>
-          <div className="flex items-center gap-2 text-emerald-400">
-            <Lock className="w-4 h-4" />
-            <span className="text-[10px] font-black uppercase tracking-widest hidden xs:block">Secure Checkout</span>
-          </div>
-        </div>
-      </header>
+        }
+        right={
+          <span className="flex items-center gap-2 text-sm font-medium text-slate-600">
+            <Lock className="w-4 h-4 text-emerald-600" aria-hidden="true" />
+            <span className="hidden sm:inline">Secure checkout</span>
+          </span>
+        }
+      />
       <Suspense fallback={<CheckoutSkeleton />}>
         <CheckoutContent />
       </Suspense>
+      <FunnelFooter />
     </main>
   );
 }

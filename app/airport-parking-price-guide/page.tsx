@@ -1,7 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
+import SiteHeader from "@/components/site/SiteHeader";
+import SiteFooter from "@/components/site/SiteFooter";
 import {
-  ArrowLeft, Plane, ArrowRight, ShieldCheck, CheckCircle2, MapPin,
+  ArrowRight, ShieldCheck, CheckCircle2, MapPin,
   TrendingDown, Calendar, Tag, AlertTriangle
 } from "lucide-react";
 import { computePrice, loadPricingSettings, DEFAULT_SETTINGS, type PricingSettings } from "@/app/lib/pricing";
@@ -101,14 +103,7 @@ export default async function PriceGuidePage() {
 
   return (
     <main className="min-h-screen bg-[#0A101D] text-white font-sans antialiased selection:bg-blue-600 selection:text-white">
-      <header className="sticky top-0 z-[100] bg-[#0A101D]/80 backdrop-blur-xl border-b border-white/5 h-20 flex items-center px-8 justify-between">
-        <Link href="/" className="text-slate-400 hover:text-white transition-colors flex items-center gap-2">
-          <ArrowLeft className="w-5 h-5" /> Back Home
-        </Link>
-        <div className="flex items-center gap-2 text-white font-black uppercase text-xl">
-          <Plane className="w-6 h-6 text-blue-500 rotate-45" />AEROPARK<span className="text-blue-500">DIRECT</span>
-        </div>
-      </header>
+      <SiteHeader />
 
       <div className="max-w-5xl mx-auto px-6 py-16">
 
@@ -186,17 +181,7 @@ export default async function PriceGuidePage() {
         </section>
       </div>
 
-      <footer className="border-t border-white/5 py-10 px-6">
-        <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-[11px] font-bold uppercase tracking-widest text-slate-500">
-          <nav className="flex flex-wrap justify-center gap-6">
-            <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
-            <Link href="/how-it-works" className="hover:text-white transition-colors">How it works</Link>
-            <Link href="mailto:info@aeroparkdirect.co.uk" className="hover:text-white transition-colors">Support</Link>
-          </nav>
-          <div className="text-slate-600">© {new Date().getFullYear()} AeroPark Direct Ltd</div>
-        </div>
-      </footer>
+      <SiteFooter />
 
       <script
         type="application/ld+json"

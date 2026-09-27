@@ -7,7 +7,7 @@ import { sendBookingReceipt, sendAmendmentAlerts, sendProviderNotification } fro
 import { createClient } from "@supabase/supabase-js";
 import { triggerMissingFlightAlert, sendBookingConfirmationSMS } from "@/app/lib/twilio";
 import { Resend } from "resend";
-import { reportOfflineConversion } from "@/app/lib/googleAds";
+import { reportOfflineConversion, logConversionUpload } from "@/app/lib/googleAds";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
@@ -258,12 +258,18 @@ export async function POST(req: Request) {
         // Uses Stripe session id as orderId so it dedupes with the client-side
         // conversion (which also passes session id as transaction_id).
         if (m.gclid) {
-          await reportOfflineConversion({
+          const value = Number(newBooking.total_price) || 0;
+          const result = await reportOfflineConversion({
             gclid: m.gclid,
-            value: Number(newBooking.total_price) || 0,
+            value,
             currency: "GBP",
             orderId: session.id,
-          }).catch((err) => logger.error("[WEBHOOK] Google Ads conversion failed:", err));
+          });
+          await logConversionUpload(
+            supabase,
+            { orderId: session.id, bookingRef: newBooking.booking_ref, clickId: m.gclid, value, source: "webhook" },
+            result
+          );
         }
 
         logger.info(`[WEBHOOK] Booking created: ${newBooking.booking_ref} (£${newBooking.total_price})`);

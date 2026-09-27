@@ -24,15 +24,15 @@ export default function HeathrowTerminal4ParkingPage() {
         h1Top: "Heathrow Terminal 4 Parking",
         h1Highlight: "Made Simple.",
         intro:
-          "Meet & Greet parking at Heathrow Terminal 4 (LHR T4). Drive straight to T4 departures, hand your keys to a vetted driver, and walk inside. No shuttle buses, no long-stay car park. Fully insured, free cancellation.",
+          "Meet & Greet parking at Heathrow Terminal 4 (LHR T4). Drive straight to T4 departures, hand your keys to a driver, and walk inside. No shuttle buses, no long-stay car park. Fully insured, free cancellation.",
         seoBlock: {
           eyebrow: "Heathrow Terminal 4 Parking Guide",
           heading: "Meet & Greet Parking at",
           highlight: "Heathrow Terminal 4",
           paragraphs: [
             "Terminal 4 is the Heathrow home of Qatar Airways, Etihad, KLM and most SkyTeam carriers, so it handles a lot of long-haul and connecting travellers. Terminal 4 sits on the south side of the airport, separate from the central T2–T3 area, and its official short-stay car park is priced at a premium while the long-stay alternatives mean a shuttle bus with your bags.",
-            "Meet & Greet skips that. You drive straight to the T4 departures forecourt, a vetted driver takes your keys, and your car is parked in a secure compound while you fly. When you land at T4 you walk out to a waiting car rather than working out the bus transfer after a long flight.",
-            "Every operator we list for Terminal 4 is fully insured and audited before it goes live, with CCTV-monitored, fenced compounds and DBS-checked drivers who photograph your car at handover. Your return is matched to your live flight arrival, so the car is ready when you land, even if you touch down late. Search your dates above for a live T4 price in under a minute, with free cancellation up to 24 hours before drop-off and a Best Price Guarantee behind it.",
+            "Meet & Greet skips that. You drive straight to the T4 departures forecourt, a driver takes your keys, and your car is parked in a secure compound while you fly. When you land at T4 you walk out to a waiting car rather than working out the bus transfer after a long flight.",
+            "Every operator we list for Terminal 4 is fully insured, and we check its compound before it goes live. Add your return flight number when you book so the operator knows when you're due back. Search your dates above for a live T4 price in under a minute, with free cancellation up to 24 hours before drop-off.",
           ],
           highlights: [
             { stat: "T4", label: "Drive straight to T4 departures. No shuttle, no car park trek." },
@@ -45,7 +45,7 @@ export default function HeathrowTerminal4ParkingPage() {
           { q: "Which airlines use Heathrow Terminal 4?", a: "Terminal 4 is home to Qatar Airways, Etihad, KLM and most SkyTeam carriers, along with Malaysia Airlines, Gulf Air and others. Always check your airline's terminal on your booking before you travel." },
           { q: "How much does Meet & Greet parking cost at Terminal 4?", a: "It depends on your dates, length of stay and operator, and is typically below the official T4 short-stay rate. Enter your dates above for an exact live price — it takes under 10 seconds." },
           { q: "What if my flight back to T4 is delayed?", a: "Your operator tracks your inbound flight. If you land late, your car is still brought to Terminal 4 ready for you, with no extra charge for the delay." },
-          { q: "Is my car insured and secure while I'm away?", a: "Yes. Every operator we list for Terminal 4 is fully insured, audited by us before listing, and keeps vehicles in CCTV-monitored, fenced compounds. Drivers are DBS-checked and photograph your vehicle at handover." },
+          { q: "Is my car insured and secure while I'm away?", a: "Yes. Every operator we list for Terminal 4 is fully insured, and we check its compound before we list it. You can see which operator will look after your car before you pay, and their contact details are in your confirmation email." },
           { q: "Can I cancel my Heathrow Terminal 4 parking booking?", a: "You can cancel at any time from the Manage Booking page — free of charge up to 24 hours before your drop-off time. Inside 24 hours the booking still cancels, and we review the refund and come back to you within one working day. To change your dates, please call your parking operator on the number in your confirmation email — they hold your space, so they are the only ones who can arrange it." },
         ],
       }}
