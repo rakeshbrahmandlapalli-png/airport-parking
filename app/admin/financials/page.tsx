@@ -8,10 +8,10 @@ import { recordAdminAction } from "@/app/lib/audit-client";
 import { useRouter } from "next/navigation";
 import { AdminSidebar, AdminMobileNav } from "@/components/admin/AdminNav";
 import {
-  LayoutDashboard, Building2, CalendarDays, Loader2, Wallet, TrendingUp, CreditCard,
-  Users, Download, Zap, PiggyBank, Filter, ChevronDown, ExternalLink, DollarSign,
-  Plus, X, Receipt, ArrowDownRight, FolderMinus, Save, CheckCircle2, Trash2,
-  FileText, Printer, HandCoins,
+  CalendarDays, Loader2, Wallet, TrendingUp, CreditCard,
+  Users, Download, PiggyBank, ChevronDown, ExternalLink,
+  Plus, X, FolderMinus, Save, CheckCircle2, Trash2,
+  FileText, Printer,
 } from "lucide-react";
 
 // ── Fee constants ──────────────────────────────────────────────
@@ -196,11 +196,11 @@ function FinancialsContent() {
     }
     if (range === "week") {
       const s = new Date(now); s.setDate(s.getDate() - 7);
-      return { startDate: s, endDate: now, rangeLabel: "Last 7 Days" };
+      return { startDate: s, endDate: now, rangeLabel: "Last 7 days" };
     }
     if (range === "month") {
       const s = new Date(now); s.setMonth(s.getMonth() - 1);
-      return { startDate: s, endDate: now, rangeLabel: "Last 30 Days" };
+      return { startDate: s, endDate: now, rangeLabel: "Last 30 days" };
     }
     if (range === "custom") {
       const s = parseLocalStart(fromDate);
@@ -212,7 +212,7 @@ function FinancialsContent() {
         : "Custom (pick dates)";
       return { startDate: s, endDate: e, rangeLabel: label };
     }
-    return { startDate: null, endDate: null, rangeLabel: "All Time" };
+    return { startDate: null, endDate: null, rangeLabel: "All time" };
   }, [range, fromDate, toDate]);
 
   // ── Per-booking economics ───────────────────────────────────
@@ -488,7 +488,7 @@ function FinancialsContent() {
       <table>
         <thead><tr>
           <th>Booking Ref</th><th>Date</th><th>Customer</th><th>Reg</th>
-          <th class="num">Parking Value</th><th class="num">Comm</th><th class="num">Owed</th>
+          <th class="num">Parking Value</th><th class="num">Commission</th><th class="num">Owed</th>
         </tr></thead>
         <tbody>${rows || `<tr><td colspan="7" style="text-align:center;padding:24px;color:#94a3b8">No bookings for this provider in the selected period.</td></tr>`}</tbody>
       </table>
@@ -569,13 +569,12 @@ function FinancialsContent() {
           <div className="absolute inset-0 border-t-2 border-emerald-500 rounded-full animate-spin"></div>
           <PiggyBank className="w-10 h-10 text-emerald-500 m-4 animate-pulse" />
         </div>
-        <p className="font-black text-fg-3 tracking-widest uppercase text-xs mt-6 relative z-10">Compiling Ledgers...</p>
+        <p className="font-semibold text-fg-3 text-xs mt-6 relative z-10">Loading financials…</p>
       </div>
     );
   }
 
-  const card = "bg-panel-2 border rounded-xl p-8 relative overflow-hidden";
-  const dateInputCls = "bg-panel-2 border border-fg/[0.12] hover:border-blue-500/50 rounded-xl py-3 px-4 text-xs font-bold text-fg outline-none focus:ring-2 focus:ring-blue-500/50 transition-all  [-webkit-text-fill-color:rgb(var(--admin-fg))]";
+  const dateInputCls = "bg-panel border border-fg/10 hover:border-fg/20 rounded-lg py-2.5 px-3 text-base md:text-sm text-fg outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors  [-webkit-text-fill-color:rgb(var(--admin-fg))]";
 
   return (
     <div className="min-h-screen bg-canvas font-sans flex flex-col md:flex-row overflow-hidden text-fg antialiased selection:bg-blue-600/30 relative">
@@ -586,193 +585,122 @@ function FinancialsContent() {
       {/* MAIN */}
       <main className="flex-1 p-4 md:p-8 lg:p-12 w-full overflow-y-auto h-screen relative pb-32 md:pb-12 custom-scrollbar z-10">
 
-        {/* 🟢 COMMAND HERO PANEL (header + controls, one unit) */}
-        <div className="relative mb-8 rounded-xl border border-fg/[0.08] bg-panel overflow-hidden">
-
-          <div className="relative p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <div className="flex items-center gap-5">
-              <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-emerald-600/10 border border-emerald-500/30 items-center justify-center shrink-0">
-                <PiggyBank className="w-7 h-7 text-emerald-400" />
-              </div>
-              <div>
-                <h1 className="text-3xl md:text-4xl font-black tracking-tight text-fg">Financial Ledger</h1>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
-                  <div className="text-emerald-400 font-bold text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Real-Time P&amp;L
-                  </div>
-                  <div className="hidden sm:block w-px h-3 bg-panel-4"></div>
-                  <div className="text-fg-3 font-bold text-[10px] uppercase tracking-[0.2em] flex items-center gap-1.5">
-                    <Filter className="w-3 h-3" /> {rangeLabel}
-                  </div>
-                </div>
-              </div>
+        {/* HEADER */}
+        <div className="mb-6 rounded-xl border border-fg/[0.08] bg-panel p-5 md:p-6">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold text-fg">Financials</h1>
+              <p className="mt-1 text-sm text-fg-3">Profit and loss · {rangeLabel}</p>
             </div>
-
-            <div className="flex flex-col gap-3 shrink-0">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative">
-                  <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none z-10" />
-                  <select value={range} onChange={(e) => setRange(e.target.value as RangeKey)}
-                    className="w-full appearance-none bg-panel-3/80 border border-fg/[0.12] hover:border-emerald-500/50 rounded-xl py-3.5 pl-10 pr-10 text-[10px] font-black uppercase tracking-widest text-fg-2 outline-none cursor-pointer transition-all focus:ring-2 focus:ring-emerald-500/40">
-                    <option value="all" className="bg-panel-3">All Time</option>
-                    <option value="today" className="bg-panel-3">Today</option>
-                    <option value="week" className="bg-panel-3">Last 7 Days</option>
-                    <option value="month" className="bg-panel-3">Last 30 Days</option>
-                    <option value="custom" className="bg-panel-3">Custom Range…</option>
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none" />
-                </div>
-                <button onClick={exportCSV} disabled={isCustomIncomplete}
-                  className="px-5 py-3.5 bg-panel-3/80 hover:bg-panel-3 disabled:opacity-40 disabled:cursor-not-allowed border border-fg/[0.12] hover:border-fg/[0.18] text-fg-2 rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-2">
-                  <Download className="w-4 h-4 text-blue-400" /> Export P&amp;L
-                </button>
-                <button onClick={() => setShowInvoiceModal(true)}
-                  className="px-5 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-[0.1em] transition-all flex items-center justify-center gap-2 relative overflow-hidden group">
-                  <FileText className="w-4 h-4" /> Generate Invoice
-                </button>
+            <div className="grid grid-cols-2 sm:flex gap-2 shrink-0">
+              <div className="relative col-span-2 sm:col-span-1">
+                <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none z-10" aria-hidden="true" />
+                <select value={range} onChange={(e) => setRange(e.target.value as RangeKey)} aria-label="Period"
+                  className="w-full appearance-none bg-panel border border-fg/10 hover:border-fg/20 rounded-lg py-2.5 pl-9 pr-9 text-sm text-fg-2 outline-none cursor-pointer transition-colors focus:ring-1 focus:ring-blue-500/40">
+                  <option value="all">All time</option>
+                  <option value="today">Today</option>
+                  <option value="week">Last 7 days</option>
+                  <option value="month">Last 30 days</option>
+                  <option value="custom">Choose dates…</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none" aria-hidden="true" />
               </div>
+              <button type="button" onClick={exportCSV} disabled={isCustomIncomplete}
+                className="px-4 py-2.5 bg-fg/[0.04] hover:bg-fg/[0.08] disabled:opacity-40 disabled:cursor-not-allowed border border-fg/10 text-fg-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                <Download className="w-4 h-4" aria-hidden="true" /> Export
+              </button>
+              <button type="button" onClick={() => setShowInvoiceModal(true)}
+                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                <FileText className="w-4 h-4" aria-hidden="true" /> Operator invoice
+              </button>
+            </div>
+          </div>
 
-              {/* Custom date pickers */}
-              {range === "custom" && (
-                <div className="flex flex-wrap items-end gap-3 bg-panel-3/60 border border-fg/[0.08] rounded-2xl p-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[9px] font-black uppercase tracking-widest text-fg-4 flex items-center gap-1"><CalendarDays className="w-3 h-3" /> From</label>
-                    <input type="date" value={fromDate} max={toDate || undefined} onChange={(e) => setFromDate(e.target.value)} className={dateInputCls} />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[9px] font-black uppercase tracking-widest text-fg-4 flex items-center gap-1"><CalendarDays className="w-3 h-3" /> To</label>
-                    <input type="date" value={toDate} min={fromDate || undefined} onChange={(e) => setToDate(e.target.value)} className={dateInputCls} />
-                  </div>
-                  {(fromDate || toDate) && (
-                    <button onClick={() => { setFromDate(""); setToDate(""); }}
-                      className="flex items-center gap-1.5 px-3 py-3 text-[9px] font-black uppercase tracking-widest text-fg-3 hover:text-red-400 border border-fg/[0.12] hover:border-red-500/30 rounded-xl transition-all">
-                      <X className="w-3 h-3" /> Clear
-                    </button>
-                  )}
-                  {isCustomIncomplete && (
-                    <p className="text-[10px] font-bold text-amber-400 self-center">Pick both dates to enable export.</p>
-                  )}
-                </div>
+          {range === "custom" && (
+            <div className="mt-4 pt-4 border-t border-fg/[0.08] flex flex-wrap items-end gap-3">
+              <label className="flex flex-col gap-1.5 text-sm text-fg-3">
+                From
+                <input type="date" value={fromDate} max={toDate || undefined} onChange={(e) => setFromDate(e.target.value)} className={dateInputCls} />
+              </label>
+              <label className="flex flex-col gap-1.5 text-sm text-fg-3">
+                To
+                <input type="date" value={toDate} min={fromDate || undefined} onChange={(e) => setToDate(e.target.value)} className={dateInputCls} />
+              </label>
+              {(fromDate || toDate) && (
+                <button type="button" onClick={() => { setFromDate(""); setToDate(""); }}
+                  className="flex items-center gap-1.5 px-3 py-2.5 text-sm text-fg-3 hover:text-red-400 border border-fg/10 rounded-lg transition-colors">
+                  <X className="w-3.5 h-3.5" aria-hidden="true" /> Clear dates
+                </button>
               )}
+              {isCustomIncomplete && <p className="text-sm text-amber-400 self-center">Pick both dates to export.</p>}
             </div>
+          )}
+        </div>
+
+        {/* PROFIT AND LOSS */}
+        <div className="mb-6 rounded-xl border border-fg/[0.08] bg-panel overflow-hidden">
+          <div className="grid grid-cols-2 lg:grid-cols-5 divide-x divide-fg/[0.08]">
+            {[
+              { label: "Taken from customers", value: `£${totals.gross.toFixed(2)}`, cls: "text-fg", Icon: Wallet },
+              { label: "Paid to operators", value: `−£${totals.operator.toFixed(2)}`, cls: "text-fg-2", Icon: Users },
+              { label: "Stripe fees", value: `−£${totals.stripe.toFixed(2)}`, cls: "text-fg-2", Icon: CreditCard },
+              { label: "Expenses", value: `−£${totals.opEx.toFixed(2)}`, cls: "text-fg-2", Icon: FolderMinus },
+            ].map((m) => (
+              <div key={m.label} className="p-4 md:p-5 border-t border-fg/[0.08] lg:border-t-0">
+                <p className="text-sm text-fg-3 flex items-center gap-1.5"><m.Icon className="w-3.5 h-3.5 text-fg-4" aria-hidden="true" /> {m.label}</p>
+                <p className={`mt-2 text-xl md:text-2xl font-semibold tabular-nums ${m.cls}`}>{m.value}</p>
+              </div>
+            ))}
+            <div className="col-span-2 lg:col-span-1 p-4 md:p-5 border-t border-fg/[0.08] lg:border-t-0 bg-emerald-500/[0.06]">
+              <p className="text-sm text-emerald-400 flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5" aria-hidden="true" /> Net profit</p>
+              <p className="mt-2 text-xl md:text-2xl font-semibold tabular-nums text-emerald-400">£{totals.trueNet.toFixed(2)}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-6 divide-x divide-fg/[0.08] border-t border-fg/[0.08] bg-panel-2">
+            {[
+              { label: "Bookings", value: `${insights.count}` },
+              { label: "Average booking", value: `£${insights.avgBooking.toFixed(2)}` },
+              { label: "Average profit per booking", value: `£${insights.avgNet.toFixed(2)}` },
+              { label: "Margin", value: `${insights.margin.toFixed(1)}%` },
+              { label: "Fast Track (all ours)", value: `£${totals.addOns.toFixed(2)}` },
+              { label: "Attendant fees", value: `£${totals.attendant.toFixed(2)}` },
+            ].map((k) => (
+              <div key={k.label} className="px-4 py-3 md:px-5 border-t border-fg/[0.08] lg:border-t-0">
+                <p className="text-xs text-fg-4">{k.label}</p>
+                <p className="mt-0.5 text-base font-semibold text-fg tabular-nums">{k.value}</p>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* 🟢 EXPANDED 5-COLUMN HUD METRICS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
-          <div className={`${card} border-fg/[0.08] group hover:border-blue-500/50 transition-colors`}>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-fg-3 mb-3 flex items-center gap-2"><Wallet className="w-4 h-4"/> Gross Collected</p>
-            <p className="text-3xl font-black text-fg tracking-tight tabular-nums">£{totals.gross.toFixed(2)}</p>
-            <Wallet className="w-20 h-20 text-fg-4/10 absolute -right-4 -bottom-4 group-hover:scale-110 transition-transform" />
-          </div>
+        <p className="mb-8 text-sm text-fg-3">
+          Stripe pays your balance into your bank automatically.{" "}
+          <a href="https://dashboard.stripe.com/settings/payouts" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline underline-offset-4 inline-flex items-center gap-1">
+            Stripe payout settings <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+          </a>
+        </p>
 
-          <div className={`${card} border-blue-900/40 group hover:border-blue-500/50 transition-colors`}>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 mb-3 flex items-center gap-2"><Users className="w-4 h-4"/> Operator Payouts</p>
-            <p className="text-3xl font-black text-blue-400 tracking-tight tabular-nums">−£{totals.operator.toFixed(2)}</p>
-            <Users className="w-20 h-20 text-blue-500/10 absolute -right-4 -bottom-4 group-hover:scale-110 transition-transform" />
-          </div>
-
-          <div className={`${card} border-rose-900/40 group hover:border-rose-500/50 transition-colors`}>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-400 mb-3 flex items-center gap-2"><CreditCard className="w-4 h-4"/> Stripe Fees</p>
-            <p className="text-3xl font-black text-rose-400 tracking-tight tabular-nums">−£{totals.stripe.toFixed(2)}</p>
-            <CreditCard className="w-20 h-20 text-rose-500/10 absolute -right-4 -bottom-4 group-hover:scale-110 transition-transform" />
-          </div>
-
-          {/* 🟢 NEW: Operating Expenses HUD */}
-          <div className={`${card} border-rose-900/40 group hover:border-rose-500/50 transition-colors`}>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-400 mb-3 flex items-center gap-2"><FolderMinus className="w-4 h-4"/> OpEx & Subs</p>
-            <p className="text-3xl font-black text-rose-400 tracking-tight tabular-nums">−£{totals.opEx.toFixed(2)}</p>
-            <ArrowDownRight className="w-20 h-20 text-rose-500/10 absolute -right-4 -bottom-4 group-hover:scale-110 transition-transform" />
-          </div>
-
-          {/* 🟢 MODIFIED: True Net Profit (Subtracts Expenses) */}
-          <div className="bg-emerald-900/10 border border-emerald-500/40 rounded-xl p-8 relative overflow-hidden group">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 mb-3 flex items-center gap-2"><TrendingUp className="w-4 h-4"/> True Net Profit</p>
-            <p className="text-3xl font-black text-emerald-400 tracking-tight tabular-nums drop-shadow">£{totals.trueNet.toFixed(2)}</p>
-            <TrendingUp className="w-20 h-20 text-emerald-500/10 absolute -right-4 -bottom-4 group-hover:scale-110 transition-transform" />
-          </div>
-        </div>
-
-        {/* STRIPE PAYOUT BRIDGE */}
-        <div className="bg-[#635BFF]/10 border border-[#635BFF]/30 p-8 rounded-xl mb-12 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
-           <div className="absolute top-0 right-0 w-64 h-64 bg-[#635BFF]/10 rounded-full blur-3xl pointer-events-none"></div>
-           <div className="relative z-10">
-             <h3 className="text-2xl font-black text-fg flex items-center gap-3 tracking-tight"><DollarSign className="text-[#635BFF]"/> Payout Routing</h3>
-             <p className="text-sm font-bold text-fg-3 mt-2 max-w-2xl leading-relaxed">
-               Your revenue is processed securely via Stripe. Automated payouts transfer your available balance directly to your bank account. Manage manual top-ups or schedules in the portal.
-             </p>
-           </div>
-           <button
-             onClick={() => window.open('https://dashboard.stripe.com/settings/payouts', '_blank')}
-             className="relative z-10 px-8 py-4 bg-[#635BFF] hover:bg-[#5851e5] text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 shrink-0"
-           >
-             <ExternalLink className="w-4 h-4" /> Configure Payouts
-           </button>
-        </div>
-
-        {/* 🟢 PERIOD INSIGHTS (enterprise KPIs) */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-          {[
-            { label: "Bookings", value: `${insights.count}` },
-            { label: "Avg Booking Value", value: `£${insights.avgBooking.toFixed(2)}` },
-            { label: "Avg Net / Booking", value: `£${insights.avgNet.toFixed(2)}` },
-            { label: "Net Margin", value: `${insights.margin.toFixed(1)}%` },
-          ].map((k) => (
-            <div key={k.label} className="bg-panel-2 border border-fg/[0.08] rounded-2xl px-5 py-4">
-              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-fg-4">{k.label}</p>
-              <p className="text-xl font-black text-fg mt-1 tabular-nums tracking-tight">{k.value}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
-          {/* FAST TRACK STRIP */}
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-6 flex items-center gap-5 relative overflow-hidden">
-            <div className="absolute -left-4 -top-4 w-24 h-24 bg-amber-500/10 blur-2xl rounded-full"></div>
-            <div className="w-12 h-12 bg-amber-500/20 border border-amber-500/30 rounded-xl flex items-center justify-center shrink-0 relative z-10">
-              <Zap className="w-6 h-6 text-amber-400" />
-            </div>
-            <div className="relative z-10">
-              <p className="text-[10px] font-black uppercase tracking-widest text-amber-400">Fast Track Add-ons (100% Margin)</p>
-              <p className="text-2xl font-black text-fg mt-1 tabular-nums tracking-tight">£{totals.addOns.toFixed(2)}</p>
-            </div>
-          </div>
-
-          {/* 🟢 ATTENDANT FEES STRIP (pass-through, never profit) */}
-          <div className="bg-violet-500/10 border border-violet-500/20 rounded-2xl p-6 flex items-center gap-5 relative overflow-hidden">
-            <div className="absolute -left-4 -top-4 w-24 h-24 bg-violet-500/10 blur-2xl rounded-full"></div>
-            <div className="w-12 h-12 bg-violet-500/20 border border-violet-500/30 rounded-xl flex items-center justify-center shrink-0 relative z-10">
-              <HandCoins className="w-6 h-6 text-violet-400" />
-            </div>
-            <div className="relative z-10">
-              <p className="text-[10px] font-black uppercase tracking-widest text-violet-400">Attendant Fees</p>
-              <p className="text-2xl font-black text-fg mt-1 tabular-nums tracking-tight">£{totals.attendant.toFixed(2)}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-12">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
           {/* BY OPERATOR */}
-          <div className="bg-panel-2 rounded-xl border border-fg/[0.08] overflow-hidden flex flex-col">
-            <div className="p-6 border-b border-fg/[0.08] bg-panel">
-              <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-fg-3 flex items-center gap-2"><Building2 className="w-4 h-4"/> Profit By Operator</h4>
+          <div className="bg-panel rounded-xl border border-fg/[0.08] overflow-hidden flex flex-col">
+            <div className="px-5 py-4 border-b border-fg/[0.08]">
+              <h2 className="text-base font-semibold text-fg">Profit by operator</h2>
             </div>
             <div className="overflow-x-auto flex-1">
               <table className="w-full text-left whitespace-nowrap h-full">
-                <thead className="border-b border-fg/[0.08] text-[9px] font-black uppercase tracking-[0.2em] text-fg-4 bg-canvas">
+                <thead className="border-b border-fg/[0.08] text-xs font-medium text-fg-3 bg-panel-2">
                   <tr>
-                    <th className="px-6 py-5">Operator Network</th>
-                    <th className="px-4 py-5 text-center">Bookings</th>
-                    <th className="px-4 py-5 text-right">Their Payout</th>
-                    <th className="px-6 py-5 text-right text-emerald-400">Your Cut</th>
-                    <th className="px-4 py-5 text-center">Invoice</th>
+                    <th className="px-4 py-3">Operator</th>
+                    <th className="px-4 py-3 text-center">Bookings</th>
+                    <th className="px-4 py-3 text-right">Paid to them</th>
+                    <th className="px-4 py-3 text-right text-emerald-400">Our share</th>
+                    <th className="px-4 py-3 text-center">Invoice</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-fg/[0.08]">
                   {byOperator.map((o, i) => (
                     <tr key={i} className="hover:bg-fg/[0.045] transition-colors">
-                      <td className="px-6 py-5 font-bold text-fg text-sm">
+                      <td className="px-4 py-3 font-medium text-fg text-sm">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-lg bg-panel-3 border border-fg/[0.12] flex items-center justify-center text-fg-3 text-xs">
                             {o.name.charAt(0)}
@@ -780,21 +708,21 @@ function FinancialsContent() {
                           {o.name}
                         </div>
                       </td>
-                      <td className="px-4 py-5 text-center text-fg-3 font-bold text-xs tabular-nums">{o.count}</td>
-                      <td className="px-4 py-5 text-right text-blue-400 font-bold text-xs tabular-nums">£{o.operatorPayout.toFixed(2)}</td>
-                      <td className="px-6 py-5 text-right text-emerald-400 font-black text-sm tabular-nums">£{o.yourCut.toFixed(2)}</td>
-                      <td className="px-4 py-5 text-center">
+                      <td className="px-4 py-3 text-center text-fg-3 font-medium text-xs tabular-nums">{o.count}</td>
+                      <td className="px-4 py-3 text-right text-blue-400 font-medium text-xs tabular-nums">£{o.operatorPayout.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right text-emerald-400 font-semibold text-sm tabular-nums">£{o.yourCut.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-center">
                         <button
                           onClick={() => openInvoiceFor(o.id === "DIRECT" ? "DIRECT" : o.id)}
                           title={`Generate remittance invoice for ${o.name}`}
-                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 text-[9px] font-black uppercase tracking-widest transition-colors">
-                          <FileText className="w-3 h-3" /> Invoice
+                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 text-xs font-semibold transition-colors">
+                          <FileText className="w-3.5 h-3.5" /> Invoice
                         </button>
                       </td>
                     </tr>
                   ))}
                   {byOperator.length === 0 && (
-                    <tr><td colSpan={5} className="px-6 py-12 text-center text-fg-4 font-bold text-sm">No bookings in this period.</td></tr>
+                    <tr><td colSpan={5} className="px-6 py-12 text-center text-fg-4 font-medium text-sm">No bookings in this period.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -802,40 +730,40 @@ function FinancialsContent() {
           </div>
 
           {/* 🟢 NEW: OPERATING EXPENSES & SUBSCRIPTIONS */}
-          <div className="bg-panel-2 rounded-xl border border-fg/[0.08] overflow-hidden flex flex-col">
-            <div className="p-6 border-b border-fg/[0.08] bg-panel flex items-center justify-between">
-              <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-fg-3 flex items-center gap-2"><Receipt className="w-4 h-4"/> OpEx & Subscriptions</h4>
-              <button onClick={() => setShowExpenseModal(true)} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg transition-colors">
-                <Plus className="w-3 h-3" /> Add Expense
+          <div className="bg-panel rounded-xl border border-fg/[0.08] overflow-hidden flex flex-col">
+            <div className="px-5 py-4 border-b border-fg/[0.08] flex items-center justify-between">
+              <h2 className="text-base font-semibold text-fg">Expenses and subscriptions</h2>
+              <button type="button" onClick={() => setShowExpenseModal(true)} className="flex items-center gap-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors">
+                <Plus className="w-4 h-4" /> Add expense
               </button>
             </div>
             <div className="overflow-x-auto flex-1">
               <table className="w-full text-left whitespace-nowrap h-full">
-                <thead className="border-b border-fg/[0.08] text-[9px] font-black uppercase tracking-[0.2em] text-fg-4 bg-canvas">
+                <thead className="border-b border-fg/[0.08] text-xs font-medium text-fg-3 bg-panel-2">
                   <tr>
-                    <th className="px-6 py-5">Date</th>
-                    <th className="px-6 py-5">Description</th>
-                    <th className="px-4 py-5 text-center">Category</th>
-                    <th className="px-6 py-5 text-right text-rose-400">Amount</th>
-                    <th className="px-4 py-5"></th>
+                    <th className="px-4 py-3">Date</th>
+                    <th className="px-4 py-3">Description</th>
+                    <th className="px-4 py-3 text-center">Category</th>
+                    <th className="px-4 py-3 text-right text-rose-400">Amount</th>
+                    <th className="px-4 py-3"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-fg/[0.08]">
                   {filteredExpenses.map((e) => (
                     <tr key={e.id} className="hover:bg-fg/[0.045] transition-colors">
-                      <td className="px-6 py-5 text-xs font-bold text-fg-3 tabular-nums">{e.date ? new Date(e.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) : "—"}</td>
-                      <td className="px-6 py-5 font-bold text-fg text-sm">
+                      <td className="px-4 py-3 text-xs font-medium text-fg-3 tabular-nums">{e.date ? new Date(e.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) : "—"}</td>
+                      <td className="px-4 py-3 font-medium text-fg text-sm">
                         <div className="flex flex-col gap-1">
                           <span>{e.description}</span>
-                          {e.is_recurring && <span className="text-[8px] font-black uppercase tracking-widest bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20 w-max">Recurring</span>}
+                          {e.is_recurring && <span className="text-xs font-semibold bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20 w-max">Recurring</span>}
                         </div>
                       </td>
-                      <td className="px-4 py-5 text-center text-fg-3 font-bold text-[10px] uppercase tracking-wider">{e.category}</td>
-                      <td className="px-6 py-5 text-right text-rose-400 font-black text-sm tabular-nums">−£{Number(e.amount).toFixed(2)}</td>
-                      <td className="px-4 py-5 text-right">
+                      <td className="px-4 py-3 text-center text-fg-3 font-medium text-xs">{e.category}</td>
+                      <td className="px-4 py-3 text-right text-rose-400 font-semibold text-sm tabular-nums">−£{Number(e.amount).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => deleteExpense(e.id)}
-                          className={`p-2 transition-colors text-xs font-bold ${pendingDeleteId === e.id ? "text-red-400 animate-pulse" : "text-fg-4 hover:text-red-400"}`}
+                          className={`p-2 transition-colors text-xs font-medium ${pendingDeleteId === e.id ? "text-red-400 animate-pulse" : "text-fg-4 hover:text-red-400"}`}
                           title={pendingDeleteId === e.id ? "Click again to confirm deletion" : "Delete expense"}
                         >
                           {pendingDeleteId === e.id ? "Confirm?" : <Trash2 className="w-4 h-4" />}
@@ -844,7 +772,7 @@ function FinancialsContent() {
                     </tr>
                   ))}
                   {filteredExpenses.length === 0 && (
-                    <tr><td colSpan={5} className="px-6 py-12 text-center text-fg-4 font-bold text-sm">No expenses logged in this period.</td></tr>
+                    <tr><td colSpan={5} className="px-6 py-12 text-center text-fg-4 font-medium text-sm">No expenses in this period.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -853,45 +781,45 @@ function FinancialsContent() {
         </div>
 
         {/* PER-BOOKING LEDGER */}
-        <div className="bg-panel-2 rounded-xl border border-fg/[0.08] overflow-hidden mb-24">
-          <div className="p-6 border-b border-fg/[0.08] bg-panel">
-            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-fg-3 flex items-center gap-2"><LayoutDashboard className="w-4 h-4"/> Booking-Level Ledger ({computed.length})</h4>
+        <div className="bg-panel rounded-xl border border-fg/[0.08] overflow-hidden mb-24">
+          <div className="px-5 py-4 border-b border-fg/[0.08]">
+            <h2 className="text-base font-semibold text-fg">Bookings <span className="font-normal text-fg-3">({computed.length}{computed.length > 50 ? ", latest 50 shown" : ""})</span></h2>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left whitespace-nowrap">
-              <thead className="border-b border-fg/[0.08] text-[9px] font-black uppercase tracking-[0.2em] text-fg-4 bg-canvas">
+              <thead className="border-b border-fg/[0.08] text-xs font-medium text-fg-3 bg-panel-2">
                 <tr>
-                  <th className="px-8 py-5">Reference</th>
-                  <th className="px-8 py-5">Date</th>
-                  <th className="px-8 py-5">Operator</th>
-                  <th className="px-8 py-5 text-right">Charged</th>
-                  <th className="px-8 py-5 text-right">Fast Track</th>
-                  <th className="px-8 py-5 text-right">Stripe Fee</th>
-                  <th className="px-8 py-5 text-right text-violet-400">Attendant</th>
-                  <th className="px-8 py-5 text-right">Operator Owed</th>
-                  <th className="px-8 py-5 text-right text-emerald-400">Net Revenue</th>
+                  <th className="px-4 py-3">Reference</th>
+                  <th className="px-4 py-3">Date</th>
+                  <th className="px-4 py-3">Operator</th>
+                  <th className="px-4 py-3 text-right">Price</th>
+                  <th className="px-4 py-3 text-right">Fast Track</th>
+                  <th className="px-4 py-3 text-right">Stripe fee</th>
+                  <th className="px-4 py-3 text-right text-violet-400">Attendant</th>
+                  <th className="px-4 py-3 text-right">To operator</th>
+                  <th className="px-4 py-3 text-right text-emerald-400">Our profit</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-fg/[0.08]">
                 {computed.slice(0, 50).map((r) => (
                   <tr key={r.id} className="hover:bg-fg/[0.045] transition-colors">
-                    <td className="px-8 py-4 text-xs font-bold text-fg">{r.booking_ref}</td>
-                    <td className="px-8 py-4 text-[10px] font-bold text-fg-4 tabular-nums">{r.created_at ? new Date(r.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" }) : "—"}</td>
-                    <td className="px-8 py-4 text-[10px] font-black uppercase text-fg-4 tracking-widest">{r.operatorName}</td>
-                    <td className="px-8 py-4 text-right text-xs font-bold text-fg-2 tabular-nums">£{r.total.toFixed(2)}</td>
-                    <td className="px-8 py-4 text-right text-xs font-bold text-amber-400 tabular-nums">
+                    <td className="px-4 py-3 text-xs font-medium text-fg">{r.booking_ref}</td>
+                    <td className="px-4 py-3 text-xs font-medium text-fg-4 tabular-nums">{r.created_at ? new Date(r.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" }) : "—"}</td>
+                    <td className="px-4 py-3 text-xs font-semibold text-fg-4">{r.operatorName}</td>
+                    <td className="px-4 py-3 text-right text-xs font-medium text-fg-2 tabular-nums">£{r.total.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right text-xs font-medium text-amber-400 tabular-nums">
                       {r.addOns > 0 ? `+£${r.addOns.toFixed(2)}` : <span className="text-fg-4">—</span>}
                     </td>
-                    <td className="px-8 py-4 text-right text-xs font-bold text-rose-400 tabular-nums">−£{r.stripeFee.toFixed(2)}</td>
-                    <td className="px-8 py-4 text-right text-xs font-bold text-violet-400 tabular-nums">
+                    <td className="px-4 py-3 text-right text-xs font-medium text-rose-400 tabular-nums">−£{r.stripeFee.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right text-xs font-medium text-violet-400 tabular-nums">
                       {r.attendantCommission > 0 ? `−£${r.attendantCommission.toFixed(2)}` : <span className="text-fg-4">—</span>}
                     </td>
-                    <td className="px-8 py-4 text-right text-xs font-bold text-blue-400 tabular-nums">£{r.operatorPayout.toFixed(2)}</td>
-                    <td className="px-8 py-4 text-right text-xs font-black text-emerald-400 tabular-nums">£{r.yourNet.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right text-xs font-medium text-blue-400 tabular-nums">£{r.operatorPayout.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right text-xs font-semibold text-emerald-400 tabular-nums">£{r.yourNet.toFixed(2)}</td>
                   </tr>
                 ))}
                 {computed.length === 0 && (
-                  <tr><td colSpan={9} className="px-8 py-12 text-center text-fg-4 font-bold text-sm">No bookings found in this period.</td></tr>
+                  <tr><td colSpan={9} className="px-8 py-12 text-center text-fg-4 font-medium text-sm">No bookings found in this period.</td></tr>
                 )}
               </tbody>
             </table>
@@ -902,25 +830,25 @@ function FinancialsContent() {
 
       {/* 🟢 NEW: INVOICE / REMITTANCE GENERATOR MODAL */}
       {showInvoiceModal && (
-        <div className="fixed inset-0 bg-canvas/95 z-[300] flex items-start md:items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-panel border border-fg/[0.08] w-full max-w-4xl rounded-xl overflow-hidden animate-in zoom-in-95 duration-200 my-8">
-            <div className="p-6 border-b border-fg/[0.08] flex justify-between items-center bg-panel-2 relative">
+        <div className="fixed inset-0 bg-[#060A14]/80 z-[300] flex items-start md:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+          <div className="bg-panel sm:border border-fg/[0.08] w-full max-w-4xl min-h-full sm:min-h-0 sm:rounded-xl overflow-hidden sm:my-8">
+            <div className="px-5 py-4 sm:px-6 border-b border-fg/[0.08] flex justify-between items-start gap-4 bg-panel-2">
               <div>
-                <h2 className="text-xl font-black text-fg tracking-tight flex items-center gap-2"><FileText className="w-5 h-5 text-emerald-400" /> Provider Remittance</h2>
-                <p className="text-[10px] font-bold text-fg-3 uppercase tracking-widest mt-1">What You Owe · By Date Range</p>
+                <h2 className="text-xl font-semibold text-fg">Operator invoice</h2>
+                <p className="text-sm text-fg-3 mt-1">What we owe an operator for a period.</p>
               </div>
-              <button onClick={() => setShowInvoiceModal(false)} className="p-2 bg-panel-3 rounded-xl text-fg-3 hover:text-fg border border-fg/[0.12]"><X className="w-5 h-5"/></button>
+              <button onClick={() => setShowInvoiceModal(false)} aria-label="Close" className="p-2 -mr-2 rounded-lg text-fg-3 hover:text-fg hover:bg-fg/[0.06]"><X className="w-5 h-5" /></button>
             </div>
 
             <div className="p-6 md:p-8 space-y-6">
               {/* CONTROLS */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <label className="text-[9px] font-black uppercase text-fg-4 block ml-1 tracking-widest">Provider</label>
+                  <label className="text-sm font-medium text-fg-2 block">Operator</label>
                   <div className="relative">
                     <select value={invoiceOperatorId} onChange={(e) => setInvoiceOperatorId(e.target.value)}
-                      className="w-full appearance-none bg-panel-3 border border-fg/[0.12] hover:border-emerald-500/50 rounded-xl px-4 py-3 text-sm text-fg font-bold outline-none cursor-pointer focus:ring-2 focus:ring-emerald-500/50 transition-all">
-                      <option value="">All Providers</option>
+                      className="w-full appearance-none bg-panel-3 border border-fg/[0.12] hover:border-emerald-500/50 rounded-lg px-3.5 py-2.5 text-base md:text-sm text-fg outline-none cursor-pointer focus:ring-2 focus:ring-emerald-500/50 transition-colors">
+                      <option value="">All operators</option>
                       {operatorOptions.map((o) => (
                         <option key={o.id} value={o.id}>{o.name}</option>
                       ))}
@@ -929,20 +857,20 @@ function FinancialsContent() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[9px] font-black uppercase text-fg-4 block ml-1 tracking-widest">From</label>
+                  <label className="text-sm font-medium text-fg-2 block">From</label>
                   <input type="date" value={invFrom} max={invTo || undefined} onChange={(e) => setInvFrom(e.target.value)} className={dateInputCls + " w-full"} />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[9px] font-black uppercase text-fg-4 block ml-1 tracking-widest">To</label>
+                  <label className="text-sm font-medium text-fg-2 block">To</label>
                   <input type="date" value={invTo} min={invFrom || undefined} onChange={(e) => setInvTo(e.target.value)} className={dateInputCls + " w-full"} />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[9px] font-black uppercase text-fg-4 block ml-1 tracking-widest">Date Basis</label>
+                  <label className="text-sm font-medium text-fg-2 block">Count bookings by</label>
                   <div className="relative">
                     <select value={invBasis} onChange={(e) => setInvBasis(e.target.value as "created" | "dropoff")}
-                      className="w-full appearance-none bg-panel-3 border border-fg/[0.12] hover:border-emerald-500/50 rounded-xl px-4 py-3 text-sm text-fg font-bold outline-none cursor-pointer focus:ring-2 focus:ring-emerald-500/50 transition-all">
-                      <option value="created">Booking Date</option>
-                      <option value="dropoff">Drop-off Date</option>
+                      className="w-full appearance-none bg-panel-3 border border-fg/[0.12] hover:border-emerald-500/50 rounded-lg px-3.5 py-2.5 text-base md:text-sm text-fg outline-none cursor-pointer focus:ring-2 focus:ring-emerald-500/50 transition-colors">
+                      <option value="created">Date booked</option>
+                      <option value="dropoff">Drop-off date</option>
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none" />
                   </div>
@@ -952,53 +880,53 @@ function FinancialsContent() {
               {/* QUICK MONTH PRESETS */}
               <div className="flex flex-wrap gap-2">
                 {[
-                  { label: "This Month", from: monthStartISO, to: toISODate(new Date()) },
-                  { label: "Last Month", ...(() => { const n = new Date(); const s = new Date(n.getFullYear(), n.getMonth() - 1, 1); const e = new Date(n.getFullYear(), n.getMonth(), 0); return { from: toISODate(s), to: toISODate(e) }; })() },
+                  { label: "This month", from: monthStartISO, to: toISODate(new Date()) },
+                  { label: "Last month", ...(() => { const n = new Date(); const s = new Date(n.getFullYear(), n.getMonth() - 1, 1); const e = new Date(n.getFullYear(), n.getMonth(), 0); return { from: toISODate(s), to: toISODate(e) }; })() },
                 ].map((p) => (
                   <button key={p.label} onClick={() => { setInvFrom(p.from); setInvTo(p.to); }}
-                    className="px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-fg-2 bg-panel-3 hover:bg-panel-4 border border-fg/[0.12] rounded-lg transition-colors">
+                    className="px-3 py-1.5 text-sm text-fg-2 bg-panel-3 hover:bg-panel-4 border border-fg/[0.12] rounded-lg transition-colors">
                     {p.label}
                   </button>
                 ))}
               </div>
 
               {/* SUMMARY BAR */}
-              <div className="bg-emerald-900/10 border border-emerald-500/40 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="bg-emerald-900/10 border border-emerald-500/40 rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Total Owed to {invoice.operatorLabel}</p>
-                  <p className="text-[11px] font-bold text-fg-3 mt-1">{invoice.count} booking{invoice.count === 1 ? "" : "s"} · {invoice.periodLabel}</p>
+                  <p className="text-xs font-semibold text-emerald-400">Owed to {invoice.operatorLabel}</p>
+                  <p className="text-sm font-medium text-fg-3 mt-1">{invoice.count} booking{invoice.count === 1 ? "" : "s"} · {invoice.periodLabel}</p>
                 </div>
-                <p className="text-4xl font-black text-emerald-400 tracking-tight tabular-nums drop-shadow">£{invoice.totalOwed.toFixed(2)}</p>
+                <p className="text-3xl font-semibold text-emerald-400 tabular-nums">£{invoice.totalOwed.toFixed(2)}</p>
               </div>
 
               {/* PREVIEW TABLE */}
-              <div className="bg-panel-2 rounded-2xl border border-fg/[0.08] overflow-hidden max-h-[40vh] overflow-y-auto">
+              <div className="bg-panel-2 rounded-xl border border-fg/[0.08] overflow-hidden max-h-[40vh] overflow-y-auto">
                 <table className="w-full text-left whitespace-nowrap">
-                  <thead className="border-b border-fg/[0.08] text-[9px] font-black uppercase tracking-[0.2em] text-fg-4 bg-canvas sticky top-0">
+                  <thead className="border-b border-fg/[0.08] text-xs font-medium text-fg-3 bg-panel-2 sticky top-0">
                     <tr>
-                      <th className="px-4 py-3">Ref</th>
+                      <th className="px-4 py-3">Reference</th>
                       <th className="px-4 py-3">{invBasis === "dropoff" ? "Drop-off" : "Booked"}</th>
                       <th className="px-4 py-3">Customer</th>
-                      {!invoiceOperatorId && <th className="px-4 py-3">Provider</th>}
+                      {!invoiceOperatorId && <th className="px-4 py-3">Operator</th>}
                       <th className="px-4 py-3 text-right">Parking</th>
-                      <th className="px-4 py-3 text-right">Comm</th>
+                      <th className="px-4 py-3 text-right">Commission</th>
                       <th className="px-4 py-3 text-right text-emerald-400">Owed</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-fg/[0.08]">
                     {invoice.lines.map((l, i) => (
                       <tr key={i} className="hover:bg-fg/[0.045] transition-colors">
-                        <td className="px-4 py-3 text-xs font-bold text-fg">{l.ref}</td>
-                        <td className="px-4 py-3 text-[10px] font-bold text-fg-3 tabular-nums">{invBasis === "dropoff" ? l.dropoffLabel : l.createdLabel}</td>
-                        <td className="px-4 py-3 text-[11px] font-bold text-fg-2">{l.customer || "—"}</td>
-                        {!invoiceOperatorId && <td className="px-4 py-3 text-[10px] font-black uppercase text-fg-4 tracking-wider">{l.operatorName}</td>}
-                        <td className="px-4 py-3 text-right text-xs font-bold text-fg-2 tabular-nums">£{l.parkingGross.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right text-[10px] font-bold text-fg-4 tabular-nums">{l.commPct}%</td>
-                        <td className="px-4 py-3 text-right text-xs font-black text-emerald-400 tabular-nums">£{l.operatorPayout.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-xs font-medium text-fg">{l.ref}</td>
+                        <td className="px-4 py-3 text-xs font-medium text-fg-3 tabular-nums">{invBasis === "dropoff" ? l.dropoffLabel : l.createdLabel}</td>
+                        <td className="px-4 py-3 text-sm font-medium text-fg-2">{l.customer || "—"}</td>
+                        {!invoiceOperatorId && <td className="px-4 py-3 text-xs font-semibold text-fg-4">{l.operatorName}</td>}
+                        <td className="px-4 py-3 text-right text-xs font-medium text-fg-2 tabular-nums">£{l.parkingGross.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right text-xs font-medium text-fg-4 tabular-nums">{l.commPct}%</td>
+                        <td className="px-4 py-3 text-right text-xs font-semibold text-emerald-400 tabular-nums">£{l.operatorPayout.toFixed(2)}</td>
                       </tr>
                     ))}
                     {invoice.lines.length === 0 && (
-                      <tr><td colSpan={!invoiceOperatorId ? 7 : 6} className="px-4 py-10 text-center text-fg-4 font-bold text-sm">No bookings for this selection.</td></tr>
+                      <tr><td colSpan={!invoiceOperatorId ? 7 : 6} className="px-4 py-10 text-center text-fg-4 font-medium text-sm">No bookings for this selection.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -1006,15 +934,15 @@ function FinancialsContent() {
 
               {/* ACTIONS */}
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <button onClick={() => setShowInvoiceModal(false)} className="px-6 py-4 text-fg-3 font-bold text-xs hover:text-fg transition-colors">Close</button>
+                <button onClick={() => setShowInvoiceModal(false)} className="px-6 py-4 text-fg-3 font-medium text-xs hover:text-fg transition-colors">Close</button>
                 <div className="flex-1" />
                 <button onClick={exportInvoiceCSV} disabled={invoice.lines.length === 0}
-                  className="px-6 py-4 bg-panel-3 hover:bg-panel-4 disabled:opacity-40 disabled:cursor-not-allowed border border-fg/[0.12] text-fg rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2">
-                  <Download className="w-4 h-4 text-blue-400" /> CSV
+                  className="px-6 py-4 bg-panel-3 hover:bg-panel-4 disabled:opacity-40 disabled:cursor-not-allowed border border-fg/[0.12] text-fg rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-2">
+                  <Download className="w-4 h-4" /> Download CSV
                 </button>
                 <button onClick={printInvoice} disabled={invoice.lines.length === 0}
-                  className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2">
-                  <Printer className="w-4 h-4" /> Print / Save PDF
+                  className="px-4 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-2">
+                  <Printer className="w-4 h-4" /> Print or save as PDF
                 </button>
               </div>
             </div>
@@ -1024,42 +952,42 @@ function FinancialsContent() {
 
       {/* 🟢 NEW: ADD EXPENSE MODAL */}
       {showExpenseModal && (
-        <div className="fixed inset-0 bg-canvas/95 z-[300] flex items-center justify-center p-4 overflow-hidden">
-          <div className="bg-panel border border-fg/[0.08] w-full max-w-lg rounded-xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-fg/[0.08] flex justify-between items-center bg-panel-2 relative">
+        <div className="fixed inset-0 bg-[#060A14]/80 z-[300] flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden">
+          <div className="bg-panel border border-fg/[0.08] w-full max-w-lg rounded-t-xl sm:rounded-xl overflow-hidden max-h-full overflow-y-auto">
+            <div className="px-5 py-4 sm:px-6 border-b border-fg/[0.08] flex justify-between items-start gap-4 bg-panel-2">
               <div>
-                <h2 className="text-xl font-black text-fg tracking-tight">Log Expense</h2>
-                <p className="text-[10px] font-bold text-fg-3 uppercase tracking-widest mt-1">Operating Costs & Subscriptions</p>
+                <h2 className="text-xl font-semibold text-fg">Add expense</h2>
+                <p className="text-sm text-fg-3 mt-1">Running costs and subscriptions.</p>
               </div>
-              <button onClick={() => setShowExpenseModal(false)} className="p-2 bg-panel-3 rounded-xl text-fg-3 hover:text-fg border border-fg/[0.12]"><X className="w-5 h-5"/></button>
+              <button onClick={() => setShowExpenseModal(false)} aria-label="Close" className="p-2 -mr-2 rounded-lg text-fg-3 hover:text-fg hover:bg-fg/[0.06]"><X className="w-5 h-5" /></button>
             </div>
             
-            <form onSubmit={handleCreateExpense} className="p-8 space-y-6 text-fg">
+            <form onSubmit={handleCreateExpense} className="p-5 sm:p-6 pb-[calc(env(safe-area-inset-bottom)+20px)] space-y-5 text-fg">
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-fg-4 block ml-1 tracking-widest">Description</label>
-                <input required type="text" placeholder="e.g. Vercel Hosting, Google Ads" value={newExpense.description} onChange={(e) => setNewExpense({...newExpense, description: e.target.value})} 
-                  className="w-full bg-panel-3 border border-fg/[0.12] hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-fg font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-fg-4" />
+                <label className="text-sm font-medium text-fg-2 block">Description</label>
+                <input required type="text" placeholder="e.g. Vercel hosting, Google Ads" value={newExpense.description} onChange={(e) => setNewExpense({...newExpense, description: e.target.value})} 
+                  className="w-full bg-panel-3 border border-fg/[0.12] hover:border-blue-500/50 rounded-lg px-3.5 py-2.5 text-base md:text-sm text-fg outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors placeholder:text-fg-4" />
               </div>
 
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-rose-400 block ml-1 tracking-widest">Amount (£)</label>
+                  <label className="text-sm font-medium text-fg-2 block">Amount (£)</label>
                   <input required type="number" step="0.01" min="0" value={newExpense.amount} onChange={(e) => setNewExpense({...newExpense, amount: parseFloat(e.target.value) || 0})} 
-                    className="w-full bg-panel-3 border border-fg/[0.12] hover:border-rose-500/50 rounded-xl px-5 py-4 text-xl text-rose-400 font-black outline-none focus:ring-2 focus:ring-rose-500/50 transition-all" />
+                    className="w-full bg-panel-3 border border-fg/[0.12] hover:border-rose-500/50 rounded-lg px-3.5 py-2.5 text-lg text-fg font-semibold outline-none focus:ring-2 focus:ring-rose-500/50 transition-colors" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-fg-4 block ml-1 tracking-widest">Date</label>
+                  <label className="text-sm font-medium text-fg-2 block">Date</label>
                   <input required type="date" value={newExpense.date} onChange={(e) => setNewExpense({...newExpense, date: e.target.value})} 
-                    className="w-full bg-panel-3 border border-fg/[0.12] hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-fg font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all " />
+                    className="w-full bg-panel-3 border border-fg/[0.12] hover:border-blue-500/50 rounded-lg px-3.5 py-2.5 text-base md:text-sm text-fg outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors " />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-fg-4 block ml-1 tracking-widest">Category</label>
+                  <label className="text-sm font-medium text-fg-2 block">Category</label>
                   <div className="relative">
                     <select value={newExpense.category} onChange={(e) => setNewExpense({...newExpense, category: e.target.value})} 
-                      className="w-full appearance-none bg-panel-3 border border-fg/[0.12] hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-fg font-bold outline-none cursor-pointer focus:ring-2 focus:ring-blue-500/50 transition-all">
+                      className="w-full appearance-none bg-panel-3 border border-fg/[0.12] hover:border-blue-500/50 rounded-lg px-3.5 py-2.5 text-base md:text-sm text-fg outline-none cursor-pointer focus:ring-2 focus:ring-blue-500/50 transition-colors">
                       <option value="Software">Software & Hosting</option>
                       <option value="Marketing">Marketing & Ads</option>
                       <option value="Operations">Operations</option>
@@ -1075,15 +1003,15 @@ function FinancialsContent() {
                       <input type="checkbox" checked={newExpense.is_recurring} onChange={(e) => setNewExpense({...newExpense, is_recurring: e.target.checked})} className="opacity-0 absolute" />
                       {newExpense.is_recurring && <CheckCircle2 className="w-4 h-4 text-blue-500" />}
                     </div>
-                    <span className="text-xs font-bold text-fg-2">Monthly Recurring</span>
+                    <span className="text-xs font-medium text-fg-2">Repeats monthly</span>
                   </label>
                 </div>
               </div>
 
               <div className="pt-6 border-t border-fg/[0.08] flex gap-4 mt-8">
-                 <button type="button" onClick={() => setShowExpenseModal(false)} className="px-6 py-4 text-fg-3 font-bold text-xs hover:text-fg transition-colors">Cancel</button>
-                 <button type="submit" disabled={isSaving} className="flex-1 bg-rose-600 hover:bg-rose-500 py-4 rounded-xl font-bold text-sm text-white transition-all flex items-center justify-center gap-2 active:scale-95">
-                  {isSaving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4"/>} Save Expense
+                 <button type="button" onClick={() => setShowExpenseModal(false)} className="px-6 py-4 text-fg-3 font-medium text-xs hover:text-fg transition-colors">Cancel</button>
+                 <button type="submit" disabled={isSaving} className="flex-1 bg-rose-600 hover:bg-rose-500 py-4 rounded-xl font-medium text-sm text-white transition-colors flex items-center justify-center gap-2">
+                  {isSaving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4"/>} Save expense
                 </button>
               </div>
             </form>
@@ -1104,7 +1032,7 @@ export default function FinancialsPage() {
           <div className="absolute inset-0 border-t-2 border-emerald-500 rounded-full animate-spin"></div>
           <PiggyBank className="w-10 h-10 text-emerald-500 m-4 animate-pulse" />
         </div>
-        <p className="font-black text-fg-3 tracking-widest uppercase text-xs mt-6">Compiling Ledgers...</p>
+        <p className="font-semibold text-fg-3 text-xs mt-6">Loading financials…</p>
       </div>
     }>
       <FinancialsContent />
