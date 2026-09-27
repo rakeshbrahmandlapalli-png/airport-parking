@@ -18,11 +18,11 @@ import { useRouter } from "next/navigation";
 import { AdminSidebar, AdminMobileNav } from "@/components/admin/AdminNav";
 
 import {
-  Users, Trash2, LogOut, Phone, Car, Plane, MessageCircle, Search,
+  Users, Trash2, Car, Plane, MessageCircle, Search,
   TrendingUp, MapPin, Loader2, Filter, LayoutDashboard, Plus, Building2, X,
   Save, Clock, CheckCircle2, AlertCircle, PlaneLanding, PlaneTakeoff, XCircle, ChevronDown,
   Download, Briefcase, Receipt, Star, Database, Smartphone, Wallet, Settings2,
-  Activity, Tags, Zap, Link2, Copy, Mail, Send, RefreshCw,
+  Tags, Zap, Link2, Copy, Mail, Send, RefreshCw,
   Megaphone,
 } from "lucide-react";
 
@@ -1107,50 +1107,26 @@ function DashboardContent() {
       {/* PRIMARY WORKSPACE */}
       <main className="flex-1 p-4 md:p-8 w-full overflow-y-auto h-screen pb-32 md:pb-10 custom-scrollbar">
 
-        {/* MOBILE HEADER */}
-        <div className="md:hidden flex items-center justify-between mb-6 bg-[#0F1523] p-4 rounded-xl border border-white/[0.06]">
-          <div className="flex items-center gap-3 font-black text-lg uppercase tracking-tight text-white">
-            <div className="w-9 h-9 bg-blue-600/15 rounded-lg flex items-center justify-center border border-blue-500/30">
-              <Plane className="w-5 h-5 text-blue-400 rotate-45" />
-            </div>
-            OPS<span className="text-blue-500">CENTER</span>
-          </div>
-          <button onClick={() => router.replace("/admin/login")} className="p-2.5 bg-white/[0.04] rounded-lg text-zinc-300 hover:text-red-400 transition-colors border border-white/[0.06]">
-            <LogOut className="w-5 h-5" />
-          </button>
-        </div>
-
         {/* HEADER + STAT RAIL */}
         <div className="mb-6 rounded-xl border border-white/[0.06] bg-[#0F1523] overflow-hidden ring-1 ring-inset ring-white/[0.04]">
           {/* ROW 1 — title + actions */}
           <div className="p-5 md:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/[0.06]">
-            <div className="flex items-center gap-4">
-              <div className="hidden sm:flex w-11 h-11 rounded-lg bg-blue-600/15 border border-blue-500/30 items-center justify-center shrink-0">
-                <Activity className="w-5 h-5 text-blue-400" />
-              </div>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white">Live Operations</h1>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-1.5">
-                  <div className="text-emerald-400 font-semibold text-[10px] uppercase tracking-[0.2em] flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Real-Time Sync
-                  </div>
-                  <div className="hidden sm:block w-px h-3 bg-white/10"></div>
-                  <div className="text-zinc-500 font-semibold text-[10px] uppercase tracking-[0.15em] flex items-center gap-1.5">
-                    <Clock className="w-3 h-3" /> {todayPretty}
-                  </div>
-                </div>
-              </div>
+            <div>
+              <h1 className="text-2xl font-semibold text-white">Live board</h1>
+              <p className="mt-1 flex items-center gap-2 text-sm text-slate-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden="true"></span>
+                Updates live · {todayPretty}
+              </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2.5 shrink-0">
-              <button onClick={exportToCSV} className="px-4 py-2.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-zinc-300 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2">
+            <div className="grid grid-cols-2 sm:flex gap-2 shrink-0">
+              <button onClick={exportToCSV} className="px-4 py-2.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-zinc-300 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
                 <Download className="w-4 h-4" /> Export
               </button>
-              <button onClick={openPayLinkModal} className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2">
-                <Link2 className="w-4 h-4" /> Payment Link
+              <button onClick={openPayLinkModal} className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                <Link2 className="w-4 h-4" /> Payment link
               </button>
-              <button onClick={() => setShowManualModal(true)} className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2">
-                <Plus className="w-4 h-4" /> New Booking
+              <button onClick={() => setShowManualModal(true)} className="hidden sm:flex px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                <Plus className="w-4 h-4" /> New booking
               </button>
             </div>
           </div>
@@ -1158,18 +1134,18 @@ function DashboardContent() {
           {/* ROW 2 — stat rail */}
           <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-white/[0.06]">
             {[
-              { label: "Total Revenue", value: `£${totalRevenue.toFixed(2)}`, sub: `${paidCount} paid · avg £${avgBookingValue.toFixed(0)}`, color: "#10b981", Icon: Wallet },
-              { label: "Active Jobs", value: `${filteredBookings.length}`, sub: pendingCount > 0 ? `${pendingCount} awaiting action` : "all up to date", color: "#3b82f6", Icon: Zap },
-              { label: "Inbound Today", value: `${arrivalsToday}`, sub: "cars in today", color: "#6366f1", Icon: PlaneLanding },
-              { label: "Return Today", value: `${returnsToday}`, sub: "cars out today", color: "#f59e0b", Icon: PlaneTakeoff },
+              { label: "Revenue", value: `£${totalRevenue.toFixed(2)}`, sub: `${paidCount} paid · avg £${avgBookingValue.toFixed(0)}`, color: "#10b981", Icon: Wallet },
+              { label: "Bookings", value: `${filteredBookings.length}`, sub: pendingCount > 0 ? `${pendingCount} awaiting action` : "none awaiting action", color: "#3b82f6", Icon: Zap },
+              { label: "Drop-offs today", value: `${arrivalsToday}`, sub: "cars in today", color: "#6366f1", Icon: PlaneLanding },
+              { label: "Returns today", value: `${returnsToday}`, sub: "cars out today", color: "#f59e0b", Icon: PlaneTakeoff },
             ].map((s, i) => (
               <div key={i} className="p-4 md:p-5 border-t border-white/[0.06] lg:border-t-0">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-500">{s.label}</p>
+                  <p className="text-sm text-slate-400">{s.label}</p>
                   <s.Icon className="w-3.5 h-3.5" style={{ color: s.color }} />
                 </div>
-                <p className="text-xl md:text-2xl font-black text-white tracking-tight tabular-nums">{s.value}</p>
-                <p className="text-[10px] font-medium text-zinc-600 mt-1 tabular-nums truncate">{s.sub}</p>
+                <p className="text-xl md:text-2xl font-semibold text-white tabular-nums">{s.value}</p>
+                <p className="text-xs text-slate-500 mt-1 tabular-nums truncate">{s.sub}</p>
               </div>
             ))}
           </div>
@@ -1182,27 +1158,27 @@ function DashboardContent() {
             <input
               type="text"
               autoComplete="off"
-              placeholder="Search reference, client name, plate, email or phone..."
+              placeholder="Search ref, name, plate, email or phone"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#0F1523] border border-white/[0.06] hover:border-white/15 rounded-lg py-2.5 pl-10 pr-4 text-[13px] font-medium text-white outline-none focus:ring-1 focus:ring-blue-500/40 focus:border-blue-500/40 transition-colors placeholder:text-zinc-600"
+              className="w-full bg-[#0F1523] border border-white/[0.06] hover:border-white/15 rounded-lg py-2.5 pl-10 pr-4 text-base md:text-sm text-white outline-none focus:ring-1 focus:ring-blue-500/40 focus:border-blue-500/40 transition-colors placeholder:text-zinc-600"
             />
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5">
             {[
-              { id: 'time', icon: Filter, state: timeFilter, set: setTimeFilter, opts: [{v: "ALL", l: "Dates: All"}, {v: "TODAY_DROP", l: "Inbound Today"}, {v: "TODAY_PICK", l: "Return Today"}] },
-              { id: 'air', icon: MapPin, state: airportFilter, set: setAirportFilter, opts: [{v: "ALL", l: "Hubs: All"}, {v: "Luton", l: "Luton (LTN)"}, {v: "Heathrow", l: "Heathrow (LHR)"}] },
-              { id: 'srv', icon: Car, state: serviceFilter, set: setServiceFilter, opts: [{v: "ALL", l: "Service: All"}, {v: "Meet & Greet", l: "Meet & Greet"}, {v: "Park & Ride", l: "Park & Ride"}, {v: "Hotel & Parking", l: "Hotel Parking"}] },
-              { id: 'stat', icon: AlertCircle, state: statusFilter, set: setStatusFilter, opts: [{v: "ALL", l: "Status: All"}, {v: "PENDING", l: "Pending"}, {v: "CONFIRMED", l: "Confirmed"}, {v: "PARKED", l: "Parked"}, {v: "COMPLETED", l: "Completed"}] },
-              { id: 'comp', icon: Building2, state: companyFilter, set: setCompanyFilter, opts: [{v: "ALL", l: "Partners: All"}, {v: "DIRECT", l: "Aero Direct"}, ...companies.map(c => ({v: c.id, l: c.name}))] }
+              { id: 'time', icon: Filter, state: timeFilter, set: setTimeFilter, opts: [{v: "ALL", l: "All dates"}, {v: "TODAY_DROP", l: "Drop-offs today"}, {v: "TODAY_PICK", l: "Returns today"}] },
+              { id: 'air', icon: MapPin, state: airportFilter, set: setAirportFilter, opts: [{v: "ALL", l: "All airports"}, {v: "Luton", l: "Luton (LTN)"}, {v: "Heathrow", l: "Heathrow (LHR)"}] },
+              { id: 'srv', icon: Car, state: serviceFilter, set: setServiceFilter, opts: [{v: "ALL", l: "All services"}, {v: "Meet & Greet", l: "Meet & Greet"}, {v: "Park & Ride", l: "Park & Ride"}, {v: "Hotel & Parking", l: "Hotel Parking"}] },
+              { id: 'stat', icon: AlertCircle, state: statusFilter, set: setStatusFilter, opts: [{v: "ALL", l: "All statuses"}, {v: "PENDING", l: "Pending"}, {v: "CONFIRMED", l: "Confirmed"}, {v: "PARKED", l: "Parked"}, {v: "COMPLETED", l: "Completed"}] },
+              { id: 'comp', icon: Building2, state: companyFilter, set: setCompanyFilter, opts: [{v: "ALL", l: "All operators"}, {v: "DIRECT", l: "No operator yet"}, ...companies.map(c => ({v: c.id, l: c.name}))] }
             ].map((f) => (
               <div key={f.id} className="relative group/sel">
                 <f.icon className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 z-10 pointer-events-none" />
                 <select
                   value={f.state}
                   onChange={(e) => f.set(e.target.value)}
-                  className="w-full appearance-none bg-[#0F1523] border border-white/[0.06] hover:border-white/15 rounded-lg py-2.5 pl-9 pr-8 text-[10px] font-semibold uppercase tracking-wider text-zinc-300 outline-none cursor-pointer transition-colors focus:ring-1 focus:ring-blue-500/40 truncate"
+                  className="w-full appearance-none bg-[#0F1523] border border-white/[0.06] hover:border-white/15 rounded-lg py-2.5 pl-9 pr-8 text-sm text-slate-200 outline-none cursor-pointer transition-colors focus:ring-1 focus:ring-blue-500/40 truncate"
                 >
                   {f.opts.map((o, idx) => <option key={idx} value={o.v} className="bg-[#0F1523] text-white">{o.l}</option>)}
                 </select>
@@ -1214,11 +1190,11 @@ function DashboardContent() {
 
         {/* RESULTS BAR + SORT */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 px-0.5">
-          <div className="flex items-center gap-2.5 text-[11px] font-medium text-zinc-400">
+          <div className="flex items-center gap-2.5 text-sm text-slate-400">
             <span className="text-white font-bold tabular-nums">{displayBookings.length}</span>
-            <span className="uppercase tracking-wider text-zinc-500">record{displayBookings.length === 1 ? "" : "s"}</span>
+            <span className="text-slate-400">booking{displayBookings.length === 1 ? "" : "s"}</span>
             {activeFilterCount > 0 && (
-              <span className="flex items-center gap-1.5 text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md uppercase tracking-wider text-[9px] font-semibold">
+              <span className="flex items-center gap-1.5 text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md text-xs">
                 <Filter className="w-2.5 h-2.5" /> {activeFilterCount} filter{activeFilterCount === 1 ? "" : "s"}
               </span>
             )}
@@ -1228,8 +1204,8 @@ function DashboardContent() {
           </div>
           <div className="flex items-center gap-2.5">
             {activeFilterCount > 0 && (
-              <button onClick={resetFilters} className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 hover:text-red-400 border border-white/10 hover:border-red-500/30 px-2.5 py-2 rounded-lg transition-colors">
-                <X className="w-3 h-3" /> Clear All
+              <button onClick={resetFilters} className="flex items-center gap-1.5 text-sm text-slate-300 hover:text-red-400 border border-white/10 hover:border-red-500/30 px-2.5 py-2 rounded-lg transition-colors">
+                <X className="w-3 h-3" /> Clear filters
               </button>
             )}
             <div className="relative group/sort flex-1 sm:flex-none">
@@ -1237,22 +1213,62 @@ function DashboardContent() {
               <select
                 value={sortKey}
                 onChange={(e) => setSortKey(e.target.value)}
-                className="w-full appearance-none bg-[#0F1523] border border-white/[0.06] hover:border-white/15 rounded-lg py-2 pl-9 pr-8 text-[10px] font-semibold uppercase tracking-wider text-zinc-300 outline-none cursor-pointer transition-colors focus:ring-1 focus:ring-blue-500/40"
+                className="w-full appearance-none bg-[#0F1523] border border-white/[0.06] hover:border-white/15 rounded-lg py-2 pl-9 pr-8 text-sm text-slate-200 outline-none cursor-pointer transition-colors focus:ring-1 focus:ring-blue-500/40"
               >
                 <option value="NEWEST" className="bg-[#0F1523] text-white">Sort: Newest</option>
-                <option value="PRICE_HIGH" className="bg-[#0F1523] text-white">Sort: Price High → Low</option>
-                <option value="PRICE_LOW" className="bg-[#0F1523] text-white">Sort: Price Low → High</option>
-                <option value="INBOUND" className="bg-[#0F1523] text-white">Sort: Inbound Date</option>
-                <option value="RETURN" className="bg-[#0F1523] text-white">Sort: Return Date</option>
-                <option value="NAME" className="bg-[#0F1523] text-white">Sort: Name A → Z</option>
+                <option value="PRICE_HIGH" className="bg-[#0F1523] text-white">Sort: Highest price</option>
+                <option value="PRICE_LOW" className="bg-[#0F1523] text-white">Sort: Lowest price</option>
+                <option value="INBOUND" className="bg-[#0F1523] text-white">Sort: Drop-off date</option>
+                <option value="RETURN" className="bg-[#0F1523] text-white">Sort: Return date</option>
+                <option value="NAME" className="bg-[#0F1523] text-white">Sort: Name A–Z</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
             </div>
           </div>
         </div>
 
-        {/* ── ENTERPRISE DATA TABLE ─────────────────────────────────────────────── */}
-        <div className="mb-24 rounded-xl border border-white/[0.06] overflow-hidden bg-[#0F1523] ring-1 ring-inset ring-white/[0.04]">
+        {/* ── PHONE LIST ── */}
+        <div className="md:hidden mb-6 rounded-xl border border-white/[0.06] bg-[#0F1523] divide-y divide-white/[0.06] overflow-hidden">
+          {displayBookings.length === 0 ? (
+            <p className="px-4 py-12 text-center text-sm text-slate-400">No bookings match these filters.</p>
+          ) : (
+            displayBookings.map((b) => (
+              <button
+                key={b.id}
+                type="button"
+                onClick={() => setViewBooking(b)}
+                className="w-full text-left px-4 py-3.5 active:bg-white/[0.04]"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[15px] font-semibold text-white truncate">{b.full_name || "Unnamed"}</p>
+                    <p className="mt-0.5 font-mono text-xs text-blue-300">{b.booking_ref || "—"}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[15px] font-semibold text-white tabular-nums">£{Number(b.total_price || 0).toFixed(2)}</p>
+                    <p className="mt-0.5 flex items-center justify-end gap-1.5 text-xs text-slate-300 capitalize">
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: statusAccentColor(b.status) }} aria-hidden="true" />
+                      {String(b.status || "pending").toLowerCase() === "cancelled" ? "voided" : String(b.status || "pending").toLowerCase()}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 tabular-nums">
+                  {b.license_plate && (
+                    <span className="font-mono font-bold text-zinc-900 bg-amber-400 px-1.5 py-0.5 rounded">{b.license_plate}</span>
+                  )}
+                  <span>{formatDate(b.dropoff_date)} {b.dropoff_time || ""} → {formatDate(b.pickup_date)} {b.pickup_time || ""}</span>
+                </div>
+                <p className="mt-1 text-xs text-slate-500 truncate">
+                  {[detectAirport(b.airport), b.service_type, b.company_id && getCompanyName(b.company_id)].filter(Boolean).join(" · ")}
+                  {!b.company_id && <span className="text-amber-400"> · needs routing</span>}
+                </p>
+              </button>
+            ))
+          )}
+        </div>
+
+        {/* ── BOOKINGS TABLE (tablet and desktop) ── */}
+        <div className="hidden md:block mb-24 rounded-xl border border-white/[0.06] overflow-hidden bg-[#0F1523] ring-1 ring-inset ring-white/[0.04]">
 
           {/* Sticky column header */}
           <div className="overflow-x-auto">

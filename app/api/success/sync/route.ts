@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 import { publicBooking, publicCompany } from "@/app/lib/manageBooking";
+import { notifyNewBooking } from "@/app/lib/push";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 const supabaseAdmin = createClient(
@@ -126,7 +127,11 @@ export async function POST(req: Request) {
 
     // created = true only if THIS request inserted the row (so the client knows
     // whether to fire the fallback confirmation email).
-    return respond(finalRow, finalRow.booking_ref === shortId);
+    const created = finalRow.booking_ref === shortId;
+    // This request wrote the booking (the webhook hasn't yet), so it announces
+    // it; the webhook will see the row already exists and stay quiet.
+    if (created) await notifyNewBooking(finalRow);
+    return respond(finalRow, created);
   } catch (err: any) {
     logger.error("success/sync error:", err?.message);
     return NextResponse.json({ error: "Verification failed." }, { status: 500 });

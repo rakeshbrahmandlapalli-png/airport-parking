@@ -8,6 +8,7 @@ import { createClient } from "@supabase/supabase-js";
 import { triggerMissingFlightAlert, sendBookingConfirmationSMS } from "@/app/lib/twilio";
 import { Resend } from "resend";
 import { reportOfflineConversion, logConversionUpload } from "@/app/lib/googleAds";
+import { notifyNewBooking } from "@/app/lib/push";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
@@ -190,6 +191,10 @@ export async function POST(req: Request) {
 
       if (newBooking) {
         const webhookWon = newBooking.booking_ref === myRef;
+
+        // Buzz the admin phones. Only when this request created the booking, so
+        // a booking the success page wrote first is never announced twice.
+        if (webhookWon) await notifyNewBooking(newBooking);
 
         // 🟢 VIP CONCIERGE INTERCEPT LOGIC (isExclusive computed above, before insert)
         if (webhookWon) {
