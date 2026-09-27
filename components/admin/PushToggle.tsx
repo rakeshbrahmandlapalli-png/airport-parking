@@ -119,27 +119,27 @@ export function PushToggle() {
   if (state === "loading" || state === "unsupported") return null;
 
   const row = "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium";
-  const hint = (text: string) => <p className="mx-3 mb-2 text-xs leading-relaxed text-slate-400">{text}</p>;
+  const hint = (text: string) => <p className="mx-3 mb-2 text-xs leading-relaxed text-fg-3">{text}</p>;
 
   return (
     <div>
       {state === "on" ? (
-        <div className={`${row} text-slate-300`}>
+        <div className={`${row} text-fg-2`}>
           <Bell className="w-4 h-4 text-emerald-400" aria-hidden="true" />
           <span>Booking alerts on</span>
           <span className="ml-auto flex items-center gap-3">
-            <button type="button" onClick={sendTest} disabled={busy} className="text-xs text-slate-400 hover:text-white underline underline-offset-4">Test</button>
-            <button type="button" onClick={turnOff} disabled={busy} className="text-xs text-slate-400 hover:text-white underline underline-offset-4">Turn off</button>
+            <button type="button" onClick={sendTest} disabled={busy} className="text-xs text-fg-3 hover:text-fg underline underline-offset-4">Test</button>
+            <button type="button" onClick={turnOff} disabled={busy} className="text-xs text-fg-3 hover:text-fg underline underline-offset-4">Turn off</button>
           </span>
         </div>
       ) : state === "off" ? (
-        <button type="button" onClick={turnOn} disabled={busy} className={`${row} text-slate-300 hover:bg-white/[0.04] hover:text-white`}>
-          {busy ? <Loader2 className="w-4 h-4 animate-spin text-slate-500" aria-hidden="true" /> : <Bell className="w-4 h-4 text-slate-500" aria-hidden="true" />}
+        <button type="button" onClick={turnOn} disabled={busy} className={`${row} text-fg-2 hover:bg-fg/[0.04] hover:text-fg`}>
+          {busy ? <Loader2 className="w-4 h-4 animate-spin text-fg-4" aria-hidden="true" /> : <Bell className="w-4 h-4 text-fg-4" aria-hidden="true" />}
           Turn on booking alerts
         </button>
       ) : (
-        <div className={`${row} text-slate-400`}>
-          <BellOff className="w-4 h-4 text-slate-500" aria-hidden="true" /> Booking alerts
+        <div className={`${row} text-fg-3`}>
+          <BellOff className="w-4 h-4 text-fg-4" aria-hidden="true" /> Booking alerts
         </div>
       )}
 

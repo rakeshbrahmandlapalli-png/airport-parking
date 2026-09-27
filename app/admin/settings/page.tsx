@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AdminSidebar, AdminMobileNav } from "@/components/admin/AdminNav";
 import {
-  LogOut, Plane, Settings2, Save, Loader2, Percent, ArrowLeft, Zap,
+  Settings2, Save, Loader2, Percent, ArrowLeft, Zap,
   Coffee, ShieldCheck, RefreshCw, CheckCircle2, AlertCircle, Gauge, Clock, Network,
   Tag, TriangleAlert, Activity, Eye, Download,
 } from "lucide-react";
@@ -371,67 +371,49 @@ export default function SettingsPage() {
     alert("✅ All modifiers reset to BASE.");
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.replace("/admin/login");
-  };
-
   if (loading) return (
-    <div className="min-h-screen bg-[#0B1120] flex flex-col items-center justify-center text-white">
+    <div className="min-h-screen bg-canvas flex flex-col items-center justify-center text-fg">
       <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-      <p className="font-semibold text-zinc-500 tracking-widest uppercase text-xs mt-5">Loading system config…</p>
+      <p className="font-semibold text-fg-4 tracking-widest uppercase text-xs mt-5">Loading system config…</p>
     </div>
   );
 
-  const inputCls = "w-full bg-[#0B1120] border border-white/[0.06] hover:border-white/15 rounded-lg px-4 py-3 text-lg font-black text-white outline-none focus:ring-1 focus:ring-blue-500/40 focus:border-blue-500/40 transition-colors shadow-[0_0_0_1000px_#0B1120_inset] [-webkit-text-fill-color:white]";
-  const labelCls = "text-[10px] font-semibold uppercase text-zinc-500 block ml-0.5 tracking-[0.15em] mb-2";
-  const sectionHeader = "p-5 md:p-6 border-b border-white/[0.06] flex items-center gap-3";
+  const inputCls = "w-full bg-canvas border border-fg/[0.06] hover:border-fg/15 rounded-lg px-4 py-3 text-lg font-black text-fg outline-none focus:ring-1 focus:ring-blue-500/40 focus:border-blue-500/40 transition-colors shadow-[0_0_0_1000px_#0B1120_inset] [-webkit-text-fill-color:rgb(var(--admin-fg))]";
+  const labelCls = "text-[10px] font-semibold uppercase text-fg-4 block ml-0.5 tracking-[0.15em] mb-2";
+  const sectionHeader = "p-5 md:p-6 border-b border-fg/[0.06] flex items-center gap-3";
 
   const previewFinal = markupEnabled ? previewBase * (1 + markupPercent / 100) : previewBase;
 
   return (
-    <div className="min-h-screen bg-[#0B1120] font-sans flex flex-col md:flex-row text-slate-100 antialiased selection:bg-blue-600/30">
+    <div className="min-h-screen bg-canvas font-sans flex flex-col md:flex-row text-fg antialiased selection:bg-blue-600/30">
 
       <AdminSidebar />
 
       {/* ── MAIN ────────────────────────────────────────────────────────── */}
       <main className="flex-1 p-4 md:p-8 w-full overflow-y-auto h-screen pb-32 md:pb-10 custom-scrollbar">
 
-        {/* MOBILE HEADER */}
-        <div className="md:hidden flex items-center justify-between mb-6 bg-[#0F1523] p-4 rounded-xl border border-white/[0.06]">
-          <div className="flex items-center gap-3 font-black text-lg uppercase tracking-tight text-white">
-            <div className="w-9 h-9 bg-blue-600/15 rounded-lg flex items-center justify-center border border-blue-500/30">
-              <Plane className="w-5 h-5 text-blue-400 rotate-45" />
-            </div>
-            OPS<span className="text-blue-500">CENTER</span>
-          </div>
-          <button type="button" onClick={handleLogout} className="p-2.5 bg-white/[0.04] rounded-lg text-zinc-300 hover:text-red-400 transition-colors border border-white/[0.06]">
-            <LogOut className="w-5 h-5" />
-          </button>
-        </div>
-
         {/* HEADER + STAT RAIL */}
-        <div className="mb-6 rounded-xl border border-white/[0.06] bg-[#0F1523] overflow-hidden ring-1 ring-inset ring-white/[0.04]">
+        <div className="mb-6 rounded-xl border border-fg/[0.06] bg-panel overflow-hidden ring-1 ring-inset ring-fg/[0.04]">
           {/* ROW 1 — title + actions */}
-          <div className="p-5 md:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/[0.06]">
+          <div className="p-5 md:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-fg/[0.06]">
             <div className="flex items-center gap-4">
               <div className="hidden sm:flex w-11 h-11 rounded-lg bg-blue-600/15 border border-blue-500/30 items-center justify-center shrink-0">
                 <Settings2 className="w-5 h-5 text-blue-400" />
               </div>
               <div>
-                <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white">Platform Settings</h1>
+                <h1 className="text-2xl md:text-3xl font-black tracking-tight text-fg">Platform Settings</h1>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-1.5">
                   <div className="text-emerald-400 font-semibold text-[10px] uppercase tracking-[0.2em] flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                     System Config
                   </div>
-                  {lastSaved && <><div className="hidden sm:block w-px h-3 bg-white/10"></div><span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-[0.15em] flex items-center gap-1.5"><Clock className="w-3 h-3" /> Saved {lastSaved.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span></>}
+                  {lastSaved && <><div className="hidden sm:block w-px h-3 bg-fg/10"></div><span className="text-[10px] font-semibold text-fg-4 uppercase tracking-[0.15em] flex items-center gap-1.5"><Clock className="w-3 h-3" /> Saved {lastSaved.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span></>}
                   {hasUnsaved && !isSaving && <span className="text-[10px] font-semibold text-amber-400 uppercase tracking-[0.15em]">● Unsaved changes</span>}
                 </div>
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-2.5 shrink-0">
-              <Link href="/admin" className="px-4 py-2.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] hover:border-white/15 text-zinc-300 rounded-lg text-[11px] font-bold uppercase tracking-[0.1em] transition-colors flex items-center justify-center gap-2">
+              <Link href="/admin" className="px-4 py-2.5 bg-fg/[0.04] hover:bg-fg/[0.08] border border-fg/[0.06] hover:border-fg/15 text-fg-2 rounded-lg text-[11px] font-bold uppercase tracking-[0.1em] transition-colors flex items-center justify-center gap-2">
                 <ArrowLeft className="w-4 h-4" /> Live Board
               </Link>
               <button type="button" onClick={() => { fetchSettings(); fetchPromos(); fetchApiCompanies(); fetchPivotCompanies(); }}
@@ -442,20 +424,20 @@ export default function SettingsPage() {
           </div>
 
           {/* ROW 2 — stat rail */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-white/[0.06]">
+          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-fg/[0.06]">
             {[
               { label: "Global Markup", value: markupEnabled ? `${markupPercent}%` : "OFF", sub: markupEnabled ? "on every price" : "disabled", color: markupEnabled ? "#3b82f6" : "#64748b", Icon: Percent },
               { label: "Auto Surge", value: autoSurgeEnabled ? `≤${autoSurgeMax}%` : "OFF", sub: autoSurgeEnabled ? "demand pricing" : "disabled", color: autoSurgeEnabled ? "#f97316" : "#64748b", Icon: Activity },
               { label: "Live API", value: `${apiCompanies.length}`, sub: "api partners", color: "#10b981", Icon: Network },
               { label: "Active Promos", value: `${promos.filter(p => p.is_active).length}`, sub: `of ${promos.length} codes`, color: "#a855f7", Icon: Tag },
             ].map((s, i) => (
-              <div key={i} className="p-4 md:p-5 border-t border-white/[0.06] lg:border-t-0">
+              <div key={i} className="p-4 md:p-5 border-t border-fg/[0.06] lg:border-t-0">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-zinc-500">{s.label}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-fg-4">{s.label}</p>
                   <s.Icon className="w-3.5 h-3.5" style={{ color: s.color }} />
                 </div>
-                <p className="text-xl md:text-2xl font-black text-white tracking-tight tabular-nums">{s.value}</p>
-                <p className="text-[10px] font-medium text-zinc-600 mt-1 truncate">{s.sub}</p>
+                <p className="text-xl md:text-2xl font-black text-fg tracking-tight tabular-nums">{s.value}</p>
+                <p className="text-[10px] font-medium text-fg-4 mt-1 truncate">{s.sub}</p>
               </div>
             ))}
           </div>
@@ -466,8 +448,8 @@ export default function SettingsPage() {
           <div className="mb-6 bg-red-500/10 border border-red-500/30 rounded-2xl p-5">
             <p className="text-red-400 font-black text-xs uppercase tracking-widest mb-2 flex items-center gap-2"><TriangleAlert className="w-4 h-4" /> Save Error — Toggle Reset Root Cause</p>
             <pre className="text-red-300 text-[10px] font-mono whitespace-pre-wrap leading-relaxed">{saveError}</pre>
-            <div className="mt-4 bg-[#0B1120] rounded-xl p-4 border border-red-500/20">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Run this SQL in Supabase to fix:</p>
+            <div className="mt-4 bg-canvas rounded-xl p-4 border border-red-500/20">
+              <p className="text-[10px] font-black uppercase tracking-widest text-fg-3 mb-2">Run this SQL in Supabase to fix:</p>
               <pre className="text-emerald-400 text-[10px] font-mono">{`-- Ensure all settings rows exist with correct key column
 INSERT INTO settings (key, value) VALUES
   ('markup_enabled',   'true'),
@@ -483,19 +465,19 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
         <form onSubmit={handleSave} className="max-w-3xl space-y-6">
 
           {/* ── SECTION 1: GLOBAL MARKUP ──────────────────────────────────── */}
-          <div className="bg-[#0F1523] rounded-xl border border-white/[0.06] overflow-hidden">
+          <div className="bg-panel rounded-xl border border-fg/[0.06] overflow-hidden">
             <div className={sectionHeader}>
               <div className="w-11 h-11 bg-blue-600/10 rounded-lg flex items-center justify-center shrink-0 border border-blue-500/20"><Percent className="w-5 h-5 text-blue-500" /></div>
-              <div><h2 className="text-lg font-black text-white tracking-tight">Global Markup Engine</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Applied on top of every base price (API or pivot)</p></div>
+              <div><h2 className="text-lg font-black text-fg tracking-tight">Global Markup Engine</h2><p className="text-[10px] font-bold text-fg-3 uppercase tracking-widest mt-0.5">Applied on top of every base price (API or pivot)</p></div>
             </div>
             <div className="p-5 md:p-6 space-y-6">
 
               {/* Toggle */}
-              <div className="flex items-center justify-between bg-[#0B1120] p-5 rounded-2xl border border-white/[0.06]">
+              <div className="flex items-center justify-between bg-canvas p-5 rounded-2xl border border-fg/[0.06]">
                 <div>
-                  <p className="text-white font-black text-lg">Enable Global Markup</p>
-                  <p className="text-slate-400 text-xs mt-0.5">Multiplies all displayed prices by (1 + markup%)</p>
-                  <p className="text-[10px] font-bold text-slate-600 mt-1 uppercase tracking-widest">
+                  <p className="text-fg font-black text-lg">Enable Global Markup</p>
+                  <p className="text-fg-3 text-xs mt-0.5">Multiplies all displayed prices by (1 + markup%)</p>
+                  <p className="text-[10px] font-bold text-fg-4 mt-1 uppercase tracking-widest">
                     Currently: <span className={markupEnabled ? "text-emerald-400" : "text-red-400"}>{markupEnabled ? "ON" : "OFF"}</span>
                   </p>
                 </div>
@@ -504,10 +486,10 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
                   type="button"
                   onClick={() => setMarkupEnabled(!markupEnabled)}
                   aria-pressed={markupEnabled}
-                  className={`relative w-16 h-8 rounded-full transition-colors duration-300 shrink-0 focus:outline-none focus:ring-4 focus:ring-blue-500/30 ${markupEnabled ? "bg-blue-600" : "bg-slate-700"}`}
+                  className={`relative w-16 h-8 rounded-full transition-colors duration-300 shrink-0 focus:outline-none focus:ring-4 focus:ring-blue-500/30 ${markupEnabled ? "bg-blue-600" : "bg-panel-4"}`}
                 >
                   <span className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-300 flex items-center justify-center ${markupEnabled ? "translate-x-8" : "translate-x-0"}`}>
-                    {markupEnabled ? <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" /> : <AlertCircle className="w-3.5 h-3.5 text-slate-400" />}
+                    {markupEnabled ? <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" /> : <AlertCircle className="w-3.5 h-3.5 text-fg-3" />}
                   </span>
                 </button>
               </div>
@@ -521,42 +503,42 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
                       onChange={e => setMarkupPercent(Number(e.target.value) || 0)}
                       disabled={!markupEnabled}
                       className={`${inputCls} [-webkit-text-fill-color:#34d399]`} />
-                    <span className="text-3xl font-black text-slate-500 shrink-0">%</span>
+                    <span className="text-3xl font-black text-fg-4 shrink-0">%</span>
                   </div>
-                  <div className="mt-3 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                  <div className="mt-3 h-1.5 bg-panel-3 rounded-full overflow-hidden">
                     <div className="h-full bg-blue-500 rounded-full transition-all duration-300" style={{ width: `${Math.min(markupPercent, 50) * 2}%` }} />
                   </div>
                 </div>
 
                 {/* 🟢 NEW: Interactive price preview */}
-                <div className="bg-[#0B1120] border border-white/[0.06] rounded-2xl p-5">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2"><Eye className="w-3.5 h-3.5" /> Live Price Preview</p>
+                <div className="bg-canvas border border-fg/[0.06] rounded-2xl p-5">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-fg-3 mb-3 flex items-center gap-2"><Eye className="w-3.5 h-3.5" /> Live Price Preview</p>
                   <div className="flex items-center gap-3 mb-3">
-                    <span className="text-slate-500 font-bold text-sm shrink-0">API base: £</span>
+                    <span className="text-fg-4 font-bold text-sm shrink-0">API base: £</span>
                     <input type="number" step="0.01" value={previewBase} onChange={e => setPreviewBase(Number(e.target.value) || 0)}
-                      className="w-28 bg-[#0B1120] border border-white/[0.06] rounded-lg px-3 py-2 text-sm font-black text-white outline-none focus:border-blue-500/40 [-webkit-text-fill-color:white] shadow-[0_0_0_1000px_#0B1120_inset]" />
+                      className="w-28 bg-canvas border border-fg/[0.06] rounded-lg px-3 py-2 text-sm font-black text-fg outline-none focus:border-blue-500/40 [-webkit-text-fill-color:rgb(var(--admin-fg))] shadow-[0_0_0_1000px_#0B1120_inset]" />
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-400 text-sm font-bold">After {markupPercent}% markup:</span>
+                    <span className="text-fg-3 text-sm font-bold">After {markupPercent}% markup:</span>
                     <span className="text-2xl font-black text-emerald-400">£{previewFinal.toFixed(2)}</span>
                   </div>
-                  <div className="text-[10px] text-slate-600 font-bold mt-1">
+                  <div className="text-[10px] text-fg-4 font-bold mt-1">
                     Difference: +£{(previewFinal - previewBase).toFixed(2)} ({markupPercent}%)
                   </div>
 
                   {/* Full customer total incl. the live add-on prices below */}
-                  <div className="mt-4 pt-4 border-t border-white/[0.06] space-y-1.5">
-                    <div className="flex items-center justify-between text-xs font-bold text-slate-400">
+                  <div className="mt-4 pt-4 border-t border-fg/[0.06] space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-bold text-fg-3">
                       <span className="flex items-center gap-1.5"><Zap className="w-3 h-3 text-amber-400" /> + 1× Fast Track</span>
                       <span>+£{fastTrackPrice.toFixed(2)}</span>
                     </div>
-                    <div className="flex items-center justify-between text-xs font-bold text-slate-400">
+                    <div className="flex items-center justify-between text-xs font-bold text-fg-3">
                       <span className="flex items-center gap-1.5"><Coffee className="w-3 h-3 text-indigo-400" /> + VIP Lounge</span>
                       <span>+£{loungePrice.toFixed(2)}</span>
                     </div>
-                    <div className="flex items-center justify-between pt-2 mt-1 border-t border-white/[0.06]">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Example total · markup + both add-ons</span>
-                      <span className="text-lg font-black text-white">£{(previewFinal + fastTrackPrice + loungePrice).toFixed(2)}</span>
+                    <div className="flex items-center justify-between pt-2 mt-1 border-t border-fg/[0.06]">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-fg-4">Example total · markup + both add-ons</span>
+                      <span className="text-lg font-black text-fg">£{(previewFinal + fastTrackPrice + loungePrice).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
@@ -565,10 +547,10 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
           </div>
 
           {/* ── SECTION 2: ADD-ON PRICES ──────────────────────────────────── */}
-          <div className="bg-[#0F1523] rounded-xl border border-white/[0.06] overflow-hidden">
+          <div className="bg-panel rounded-xl border border-fg/[0.06] overflow-hidden">
             <div className={sectionHeader}>
               <div className="w-11 h-11 bg-amber-500/10 rounded-lg flex items-center justify-center shrink-0 border border-amber-500/20"><Zap className="w-5 h-5 text-amber-400" /></div>
-              <div><h2 className="text-lg font-black text-white tracking-tight">Add-On Prices</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Fast Track & Lounge — 100% AeroPark revenue</p></div>
+              <div><h2 className="text-lg font-black text-fg tracking-tight">Add-On Prices</h2><p className="text-[10px] font-bold text-fg-3 uppercase tracking-widest mt-0.5">Fast Track & Lounge — 100% AeroPark revenue</p></div>
             </div>
             <div className="p-5 md:p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
@@ -587,39 +569,39 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
           </div>
 
           {/* ── SECTION 3: CHECKOUT SAFETY ────────────────────────────────── */}
-          <div className="bg-[#0F1523] rounded-xl border border-white/[0.06] overflow-hidden">
+          <div className="bg-panel rounded-xl border border-fg/[0.06] overflow-hidden">
             <div className={sectionHeader}>
               <div className="w-11 h-11 bg-emerald-500/10 rounded-lg flex items-center justify-center shrink-0 border border-emerald-500/20"><ShieldCheck className="w-5 h-5 text-emerald-400" /></div>
-              <div><h2 className="text-lg font-black text-white tracking-tight">Checkout Safety</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Server-side price validation tolerance</p></div>
+              <div><h2 className="text-lg font-black text-fg tracking-tight">Checkout Safety</h2><p className="text-[10px] font-bold text-fg-3 uppercase tracking-widest mt-0.5">Server-side price validation tolerance</p></div>
             </div>
             <div className="p-5 md:p-6 space-y-4">
               <label className={labelCls}><Gauge className="w-3 h-3 inline mr-1 text-emerald-400" /> Price Tolerance (£)</label>
               <div className="flex items-center gap-3">
-                <span className="text-3xl font-black text-slate-500 shrink-0">£</span>
+                <span className="text-3xl font-black text-fg-4 shrink-0">£</span>
                 <input type="number" step="0.10" min="0" max="10" value={priceTolerance} onChange={e => setPriceTolerance(Number(e.target.value) || 0)}
                   className={`${inputCls} [-webkit-text-fill-color:#34d399]`} />
               </div>
-              <p className="text-[10px] text-slate-500 font-bold leading-relaxed">Max price difference before checkout rejects. Default £0.50. Raise if you get false rejections.</p>
-              <div className="bg-[#0B1120] border border-white/[0.06] rounded-xl p-4 text-xs font-bold text-slate-400">
+              <p className="text-[10px] text-fg-4 font-bold leading-relaxed">Max price difference before checkout rejects. Default £0.50. Raise if you get false rejections.</p>
+              <div className="bg-canvas border border-fg/[0.06] rounded-xl p-4 text-xs font-bold text-fg-3">
                 <span className="text-emerald-400 font-black">Example:</span> Customer sees £84.63. Server calculates £84.80. Diff = £0.17 → ✅ within tolerance.
               </div>
             </div>
           </div>
 
           {/* ── SECTION 4b: AUTO SURGE (pivot pricing) ────────────────────── */}
-          <div className="bg-[#0F1523] rounded-xl border border-white/[0.06] overflow-hidden">
+          <div className="bg-panel rounded-xl border border-fg/[0.06] overflow-hidden">
             <div className={sectionHeader}>
               <div className="w-11 h-11 bg-orange-500/10 rounded-lg flex items-center justify-center shrink-0 border border-orange-500/20"><Activity className="w-5 h-5 text-orange-400" /></div>
-              <div><h2 className="text-lg font-black text-white tracking-tight">Auto Surge</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Automatic demand pricing on pivot-priced companies</p></div>
+              <div><h2 className="text-lg font-black text-fg tracking-tight">Auto Surge</h2><p className="text-[10px] font-bold text-fg-3 uppercase tracking-widest mt-0.5">Automatic demand pricing on pivot-priced companies</p></div>
             </div>
 
             {/* Enable / disable */}
-            <div className="p-5 md:p-6 border-b border-white/[0.06]">
-              <div className="flex items-center justify-between bg-[#0B1120] p-5 rounded-2xl border border-white/[0.06]">
+            <div className="p-5 md:p-6 border-b border-fg/[0.06]">
+              <div className="flex items-center justify-between bg-canvas p-5 rounded-2xl border border-fg/[0.06]">
                 <div>
-                  <p className="text-white font-black text-lg">Enable Auto Surge</p>
-                  <p className="text-slate-400 text-xs mt-0.5">Fluctuates pivot prices by lead-time, weekend, length-of-stay & daily jitter. Deterministic so the quote shown matches the amount charged.</p>
-                  <p className="text-[10px] font-bold text-slate-600 mt-1 uppercase tracking-widest">
+                  <p className="text-fg font-black text-lg">Enable Auto Surge</p>
+                  <p className="text-fg-3 text-xs mt-0.5">Fluctuates pivot prices by lead-time, weekend, length-of-stay & daily jitter. Deterministic so the quote shown matches the amount charged.</p>
+                  <p className="text-[10px] font-bold text-fg-4 mt-1 uppercase tracking-widest">
                     Currently: <span className={autoSurgeEnabled ? "text-emerald-400" : "text-red-400"}>{autoSurgeEnabled ? "ACTIVE" : "OFF"}</span>
                   </p>
                 </div>
@@ -627,10 +609,10 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
                   type="button"
                   onClick={() => setAutoSurgeEnabled(!autoSurgeEnabled)}
                   aria-pressed={autoSurgeEnabled}
-                  className={`relative w-16 h-8 rounded-full transition-colors duration-300 shrink-0 focus:outline-none focus:ring-4 focus:ring-orange-500/30 ${autoSurgeEnabled ? "bg-orange-600" : "bg-slate-700"}`}
+                  className={`relative w-16 h-8 rounded-full transition-colors duration-300 shrink-0 focus:outline-none focus:ring-4 focus:ring-orange-500/30 ${autoSurgeEnabled ? "bg-orange-600" : "bg-panel-4"}`}
                 >
                   <span className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-300 flex items-center justify-center ${autoSurgeEnabled ? "translate-x-8" : "translate-x-0"}`}>
-                    {autoSurgeEnabled ? <CheckCircle2 className="w-3.5 h-3.5 text-orange-600" /> : <AlertCircle className="w-3.5 h-3.5 text-slate-400" />}
+                    {autoSurgeEnabled ? <CheckCircle2 className="w-3.5 h-3.5 text-orange-600" /> : <AlertCircle className="w-3.5 h-3.5 text-fg-3" />}
                   </span>
                 </button>
               </div>
@@ -640,30 +622,30 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
             <div className={`transition-opacity duration-300 ${!autoSurgeEnabled ? "opacity-30 pointer-events-none select-none" : ""}`}>
 
               {/* Max surge % */}
-              <div className="p-5 md:p-6 border-b border-white/[0.06]">
+              <div className="p-5 md:p-6 border-b border-fg/[0.06]">
                 <label className={labelCls}><TriangleAlert className="w-3 h-3 inline mr-1 text-orange-400" /> Max Surge (%)</label>
                 <input type="number" step="1" min="0" max="100" value={autoSurgeMax}
                   onChange={e => setAutoSurgeMax(Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
                   className={`${inputCls} [-webkit-text-fill-color:#fb923c]`} />
-                <p className="text-[10px] text-slate-500 font-bold mt-2">Upper bound — prices can rise by up to this much. Recommended 10–20%.</p>
+                <p className="text-[10px] text-fg-4 font-bold mt-2">Upper bound — prices can rise by up to this much. Recommended 10–20%.</p>
               </div>
 
               {/* Per-company opt-out */}
               <div className="p-5 md:p-6">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 mb-3"><Network className="w-3.5 h-3.5" /> Pivot Companies — toggle off to exclude</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-fg-3 flex items-center gap-2 mb-3"><Network className="w-3.5 h-3.5" /> Pivot Companies — toggle off to exclude</p>
                 {pivotCompanies.length === 0 ? (
-                  <p className="text-xs text-slate-500 font-bold">No pivot-priced companies found.</p>
+                  <p className="text-xs text-fg-4 font-bold">No pivot-priced companies found.</p>
                 ) : (
                   <div className="space-y-2">
                     {pivotCompanies.map((c) => {
                       const excluded = surgeExcluded.includes(String(c.id));
                       const on = !excluded;
                       return (
-                        <div key={c.id} className="flex items-center justify-between bg-[#0B1120] p-4 rounded-xl border border-white/[0.06]">
+                        <div key={c.id} className="flex items-center justify-between bg-canvas p-4 rounded-xl border border-fg/[0.06]">
                           <div>
-                            <p className="text-white font-black text-sm">{c.name}</p>
+                            <p className="text-fg font-black text-sm">{c.name}</p>
                             <p className="text-[10px] font-bold uppercase tracking-widest mt-0.5">
-                              <span className={on ? "text-emerald-400" : "text-slate-500"}>{on ? "Surging" : "Excluded"}</span>
+                              <span className={on ? "text-emerald-400" : "text-fg-4"}>{on ? "Surging" : "Excluded"}</span>
                             </p>
                           </div>
                           <button
@@ -672,7 +654,7 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
                             onClick={() => setSurgeExcluded(prev =>
                               excluded ? prev.filter(id => id !== String(c.id)) : [...prev, String(c.id)]
                             )}
-                            className={`relative w-14 h-7 rounded-full transition-colors duration-300 shrink-0 focus:outline-none focus:ring-4 focus:ring-orange-500/30 ${on ? "bg-orange-600" : "bg-slate-700"}`}
+                            className={`relative w-14 h-7 rounded-full transition-colors duration-300 shrink-0 focus:outline-none focus:ring-4 focus:ring-orange-500/30 ${on ? "bg-orange-600" : "bg-panel-4"}`}
                           >
                             <span className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-300 ${on ? "translate-x-7" : "translate-x-0"}`} />
                           </button>
@@ -686,7 +668,7 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
           </div>
 
           {/* ── SAVE ──────────────────────────────────────────────────────── */}
-          <div className="bg-[#0F1523] rounded-xl border border-white/[0.06] p-5 md:p-6">
+          <div className="bg-panel rounded-xl border border-fg/[0.06] p-5 md:p-6">
             <button type="submit" disabled={isSaving}
               className={`w-full h-14 font-bold text-[13px] uppercase tracking-[0.15em] rounded-lg flex items-center justify-center gap-3 transition-colors active:scale-[0.99] disabled:opacity-60 text-white ${saved ? "bg-emerald-600 hover:bg-emerald-500" : "bg-blue-600 hover:bg-blue-500"}`}>
               {isSaving ? <><Loader2 className="w-5 h-5 animate-spin" /> Saving...</>
@@ -696,42 +678,42 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
             <div className="flex items-center justify-center gap-2 mt-3 text-[10px] font-semibold uppercase tracking-[0.15em]">
               {hasUnsaved && !isSaving
                 ? <span className="text-amber-400">● Unsaved changes</span>
-                : <span className="text-zinc-600">All changes saved</span>}
-              <span className="text-zinc-700">·</span>
-              <span className="text-zinc-600">Press <kbd className="px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/10 text-zinc-400 normal-case">⌘/Ctrl + S</kbd> to save</span>
+                : <span className="text-fg-4">All changes saved</span>}
+              <span className="text-fg-4">·</span>
+              <span className="text-fg-4">Press <kbd className="px-1.5 py-0.5 rounded bg-fg/[0.06] border border-fg/10 text-fg-3 normal-case">⌘/Ctrl + S</kbd> to save</span>
             </div>
           </div>
         </form>
 
         {/* ── SECTION 5: PROMO QUICK MANAGER (outside form) ──────────────── */}
         <div className="max-w-3xl mt-6">
-          <div className="bg-[#0F1523] rounded-xl border border-white/[0.06] overflow-hidden">
+          <div className="bg-panel rounded-xl border border-fg/[0.06] overflow-hidden">
             <div className={sectionHeader}>
               <div className="w-11 h-11 bg-purple-500/10 rounded-lg flex items-center justify-center shrink-0 border border-purple-500/20"><Tag className="w-5 h-5 text-purple-400" /></div>
-              <div className="flex-1"><h2 className="text-lg font-black text-white tracking-tight">Promo Code Manager</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Quick enable/disable without leaving settings</p></div>
+              <div className="flex-1"><h2 className="text-lg font-black text-fg tracking-tight">Promo Code Manager</h2><p className="text-[10px] font-bold text-fg-3 uppercase tracking-widest mt-0.5">Quick enable/disable without leaving settings</p></div>
               <Link href="/admin/promos" className="text-[10px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300 border border-blue-500/20 px-3 py-1.5 rounded-lg transition-all">Full Manager →</Link>
             </div>
             <div className="p-5 md:p-6">
               {loadingPromos ? (
-                <div className="flex items-center gap-3 text-slate-500"><Loader2 className="w-4 h-4 animate-spin" /> Loading promos...</div>
+                <div className="flex items-center gap-3 text-fg-4"><Loader2 className="w-4 h-4 animate-spin" /> Loading promos...</div>
               ) : promos.length === 0 ? (
-                <p className="text-slate-500 text-sm font-bold">No promo codes found.</p>
+                <p className="text-fg-4 text-sm font-bold">No promo codes found.</p>
               ) : (
                 <div className="space-y-3">
                   {promos.map(promo => {
                     const isExpired = promo.expiry_date && new Date(promo.expiry_date) < new Date();
                     return (
-                      <div key={promo.id} className={`flex items-center justify-between bg-[#0B1120] px-5 py-4 rounded-xl border transition-all ${promo.is_active && !isExpired ? "border-emerald-500/20" : "border-white/[0.06] opacity-60"}`}>
+                      <div key={promo.id} className={`flex items-center justify-between bg-canvas px-5 py-4 rounded-xl border transition-all ${promo.is_active && !isExpired ? "border-emerald-500/20" : "border-fg/[0.06] opacity-60"}`}>
                         <div className="flex items-center gap-4">
-                          <span className="font-black text-white tracking-widest text-sm">{promo.code}</span>
+                          <span className="font-black text-fg tracking-widest text-sm">{promo.code}</span>
                           <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">{promo.discount_percent}% off</span>
                           {isExpired && <span className="text-[10px] font-black uppercase tracking-widest text-red-400 bg-red-500/10 px-2 py-0.5 rounded">Expired</span>}
-                          {promo.expiry_date && !isExpired && <span className="text-[10px] text-slate-500 font-bold">Expires {new Date(promo.expiry_date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>}
+                          {promo.expiry_date && !isExpired && <span className="text-[10px] text-fg-4 font-bold">Expires {new Date(promo.expiry_date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>}
                         </div>
                         <button type="button" disabled={!!isExpired || togglingPromo === promo.id} onClick={() => togglePromo(promo)}
-                          className={`relative w-12 h-6 rounded-full transition-colors duration-300 disabled:opacity-40 ${promo.is_active ? "bg-emerald-600" : "bg-slate-700"}`}>
+                          className={`relative w-12 h-6 rounded-full transition-colors duration-300 disabled:opacity-40 ${promo.is_active ? "bg-emerald-600" : "bg-panel-4"}`}>
                           {togglingPromo === promo.id
-                            ? <Loader2 className="w-3 h-3 animate-spin absolute inset-0 m-auto text-white" />
+                            ? <Loader2 className="w-3 h-3 animate-spin absolute inset-0 m-auto text-fg" />
                             : <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-300 ${promo.is_active ? "translate-x-6" : "translate-x-0"}`} />}
                         </button>
                       </div>
@@ -745,38 +727,38 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
 
         {/* ── SECTION 6: API HEALTH CHECK ─────────────────────────────────── */}
         <div className="max-w-3xl mt-6">
-          <div className="bg-[#0F1523] rounded-xl border border-white/[0.06] overflow-hidden">
+          <div className="bg-panel rounded-xl border border-fg/[0.06] overflow-hidden">
             <div className={sectionHeader}>
               <div className="w-11 h-11 bg-blue-500/10 rounded-lg flex items-center justify-center shrink-0 border border-blue-500/20"><Activity className="w-5 h-5 text-blue-400" /></div>
-              <div className="flex-1"><h2 className="text-lg font-black text-white tracking-tight">API Gateway Health</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Test all live API companies at once</p></div>
+              <div className="flex-1"><h2 className="text-lg font-black text-fg tracking-tight">API Gateway Health</h2><p className="text-[10px] font-bold text-fg-3 uppercase tracking-widest mt-0.5">Test all live API companies at once</p></div>
               <button type="button" onClick={runApiHealthCheck} disabled={testingApi || apiCompanies.length === 0}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-panel-3 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
                 {testingApi ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Testing...</> : <><Network className="w-3.5 h-3.5" /> Run All</>}
               </button>
             </div>
             <div className="p-5 md:p-6">
               {apiCompanies.length === 0 ? (
-                <p className="text-slate-500 text-sm font-bold">No companies with API tokens found.</p>
+                <p className="text-fg-4 text-sm font-bold">No companies with API tokens found.</p>
               ) : (
                 <div className="space-y-3">
                   {apiCompanies.map(c => {
                     const r = apiResults[c.id];
                     return (
-                      <div key={c.id} className={`flex items-center justify-between bg-[#0B1120] px-5 py-4 rounded-xl border transition-all ${!r ? "border-white/[0.06]" : r.ok ? "border-emerald-500/20" : "border-red-500/20"}`}>
+                      <div key={c.id} className={`flex items-center justify-between bg-canvas px-5 py-4 rounded-xl border transition-all ${!r ? "border-fg/[0.06]" : r.ok ? "border-emerald-500/20" : "border-red-500/20"}`}>
                         <div>
-                          <p className="font-black text-white text-sm">{c.name}</p>
-                          <p className="text-[10px] text-slate-500 font-bold mt-0.5">
+                          <p className="font-black text-fg text-sm">{c.name}</p>
+                          <p className="text-[10px] text-fg-4 font-bold mt-0.5">
                             Surcharge: {c.dynamic_surcharge_percent || 0}% · Modifier: {c.price_modifier || 1}x
                           </p>
                         </div>
                         <div className="text-right">
-                          {!r && <span className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">Not tested</span>}
+                          {!r && <span className="text-[10px] text-fg-4 font-bold uppercase tracking-widest">Not tested</span>}
                           {r && (
                             <>
                               <div className={`text-sm font-black ${r.ok ? "text-emerald-400" : "text-red-400"}`}>
                                 {r.ok ? r.price : r.error || "Failed"}
                               </div>
-                              <div className="text-[10px] text-slate-500 font-bold">{r.ms}ms · HTTP {r.status}</div>
+                              <div className="text-[10px] text-fg-4 font-bold">{r.ms}ms · HTTP {r.status}</div>
                             </>
                           )}
                         </div>
@@ -791,21 +773,21 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
 
         {/* ── SECTION 6b: CONVERSION TRACKING DIAGNOSTIC ──────────────────── */}
         <div className="max-w-3xl mt-6">
-          <div className="bg-[#0F1523] rounded-xl border border-white/[0.06] overflow-hidden">
+          <div className="bg-panel rounded-xl border border-fg/[0.06] overflow-hidden">
             <div className={sectionHeader}>
               <div className="w-11 h-11 bg-emerald-500/10 rounded-lg flex items-center justify-center shrink-0 border border-emerald-500/20"><Activity className="w-5 h-5 text-emerald-400" /></div>
-              <div className="flex-1"><h2 className="text-lg font-black text-white tracking-tight">Conversion Tracking</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Google Ads offline conversion pipeline</p></div>
+              <div className="flex-1"><h2 className="text-lg font-black text-fg tracking-tight">Conversion Tracking</h2><p className="text-[10px] font-bold text-fg-3 uppercase tracking-widest mt-0.5">Google Ads offline conversion pipeline</p></div>
               <div className="flex items-center gap-2 shrink-0">
                 <a href="/api/admin/conversions-export" download
-                  className="flex items-center gap-2 px-4 py-2 bg-white/[0.06] hover:bg-white/[0.1] text-slate-200 border border-white/[0.08] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
+                  className="flex items-center gap-2 px-4 py-2 bg-fg/[0.06] hover:bg-fg/[0.1] text-fg-2 border border-fg/[0.08] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
                   <Download className="w-3.5 h-3.5" /> Conversions CSV
                 </a>
                 <button type="button" onClick={runAdsCheck} disabled={adsChecking}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-panel-3 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
                   {adsChecking ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Checking...</> : <><CheckCircle2 className="w-3.5 h-3.5" /> Verify Connection</>}
                 </button>
                 <button type="button" onClick={runAdsResend} disabled={adsResending}
-                  className="flex items-center gap-2 px-4 py-2 bg-white/[0.06] hover:bg-white/[0.1] disabled:opacity-50 text-slate-200 border border-white/[0.08] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
+                  className="flex items-center gap-2 px-4 py-2 bg-fg/[0.06] hover:bg-fg/[0.1] disabled:opacity-50 text-fg-2 border border-fg/[0.08] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
                   {adsResending ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Sending...</> : <><RefreshCw className="w-3.5 h-3.5" /> Re-send Conversions</>}
                 </button>
               </div>
@@ -813,14 +795,14 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
             {adsResend && (
               <div className="px-5 md:px-6 pt-5 md:pt-6">
                 {adsResend.error ? (
-                  <div className="bg-[#0B1120] border border-red-500/20 rounded-xl p-4 text-red-400 text-sm font-bold">
+                  <div className="bg-canvas border border-red-500/20 rounded-xl p-4 text-red-400 text-sm font-bold">
                     {adsResend.error === "Unauthorized" ? "Session expired — reload the page and sign in again." : adsResend.error}
                   </div>
                 ) : adsResend.count === 0 ? (
-                  <p className="text-slate-400 text-sm font-bold">No paid bookings with a Google Ads click in the last 89 days.</p>
+                  <p className="text-fg-3 text-sm font-bold">No paid bookings with a Google Ads click in the last 89 days.</p>
                 ) : (
                   <div className="space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-fg-4">
                       Re-sent {adsResend.count} ad booking{adsResend.count === 1 ? "" : "s"} from the last 89 days
                     </p>
                     {adsResend.results.map((r: any) => (
@@ -837,9 +819,9 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
             )}
             <div className="p-5 md:p-6">
               {!adsCheck ? (
-                <p className="text-slate-500 text-sm font-bold">Tests env vars, OAuth, your developer token and the conversion action &mdash; no test booking needed.</p>
+                <p className="text-fg-4 text-sm font-bold">Tests env vars, OAuth, your developer token and the conversion action &mdash; no test booking needed.</p>
               ) : adsCheck.error ? (
-                <div className="bg-[#0B1120] border border-red-500/20 rounded-xl p-4 text-red-400 text-sm font-bold">
+                <div className="bg-canvas border border-red-500/20 rounded-xl p-4 text-red-400 text-sm font-bold">
                   {adsCheck.error === "Unauthorized" ? "Session expired — reload the page and sign in again." : adsCheck.error}
                 </div>
               ) : (
@@ -848,7 +830,7 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
                     {adsCheck.ready ? <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" /> : <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />}
                     <div>
                       <p className={`font-black text-sm ${adsCheck.ready ? "text-emerald-400" : "text-amber-400"}`}>{adsCheck.ready ? "Connected & ready" : "Not fully ready yet"}</p>
-                      <p className="text-[11px] text-slate-400 font-bold">Google Ads API {adsCheck.apiVersion}</p>
+                      <p className="text-[11px] text-fg-3 font-bold">Google Ads API {adsCheck.apiVersion}</p>
                     </div>
                   </div>
 
@@ -864,19 +846,19 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
                   </div>
 
                   {Array.isArray(adsCheck.accessibleCustomers) && adsCheck.accessibleCustomers.length > 0 && (
-                    <div className="bg-[#0B1120] border border-white/[0.06] rounded-xl px-4 py-3">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Accounts your token can access</p>
-                      <p className="text-[12px] font-bold text-slate-300 tabular-nums">{adsCheck.accessibleCustomers.join(" · ")}</p>
-                      <p className="text-[10px] font-bold text-slate-500 mt-2">
-                        login-customer-id: <span className="text-slate-300 tabular-nums">{adsCheck.loginCustomerId || "(not set)"}</span>
+                    <div className="bg-canvas border border-fg/[0.06] rounded-xl px-4 py-3">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-fg-4 mb-1.5">Accounts your token can access</p>
+                      <p className="text-[12px] font-bold text-fg-2 tabular-nums">{adsCheck.accessibleCustomers.join(" · ")}</p>
+                      <p className="text-[10px] font-bold text-fg-4 mt-2">
+                        login-customer-id: <span className="text-fg-2 tabular-nums">{adsCheck.loginCustomerId || "(not set)"}</span>
                       </p>
                     </div>
                   )}
 
                   {Array.isArray(adsCheck.hints) && adsCheck.hints.length > 0 && (
-                    <div className="bg-[#0B1120] border border-white/[0.06] rounded-xl p-4 space-y-2">
+                    <div className="bg-canvas border border-fg/[0.06] rounded-xl p-4 space-y-2">
                       {adsCheck.hints.map((h: string, i: number) => (
-                        <p key={i} className="text-[12px] text-slate-300 font-medium leading-relaxed">{h}</p>
+                        <p key={i} className="text-[12px] text-fg-2 font-medium leading-relaxed">{h}</p>
                       ))}
                     </div>
                   )}
@@ -888,16 +870,16 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
 
         {/* ── SECTION 7: DANGER ZONE ──────────────────────────────────────── */}
         <div className="max-w-3xl mt-6 mb-12">
-          <div className="bg-[#0F1523] rounded-xl border border-red-500/20 overflow-hidden">
+          <div className="bg-panel rounded-xl border border-red-500/20 overflow-hidden">
             <div className="p-5 md:p-6 border-b border-red-500/10 bg-red-500/5 flex items-center gap-4">
               <div className="w-11 h-11 bg-red-500/10 rounded-lg flex items-center justify-center shrink-0 border border-red-500/20"><TriangleAlert className="w-5 h-5 text-red-400" /></div>
-              <div><h2 className="text-lg font-black text-white tracking-tight">Danger Zone</h2><p className="text-[10px] font-bold text-red-400/70 uppercase tracking-widest mt-0.5">Irreversible actions — use with caution</p></div>
+              <div><h2 className="text-lg font-black text-fg tracking-tight">Danger Zone</h2><p className="text-[10px] font-bold text-red-400/70 uppercase tracking-widest mt-0.5">Irreversible actions — use with caution</p></div>
             </div>
             <div className="p-5 md:p-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#0B1120] p-5 rounded-xl border border-white/[0.06]">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-canvas p-5 rounded-xl border border-fg/[0.06]">
                 <div>
-                  <p className="text-white font-black">Reset All Price Modifiers</p>
-                  <p className="text-slate-400 text-xs mt-0.5">Sets every company's price_modifier back to 1.0 (BASE). This cannot be undone.</p>
+                  <p className="text-fg font-black">Reset All Price Modifiers</p>
+                  <p className="text-fg-3 text-xs mt-0.5">Sets every company's price_modifier back to 1.0 (BASE). This cannot be undone.</p>
                 </div>
                 <button type="button" onClick={resetAllModifiers}
                   className="shrink-0 px-5 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
@@ -918,12 +900,12 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
 // Single pass/fail row used by the Conversion Tracking diagnostic.
 function StatusRow({ ok, label, note }: { ok: boolean; label: string; note?: string }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 bg-[#0B1120] border border-white/[0.06] rounded-lg px-4 py-2.5">
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 bg-canvas border border-fg/[0.06] rounded-lg px-4 py-2.5">
       <div className="flex items-center gap-2.5 min-w-0">
         {ok
           ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           : <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />}
-        <span className="text-[12px] font-bold text-slate-200 truncate">{label}</span>
+        <span className="text-[12px] font-bold text-fg-2 truncate">{label}</span>
       </div>
       {note && <span className={`text-[11px] font-bold break-words min-w-0 ${ok ? "text-emerald-400/80 shrink-0" : "text-red-400/80"}`}>{note}</span>}
     </div>

@@ -6,7 +6,7 @@
  */
 
 import { logger } from "@/app/lib/logger";
-import { useEffect, useState, useMemo, Suspense } from "react";
+import { useEffect, useState, useMemo, Suspense, type ReactNode } from "react";
 import { supabase } from "@/app/lib/supabase";
 import { recordAdminAction } from "@/app/lib/audit-client";
 import {
@@ -18,8 +18,8 @@ import { useRouter } from "next/navigation";
 import { AdminSidebar, AdminMobileNav } from "@/components/admin/AdminNav";
 
 import {
-  Users, Trash2, Car, Plane, MessageCircle, Search,
-  TrendingUp, MapPin, Loader2, Filter, LayoutDashboard, Plus, Building2, X,
+  Trash2, Phone, Car, Plane, MessageCircle, Search,
+  TrendingUp, MapPin, Loader2, Filter, Plus, Building2, X,
   Save, Clock, CheckCircle2, AlertCircle, PlaneLanding, PlaneTakeoff, XCircle, ChevronDown,
   Download, Briefcase, Receipt, Star, Database, Smartphone, Wallet, Settings2,
   Tags, Zap, Link2, Copy, Mail, Send, RefreshCw,
@@ -775,17 +775,6 @@ function DashboardContent() {
     return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
   };
 
-  const getStatusBadge = (status: string) => {
-    const s = status?.toLowerCase() || "pending";
-    const classes = "px-2.5 py-1 rounded-md text-[9px] font-semibold uppercase tracking-wider flex items-center gap-1.5 w-max";
-
-    if (s === "confirmed") return <div className={`${classes} bg-blue-500/10 text-blue-400`}><CheckCircle2 className="w-3 h-3"/> Confirmed</div>;
-    if (s === "parked") return <div className={`${classes} bg-violet-500/10 text-violet-400`}><Car className="w-3 h-3"/> Parked</div>;
-    if (s === "completed") return <div className={`${classes} bg-emerald-500/10 text-emerald-400`}><CheckCircle2 className="w-3 h-3"/> Completed</div>;
-    if (s === "cancelled") return <div className={`${classes} bg-red-500/10 text-red-400`}><XCircle className="w-3 h-3"/> Voided</div>;
-    return <div className={`${classes} bg-amber-500/10 text-amber-400`}><Clock className="w-3 h-3"/> Pending</div>;
-  };
-
   // Status → row "spine" colour (lets operators scan status down the table at a glance)
   const statusAccentColor = (status: string) => {
     const s = status?.toLowerCase() || "pending";
@@ -814,7 +803,7 @@ function DashboardContent() {
   // Compact table status pill — no glow, no backdrop blur; pure semantic colour.
   const getTableStatusPill = (status: string) => {
     const s = status?.toLowerCase() || "pending";
-    const base = "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap";
+    const base = "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold whitespace-nowrap";
     if (s === "confirmed") return <span className={`${base} bg-blue-500/10 text-blue-400`}><CheckCircle2 className="w-2.5 h-2.5" />Confirmed</span>;
     if (s === "parked")    return <span className={`${base} bg-violet-500/10 text-violet-400`}><Car className="w-2.5 h-2.5" />Parked</span>;
     if (s === "completed") return <span className={`${base} bg-emerald-500/10 text-emerald-400`}><CheckCircle2 className="w-2.5 h-2.5" />Completed</span>;
@@ -825,13 +814,13 @@ function DashboardContent() {
   // API sync status chip — reflects whether this booking has been routed to a partner.
   const getApiSyncBadge = (b: any) => {
     const s = b.status?.toLowerCase() || "pending";
-    const base = "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap";
-    if (s === "cancelled") return <span className="text-[10px] text-zinc-600 font-medium">N/A</span>;
+    const base = "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold whitespace-nowrap";
+    if (s === "cancelled") return <span className="text-xs text-fg-4 font-medium">N/A</span>;
     if (!b.company_id)
       return <span className={`${base} bg-amber-500/10 text-amber-500`}><AlertCircle className="w-2.5 h-2.5" />Unrouted</span>;
     if (s === "confirmed" || s === "parked" || s === "completed")
       return <span className={`${base} bg-emerald-500/10 text-emerald-400`}><CheckCircle2 className="w-2.5 h-2.5" />Synced</span>;
-    return <span className={`${base} bg-white/5 text-zinc-400`}><Clock className="w-2.5 h-2.5" />Queued</span>;
+    return <span className={`${base} bg-fg/5 text-fg-3`}><Clock className="w-2.5 h-2.5" />Queued</span>;
   };
 
   // --- 8. FILTER ENGINE ---
@@ -920,179 +909,221 @@ function DashboardContent() {
   const todayPretty = todayDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   if (loading) return (
-    <div className="min-h-screen bg-[#0B1120] flex flex-col items-center justify-center text-white">
+    <div className="min-h-screen bg-canvas flex flex-col items-center justify-center text-fg">
       <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-      <p className="font-semibold text-zinc-500 tracking-widest uppercase text-[11px] mt-5">Loading operations…</p>
+      <p className="font-semibold text-fg-4 text-sm mt-5">Loading bookings…</p>
     </div>
   );
 
   // Flat enterprise input styles — solid deep colour, subtle 1px borders, no blur.
-  const inputStyle = "w-full bg-[#0B1120] border border-white/10 hover:border-white/20 rounded-lg px-4 py-3 text-sm text-white font-medium outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition-colors [-webkit-text-fill-color:white] placeholder:text-zinc-600";
-  const selectStyle = "w-full appearance-none bg-[#0B1120] border border-white/10 hover:border-white/20 rounded-lg px-4 py-3 text-sm text-white font-medium outline-none cursor-pointer focus:ring-1 focus:ring-blue-500/50 transition-colors [-webkit-text-fill-color:white]";
+  const inputStyle = "w-full bg-canvas border border-fg/10 hover:border-fg/20 rounded-lg px-4 py-3 text-sm text-fg font-medium outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition-colors [-webkit-text-fill-color:rgb(var(--admin-fg))] placeholder:text-fg-4";
+  const selectStyle = "w-full appearance-none bg-canvas border border-fg/10 hover:border-fg/20 rounded-lg px-4 py-3 text-sm text-fg font-medium outline-none cursor-pointer focus:ring-1 focus:ring-blue-500/50 transition-colors [-webkit-text-fill-color:rgb(var(--admin-fg))]";
   const yellowInputStyle = "w-full bg-amber-400 border border-amber-500 rounded-lg px-4 py-3 text-black text-lg text-center font-bold font-mono uppercase outline-none focus:ring-2 focus:ring-amber-500/40 transition-colors [-webkit-text-fill-color:black] placeholder:text-amber-700/50 tracking-wider";
 
-  // ── MASTER–DETAIL: the right-hand detail panel for the selected booking ──────
-  const detailRow = (label: string, value: any, accent = "text-white") => (
-    <div className="flex items-center justify-between gap-4 py-2.5 border-b border-slate-800/60 last:border-0">
-      <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 shrink-0">{label}</span>
-      <span className={`text-sm font-bold text-right ${accent}`}>{value || <span className="text-slate-600">—</span>}</span>
+  // ── BOOKING DETAIL (opens when a booking is tapped) ──────────────────────
+  const detailRow = (label: string, value: any, accent = "text-fg") => (
+    <div className="flex items-start justify-between gap-4 py-2.5 border-b border-fg/[0.06] last:border-0">
+      <span className="text-sm text-fg-3 shrink-0">{label}</span>
+      <span className={`text-sm font-medium text-right min-w-0 break-words ${accent}`}>{value || <span className="text-fg-4">—</span>}</span>
     </div>
   );
 
+  const detailSection = (title: string, children: ReactNode) => (
+    <section>
+      <h4 className="text-sm font-semibold text-fg mb-2">{title}</h4>
+      <div className="rounded-xl border border-fg/[0.08] bg-panel-2 px-4">{children}</div>
+    </section>
+  );
+
+  const actionBtn = "flex items-center justify-center gap-2 h-11 px-3 rounded-lg border border-fg/10 bg-panel-3 hover:bg-panel-4 text-sm font-medium text-fg-2 hover:text-fg transition-colors";
+
   const renderDetail = (b: any) => {
-    if (!b) {
-      return (
-        <div className="h-full flex flex-col items-center justify-center text-center py-24 opacity-40">
-          <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-slate-700 flex items-center justify-center mb-5 bg-slate-900/40">
-            <LayoutDashboard className="w-9 h-9 text-slate-600" />
-          </div>
-          <p className="text-sm font-black uppercase tracking-[0.25em] text-slate-400">No record selected</p>
-          <p className="text-xs font-bold text-slate-600 mt-2">Choose a booking from the list to view its dossier.</p>
-        </div>
-      );
-    }
+    if (!b) return null;
+    const status = b.status?.toLowerCase() || "pending";
+    const commission = getCommission(b);
+    const bookedOn = b.created_at
+      ? new Date(b.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
+      : "";
+    const tel = String(b.phone_number || "").replace(/[^\d+]/g, "");
     return (
       <div className="flex flex-col h-full">
         {/* HEADER */}
-        <div className="p-6 border-b border-slate-800 bg-[#131A2B] relative" style={{ boxShadow: `inset 4px 0 0 0 ${statusAccentColor(b.status)}` }}>
+        <div className="px-5 pt-5 pb-4 border-b border-fg/[0.08] bg-panel-2">
           <div className="flex items-start justify-between gap-4">
-            <div className="flex flex-col gap-2">
-              <span className="text-[11px] font-black font-mono text-blue-400 tracking-widest uppercase bg-blue-500/10 px-2.5 py-1 rounded border border-blue-500/20 w-max">{b.booking_ref}</span>
-              <h3 className="text-2xl font-black text-white tracking-tight">{b.full_name || "Unnamed Client"}</h3>
-              <div className="flex flex-wrap items-center gap-2">
-                {getStatusBadge(b.status)}
-                {b.fast_track_count > 0 && (
-                  <span className="text-[9px] font-black text-amber-400 uppercase tracking-widest bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20 flex items-center gap-1">
-                    <Zap className="w-3 h-3" /> {b.fast_track_count}× Fast Track
-                  </span>
-                )}
-              </div>
+            <div className="min-w-0">
+              <p className="font-mono text-sm text-blue-400">{b.booking_ref}</p>
+              <h3 className="mt-1 text-xl font-semibold text-fg truncate">{b.full_name || "Unnamed customer"}</h3>
+              <p className="mt-1 text-sm text-fg-3 tabular-nums">
+                £{Number(b.total_price || 0).toFixed(2)}
+                {bookedOn && <> · booked {bookedOn}</>}
+              </p>
             </div>
-            {/* close the dossier modal */}
-            <button onClick={() => setViewBooking(null)} className="p-2.5 bg-[#1A2235] rounded-xl text-slate-400 hover:text-white border border-slate-700/50 shrink-0">
+            <button type="button" onClick={() => setViewBooking(null)} aria-label="Close" className="p-2 -mr-2 rounded-lg text-fg-3 hover:text-fg hover:bg-fg/[0.06] shrink-0">
               <X className="w-5 h-5" />
             </button>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <label className="relative inline-flex items-center">
+              <span className="sr-only">Status</span>
+              <span className="absolute left-3 w-2 h-2 rounded-full pointer-events-none" style={{ background: statusAccentColor(b.status) }} aria-hidden="true" />
+              <select
+                value={status}
+                onChange={(e) => quickStatus(b, e.target.value)}
+                className="appearance-none h-9 rounded-lg border border-fg/10 bg-panel pl-7 pr-8 text-sm font-medium text-fg outline-none focus:ring-2 focus:ring-blue-500/40 cursor-pointer"
+              >
+                <option value="pending">Pending</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="parked">Parked</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Voided</option>
+              </select>
+              <ChevronDown className="absolute right-2.5 w-4 h-4 text-fg-4 pointer-events-none" aria-hidden="true" />
+            </label>
+            {b.fast_track_count > 0 && (
+              <span className="inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-amber-500/10 text-sm text-amber-400">
+                <Zap className="w-3.5 h-3.5" aria-hidden="true" /> {b.fast_track_count}× Fast Track
+              </span>
+            )}
+            {String(b.gclid || "").trim() && (
+              <span className="inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-sky-500/10 text-sm text-sky-400">
+                <Megaphone className="w-3.5 h-3.5" aria-hidden="true" /> Google Ads
+              </span>
+            )}
           </div>
         </div>
 
         {/* BODY */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
-          {/* PRICE BANNER */}
-          <div className="bg-[#131A2B] border border-emerald-500/20 rounded-xl p-5 flex items-center justify-between" style={{ boxShadow: "inset 3px 0 0 0 #10b981" }}>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Transaction Value</p>
-              <p className="text-3xl font-black text-white tracking-tight tabular-nums mt-1">£{Number(b.total_price || 0).toFixed(2)}</p>
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-5">
+          {(airportMismatch(b) || !b.company_id || b.fees_covered) && (
+            <div className="space-y-2">
+              {airportMismatch(b) && (
+                <p className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm text-amber-300">
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
+                  Wrong airport: {airportMismatch(b)}. Reassign it before the customer is told where to go.
+                </p>
+              )}
+              {!b.company_id && (
+                <p className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm text-amber-300">
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
+                  No operator yet. Choose one under Operator below.
+                </p>
+              )}
+              {b.fees_covered && (
+                <p className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm text-amber-300">
+                  <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
+                  Fees covered by AeroPark. Don&apos;t send the customer the standard fee note, whichever operator has it.
+                </p>
+              )}
             </div>
-            <Wallet className="w-12 h-12 text-emerald-500/20" />
-          </div>
+          )}
 
-          {/* CONTACT */}
-          <div>
-            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500 mb-2 flex items-center gap-2"><Users className="w-3.5 h-3.5" /> Customer</p>
-            <div className="bg-[#131A2B] border border-white/[0.06] rounded-xl px-5 py-2">
-              {detailRow("Phone", b.phone_number)}
-              {detailRow("Email", b.email, "text-slate-300 break-all")}
-            </div>
-          </div>
+          {detailSection("Customer", <>
+            {detailRow("Phone", b.phone_number && (
+              <a href={`tel:${tel}`} className="text-blue-400 hover:underline underline-offset-4 tabular-nums">{b.phone_number}</a>
+            ))}
+            {detailRow("Email", b.email && (
+              <a href={`mailto:${b.email}`} className="text-blue-400 hover:underline underline-offset-4 break-all">{b.email}</a>
+            ))}
+          </>)}
 
-          {/* VEHICLE */}
-          <div>
-            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500 mb-2 flex items-center gap-2"><Car className="w-3.5 h-3.5" /> Vehicle</p>
-            <div className="bg-[#131A2B] border border-white/[0.06] rounded-xl px-5 py-4 flex items-center gap-4">
-              <div className="px-3 py-2 bg-amber-400 text-black font-bold font-mono text-sm rounded tracking-[0.1em]">
-                {b.license_plate || "—"}
-              </div>
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-300 uppercase tracking-widest">
-                <div className="w-3 h-3 rounded-full border border-white/20 shadow-inner" style={{ background: b.car_color || "#334155" }}></div>
-                {b.car_make || "Standard Fleet"}
-              </div>
-            </div>
-          </div>
+          {detailSection("Trip", <>
+            {detailRow("Drop-off", <span className="tabular-nums">{formatDate(b.dropoff_date)} {b.dropoff_time || ""}</span>)}
+            {detailRow("Return", <span className="tabular-nums">{formatDate(b.pickup_date)} {b.pickup_time || ""}</span>)}
+            {detailRow("Airport", b.airport)}
+            {detailRow("Terminal", b.terminal)}
+            {detailRow("Flight", b.flight_number)}
+            {detailRow("Service", b.service_type || "Meet & Greet")}
+          </>)}
 
-          {/* SCHEDULE */}
-          <div>
-            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500 mb-2 flex items-center gap-2"><Clock className="w-3.5 h-3.5" /> Logistics</p>
-            <div className="bg-[#131A2B] border border-white/[0.06] rounded-xl px-5 py-2">
-              {detailRow("Inbound", <span className="tabular-nums">{formatDate(b.dropoff_date)} {b.dropoff_time || ""}</span>, "text-blue-300")}
-              {detailRow("Return", <span className="tabular-nums">{formatDate(b.pickup_date)} {b.pickup_time || ""}</span>, "text-emerald-300")}
-              {detailRow("Airport", b.airport)}
-              {detailRow("Terminal", b.terminal)}
-              {detailRow("Flight", b.flight_number)}
-            </div>
-            {airportMismatch(b) && (
-              <p className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] font-bold text-amber-300">
-                Wrong airport: {airportMismatch(b)}. Reassign before this customer is told where to drive.
+          {detailSection("Vehicle", <>
+            {detailRow("Registration", b.license_plate && (
+              <span className="inline-block px-2 py-0.5 rounded bg-amber-400 font-mono font-bold text-black tracking-wider">{b.license_plate}</span>
+            ))}
+            {detailRow("Car", [b.car_color, b.car_make].filter(Boolean).join(" "))}
+          </>)}
+
+          {b.additional_notes && detailSection("Customer notes",
+            <p className="py-3 text-sm text-fg-2 whitespace-pre-wrap">{b.additional_notes}</p>
+          )}
+
+          {detailSection("Payment", <>
+            {detailRow("Total", <span className="tabular-nums">£{Number(b.total_price || 0).toFixed(2)}</span>)}
+            {detailRow("Our commission", <span className="tabular-nums">£{commission.amount.toFixed(2)} <span className="text-fg-4 font-normal">({commission.label})</span></span>, "text-emerald-400")}
+            {Number(b.attendant_commission) > 0 && detailRow("Attendant fee", <span className="tabular-nums">£{Number(b.attendant_commission).toFixed(2)}</span>)}
+            {b.promo_code && detailRow("Promo code", <span className="font-mono">{b.promo_code}</span>)}
+            {detailRow("Paid by", b.stripe_session_id ? "Card (Stripe)" : "Added manually")}
+          </>)}
+
+          <section>
+            <h4 className="text-sm font-semibold text-fg mb-2">Operator</h4>
+            <div className="rounded-xl border border-fg/[0.08] bg-panel-2 p-4 space-y-3">
+              <p className="text-sm text-fg-2">
+                Currently: <span className="font-medium text-fg">{b.company_id ? getCompanyName(b.company_id) : "not assigned"}</span>
               </p>
-            )}
-          </div>
-
-          {/* COMMERCIAL */}
-          <div>
-            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500 mb-2 flex items-center gap-2"><Building2 className="w-3.5 h-3.5" /> Commercial</p>
-            <div className="bg-[#131A2B] border border-white/[0.06] rounded-xl px-5 py-2">
-              {detailRow("Partner", getCompanyName(b.company_id))}
-              {detailRow("Service", b.service_type || "Meet & Greet")}
-            </div>
-            {b.fees_covered && (
-              <p className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] font-bold text-amber-300 flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Fees covered by AeroPark — whichever operator holds this booking, do not send the customer the standard fee note.
-              </p>
-            )}
-
-            {/* Manual transfer — assign to the best provider & email them */}
-            <div className="mt-3 bg-[#131A2B] border border-white/[0.06] rounded-xl px-4 py-3">
-              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">Transfer to Provider</p>
-              <div className="flex items-center gap-2">
-                <select
-                  value={assignSel[b.id] ?? (b.company_id || "")}
-                  onChange={(e) => setAssignSel((s) => ({ ...s, [b.id]: e.target.value }))}
-                  className="flex-1 bg-[#0F1523] border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-bold text-white outline-none focus:border-blue-500"
-                >
-                  <option value="">— Select provider —</option>
-                  {assignableTo(companies, detectAirport(b.airport)).map((c: any) => (
-                    <option key={c.id} value={c.id}>{operatorLabel(c, companies)}{c.email ? "" : " (no email)"}</option>
-                  ))}
-                </select>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
+                  <select
+                    aria-label="Operator"
+                    value={assignSel[b.id] ?? (b.company_id || "")}
+                    onChange={(e) => setAssignSel((s) => ({ ...s, [b.id]: e.target.value }))}
+                    className="w-full appearance-none h-11 rounded-lg border border-fg/10 bg-panel pl-3 pr-9 text-sm text-fg outline-none focus:ring-2 focus:ring-blue-500/40"
+                  >
+                    <option value="">Choose an operator</option>
+                    {assignableTo(companies, detectAirport(b.airport)).map((c: any) => (
+                      <option key={c.id} value={c.id}>{operatorLabel(c, companies)}{c.email ? "" : " (no email)"}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none" aria-hidden="true" />
+                </div>
                 <button
+                  type="button"
                   onClick={() => assignAndNotify(b, assignSel[b.id] ?? (b.company_id || ""))}
-                  className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-xl border border-emerald-500/20 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest"
+                  className="h-11 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium inline-flex items-center justify-center gap-2"
                 >
-                  <Briefcase className="w-3.5 h-3.5" /> Assign &amp; Email
+                  <Briefcase className="w-4 h-4" aria-hidden="true" /> Assign and email
                 </button>
               </div>
             </div>
-          </div>
+          </section>
         </div>
 
-        {/* ACTION BAR */}
-        <div className="p-5 border-t border-slate-800 bg-[#131A2B] grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-          <button onClick={() => sendManualEmail(b, "customer")} className="flex items-center justify-center gap-2 px-3 py-3 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white rounded-xl border border-blue-500/20 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest">
-            <Receipt className="w-4 h-4" /> Customer
-          </button>
-          <button onClick={() => sendManualEmail(b, "provider")} className="flex items-center justify-center gap-2 px-3 py-3 bg-purple-500/10 text-purple-400 hover:bg-purple-500 hover:text-white rounded-xl border border-purple-500/20 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest">
-            <Briefcase className="w-4 h-4" /> Provider
-          </button>
-          <button onClick={() => openMessageCentre(b)} className="flex items-center justify-center gap-2 px-3 py-3 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white rounded-xl border border-blue-500/20 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest">
-            <Send className="w-4 h-4" /> Message
-          </button>
-          <button onClick={() => sendToWhatsApp(b)} className="flex items-center justify-center gap-2 px-3 py-3 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white rounded-xl border border-emerald-500/20 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest">
-            <MessageCircle className="w-4 h-4" /> Ops Dispatch
-          </button>
-          {b.status?.toLowerCase() === "completed" && (
-            <>
-              <button onClick={() => handleRequestReview(b)} className="flex items-center justify-center gap-2 px-3 py-3 bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white rounded-xl border border-amber-500/20 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest">
-                <Star className="w-4 h-4 fill-current" /> Review
-              </button>
-              <button onClick={() => handleRequestReviewSMS(b)} className="flex items-center justify-center gap-2 px-3 py-3 bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white rounded-xl border border-amber-500/20 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest">
-                <Smartphone className="w-4 h-4" /> Review SMS
-              </button>
-            </>
-          )}
-          <button onClick={() => setEditingBooking(b)} className="flex items-center justify-center gap-2 px-3 py-3 bg-[#1A2235] text-slate-300 hover:bg-blue-600 hover:text-white rounded-xl border border-slate-700 hover:border-transparent transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest">
-            <Settings2 className="w-4 h-4" /> Edit
-          </button>
-          <button onClick={() => deleteBooking(b.id, b.booking_ref)} className="flex items-center justify-center gap-2 px-3 py-3 bg-[#1A2235] text-slate-500 hover:bg-red-500 hover:text-white rounded-xl border border-slate-700 hover:border-transparent transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest">
-            <Trash2 className="w-4 h-4" /> Delete
+        {/* ACTIONS */}
+        <div className="p-4 pb-[calc(env(safe-area-inset-bottom)+16px)] border-t border-fg/[0.08] bg-panel-2 space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            {tel && (
+              <a href={`tel:${tel}`} className={actionBtn}>
+                <Phone className="w-4 h-4" aria-hidden="true" /> Call
+              </a>
+            )}
+            <button type="button" onClick={() => openMessageCentre(b)} className={actionBtn}>
+              <Send className="w-4 h-4" aria-hidden="true" /> Message
+            </button>
+            <button type="button" onClick={() => sendManualEmail(b, "customer")} className={actionBtn}>
+              <Receipt className="w-4 h-4" aria-hidden="true" /> Email confirmation
+            </button>
+            <button type="button" onClick={() => sendManualEmail(b, "provider")} className={actionBtn}>
+              <Briefcase className="w-4 h-4" aria-hidden="true" /> Email operator
+            </button>
+            <button type="button" onClick={() => sendToWhatsApp(b)} className={actionBtn}>
+              <MessageCircle className="w-4 h-4" aria-hidden="true" /> Share on WhatsApp
+            </button>
+            {status === "completed" && (
+              <>
+                <button type="button" onClick={() => handleRequestReview(b)} className={actionBtn}>
+                  <Star className="w-4 h-4" aria-hidden="true" /> Ask for review
+                </button>
+                <button type="button" onClick={() => handleRequestReviewSMS(b)} className={actionBtn}>
+                  <Smartphone className="w-4 h-4" aria-hidden="true" /> Review by SMS
+                </button>
+              </>
+            )}
+            <button type="button" onClick={() => setEditingBooking(b)} className={actionBtn}>
+              <Settings2 className="w-4 h-4" aria-hidden="true" /> Edit booking
+            </button>
+          </div>
+          <button type="button" onClick={() => deleteBooking(b.id, b.booking_ref)} className="w-full h-10 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 inline-flex items-center justify-center gap-2">
+            <Trash2 className="w-4 h-4" aria-hidden="true" /> Delete booking
           </button>
         </div>
       </div>
@@ -1100,7 +1131,7 @@ function DashboardContent() {
   };
 
   return (
-    <div className="dark-ui-deep min-h-screen bg-[#0B1120] font-sans flex flex-col md:flex-row text-slate-100 antialiased selection:bg-blue-600/30">
+    <div className="dark-ui-deep min-h-screen bg-canvas font-sans flex flex-col md:flex-row text-fg antialiased selection:bg-blue-600/30">
 
       <AdminSidebar />
 
@@ -1108,18 +1139,18 @@ function DashboardContent() {
       <main className="flex-1 p-4 md:p-8 w-full overflow-y-auto h-screen pb-32 md:pb-10 custom-scrollbar">
 
         {/* HEADER + STAT RAIL */}
-        <div className="mb-6 rounded-xl border border-white/[0.06] bg-[#0F1523] overflow-hidden ring-1 ring-inset ring-white/[0.04]">
+        <div className="mb-6 rounded-xl border border-fg/[0.06] bg-panel overflow-hidden ring-1 ring-inset ring-fg/[0.04]">
           {/* ROW 1 — title + actions */}
-          <div className="p-5 md:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/[0.06]">
+          <div className="p-5 md:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-fg/[0.06]">
             <div>
-              <h1 className="text-2xl font-semibold text-white">Live board</h1>
-              <p className="mt-1 flex items-center gap-2 text-sm text-slate-400">
+              <h1 className="text-2xl font-semibold text-fg">Live board</h1>
+              <p className="mt-1 flex items-center gap-2 text-sm text-fg-3">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden="true"></span>
                 Updates live · {todayPretty}
               </p>
             </div>
             <div className="grid grid-cols-2 sm:flex gap-2 shrink-0">
-              <button onClick={exportToCSV} className="px-4 py-2.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-zinc-300 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+              <button onClick={exportToCSV} className="px-4 py-2.5 bg-fg/[0.04] hover:bg-fg/[0.08] border border-fg/10 text-fg-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
                 <Download className="w-4 h-4" /> Export
               </button>
               <button onClick={openPayLinkModal} className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
@@ -1132,20 +1163,20 @@ function DashboardContent() {
           </div>
 
           {/* ROW 2 — stat rail */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-white/[0.06]">
+          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-fg/[0.06]">
             {[
               { label: "Revenue", value: `£${totalRevenue.toFixed(2)}`, sub: `${paidCount} paid · avg £${avgBookingValue.toFixed(0)}`, color: "#10b981", Icon: Wallet },
               { label: "Bookings", value: `${filteredBookings.length}`, sub: pendingCount > 0 ? `${pendingCount} awaiting action` : "none awaiting action", color: "#3b82f6", Icon: Zap },
               { label: "Drop-offs today", value: `${arrivalsToday}`, sub: "cars in today", color: "#6366f1", Icon: PlaneLanding },
               { label: "Returns today", value: `${returnsToday}`, sub: "cars out today", color: "#f59e0b", Icon: PlaneTakeoff },
             ].map((s, i) => (
-              <div key={i} className="p-4 md:p-5 border-t border-white/[0.06] lg:border-t-0">
+              <div key={i} className="p-4 md:p-5 border-t border-fg/[0.06] lg:border-t-0">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm text-slate-400">{s.label}</p>
+                  <p className="text-sm text-fg-3">{s.label}</p>
                   <s.Icon className="w-3.5 h-3.5" style={{ color: s.color }} />
                 </div>
-                <p className="text-xl md:text-2xl font-semibold text-white tabular-nums">{s.value}</p>
-                <p className="text-xs text-slate-500 mt-1 tabular-nums truncate">{s.sub}</p>
+                <p className="text-xl md:text-2xl font-semibold text-fg tabular-nums">{s.value}</p>
+                <p className="text-xs text-fg-4 mt-1 tabular-nums truncate">{s.sub}</p>
               </div>
             ))}
           </div>
@@ -1154,14 +1185,14 @@ function DashboardContent() {
         {/* TOOLBAR */}
         <div className="mb-5">
           <div className="relative mb-2.5">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none" />
             <input
               type="text"
               autoComplete="off"
               placeholder="Search ref, name, plate, email or phone"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#0F1523] border border-white/[0.06] hover:border-white/15 rounded-lg py-2.5 pl-10 pr-4 text-base md:text-sm text-white outline-none focus:ring-1 focus:ring-blue-500/40 focus:border-blue-500/40 transition-colors placeholder:text-zinc-600"
+              className="w-full bg-panel border border-fg/[0.06] hover:border-fg/15 rounded-lg py-2.5 pl-10 pr-4 text-base md:text-sm text-fg outline-none focus:ring-1 focus:ring-blue-500/40 focus:border-blue-500/40 transition-colors placeholder:text-fg-4"
             />
           </div>
 
@@ -1174,15 +1205,15 @@ function DashboardContent() {
               { id: 'comp', icon: Building2, state: companyFilter, set: setCompanyFilter, opts: [{v: "ALL", l: "All operators"}, {v: "DIRECT", l: "No operator yet"}, ...companies.map(c => ({v: c.id, l: c.name}))] }
             ].map((f) => (
               <div key={f.id} className="relative group/sel">
-                <f.icon className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 z-10 pointer-events-none" />
+                <f.icon className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-fg-4 z-10 pointer-events-none" />
                 <select
                   value={f.state}
                   onChange={(e) => f.set(e.target.value)}
-                  className="w-full appearance-none bg-[#0F1523] border border-white/[0.06] hover:border-white/15 rounded-lg py-2.5 pl-9 pr-8 text-sm text-slate-200 outline-none cursor-pointer transition-colors focus:ring-1 focus:ring-blue-500/40 truncate"
+                  className="w-full appearance-none bg-panel border border-fg/[0.06] hover:border-fg/15 rounded-lg py-2.5 pl-9 pr-8 text-sm text-fg-2 outline-none cursor-pointer transition-colors focus:ring-1 focus:ring-blue-500/40 truncate"
                 >
-                  {f.opts.map((o, idx) => <option key={idx} value={o.v} className="bg-[#0F1523] text-white">{o.l}</option>)}
+                  {f.opts.map((o, idx) => <option key={idx} value={o.v} className="bg-panel text-fg">{o.l}</option>)}
                 </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-fg-4 pointer-events-none" />
               </div>
             ))}
           </div>
@@ -1190,9 +1221,9 @@ function DashboardContent() {
 
         {/* RESULTS BAR + SORT */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 px-0.5">
-          <div className="flex items-center gap-2.5 text-sm text-slate-400">
-            <span className="text-white font-bold tabular-nums">{displayBookings.length}</span>
-            <span className="text-slate-400">booking{displayBookings.length === 1 ? "" : "s"}</span>
+          <div className="flex items-center gap-2.5 text-sm text-fg-3">
+            <span className="text-fg font-bold tabular-nums">{displayBookings.length}</span>
+            <span className="text-fg-3">booking{displayBookings.length === 1 ? "" : "s"}</span>
             {activeFilterCount > 0 && (
               <span className="flex items-center gap-1.5 text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md text-xs">
                 <Filter className="w-2.5 h-2.5" /> {activeFilterCount} filter{activeFilterCount === 1 ? "" : "s"}
@@ -1204,61 +1235,61 @@ function DashboardContent() {
           </div>
           <div className="flex items-center gap-2.5">
             {activeFilterCount > 0 && (
-              <button onClick={resetFilters} className="flex items-center gap-1.5 text-sm text-slate-300 hover:text-red-400 border border-white/10 hover:border-red-500/30 px-2.5 py-2 rounded-lg transition-colors">
+              <button onClick={resetFilters} className="flex items-center gap-1.5 text-sm text-fg-2 hover:text-red-400 border border-fg/10 hover:border-red-500/30 px-2.5 py-2 rounded-lg transition-colors">
                 <X className="w-3 h-3" /> Clear filters
               </button>
             )}
             <div className="relative group/sort flex-1 sm:flex-none">
-              <TrendingUp className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 z-10 pointer-events-none" />
+              <TrendingUp className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-fg-4 z-10 pointer-events-none" />
               <select
                 value={sortKey}
                 onChange={(e) => setSortKey(e.target.value)}
-                className="w-full appearance-none bg-[#0F1523] border border-white/[0.06] hover:border-white/15 rounded-lg py-2 pl-9 pr-8 text-sm text-slate-200 outline-none cursor-pointer transition-colors focus:ring-1 focus:ring-blue-500/40"
+                className="w-full appearance-none bg-panel border border-fg/[0.06] hover:border-fg/15 rounded-lg py-2 pl-9 pr-8 text-sm text-fg-2 outline-none cursor-pointer transition-colors focus:ring-1 focus:ring-blue-500/40"
               >
-                <option value="NEWEST" className="bg-[#0F1523] text-white">Sort: Newest</option>
-                <option value="PRICE_HIGH" className="bg-[#0F1523] text-white">Sort: Highest price</option>
-                <option value="PRICE_LOW" className="bg-[#0F1523] text-white">Sort: Lowest price</option>
-                <option value="INBOUND" className="bg-[#0F1523] text-white">Sort: Drop-off date</option>
-                <option value="RETURN" className="bg-[#0F1523] text-white">Sort: Return date</option>
-                <option value="NAME" className="bg-[#0F1523] text-white">Sort: Name A–Z</option>
+                <option value="NEWEST" className="bg-panel text-fg">Sort: Newest</option>
+                <option value="PRICE_HIGH" className="bg-panel text-fg">Sort: Highest price</option>
+                <option value="PRICE_LOW" className="bg-panel text-fg">Sort: Lowest price</option>
+                <option value="INBOUND" className="bg-panel text-fg">Sort: Drop-off date</option>
+                <option value="RETURN" className="bg-panel text-fg">Sort: Return date</option>
+                <option value="NAME" className="bg-panel text-fg">Sort: Name A–Z</option>
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-fg-4 pointer-events-none" />
             </div>
           </div>
         </div>
 
         {/* ── PHONE LIST ── */}
-        <div className="md:hidden mb-6 rounded-xl border border-white/[0.06] bg-[#0F1523] divide-y divide-white/[0.06] overflow-hidden">
+        <div className="md:hidden mb-6 rounded-xl border border-fg/[0.06] bg-panel divide-y divide-fg/[0.06] overflow-hidden">
           {displayBookings.length === 0 ? (
-            <p className="px-4 py-12 text-center text-sm text-slate-400">No bookings match these filters.</p>
+            <p className="px-4 py-12 text-center text-sm text-fg-3">No bookings match these filters.</p>
           ) : (
             displayBookings.map((b) => (
               <button
                 key={b.id}
                 type="button"
                 onClick={() => setViewBooking(b)}
-                className="w-full text-left px-4 py-3.5 active:bg-white/[0.04]"
+                className="w-full text-left px-4 py-3.5 active:bg-fg/[0.04]"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-[15px] font-semibold text-white truncate">{b.full_name || "Unnamed"}</p>
+                    <p className="text-[15px] font-semibold text-fg truncate">{b.full_name || "Unnamed"}</p>
                     <p className="mt-0.5 font-mono text-xs text-blue-300">{b.booking_ref || "—"}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-[15px] font-semibold text-white tabular-nums">£{Number(b.total_price || 0).toFixed(2)}</p>
-                    <p className="mt-0.5 flex items-center justify-end gap-1.5 text-xs text-slate-300 capitalize">
+                    <p className="text-[15px] font-semibold text-fg tabular-nums">£{Number(b.total_price || 0).toFixed(2)}</p>
+                    <p className="mt-0.5 flex items-center justify-end gap-1.5 text-xs text-fg-2 capitalize">
                       <span className="w-1.5 h-1.5 rounded-full" style={{ background: statusAccentColor(b.status) }} aria-hidden="true" />
                       {String(b.status || "pending").toLowerCase() === "cancelled" ? "voided" : String(b.status || "pending").toLowerCase()}
                     </p>
                   </div>
                 </div>
-                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 tabular-nums">
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-fg-3 tabular-nums">
                   {b.license_plate && (
-                    <span className="font-mono font-bold text-zinc-900 bg-amber-400 px-1.5 py-0.5 rounded">{b.license_plate}</span>
+                    <span className="font-mono font-bold text-fg-4 bg-amber-400 px-1.5 py-0.5 rounded">{b.license_plate}</span>
                   )}
                   <span>{formatDate(b.dropoff_date)} {b.dropoff_time || ""} → {formatDate(b.pickup_date)} {b.pickup_time || ""}</span>
                 </div>
-                <p className="mt-1 text-xs text-slate-500 truncate">
+                <p className="mt-1 text-xs text-fg-4 truncate">
                   {[detectAirport(b.airport), b.service_type, b.company_id && getCompanyName(b.company_id)].filter(Boolean).join(" · ")}
                   {!b.company_id && <span className="text-amber-400"> · needs routing</span>}
                 </p>
@@ -1268,13 +1299,13 @@ function DashboardContent() {
         </div>
 
         {/* ── BOOKINGS TABLE (tablet and desktop) ── */}
-        <div className="hidden md:block mb-24 rounded-xl border border-white/[0.06] overflow-hidden bg-[#0F1523] ring-1 ring-inset ring-white/[0.04]">
+        <div className="hidden md:block mb-24 rounded-xl border border-fg/[0.06] overflow-hidden bg-panel ring-1 ring-inset ring-fg/[0.04]">
 
           {/* Sticky column header */}
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[1240px] border-collapse">
               <thead>
-                <tr className="border-b border-white/[0.08] bg-[#131A2B]">
+                <tr className="border-b border-fg/[0.08] bg-panel-2">
                   {[
                     { label: "Booking Ref",    cls: "w-[130px] pl-5" },
                     { label: "Customer",        cls: "w-[200px]" },
@@ -1287,7 +1318,7 @@ function DashboardContent() {
                     { label: "API Sync",        cls: "w-[90px] text-center" },
                     { label: "",                cls: "w-[150px] pr-4" },
                   ].map((h) => (
-                    <th key={h.label} className={`py-2.5 px-3 text-[10px] font-semibold text-zinc-500 uppercase tracking-widest text-left ${h.cls}`}>
+                    <th key={h.label} className={`py-2.5 px-3 text-xs font-semibold text-fg-4 text-left ${h.cls}`}>
                       {h.label}
                     </th>
                   ))}
@@ -1299,9 +1330,9 @@ function DashboardContent() {
                   <tr>
                     <td colSpan={10} className="py-24 text-center">
                       <div className="flex flex-col items-center gap-3 opacity-40">
-                        <Search className="w-7 h-7 text-zinc-500" />
-                        <p className="text-xs font-semibold uppercase tracking-widest text-zinc-400">No records match</p>
-                        <p className="text-[11px] text-zinc-600">Adjust your filters to retrieve bookings.</p>
+                        <Search className="w-7 h-7 text-fg-4" />
+                        <p className="text-xs font-semibold text-fg-3">No bookings match</p>
+                        <p className="text-[11px] text-fg-4">Try clearing a filter.</p>
                       </div>
                     </td>
                   </tr>
@@ -1312,8 +1343,8 @@ function DashboardContent() {
                       onClick={() => setViewBooking(b)}
                       className={[
                         "group/row cursor-pointer transition-colors duration-75",
-                        "hover:bg-white/[0.025]",
-                        idx !== displayBookings.length - 1 ? "border-b border-white/[0.05]" : "",
+                        "hover:bg-fg/[0.025]",
+                        idx !== displayBookings.length - 1 ? "border-b border-fg/[0.05]" : "",
                       ].join(" ")}
                     >
                       {/* ── REF ── */}
@@ -1326,7 +1357,7 @@ function DashboardContent() {
                             {b.booking_ref || "—"}
                           </span>
                           {b.fast_track_count > 0 && (
-                            <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-amber-500 pl-[8px]">
+                            <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-amber-500 pl-[8px]">
                               <Zap className="w-2 h-2" />{b.fast_track_count}× Fast Track
                             </span>
                           )}
@@ -1335,21 +1366,21 @@ function DashboardContent() {
 
                       {/* ── CUSTOMER ── */}
                       <td className="py-3 px-3 align-middle max-w-[200px]">
-                        <div className="text-[13px] font-semibold text-white truncate leading-snug">
-                          {b.full_name || <span className="text-zinc-600 italic">Unnamed</span>}
+                        <div className="text-[13px] font-semibold text-fg truncate leading-snug">
+                          {b.full_name || <span className="text-fg-4 italic">Unnamed</span>}
                         </div>
-                        <div className="text-[11px] text-zinc-500 truncate tabular-nums mt-0.5">
+                        <div className="text-[11px] text-fg-4 truncate tabular-nums mt-0.5">
                           {b.email || b.phone_number || "—"}
                         </div>
                       </td>
 
                       {/* ── VEHICLE / REG ── */}
                       <td className="py-3 px-3 align-middle">
-                        <span className="inline-block font-mono text-[11px] font-bold text-zinc-900 bg-amber-400 px-1.5 py-0.5 rounded tracking-wider whitespace-nowrap">
+                        <span className="inline-block font-mono text-[11px] font-bold text-fg-4 bg-amber-400 px-1.5 py-0.5 rounded tracking-wider whitespace-nowrap">
                           {b.license_plate || "—"}
                         </span>
-                        <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 mt-1 max-w-[110px]">
-                          <span className="w-2 h-2 rounded-full border border-white/20 shrink-0" style={{ background: b.car_color || "#3f3f46" }} />
+                        <div className="flex items-center gap-1.5 text-xs text-fg-4 mt-1 max-w-[110px]">
+                          <span className="w-2 h-2 rounded-full border border-fg/20 shrink-0" style={{ background: b.car_color || "#3f3f46" }} />
                           <span className="truncate">{b.car_make || "—"}</span>
                         </div>
                       </td>
@@ -1358,16 +1389,16 @@ function DashboardContent() {
                       <td className="py-3 px-3 align-middle">
                         <div className="flex items-start gap-1.5 tabular-nums">
                           <div>
-                            <div className="text-[12px] font-semibold text-zinc-200 leading-snug">{formatDate(b.dropoff_date)}</div>
-                            <div className="text-[10px] text-zinc-600">{b.dropoff_time || "—"}</div>
+                            <div className="text-[12px] font-semibold text-fg-2 leading-snug">{formatDate(b.dropoff_date)}</div>
+                            <div className="text-xs text-fg-4">{b.dropoff_time || "—"}</div>
                           </div>
-                          <span className="text-zinc-700 text-[10px] mt-1 font-bold">→</span>
+                          <span className="text-fg-4 text-xs mt-1 font-bold">→</span>
                           <div>
-                            <div className="text-[12px] font-semibold text-zinc-200 leading-snug">{formatDate(b.pickup_date)}</div>
-                            <div className="text-[10px] text-zinc-600">{b.pickup_time || "—"}</div>
+                            <div className="text-[12px] font-semibold text-fg-2 leading-snug">{formatDate(b.pickup_date)}</div>
+                            <div className="text-xs text-fg-4">{b.pickup_time || "—"}</div>
                           </div>
                         </div>
-                        <div className="text-[10px] text-zinc-600 mt-1 tabular-nums">
+                        <div className="text-xs text-fg-4 mt-1 tabular-nums">
                           {detectAirport(b.airport) ?? "—"}
                           {b.service_type ? ` · ${b.service_type.length > 15 ? b.service_type.slice(0, 14) + "…" : b.service_type}` : ""}
                         </div>
@@ -1375,27 +1406,27 @@ function DashboardContent() {
 
                       {/* ── PARTNER ── */}
                       <td className="py-3 px-3 align-middle max-w-[150px]">
-                        <div className="text-[12px] font-semibold text-zinc-300 truncate leading-snug">
+                        <div className="text-[12px] font-semibold text-fg-2 truncate leading-snug">
                           {getCompanyName(b.company_id)}
                         </div>
                         {airportMismatch(b) && (
-                          <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-amber-400 mt-0.5" title={airportMismatch(b) ?? ""}>
+                          <span className="inline-flex items-center gap-0.5 text-xs font-bold text-amber-400 mt-0.5" title={airportMismatch(b) ?? ""}>
                             <AlertCircle className="w-2.5 h-2.5" />wrong airport
                           </span>
                         )}
                         {!b.company_id && (
-                          <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-amber-500 mt-0.5">
+                          <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-amber-500 mt-0.5">
                             <AlertCircle className="w-2.5 h-2.5" />needs routing
                           </span>
                         )}
                         {b.fees_covered && (
-                          <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-amber-400 mt-0.5" title="Barrier/exit fee is covered by AeroPark, regardless of operator">
+                          <span className="inline-flex items-center gap-0.5 text-xs font-bold text-amber-400 mt-0.5" title="Barrier/exit fee is covered by AeroPark, regardless of operator">
                             <CheckCircle2 className="w-2.5 h-2.5" />fees covered
                           </span>
                         )}
                         {String(b.gclid || "").trim() && (
                           <div>
-                            <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-sky-400 mt-0.5" title="Came from a Google Ads click (click ID saved). Counts toward Ads conversions.">
+                            <span className="inline-flex items-center gap-0.5 text-xs font-bold text-sky-400 mt-0.5" title="Came from a Google Ads click (click ID saved). Counts toward Ads conversions.">
                               <Megaphone className="w-2.5 h-2.5" />from Google Ads
                             </span>
                           </div>
@@ -1404,7 +1435,7 @@ function DashboardContent() {
 
                       {/* ── REVENUE ── */}
                       <td className="py-3 px-3 align-middle text-right">
-                        <span className="text-[13px] font-bold text-white tabular-nums">
+                        <span className="text-[13px] font-bold text-fg tabular-nums">
                           £{Number(b.total_price || 0).toFixed(2)}
                         </span>
                       </td>
@@ -1414,7 +1445,7 @@ function DashboardContent() {
                         <span className="text-[12px] font-semibold text-emerald-400 tabular-nums">
                           £{getCommission(b).amount.toFixed(2)}
                         </span>
-                        <div className="text-[9px] text-zinc-600 mt-0.5 tabular-nums">
+                        <div className="text-xs text-fg-4 mt-0.5 tabular-nums">
                           {getCommission(b).label}
                         </div>
                       </td>
@@ -1436,7 +1467,7 @@ function DashboardContent() {
                           </select>
                           <div className="pointer-events-none flex items-center gap-1">
                             {getTableStatusPill(b.status)}
-                            <ChevronDown className="w-2.5 h-2.5 text-zinc-600 shrink-0" />
+                            <ChevronDown className="w-2.5 h-2.5 text-fg-4 shrink-0" />
                           </div>
                         </div>
                       </td>
@@ -1454,28 +1485,28 @@ function DashboardContent() {
                           <button
                             title="Process Refund"
                             onClick={() => processRefund(b)}
-                            className="h-7 w-7 rounded-md flex items-center justify-center text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                            className="h-7 w-7 rounded-md flex items-center justify-center text-fg-4 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                           >
                             <RefreshCw className="w-3.5 h-3.5" />
                           </button>
                           <button
                             title="Resend Confirmation"
                             onClick={() => sendManualEmail(b, "customer")}
-                            className="h-7 w-7 rounded-md flex items-center justify-center text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+                            className="h-7 w-7 rounded-md flex items-center justify-center text-fg-4 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
                           >
                             <Mail className="w-3.5 h-3.5" />
                           </button>
                           <button
                             title="Message customer"
                             onClick={() => openMessageCentre(b)}
-                            className="h-7 w-7 rounded-md flex items-center justify-center text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+                            className="h-7 w-7 rounded-md flex items-center justify-center text-fg-4 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
                           >
                             <Send className="w-3.5 h-3.5" />
                           </button>
                           <button
                             title="Force API Sync"
                             onClick={() => forceApiSync(b)}
-                            className="h-7 w-7 rounded-md flex items-center justify-center text-zinc-600 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+                            className="h-7 w-7 rounded-md flex items-center justify-center text-fg-4 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
                           >
                             <Database className="w-3.5 h-3.5" />
                           </button>
@@ -1484,31 +1515,31 @@ function DashboardContent() {
                               <button
                                 title="Request review by email"
                                 onClick={() => handleRequestReview(b)}
-                                className="h-7 w-7 rounded-md flex items-center justify-center text-zinc-600 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
+                                className="h-7 w-7 rounded-md flex items-center justify-center text-fg-4 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
                               >
                                 <Star className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 title="Request review by SMS"
                                 onClick={() => handleRequestReviewSMS(b)}
-                                className="h-7 w-7 rounded-md flex items-center justify-center text-zinc-600 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
+                                className="h-7 w-7 rounded-md flex items-center justify-center text-fg-4 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
                               >
                                 <Smartphone className="w-3.5 h-3.5" />
                               </button>
                             </>
                           )}
-                          <div className="w-px h-4 bg-white/10 mx-1" />
+                          <div className="w-px h-4 bg-fg/10 mx-1" />
                           <button
                             title="Edit / amend booking"
                             onClick={() => setEditingBooking(b)}
-                            className="h-7 w-7 rounded-md flex items-center justify-center text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+                            className="h-7 w-7 rounded-md flex items-center justify-center text-fg-4 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
                           >
                             <Settings2 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             title="Delete record"
                             onClick={() => deleteBooking(b.id, b.booking_ref)}
-                            className="h-7 w-7 rounded-md flex items-center justify-center text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                            className="h-7 w-7 rounded-md flex items-center justify-center text-fg-4 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -1523,14 +1554,14 @@ function DashboardContent() {
 
           {/* Table footer — record count + revenue summary */}
           {displayBookings.length > 0 && (
-            <div className="flex items-center justify-between px-5 py-3 border-t border-white/[0.06] bg-[#131A2B]">
-              <span className="text-[11px] text-zinc-500 tabular-nums">
-                <span className="font-semibold text-zinc-300">{displayBookings.length}</span> record{displayBookings.length === 1 ? "" : "s"}
+            <div className="flex items-center justify-between px-5 py-3 border-t border-fg/[0.06] bg-panel-2">
+              <span className="text-[11px] text-fg-4 tabular-nums">
+                <span className="font-semibold text-fg-2">{displayBookings.length}</span> record{displayBookings.length === 1 ? "" : "s"}
                 {activeFilterCount > 0 && <span className="text-blue-500 ml-2">({activeFilterCount} filter{activeFilterCount === 1 ? "" : "s"} active)</span>}
               </span>
-              <span className="text-[11px] text-zinc-500 tabular-nums flex items-center gap-3">
-                <span>Revenue <span className="font-semibold text-white">£{totalRevenue.toFixed(2)}</span></span>
-                <span className="w-px h-3 bg-white/10" />
+              <span className="text-[11px] text-fg-4 tabular-nums flex items-center gap-3">
+                <span>Revenue <span className="font-semibold text-fg">£{totalRevenue.toFixed(2)}</span></span>
+                <span className="w-px h-3 bg-fg/10" />
                 <span>Commission <span className="font-semibold text-emerald-400">£{displayBookings.filter(b => ['confirmed','completed','parked'].includes(b.status?.toLowerCase())).reduce((s, b) => s + getCommission(b).amount, 0).toFixed(2)}</span></span>
               </span>
             </div>
@@ -1540,7 +1571,7 @@ function DashboardContent() {
         {/* 🟢 DOSSIER MODAL — full record + all dispatch actions */}
         {viewBooking && (
           <div className="fixed inset-0 z-[200] bg-[#060A14]/80 flex items-center justify-center p-0 sm:p-6 animate-in fade-in duration-150" onClick={() => setViewBooking(null)}>
-            <div className="bg-[#0F1523] border border-white/10 w-full max-w-2xl sm:rounded-2xl h-full sm:h-auto sm:max-h-[92vh] flex flex-col overflow-hidden relative animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-panel border border-fg/10 w-full max-w-2xl sm:rounded-2xl h-full sm:h-auto sm:max-h-[92vh] flex flex-col overflow-hidden relative animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
               {renderDetail(viewBooking)}
             </div>
           </div>
@@ -1552,27 +1583,26 @@ function DashboardContent() {
       {/* --- 🟢 MODAL: MANUAL BOOKING ENTRY --- */}
       {/* ── PAYMENT LINK GENERATOR MODAL ───────────────────────────────────── */}
       {showPayLinkModal && (
-        <div className="fixed inset-0 bg-[#060A14]/80 z-[300] flex items-center justify-center p-4 sm:p-8 overflow-hidden">
-          <div className="bg-[#0F1523] border border-white/10 w-full max-w-5xl rounded-2xl max-h-[95vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 relative">
-            <div className="p-8 border-b border-white/[0.06] flex justify-between items-center bg-[#131A2B] relative">
-              <div className="absolute top-0 left-0 w-full h-0.5 bg-emerald-500"></div>
+        <div className="fixed inset-0 bg-[#060A14]/80 z-[300] flex items-center justify-center p-0 sm:p-8 overflow-hidden">
+          <div className="bg-panel sm:border border-fg/10 w-full max-w-5xl h-full sm:h-auto sm:rounded-2xl sm:max-h-[95vh] flex flex-col overflow-hidden relative">
+            <div className="px-5 py-4 sm:px-8 sm:py-6 pt-[calc(env(safe-area-inset-top)+16px)] sm:pt-6 border-b border-fg/[0.08] flex justify-between items-start gap-4 bg-panel-2">
               <div>
-                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Payment Link</h2>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-1.5"><Link2 className="w-3.5 h-3.5 text-emerald-500" /> Stripe Checkout · valid 24h · fulfils like a normal booking</p>
+                <h2 className="text-xl font-semibold text-fg">Payment link</h2>
+                <p className="text-sm text-fg-3 mt-1">Card payment through Stripe. The link lasts 24 hours, and the booking is created when the customer pays.</p>
               </div>
-              <button onClick={() => setShowPayLinkModal(false)} className="p-3 bg-[#1A2235] rounded-xl text-slate-400 hover:text-white hover:bg-red-500/20 transition-colors border border-slate-700/50"><X className="w-5 h-5"/></button>
+              <button onClick={() => setShowPayLinkModal(false)} aria-label="Close" className="p-2 -mr-2 rounded-lg text-fg-3 hover:text-fg hover:bg-fg/[0.06] shrink-0"><X className="w-5 h-5" /></button>
             </div>
 
             {payLinkResult ? (
               /* ── RESULT PANEL ── */
-              <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar text-white">
+              <div className="flex-1 overflow-y-auto p-5 sm:p-8 space-y-8 custom-scrollbar text-fg">
                 <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-6 flex items-center gap-4">
                   <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center shrink-0">
                     <CheckCircle2 className="w-6 h-6 text-emerald-400" />
                   </div>
                   <div>
-                    <p className="font-black text-lg text-white">Link ready — {payLinkResult.ref}</p>
-                    <p className="text-xs font-bold text-slate-400 mt-0.5">
+                    <p className="font-semibold text-lg text-fg">Link ready — {payLinkResult.ref}</p>
+                    <p className="text-xs font-bold text-fg-3 mt-0.5">
                       £{Number(payLink.total_price).toFixed(2)} · {payLink.airport} · {payLink.service_type}
                       {payLinkResult.emailSent
                         ? <span className="text-emerald-400"> · ✓ Emailed to {payLink.email}</span>
@@ -1582,46 +1612,44 @@ function DashboardContent() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Secure Stripe Link</label>
+                  <label className="text-sm font-medium text-fg-2 block">Payment link</label>
                   <input readOnly value={payLinkResult.url} onFocus={(e) => e.target.select()} className={`${inputStyle} font-mono text-xs`} />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <button onClick={copyPayLink} className="h-14 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95">
+                  <button onClick={copyPayLink} className="h-14 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors">
                     {linkCopied ? <><CheckCircle2 className="w-4 h-4" /> Copied!</> : <><Copy className="w-4 h-4" /> Copy Link</>}
                   </button>
-                  <button onClick={sharePayLinkWhatsApp} className="h-14 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95">
+                  <button onClick={sharePayLinkWhatsApp} className="h-14 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors">
                     <Send className="w-4 h-4" /> WhatsApp
                   </button>
-                  <button onClick={() => { setPayLinkResult(null); }} className="h-14 rounded-xl bg-[#1A2235] border border-slate-700 hover:border-emerald-500/50 text-slate-300 hover:text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95">
+                  <button onClick={() => { setPayLinkResult(null); }} className="h-14 rounded-xl bg-panel-3 border border-fg/[0.12] hover:border-emerald-500/50 text-fg-2 hover:text-fg font-semibold text-xs flex items-center justify-center gap-2 transition-colors">
                     <Link2 className="w-4 h-4" /> Edit &amp; Regenerate
                   </button>
                 </div>
 
-                <p className="text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <p className="text-center text-xs font-bold text-fg-4">
                   When the customer pays, the booking auto-creates on the Live Board with confirmation emails.
                 </p>
               </div>
             ) : (
               /* ── EDITABLE FORM — every field ── */
-              <form onSubmit={handleGeneratePayLink} autoComplete="off" className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar text-white">
+              <form onSubmit={handleGeneratePayLink} autoComplete="off" className="flex-1 overflow-y-auto p-5 sm:p-8 space-y-8 custom-scrollbar text-fg">
                 <section className="space-y-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center border border-blue-500/20"><Users className="w-4 h-4 text-blue-400"/></div>
-                    <h3 className="text-xs font-black uppercase text-slate-300 tracking-widest">1. Customer</h3>
-                    <div className="flex-1 h-px bg-slate-800"></div>
+                    <h3 className="text-base font-semibold text-fg">Customer</h3>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Full Name</label>
+                      <label className="text-sm font-medium text-fg-2 block">Full name</label>
                       <input required type="text" value={payLink.full_name} onChange={(e) => setPayLink({ ...payLink, full_name: e.target.value })} className={inputStyle} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Email Address</label>
+                      <label className="text-sm font-medium text-fg-2 block">Email</label>
                       <input type="email" required={payLinkSendEmail} value={payLink.email} onChange={(e) => setPayLink({ ...payLink, email: e.target.value })} className={inputStyle} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Mobile Number</label>
+                      <label className="text-sm font-medium text-fg-2 block">Mobile</label>
                       <input type="text" value={payLink.phone_number} onChange={(e) => setPayLink({ ...payLink, phone_number: e.target.value })} className={inputStyle} />
                     </div>
                   </div>
@@ -1629,25 +1657,23 @@ function DashboardContent() {
 
                 <section className="space-y-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center border border-amber-500/20"><Car className="w-4 h-4 text-amber-400"/></div>
-                    <h3 className="text-xs font-black uppercase text-slate-300 tracking-widest">2. Vehicle &amp; Flight</h3>
-                    <div className="flex-1 h-px bg-slate-800"></div>
+                    <h3 className="text-base font-semibold text-fg">Vehicle and flight</h3>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-amber-500 block ml-1 tracking-widest">Registration Plate</label>
+                      <label className="text-sm font-medium text-fg-2 block">Registration</label>
                       <input type="text" value={payLink.license_plate} onChange={(e) => setPayLink({ ...payLink, license_plate: e.target.value.toUpperCase() })} className={inputStyle} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Make / Model</label>
+                      <label className="text-sm font-medium text-fg-2 block">Make and model</label>
                       <input type="text" value={payLink.car_make} onChange={(e) => setPayLink({ ...payLink, car_make: e.target.value })} className={inputStyle} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Colour</label>
+                      <label className="text-sm font-medium text-fg-2 block">Colour</label>
                       <input type="text" value={payLink.car_color} onChange={(e) => setPayLink({ ...payLink, car_color: e.target.value })} className={inputStyle} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Return Flight</label>
+                      <label className="text-sm font-medium text-fg-2 block">Return flight</label>
                       <input type="text" value={payLink.flight_number} onChange={(e) => setPayLink({ ...payLink, flight_number: e.target.value.toUpperCase() })} className={inputStyle} />
                     </div>
                   </div>
@@ -1655,45 +1681,43 @@ function DashboardContent() {
 
                 <section className="space-y-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-indigo-500/10 rounded-lg flex items-center justify-center border border-indigo-500/20"><Clock className="w-4 h-4 text-indigo-400"/></div>
-                    <h3 className="text-xs font-black uppercase text-slate-300 tracking-widest">3. Trip</h3>
-                    <div className="flex-1 h-px bg-slate-800"></div>
+                    <h3 className="text-base font-semibold text-fg">Trip</h3>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6 tabular-nums">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Drop-off Date</label>
-                      <input required type="date" value={payLink.dropoff_date} onChange={(e) => setPayLink({ ...payLink, dropoff_date: e.target.value })} className={`${inputStyle} [color-scheme:dark]`} />
+                      <label className="text-sm font-medium text-fg-2 block">Drop-off date</label>
+                      <input required type="date" value={payLink.dropoff_date} onChange={(e) => setPayLink({ ...payLink, dropoff_date: e.target.value })} className={`${inputStyle} `} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Time</label>
-                      <input type="time" value={payLink.dropoff_time} onChange={(e) => setPayLink({ ...payLink, dropoff_time: e.target.value })} className={`${inputStyle} [color-scheme:dark]`} />
+                      <label className="text-sm font-medium text-fg-2 block">Time</label>
+                      <input type="time" value={payLink.dropoff_time} onChange={(e) => setPayLink({ ...payLink, dropoff_time: e.target.value })} className={`${inputStyle} `} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Return Date</label>
-                      <input required type="date" value={payLink.pickup_date} onChange={(e) => setPayLink({ ...payLink, pickup_date: e.target.value })} className={`${inputStyle} [color-scheme:dark]`} />
+                      <label className="text-sm font-medium text-fg-2 block">Return date</label>
+                      <input required type="date" value={payLink.pickup_date} onChange={(e) => setPayLink({ ...payLink, pickup_date: e.target.value })} className={`${inputStyle} `} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Time</label>
-                      <input type="time" value={payLink.pickup_time} onChange={(e) => setPayLink({ ...payLink, pickup_time: e.target.value })} className={`${inputStyle} [color-scheme:dark]`} />
+                      <label className="text-sm font-medium text-fg-2 block">Time</label>
+                      <input type="time" value={payLink.pickup_time} onChange={(e) => setPayLink({ ...payLink, pickup_time: e.target.value })} className={`${inputStyle} `} />
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Airport</label>
+                      <label className="text-sm font-medium text-fg-2 block">Airport</label>
                       <div className="relative">
                         <select value={payLink.airport} onChange={(e) => setPayLink({ ...payLink, airport: e.target.value, terminal: e.target.value.includes("Luton") ? "Main Terminal" : "Terminal 2" })} className={`${inputStyle} appearance-none cursor-pointer pr-10`}>
                           <option value="Luton Airport (LTN)">Luton (LTN)</option>
                           <option value="Heathrow (LHR)">Heathrow (LHR)</option>
                         </select>
-                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none" />
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Terminal</label>
+                      <label className="text-sm font-medium text-fg-2 block">Terminal</label>
                       <input type="text" value={payLink.terminal} onChange={(e) => setPayLink({ ...payLink, terminal: e.target.value })} className={inputStyle} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Service Type</label>
+                      <label className="text-sm font-medium text-fg-2 block">Service</label>
                       <div className="relative">
                         <select value={payLink.service_type} onChange={(e) => setPayLink({ ...payLink, service_type: e.target.value })} className={`${inputStyle} appearance-none cursor-pointer pr-10`}>
                           <option value="Meet & Greet">Meet &amp; Greet</option>
@@ -1701,7 +1725,7 @@ function DashboardContent() {
                           <option value="AeroPark Exclusive">AeroPark Exclusive (VIP)</option>
                           <option value="Hotel & Parking">Hotel &amp; Parking</option>
                         </select>
-                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none" />
                       </div>
                     </div>
                   </div>
@@ -1709,58 +1733,56 @@ function DashboardContent() {
 
                 <section className="space-y-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-emerald-500/10 rounded-lg flex items-center justify-center border border-emerald-500/20"><Wallet className="w-4 h-4 text-emerald-400"/></div>
-                    <h3 className="text-xs font-black uppercase text-slate-300 tracking-widest">4. Price &amp; Assignment</h3>
-                    <div className="flex-1 h-px bg-slate-800"></div>
+                    <h3 className="text-base font-semibold text-fg">Price and operator</h3>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-emerald-500 block ml-1 tracking-widest">Charge Amount (£)</label>
+                      <label className="text-sm font-medium text-fg-2 block">Amount to charge (£)</label>
                       <input required type="number" min="1" max="3000" step="0.01" value={payLink.total_price} onChange={(e) => setPayLink({ ...payLink, total_price: e.target.value })} className={`${inputStyle} text-lg`} placeholder="0.00" />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Assign Provider</label>
+                      <label className="text-sm font-medium text-fg-2 block">Operator</label>
                       <div className="relative">
                         <select value={payLink.company_id} onChange={(e) => setPayLink({ ...payLink, company_id: e.target.value })} className={`${inputStyle} appearance-none cursor-pointer pr-10`}>
-                          <option value="ALL">Unassigned (AeroPark Direct)</option>
+                          <option value="ALL">Not assigned yet</option>
                           {assignableTo(companies, detectAirport(payLink.airport)).map((c: any) => <option key={c.id} value={c.id}>{operatorLabel(c, companies)}</option>)}
                         </select>
-                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none" />
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Fast Track (qty)</label>
+                      <label className="text-sm font-medium text-fg-2 block">Fast Track passes</label>
                       <input type="number" min="0" max="9" value={payLink.fast_track_count} onChange={(e) => setPayLink({ ...payLink, fast_track_count: Number(e.target.value) || 0 })} className={inputStyle} />
                     </div>
                   </div>
 
                   <div className="space-y-2 lg:col-span-1 mt-4">
-                    <label className="text-[10px] font-black uppercase text-blue-400 block ml-1 tracking-widest">Attendant Fee (£)</label>
+                    <label className="text-sm font-medium text-fg-2 block">Attendant fee (£)</label>
                     <div className="relative">
                       <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-600" />
                       <input type="number" step="0.01" min="0" value={payLink.attendant_commission || 0} onChange={(e) => setPayLink({ ...payLink, attendant_commission: parseFloat(e.target.value) || 0 })} className={`${inputStyle} pl-12 text-blue-400 text-lg`} />
                     </div>
-                    <p className="text-[9px] text-slate-500 font-bold ml-1 leading-snug">Hidden from provider; shown in financials only.</p>
+                    <p className="text-xs text-fg-4 leading-snug">Hidden from provider; shown in financials only.</p>
                   </div>
 
                   <div className="space-y-2 lg:col-span-1 mt-4">
-                    <label className="text-[10px] font-black uppercase text-emerald-400 block ml-1 tracking-widest">Your Commission (%)</label>
+                    <label className="text-sm font-medium text-fg-2 block">Our commission (%)</label>
                     <div className="relative">
                       <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-600" />
                       <input type="number" step="1" min="0" max="100" value={payLink.commission_percentage || 30} onChange={(e) => setPayLink({ ...payLink, commission_percentage: Number(e.target.value) || 30 })} className={`${inputStyle} pl-12 text-emerald-400 text-lg`} />
                     </div>
-                    <p className="text-[9px] text-slate-500 font-bold ml-1 leading-snug">Shown on invoice + provider email. Operator keeps the rest.</p>
+                    <p className="text-xs text-fg-4 leading-snug">Shown on invoice + provider email. Operator keeps the rest.</p>
                   </div>
 
-                  <label className="flex items-center gap-3 bg-[#1A2235] border border-slate-700/50 rounded-xl px-5 py-4 cursor-pointer hover:border-emerald-500/40 transition-colors mt-4 lg:col-span-full">
+                  <label className="flex items-center gap-3 bg-panel-3 border border-fg/[0.12] rounded-xl px-5 py-4 cursor-pointer hover:border-emerald-500/40 transition-colors mt-4 lg:col-span-full">
                     <input type="checkbox" checked={payLinkSendEmail} onChange={(e) => setPayLinkSendEmail(e.target.checked)} className="w-4 h-4 accent-emerald-500" />
                     <Mail className="w-4 h-4 text-emerald-400" />
-                    <span className="text-xs font-bold text-slate-300">Email the payment link to the customer automatically</span>
+                    <span className="text-xs font-bold text-fg-2">Email the payment link to the customer automatically</span>
                   </label>
                 </section>
 
                 <div className="pt-2 pb-4">
-                  <button type="submit" disabled={isGeneratingLink} className="w-full h-16 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-black text-sm uppercase tracking-[0.15em] flex items-center justify-center gap-3 transition-colors active:scale-[0.98]">
+                  <button type="submit" disabled={isGeneratingLink} className="w-full h-16 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-panel-4 disabled:text-fg-4 text-white font-semibold text-sm flex items-center justify-center gap-3 transition-colors">
                     {isGeneratingLink
                       ? <><Loader2 className="w-5 h-5 animate-spin" /> Creating secure link…</>
                       : <><Link2 className="w-5 h-5" /> Generate Payment Link{payLink.total_price ? ` — £${Number(payLink.total_price).toFixed(2)}` : ""}</>}
@@ -1773,35 +1795,32 @@ function DashboardContent() {
       )}
 
       {showManualModal && (
-        <div className="fixed inset-0 bg-[#060A14]/80 z-[300] flex items-center justify-center p-4 sm:p-8 overflow-hidden">
-          <div className="bg-[#0F1523] border border-white/10 w-full max-w-5xl rounded-2xl max-h-[95vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 relative">
-            <div className="p-8 border-b border-white/[0.06] flex justify-between items-center bg-[#131A2B] relative">
-              <div className="absolute top-0 left-0 w-full h-0.5 bg-blue-600"></div>
+        <div className="fixed inset-0 bg-[#060A14]/80 z-[300] flex items-center justify-center p-0 sm:p-8 overflow-hidden">
+          <div className="bg-panel sm:border border-fg/10 w-full max-w-5xl h-full sm:h-auto sm:rounded-2xl sm:max-h-[95vh] flex flex-col overflow-hidden relative">
+            <div className="px-5 py-4 sm:px-8 sm:py-6 pt-[calc(env(safe-area-inset-top)+16px)] sm:pt-6 border-b border-fg/[0.08] flex justify-between items-start gap-4 bg-panel-2">
               <div>
-                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Manual Booking</h2>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-1.5"><Database className="w-3.5 h-3.5 text-blue-500" /> Direct Database Injection</p>
+                <h2 className="text-xl font-semibold text-fg">New booking</h2>
+                <p className="text-sm text-fg-3 mt-1">For bookings taken by phone or paid another way. No payment is taken.</p>
               </div>
-              <button onClick={() => setShowManualModal(false)} className="p-3 bg-[#1A2235] rounded-xl text-slate-400 hover:text-white hover:bg-red-500/20 transition-colors border border-slate-700/50"><X className="w-5 h-5"/></button>
+              <button onClick={() => setShowManualModal(false)} aria-label="Close" className="p-2 -mr-2 rounded-lg text-fg-3 hover:text-fg hover:bg-fg/[0.06] shrink-0"><X className="w-5 h-5" /></button>
             </div>
             
-            <form onSubmit={handleCreateManualBooking} autoComplete="off" className="flex-1 overflow-y-auto p-8 space-y-12 custom-scrollbar text-white">
+            <form onSubmit={handleCreateManualBooking} autoComplete="off" className="flex-1 overflow-y-auto p-5 sm:p-8 space-y-8 custom-scrollbar text-fg">
               <section className="space-y-6">
                 <div className="flex items-center gap-3">
-                   <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center border border-blue-500/20"><Users className="w-4 h-4 text-blue-400"/></div>
-                   <h3 className="text-xs font-black uppercase text-slate-300 tracking-widest">1. Subject ID</h3>
-                   <div className="flex-1 h-px bg-slate-800"></div>
+                   <h3 className="text-base font-semibold text-fg">Customer</h3>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Full Name</label>
+                    <label className="text-sm font-medium text-fg-2 block">Full name</label>
                     <input required type="text" value={newBooking.full_name || ''} onChange={(e) => setNewBooking({...newBooking, full_name: e.target.value})} className={inputStyle} />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Email Address</label>
+                    <label className="text-sm font-medium text-fg-2 block">Email</label>
                     <input type="email" value={newBooking.email || ''} onChange={(e) => setNewBooking({...newBooking, email: e.target.value})} className={inputStyle} />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Mobile Number</label>
+                    <label className="text-sm font-medium text-fg-2 block">Mobile</label>
                     <input type="text" value={newBooking.phone_number || ''} onChange={(e) => setNewBooking({...newBooking, phone_number: e.target.value})} className={inputStyle} />
                   </div>
                 </div>
@@ -1809,21 +1828,19 @@ function DashboardContent() {
 
               <section className="space-y-6">
                 <div className="flex items-center gap-3">
-                   <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center border border-amber-500/20"><Car className="w-4 h-4 text-amber-400"/></div>
-                   <h3 className="text-xs font-black uppercase text-slate-300 tracking-widest">2. Asset Specs</h3>
-                   <div className="flex-1 h-px bg-slate-800"></div>
+                   <h3 className="text-base font-semibold text-fg">Vehicle and flight</h3>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-amber-500 block ml-1 tracking-widest">Registration Plate</label>
+                    <label className="text-sm font-medium text-fg-2 block">Registration</label>
                     <input required type="text" value={newBooking.license_plate || ''} onChange={(e) => setNewBooking({...newBooking, license_plate: e.target.value.toUpperCase()})} className={yellowInputStyle} />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Make / Model / Color</label>
+                    <label className="text-sm font-medium text-fg-2 block">Make, model and colour</label>
                     <input type="text" value={newBooking.car_make || ''} onChange={(e) => setNewBooking({...newBooking, car_make: e.target.value})} className={inputStyle} />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Inbound Flight</label>
+                    <label className="text-sm font-medium text-fg-2 block">Outbound flight</label>
                     <input type="text" value={newBooking.flight_number || ''} onChange={(e) => setNewBooking({...newBooking, flight_number: e.target.value.toUpperCase()})} className={inputStyle} />
                   </div>
                 </div>
@@ -1831,62 +1848,58 @@ function DashboardContent() {
 
               <section className="space-y-6 pt-2">
                 <div className="flex items-center gap-3">
-                   <div className="w-8 h-8 bg-indigo-500/10 rounded-lg flex items-center justify-center border border-indigo-500/20"><Clock className="w-4 h-4 text-indigo-400"/></div>
-                   <h3 className="text-xs font-black uppercase text-slate-300 tracking-widest">3. Logistics Timeline</h3>
-                   <div className="flex-1 h-px bg-slate-800"></div>
+                   <h3 className="text-base font-semibold text-fg">Trip</h3>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6 tabular-nums">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Arrival Date</label>
-                    <input required type="date" value={newBooking.dropoff_date || ''} onChange={(e) => setNewBooking({...newBooking, dropoff_date: e.target.value})} className={`${inputStyle} [color-scheme:dark]`} />
+                    <label className="text-sm font-medium text-fg-2 block">Drop-off date</label>
+                    <input required type="date" value={newBooking.dropoff_date || ''} onChange={(e) => setNewBooking({...newBooking, dropoff_date: e.target.value})} className={`${inputStyle} `} />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Time</label>
-                    <input type="time" value={newBooking.dropoff_time || ''} onChange={(e) => setNewBooking({...newBooking, dropoff_time: e.target.value})} className={`${inputStyle} [color-scheme:dark]`} />
+                    <label className="text-sm font-medium text-fg-2 block">Time</label>
+                    <input type="time" value={newBooking.dropoff_time || ''} onChange={(e) => setNewBooking({...newBooking, dropoff_time: e.target.value})} className={`${inputStyle} `} />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Return Date</label>
-                    <input required type="date" value={newBooking.pickup_date || ''} onChange={(e) => setNewBooking({...newBooking, pickup_date: e.target.value})} className={`${inputStyle} [color-scheme:dark]`} />
+                    <label className="text-sm font-medium text-fg-2 block">Return date</label>
+                    <input required type="date" value={newBooking.pickup_date || ''} onChange={(e) => setNewBooking({...newBooking, pickup_date: e.target.value})} className={`${inputStyle} `} />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Time</label>
-                    <input type="time" value={newBooking.pickup_time || ''} onChange={(e) => setNewBooking({...newBooking, pickup_time: e.target.value})} className={`${inputStyle} [color-scheme:dark]`} />
+                    <label className="text-sm font-medium text-fg-2 block">Time</label>
+                    <input type="time" value={newBooking.pickup_time || ''} onChange={(e) => setNewBooking({...newBooking, pickup_time: e.target.value})} className={`${inputStyle} `} />
                   </div>
                 </div>
               </section>
 
               <section className="space-y-6 pt-2">
                 <div className="flex items-center gap-3">
-                   <div className="w-8 h-8 bg-emerald-500/10 rounded-lg flex items-center justify-center border border-emerald-500/20"><Wallet className="w-4 h-4 text-emerald-400"/></div>
-                   <h3 className="text-xs font-black uppercase text-slate-300 tracking-widest">4. Economics</h3>
-                   <div className="flex-1 h-px bg-slate-800"></div>
+                   <h3 className="text-base font-semibold text-fg">Price and operator</h3>
                 </div>
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Partner Node</label>
+                    <label className="text-sm font-medium text-fg-2 block">Operator</label>
                     <div className="relative">
                       <select value={newBooking.company_id || ''} onChange={(e) => setNewBooking({...newBooking, company_id: e.target.value})} className={selectStyle}>
-                        <option value="ALL">Aero Direct (Internal)</option>
+                        <option value="ALL">Not assigned yet</option>
                         {assignableTo(companies, detectAirport(newBooking.airport)).map((c: any) => <option key={c.id} value={c.id}>{operatorLabel(c, companies)}</option>)}
                       </select>
-                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none" />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Service Level</label>
+                    <label className="text-sm font-medium text-fg-2 block">Service</label>
                     <div className="relative">
                       <select value={newBooking.service_type || ''} onChange={(e) => setNewBooking({...newBooking, service_type: e.target.value})} className={selectStyle}>
                         <option value="Meet & Greet">Meet & Greet</option>
                         <option value="Park & Ride">Park & Ride</option>
                         <option value="Hotel & Parking">Hotel & Parking</option>
                       </select>
-                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none" />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-amber-500 block ml-1 tracking-widest">Fast Track Passes</label>
+                    <label className="text-sm font-medium text-fg-2 block">Fast Track passes</label>
                     <div className="relative">
                        <Zap className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-600" />
                        <input type="number" min="0" value={newBooking.fast_track_count || 0} onChange={(e) => setNewBooking({...newBooking, fast_track_count: parseInt(e.target.value) || 0})} className={`${inputStyle} pl-12 text-amber-400 text-xl`} />
@@ -1894,7 +1907,7 @@ function DashboardContent() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-emerald-400 block ml-1 tracking-widest">Transaction (£)</label>
+                    <label className="text-sm font-medium text-fg-2 block">Price (£)</label>
                     <div className="relative">
                        <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-600" />
                        <input type="number" step="0.01" value={newBooking.total_price || 0} onChange={(e) => setNewBooking({...newBooking, total_price: parseFloat(e.target.value) || 0})} className={`${inputStyle} pl-12 text-emerald-400 text-xl`} />
@@ -1904,29 +1917,29 @@ function DashboardContent() {
 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-2">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-blue-400 block ml-1 tracking-widest">Attendant Fee (£)</label>
+                    <label className="text-sm font-medium text-fg-2 block">Attendant fee (£)</label>
                     <div className="relative">
                       <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-600" />
                       <input type="number" step="0.01" min="0" value={newBooking.attendant_commission || 0} onChange={(e) => setNewBooking({...newBooking, attendant_commission: parseFloat(e.target.value) || 0})} className={`${inputStyle} pl-12 text-blue-400`} />
                     </div>
-                    <p className="text-[9px] text-slate-500 font-bold ml-1">Hidden from provider</p>
+                    <p className="text-xs text-fg-4 font-bold ml-1">Not shown to the operator</p>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-emerald-400 block ml-1 tracking-widest">Your Commission (%)</label>
+                    <label className="text-sm font-medium text-fg-2 block">Our commission (%)</label>
                     <div className="relative">
                       <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-600" />
                       <input type="number" step="1" min="0" max="100" value={newBooking.commission_percentage || 30} onChange={(e) => setNewBooking({...newBooking, commission_percentage: Number(e.target.value) || 30})} className={`${inputStyle} pl-12 text-emerald-400`} />
                     </div>
-                    <p className="text-[9px] text-slate-500 font-bold ml-1">On invoice + email</p>
+                    <p className="text-xs text-fg-4 font-bold ml-1">On invoice + email</p>
                   </div>
                 </div>
               </section>
             </form>
             
-            <div className="p-8 bg-[#131A2B] border-t border-slate-800 flex gap-4">
-               <button onClick={() => setShowManualModal(false)} className="px-8 py-4 text-slate-400 font-bold text-xs hover:text-white transition-colors">Cancel</button>
-               <button disabled={isSaving} onClick={handleCreateManualBooking} className="flex-1 bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-sm text-white transition-colors flex items-center justify-center gap-2 active:scale-95">
+            <div className="p-4 sm:p-6 pb-[calc(env(safe-area-inset-bottom)+16px)] bg-panel-2 border-t border-fg/[0.08] flex gap-3">
+               <button onClick={() => setShowManualModal(false)} className="px-8 py-4 text-fg-3 font-bold text-xs hover:text-fg transition-colors">Cancel</button>
+               <button disabled={isSaving} onClick={handleCreateManualBooking} className="flex-1 bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-sm text-white transition-colors flex items-center justify-center gap-2">
                 {isSaving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4"/>} Commit Deployment
               </button>
             </div>
@@ -1936,69 +1949,68 @@ function DashboardContent() {
 
       {/* --- 🟢 MODAL: MODIFY LIVE RECORD --- */}
       {editingBooking && (
-        <div className="fixed inset-0 bg-[#060A14]/80 z-[300] flex items-center justify-center p-4 sm:p-8 overflow-hidden">
-          <div className="bg-[#0F1523] border border-white/10 w-full max-w-4xl rounded-2xl max-h-[95vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 relative">
-            <div className="p-8 border-b border-white/[0.06] flex justify-between items-center bg-[#131A2B] relative">
-              <div className="absolute top-0 left-0 w-full h-0.5 bg-amber-500"></div>
+        <div className="fixed inset-0 bg-[#060A14]/80 z-[300] flex items-center justify-center p-0 sm:p-8 overflow-hidden">
+          <div className="bg-panel sm:border border-fg/10 w-full max-w-4xl h-full sm:h-auto sm:rounded-2xl sm:max-h-[95vh] flex flex-col overflow-hidden relative">
+            <div className="px-5 py-4 sm:px-8 sm:py-6 pt-[calc(env(safe-area-inset-top)+16px)] sm:pt-6 border-b border-fg/[0.08] flex justify-between items-start gap-4 bg-panel-2">
               <div>
-                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Modify Case</h2>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-1.5"><Settings2 className="w-3.5 h-3.5" /> Override Access: {editingBooking?.booking_ref || 'Unknown'}</p>
+                <h2 className="text-xl font-semibold text-fg">Edit booking</h2>
+                <p className="text-sm text-fg-3 mt-1"><span className="font-mono">{editingBooking?.booking_ref || ''}</span></p>
               </div>
-              <button onClick={() => setEditingBooking(null)} className="p-3 bg-[#1A2235] rounded-xl text-slate-400 hover:text-white transition-colors border border-slate-700/50"><X className="w-5 h-5"/></button>
+              <button onClick={() => setEditingBooking(null)} aria-label="Close" className="p-2 -mr-2 rounded-lg text-fg-3 hover:text-fg hover:bg-fg/[0.06] shrink-0"><X className="w-5 h-5" /></button>
             </div>
             
-            <form onSubmit={handleUpdateBooking} className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar text-white">
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Client Label</label><input required type="text" value={editingBooking?.full_name || ''} onChange={(e) => setEditingBooking({...editingBooking, full_name: e.target.value})} className={inputStyle} /></div>
-                  <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Secure Email</label><input type="email" value={editingBooking?.email || ''} onChange={(e) => setEditingBooking({...editingBooking, email: e.target.value})} className={inputStyle} /></div>
-                  <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">License ID</label><input required type="text" value={editingBooking?.license_plate || ''} onChange={(e) => setEditingBooking({...editingBooking, license_plate: e.target.value.toUpperCase()})} className={yellowInputStyle} /></div>
+            <form onSubmit={handleUpdateBooking} className="flex-1 overflow-y-auto p-5 sm:p-8 space-y-8 custom-scrollbar text-fg">
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                  <div className="space-y-2"><label className="text-sm font-medium text-fg-2 block">Full name</label><input required type="text" value={editingBooking?.full_name || ''} onChange={(e) => setEditingBooking({...editingBooking, full_name: e.target.value})} className={inputStyle} /></div>
+                  <div className="space-y-2"><label className="text-sm font-medium text-fg-2 block">Email</label><input type="email" value={editingBooking?.email || ''} onChange={(e) => setEditingBooking({...editingBooking, email: e.target.value})} className={inputStyle} /></div>
+                  <div className="space-y-2"><label className="text-sm font-medium text-fg-2 block">Registration</label><input required type="text" value={editingBooking?.license_plate || ''} onChange={(e) => setEditingBooking({...editingBooking, license_plate: e.target.value.toUpperCase()})} className={yellowInputStyle} /></div>
                </div>
               
-               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-6 border-t border-slate-800">
+               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-6 border-t border-fg/[0.08]">
                  <div className="space-y-2">
-                   <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Inbound Date</label>
-                   <input type="date" value={editingBooking?.dropoff_date || ''} onChange={(e) => setEditingBooking({...editingBooking, dropoff_date: e.target.value})} className={`${inputStyle} [color-scheme:dark]`} />
+                   <label className="text-sm font-medium text-fg-2">Drop-off date</label>
+                   <input type="date" value={editingBooking?.dropoff_date || ''} onChange={(e) => setEditingBooking({...editingBooking, dropoff_date: e.target.value})} className={`${inputStyle} `} />
                  </div>
                  <div className="space-y-2">
-                   <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Inbound Time</label>
-                   <input type="time" value={editingBooking?.dropoff_time || ''} onChange={(e) => setEditingBooking({...editingBooking, dropoff_time: e.target.value})} className={`${inputStyle} [color-scheme:dark]`} />
+                   <label className="text-sm font-medium text-fg-2">Drop-off time</label>
+                   <input type="time" value={editingBooking?.dropoff_time || ''} onChange={(e) => setEditingBooking({...editingBooking, dropoff_time: e.target.value})} className={`${inputStyle} `} />
                  </div>
                  <div className="space-y-2">
-                   <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Return Date</label>
-                   <input type="date" value={editingBooking?.pickup_date || ''} onChange={(e) => setEditingBooking({...editingBooking, pickup_date: e.target.value})} className={`${inputStyle} [color-scheme:dark]`} />
+                   <label className="text-sm font-medium text-fg-2">Return date</label>
+                   <input type="date" value={editingBooking?.pickup_date || ''} onChange={(e) => setEditingBooking({...editingBooking, pickup_date: e.target.value})} className={`${inputStyle} `} />
                  </div>
                  <div className="space-y-2">
-                   <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Return Time</label>
-                   <input type="time" value={editingBooking?.pickup_time || ''} onChange={(e) => setEditingBooking({...editingBooking, pickup_time: e.target.value})} className={`${inputStyle} [color-scheme:dark]`} />
+                   <label className="text-sm font-medium text-fg-2">Return time</label>
+                   <input type="time" value={editingBooking?.pickup_time || ''} onChange={(e) => setEditingBooking({...editingBooking, pickup_time: e.target.value})} className={`${inputStyle} `} />
                  </div>
                </div>
 
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-6 pt-6 border-t border-slate-800">
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-6 pt-6 border-t border-fg/[0.08]">
                 <div className="space-y-2 lg:col-span-1">
-                  <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Partner Node</label>
+                  <label className="text-sm font-medium text-fg-2 block">Operator</label>
                   <div className="relative">
                     <select value={editingBooking?.company_id || 'ALL'} onChange={(e) => setEditingBooking({...editingBooking, company_id: e.target.value === 'ALL' ? null : e.target.value})} className={selectStyle}>
-                      <option value="ALL">Aero Direct</option>
+                      <option value="ALL">Not assigned yet</option>
                       {assignableTo(companies, detectAirport(editingBooking?.airport)).map((c: any) => <option key={c.id} value={c.id}>{operatorLabel(c, companies)}</option>)}
                     </select>
-                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none" />
                   </div>
                 </div>
 
                 <div className="space-y-2 lg:col-span-1">
-                  <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Service Level</label>
+                  <label className="text-sm font-medium text-fg-2 block">Service</label>
                   <div className="relative">
                     <select value={editingBooking?.service_type || "Meet & Greet"} onChange={(e) => setEditingBooking({...editingBooking, service_type: e.target.value})} className={selectStyle}>
-                      <option value="Meet & Greet">M&G</option>
-                      <option value="Park & Ride">P&R</option>
+                      <option value="Meet & Greet">Meet &amp; Greet</option>
+                      <option value="Park & Ride">Park &amp; Ride</option>
                       <option value="Hotel & Parking">Hotel</option>
                     </select>
-                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none" />
                   </div>
                 </div>
 
                 <div className="space-y-2 lg:col-span-1">
-                  <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 tracking-widest">Status Lifecycle</label>
+                  <label className="text-sm font-medium text-fg-2 block">Status</label>
                   <div className="relative">
                     <select value={editingBooking?.status || ''} onChange={(e) => setEditingBooking({...editingBooking, status: e.target.value})} className={selectStyle}>
                       <option value="pending">Pending</option>
@@ -2007,12 +2019,12 @@ function DashboardContent() {
                       <option value="completed">Completed</option>
                       <option value="cancelled">Voided</option>
                     </select>
-                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-4 pointer-events-none" />
                   </div>
                 </div>
 
                 <div className="space-y-2 lg:col-span-1">
-                  <label className="text-[10px] font-black uppercase text-amber-500 block ml-1 tracking-widest">Fast Track</label>
+                  <label className="text-sm font-medium text-fg-2 block">Fast Track</label>
                   <div className="relative">
                      <Zap className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-600" />
                      <input type="number" min="0" value={editingBooking?.fast_track_count || 0} onChange={(e) => setEditingBooking({...editingBooking, fast_track_count: parseInt(e.target.value) || 0})} className={`${inputStyle} pl-12 text-amber-400 text-xl`} />
@@ -2020,7 +2032,7 @@ function DashboardContent() {
                 </div>
 
                 <div className="space-y-2 lg:col-span-1">
-                  <label className="text-[10px] font-black uppercase text-emerald-400 block ml-1 tracking-widest">Override (£)</label>
+                  <label className="text-sm font-medium text-fg-2 block">Price (£)</label>
                   <div className="relative group">
                     <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-600" />
                     <input type="number" step="0.01" value={editingBooking?.total_price || 0} onChange={(e) => setEditingBooking({...editingBooking, total_price: parseFloat(e.target.value) || 0})} className={`${inputStyle} pl-12 text-emerald-400 text-xl`} />
@@ -2028,52 +2040,52 @@ function DashboardContent() {
                 </div>
 
                 <div className="space-y-2 lg:col-span-1">
-                  <label className="text-[10px] font-black uppercase text-blue-400 block ml-1 tracking-widest">Attendant Fee (£)</label>
+                  <label className="text-sm font-medium text-fg-2 block">Attendant fee (£)</label>
                   <div className="relative">
                     <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-600" />
                     <input type="number" step="0.01" min="0" value={editingBooking?.attendant_commission || 0} onChange={(e) => setEditingBooking({...editingBooking, attendant_commission: parseFloat(e.target.value) || 0})} className={`${inputStyle} pl-12 text-blue-400 text-xl`} />
                   </div>
-                  <p className="text-[9px] text-slate-500 font-bold ml-1 leading-snug">Deducted from the provider&rsquo;s payout &amp; hidden from them. Leave 0 if none.</p>
+                  <p className="text-xs text-fg-4 leading-snug">Deducted from the provider&rsquo;s payout &amp; hidden from them. Leave 0 if none.</p>
                 </div>
 
                 <div className="space-y-2 lg:col-span-1">
-                  <label className="text-[10px] font-black uppercase text-emerald-400 block ml-1 tracking-widest">Your Commission (%)</label>
+                  <label className="text-sm font-medium text-fg-2 block">Our commission (%)</label>
                   <div className="relative">
                     <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-600" />
                     <input type="number" step="1" min="0" max="100" value={editingBooking?.commission_percentage || 30} onChange={(e) => setEditingBooking({...editingBooking, commission_percentage: Number(e.target.value) || 30})} className={`${inputStyle} pl-12 text-emerald-400 text-xl`} />
                   </div>
-                  <p className="text-[9px] text-slate-500 font-bold ml-1 leading-snug">Shown on invoice &amp; provider email. Operator keeps the rest.</p>
+                  <p className="text-xs text-fg-4 leading-snug">Shown on invoice &amp; provider email. Operator keeps the rest.</p>
                 </div>
 
                 <div className="space-y-2 lg:col-span-1">
-                  <label className="text-[10px] font-black uppercase text-amber-400 block ml-1 tracking-widest">Fees Covered</label>
+                  <label className="text-sm font-medium text-fg-2 block">Fees covered</label>
                   <label className={`${inputStyle} flex items-center gap-2 cursor-pointer select-none`}>
                     <input type="checkbox" checked={!!editingBooking?.fees_covered} onChange={(e) => setEditingBooking({...editingBooking, fees_covered: e.target.checked})} className="w-4 h-4 accent-amber-500" />
                     <CheckCircle2 className="w-4 h-4 text-amber-500" />
                     <span className="text-amber-300 text-[13px] font-bold">{editingBooking?.fees_covered ? "On" : "Off"}</span>
                   </label>
-                  <p className="text-[9px] text-slate-500 font-bold ml-1 leading-snug">Barrier/exit fee is on us, whoever ends up handling the car. Set automatically for Exclusive bookings.</p>
+                  <p className="text-xs text-fg-4 leading-snug">Barrier/exit fee is on us, whoever ends up handling the car. Set automatically for Exclusive bookings.</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-6 border-t border-slate-800">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-6 border-t border-fg/[0.08]">
                 {[
-                  {l: 'Node Terminal', k: 'terminal', icon: MapPin},
-                  {l: 'Inbound Flight', k: 'flight_number', icon: Plane},
-                  {l: 'Model Spec', k: 'car_make', icon: Car},
-                  {l: 'Visual Finish', k: 'car_color', icon: Tags}
+                  {l: 'Terminal', k: 'terminal', icon: MapPin},
+                  {l: 'Flight number', k: 'flight_number', icon: Plane},
+                  {l: 'Make and model', k: 'car_make', icon: Car},
+                  {l: 'Colour', k: 'car_color', icon: Tags}
                 ].map(field => (
                   <div key={field.k} className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-slate-500 block ml-1 flex items-center gap-1.5"><field.icon className="w-3 h-3"/> {field.l}</label>
+                    <label className="text-sm font-medium text-fg-2 flex items-center gap-1.5"><field.icon className="w-3 h-3"/> {field.l}</label>
                     <input type="text" value={editingBooking?.[field.k] || ''} onChange={(e) => setEditingBooking({...editingBooking, [field.k]: e.target.value})} className={inputStyle} />
                   </div>
                 ))}
               </div>
             </form>
             
-            <div className="p-8 bg-[#131A2B] border-t border-slate-800 flex gap-4">
-               <button onClick={() => setEditingBooking(null)} className="px-8 py-4 text-slate-400 font-bold text-xs hover:text-white transition-colors">Abandon</button>
-               <button disabled={isSaving} onClick={handleUpdateBooking} className="flex-1 bg-amber-600 hover:bg-amber-500 py-4 rounded-xl font-bold text-sm text-white transition-colors flex items-center justify-center gap-2 active:scale-95">
+            <div className="p-4 sm:p-6 pb-[calc(env(safe-area-inset-bottom)+16px)] bg-panel-2 border-t border-fg/[0.08] flex gap-3">
+               <button onClick={() => setEditingBooking(null)} className="px-8 py-4 text-fg-3 font-bold text-xs hover:text-fg transition-colors">Cancel</button>
+               <button disabled={isSaving} onClick={handleUpdateBooking} className="flex-1 bg-amber-600 hover:bg-amber-500 py-4 rounded-xl font-bold text-sm text-white transition-colors flex items-center justify-center gap-2">
                 {isSaving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4"/>} Authorize Update
               </button>
             </div>
@@ -2083,21 +2095,21 @@ function DashboardContent() {
 
       {/* --- 🟢 MESSAGE CENTRE --- */}
       {msgBooking && (
-        <div className="fixed inset-0 bg-[#0B1120]/95 backdrop-blur-sm z-[300] flex items-start md:items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-[#0F1523] border border-slate-800 w-full max-w-3xl rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 my-8">
+        <div className="fixed inset-0 bg-canvas/95 backdrop-blur-sm z-[300] flex items-start md:items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-panel border border-fg/[0.08] w-full max-w-3xl rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 my-8">
 
             {/* Header */}
-            <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-[#131A2B] relative">
+            <div className="p-6 border-b border-fg/[0.08] flex justify-between items-center bg-panel-2 relative">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-emerald-500"></div>
               <div>
-                <h2 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
+                <h2 className="text-xl font-semibold text-fg tracking-tight flex items-center gap-2">
                   <MessageCircle className="w-5 h-5 text-blue-400" /> Message Centre
                 </h2>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                <p className="text-xs font-bold text-fg-3 mt-1">
                   {msgBooking.full_name || "Customer"} · {msgBooking.booking_ref} · {msgBooking.phone_number || "no number"}
                 </p>
               </div>
-              <button onClick={() => setMsgBooking(null)} className="p-2 bg-[#1A2235] rounded-xl text-slate-400 hover:text-white border border-slate-700/50">
+              <button onClick={() => setMsgBooking(null)} className="p-2 bg-panel-3 rounded-xl text-fg-3 hover:text-fg border border-fg/[0.12]">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -2112,44 +2124,44 @@ function DashboardContent() {
 
               {/* Template picker */}
               <div>
-                <label className="text-[9px] font-black uppercase text-slate-500 block mb-3 tracking-widest">Template</label>
+                <label className="text-xs font-semibold text-fg-4 block mb-3">Template</label>
                 <div className="flex flex-wrap gap-2">
                   {MESSAGE_TEMPLATES.map((t) => (
                     <button
                       key={t.id}
                       onClick={() => applyTemplate(t.id)}
                       title={t.hint}
-                      className={`px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all ${
+                      className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${
                         msgTemplate === t.id
                           ? "bg-blue-600 border-blue-500 text-white"
-                          : "bg-[#1A2235] border-slate-700 text-slate-400 hover:text-white hover:border-slate-600"
+                          : "bg-panel-3 border-fg/[0.12] text-fg-3 hover:text-fg hover:border-fg/[0.18]"
                       }`}
                     >
                       {t.label}
                     </button>
                   ))}
                 </div>
-                <p className="text-[10px] text-slate-500 font-bold mt-2">
+                <p className="text-xs text-fg-4 font-bold mt-2">
                   {MESSAGE_TEMPLATES.find((t) => t.id === msgTemplate)?.hint}
                 </p>
               </div>
 
               {/* Editable body */}
               <div>
-                <label className="text-[9px] font-black uppercase text-slate-500 block mb-2 tracking-widest">Message</label>
+                <label className="text-xs font-semibold text-fg-4 block mb-2">Message</label>
                 <textarea
                   value={msgBody}
                   onChange={(e) => { setMsgBody(e.target.value); if (msgTemplate !== "custom") setMsgTemplate("custom"); }}
                   rows={6}
                   placeholder="Write your message…"
-                  className="w-full bg-[#1A2235] border border-slate-700 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-white font-medium leading-relaxed outline-none focus:ring-2 focus:ring-blue-500/50 transition-all resize-y placeholder:text-slate-600"
+                  className="w-full bg-panel-3 border border-fg/[0.12] hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-fg font-medium leading-relaxed outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors resize-y placeholder:text-fg-4"
                 />
                 {(() => {
                   const info = smsInfo(msgBody);
                   return (
-                    <div className="flex flex-wrap items-center gap-3 mt-2 text-[10px] font-bold">
-                      <span className="text-slate-500">{info.chars} chars</span>
-                      <span className={info.segments > 2 ? "text-amber-400" : "text-slate-500"}>
+                    <div className="flex flex-wrap items-center gap-3 mt-2 text-xs font-bold">
+                      <span className="text-fg-4">{info.chars} chars</span>
+                      <span className={info.segments > 2 ? "text-amber-400" : "text-fg-4"}>
                         {info.segments} SMS segment{info.segments === 1 ? "" : "s"}
                       </span>
                       {info.unicode && (
@@ -2167,46 +2179,46 @@ function DashboardContent() {
                 <button
                   onClick={sendMessageSMS}
                   disabled={msgSending || !msgBody.trim() || !(msgBooking.phone_number || "").trim()}
-                  className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white py-4 rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95"
+                  className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white py-4 rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-2"
                 >
                   {msgSending ? <Loader2 className="animate-spin w-4 h-4" /> : <Send className="w-4 h-4" />} Send SMS
                 </button>
                 <button
                   onClick={sendMessageWhatsApp}
                   disabled={!msgBody.trim() || !(msgBooking.phone_number || "").trim()}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white py-4 rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 active:scale-95"
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white py-4 rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-2"
                 >
                   <MessageCircle className="w-4 h-4" /> Open In WhatsApp
                 </button>
                 <button
                   onClick={() => { navigator.clipboard?.writeText(msgBody.trim()); notify("success", "Message copied."); }}
                   disabled={!msgBody.trim()}
-                  className="px-6 py-4 bg-[#1A2235] hover:bg-[#222b40] disabled:opacity-40 border border-slate-700 text-slate-300 rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2"
+                  className="px-6 py-4 bg-panel-3 hover:bg-panel-4 disabled:opacity-40 border border-fg/[0.12] text-fg-2 rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-2"
                 >
                   <Copy className="w-4 h-4" /> Copy
                 </button>
               </div>
 
               {/* History */}
-              <div className="border-t border-slate-800 pt-6">
+              <div className="border-t border-fg/[0.08] pt-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">SMS History</h3>
+                  <h3 className="text-xs font-semibold text-fg-3">SMS history</h3>
                   <button
                     onClick={() => msgBooking.booking_ref && loadMessageHistory(msgBooking.booking_ref)}
-                    className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white flex items-center gap-1.5"
+                    className="text-xs font-semibold text-fg-4 hover:text-fg flex items-center gap-1.5"
                   >
                     <RefreshCw className={`w-3 h-3 ${msgHistoryLoading ? "animate-spin" : ""}`} /> Refresh
                   </button>
                 </div>
 
                 {msgHistoryLoading && msgHistory.length === 0 && (
-                  <p className="text-slate-500 text-xs font-bold py-6 text-center">Loading…</p>
+                  <p className="text-fg-4 text-xs font-bold py-6 text-center">Loading…</p>
                 )}
                 {!msgHistoryLoading && msgHistoryError && (
                   <p className="text-amber-400 text-xs font-bold py-4 text-center">{msgHistoryError}</p>
                 )}
                 {!msgHistoryLoading && !msgHistoryError && msgHistory.length === 0 && (
-                  <p className="text-slate-500 text-xs font-bold py-6 text-center">No SMS sent to this customer yet.</p>
+                  <p className="text-fg-4 text-xs font-bold py-6 text-center">No SMS sent to this customer yet.</p>
                 )}
 
                 <div className="space-y-3 max-h-[30vh] overflow-y-auto">
@@ -2218,23 +2230,23 @@ function DashboardContent() {
                         key={m.sid}
                         className={`p-4 rounded-xl border text-xs leading-relaxed ${
                           inbound
-                            ? "bg-[#131A2B] border-slate-700 text-slate-200"
+                            ? "bg-panel-2 border-fg/[0.12] text-fg-2"
                             : failed
-                            ? "bg-red-500/5 border-red-500/20 text-slate-300"
-                            : "bg-[#1A2235] border-slate-800 text-slate-300"
+                            ? "bg-red-500/5 border-red-500/20 text-fg-2"
+                            : "bg-panel-3 border-fg/[0.08] text-fg-2"
                         }`}
                       >
                         <div className="flex items-center justify-between gap-3 mb-1.5">
-                          <span className={`text-[9px] font-black uppercase tracking-widest ${inbound ? "text-emerald-400" : "text-slate-500"}`}>
+                          <span className={`text-xs font-semibold ${inbound ? "text-emerald-400" : "text-fg-4"}`}>
                             {inbound ? "Customer replied" : "Sent"}
                           </span>
-                          <span className={`text-[9px] font-black uppercase tracking-widest ${failed ? "text-red-400" : "text-slate-600"}`}>
+                          <span className={`text-xs font-semibold ${failed ? "text-red-400" : "text-fg-4"}`}>
                             {m.status}{m.sentAt ? ` · ${new Date(m.sentAt).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}
                           </span>
                         </div>
                         <p className="whitespace-pre-wrap">{m.body}</p>
                         {failed && m.errorMessage && (
-                          <p className="text-red-400 text-[10px] font-bold mt-2">{m.errorMessage}</p>
+                          <p className="text-red-400 text-xs font-bold mt-2">{m.errorMessage}</p>
                         )}
                       </div>
                     );
@@ -2250,23 +2262,23 @@ function DashboardContent() {
       {/* --- 🟢 CONFIRM DIALOG --- */}
       {confirmState && (
         <div className="fixed inset-0 bg-[#060A14]/80 z-[400] flex items-center justify-center p-4">
-          <div className="bg-[#0F1523] border border-white/10 w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-panel border border-fg/10 w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-7">
               <div className="flex items-start gap-4">
                 <div className={`w-11 h-11 shrink-0 rounded-xl flex items-center justify-center border ${confirmState.danger ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-blue-500/10 border-blue-500/20 text-blue-400'}`}>
                   <AlertCircle className="w-6 h-6" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-black text-white tracking-tight">{confirmState.title}</h3>
-                  <p className="text-sm font-medium text-slate-400 mt-1.5 leading-relaxed">{confirmState.body}</p>
+                  <h3 className="text-lg font-semibold text-fg tracking-tight">{confirmState.title}</h3>
+                  <p className="text-sm font-medium text-fg-3 mt-1.5 leading-relaxed">{confirmState.body}</p>
                 </div>
               </div>
             </div>
-            <div className="px-7 py-5 bg-[#131A2B] border-t border-slate-800 flex gap-3 justify-end">
-              <button onClick={() => setConfirmState(null)} className="px-5 py-3 text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-white transition-colors">Cancel</button>
+            <div className="px-7 py-5 bg-panel-2 border-t border-fg/[0.08] flex gap-3 justify-end">
+              <button onClick={() => setConfirmState(null)} className="px-5 py-3 text-fg-3 font-bold text-xs hover:text-fg transition-colors">Cancel</button>
               <button
                 onClick={() => { const fn = confirmState.onConfirm; setConfirmState(null); fn(); }}
-                className={`px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest text-white transition-colors active:scale-95 ${confirmState.danger ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'}`}
+                className={`px-6 py-3 rounded-xl font-semibold text-xs text-white transition-colors ${confirmState.danger ? 'bg-red-600 hover:bg-red-500' : 'bg-blue-600 hover:bg-blue-500'}`}
               >
                 {confirmState.confirmLabel}
               </button>
@@ -2280,7 +2292,7 @@ function DashboardContent() {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-xl border shadow-xl bg-[#131A2B] animate-in slide-in-from-right-8 duration-300 max-w-sm ${
+            className={`pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-xl border shadow-xl bg-panel-2 animate-in slide-in-from-right-8 duration-300 max-w-sm ${
               t.type === 'success' ? 'border-emerald-500/30 text-emerald-300'
               : t.type === 'error' ? 'border-red-500/30 text-red-300'
               : 'border-blue-500/30 text-blue-300'
@@ -2304,12 +2316,12 @@ function DashboardContent() {
 export default function AdminDashboard() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#0B1120] flex flex-col items-center justify-center text-white">
+      <div className="min-h-screen bg-canvas flex flex-col items-center justify-center text-fg">
         <div className="relative">
           <div className="absolute inset-0 border-t-2 border-blue-500 rounded-full animate-spin"></div>
           <Plane className="w-10 h-10 text-blue-500 m-4 animate-pulse rotate-45" />
         </div>
-        <p className="font-black text-slate-400 tracking-widest uppercase text-xs mt-6">Initializing Command Hub...</p>
+        <p className="font-semibold text-fg-3 text-xs mt-6">Loading…</p>
       </div>
     }>
       <DashboardContent />

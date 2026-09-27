@@ -19,19 +19,19 @@ export default function AdminActivityPage() {
 
   if (!ready) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0B1120] text-sm text-slate-400">
+      <div className="flex min-h-screen items-center justify-center bg-canvas text-sm text-fg-3">
         Loading…
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0B1120] text-white antialiased flex flex-col md:flex-row">
+    <div className="min-h-screen bg-canvas text-fg antialiased flex flex-col md:flex-row">
       <AdminSidebar />
       <main className="flex-1 min-w-0 px-4 md:px-8 py-6 md:py-10 pb-28 md:pb-10">
         <div className="mx-auto max-w-3xl">
           <h1 className="text-2xl font-bold tracking-tight">Activity log</h1>
-          <p className="mt-1 text-sm text-slate-400">Every change made in admin, newest first.</p>
+          <p className="mt-1 text-sm text-fg-3">Every change made in admin, newest first.</p>
           <div className="mt-6">
             <AdminActivityFeed limit={100} />
           </div>
