@@ -18,6 +18,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Cookie, X } from "lucide-react";
 
 const STORAGE_KEY = "apd_consent_v1";
@@ -75,6 +76,7 @@ function applyConsent(prefs: Prefs) {
 }
 
 export default function CookieConsent() {
+  const pathname = usePathname() ?? "";
   const [open, setOpen] = useState(false);
   const [showPrefs, setShowPrefs] = useState(false);
   const [analytics, setAnalytics] = useState(true);
@@ -115,7 +117,9 @@ export default function CookieConsent() {
   const rejectAll = () => persist({ analytics: false, marketing: false });
   const savePrefs = () => persist({ analytics, marketing });
 
-  if (!open) return null;
+  // Staff pages: no banner. Nothing on /admin needs analytics or ad cookies,
+  // so it simply stays on the "denied" default.
+  if (!open || pathname.startsWith("/admin")) return null;
 
   const toggleRow = (
     label: string,

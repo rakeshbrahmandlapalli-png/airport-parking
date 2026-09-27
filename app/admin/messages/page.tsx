@@ -5,10 +5,9 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/app/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { AdminSidebar, AdminMobileNav } from "@/components/admin/AdminNav";
 import {
-  Plane, LayoutDashboard, Building2, LogOut, Settings2, PiggyBank,
-  Activity, Tags, MessageCircle, RefreshCw, Search, ArrowDownLeft,
-  ArrowUpRight, AlertCircle, Inbox,
+  MessageCircle, RefreshCw, Search, ArrowDownLeft, ArrowUpRight, AlertCircle, Inbox,
 } from "lucide-react";
 
 type Msg = {
@@ -98,7 +97,6 @@ export default function MessagesPage() {
     });
   }, [messages, filter, search]);
 
-  const navLink = "flex items-center gap-4 px-5 py-4 hover:bg-white/5 hover:text-white rounded-xl transition-all hover:border-l-2 hover:border-blue-500/50";
 
   if (loading && messages.length === 0) return (
     <div className="min-h-screen bg-gradient-to-b from-[#0B1120] via-[#0A0E1A] to-[#0B1120] flex flex-col items-center justify-center text-white relative overflow-hidden">
@@ -117,35 +115,7 @@ export default function MessagesPage() {
       <div className="fixed top-[-200px] left-[200px] w-[600px] h-[600px] bg-blue-600/8 rounded-full blur-[140px] pointer-events-none z-0"></div>
       <div className="fixed bottom-[-200px] right-[100px] w-[500px] h-[500px] bg-indigo-600/8 rounded-full blur-[140px] pointer-events-none z-0"></div>
 
-      {/* SIDEBAR */}
-      <aside className="w-full md:w-64 bg-[#0F1523]/90 backdrop-blur-xl text-slate-400 hidden md:flex flex-col sticky top-0 h-screen border-r border-slate-800/80 shadow-2xl z-50 shrink-0 relative">
-        <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-blue-500/20 to-transparent"></div>
-        <div className="p-8 flex items-center gap-4 text-white">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-600/30 to-blue-600/5 rounded-xl flex items-center justify-center border border-blue-500/30 shadow-[0_0_20px_rgba(37,99,235,0.25)]">
-            <Plane className="w-6 h-6 text-blue-400 rotate-45 drop-shadow-[0_0_6px_rgba(59,130,246,0.6)]" />
-          </div>
-          <span className="font-black text-xl tracking-tighter uppercase">OPS <span className="text-blue-500 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]">CENTER</span></span>
-        </div>
-
-        <nav className="px-5 space-y-3 flex-grow mt-6 font-bold text-sm">
-          <Link href="/admin" className={navLink}><LayoutDashboard className="w-5 h-5 text-slate-500" /> Live Board</Link>
-          <Link href="/admin/companies" className={navLink}><Building2 className="w-5 h-5 text-slate-500" /> Partner Network</Link>
-          <Link href="/admin/promos" className={navLink}><Tags className="w-5 h-5 text-slate-500" /> Promo Manager</Link>
-          <Link href="/admin/financials" className={navLink}><PiggyBank className="w-5 h-5 text-slate-500" /> Financials</Link>
-          <Link href="/admin/messages" className="flex items-center gap-4 px-5 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl shadow-[0_10px_30px_-5px_rgba(37,99,235,0.5)] transition-all hover:-translate-y-0.5 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-            <MessageCircle className="w-5 h-5" /> Messages
-          </Link>
-          <Link href="/admin/activity" className={navLink}><Activity className="w-5 h-5 text-slate-500" /> Activity Ledger</Link>
-          <Link href="/admin/settings" className={`${navLink} border-t border-slate-800/50 mt-4 pt-6`}><Settings2 className="w-5 h-5 text-slate-500" /> Platform Settings</Link>
-        </nav>
-
-        <div className="p-6">
-          <button onClick={() => supabase.auth.signOut().then(() => router.push("/admin/login"))} className="flex items-center gap-4 text-sm font-bold hover:text-red-400 transition-colors w-full text-left px-5 py-4 group bg-slate-900/50 rounded-xl border border-slate-800/80 shadow-sm hover:border-red-500/30">
-            <LogOut className="w-5 h-5 text-slate-500 group-hover:text-red-500 transition-colors" /> Secure Logout
-          </button>
-        </div>
-      </aside>
+      <AdminSidebar unreadMessages={stats.unread} />
 
       {/* WORKSPACE */}
       <main className="flex-1 p-4 md:p-8 lg:p-12 w-full overflow-y-auto h-screen relative pb-32 md:pb-12 custom-scrollbar z-10">
@@ -304,20 +274,7 @@ export default function MessagesPage() {
         </div>
       </main>
 
-      {/* MOBILE NAV */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] px-2 pb-6 pt-2 bg-gradient-to-t from-[#0B1120] via-[#0B1120]/95 to-transparent pointer-events-none">
-        <nav className="max-w-md mx-auto bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-3xl h-20 flex items-center justify-around px-2 shadow-2xl pointer-events-auto">
-          <Link href="/admin" className="flex flex-col items-center justify-center gap-1 text-slate-500"><LayoutDashboard className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Live</span></Link>
-          <Link href="/admin/companies" className="flex flex-col items-center justify-center gap-1 text-slate-500"><Building2 className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Ops</span></Link>
-          <Link href="/admin/messages" className="flex flex-col items-center justify-center gap-1 text-blue-500 relative">
-            <MessageCircle className="w-5 h-5" />
-            {stats.unread > 0 && <span className="absolute -top-1 right-2 w-2 h-2 rounded-full bg-emerald-400"></span>}
-            <span className="text-[8px] font-bold uppercase tracking-tighter">Texts</span>
-          </Link>
-          <Link href="/admin/financials" className="flex flex-col items-center justify-center gap-1 text-slate-500"><PiggyBank className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Finance</span></Link>
-          <Link href="/admin/settings" className="flex flex-col items-center justify-center gap-1 text-slate-500"><Settings2 className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Settings</span></Link>
-        </nav>
-      </div>
+      <AdminMobileNav unreadMessages={stats.unread} />
     </div>
   );
 }

@@ -15,16 +15,15 @@ import {
 } from "@/app/lib/messageTemplates";
 import { detectAirport, operatesAt, assignableTo, operatorLabel, AIRPORT_NAME } from "@/app/lib/airport";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { AdminSidebar, AdminMobileNav } from "@/components/admin/AdminNav";
 
 import {
-  Users, Trash2, LogOut, Phone, Car, Plane, MessageCircle,
-  Search, TrendingUp, MapPin, Loader2, Filter,
-  LayoutDashboard, Plus, Building2, X, Save, Clock,
-  CheckCircle2, AlertCircle, PlaneLanding, PlaneTakeoff,
-  XCircle, ChevronDown, Download, Briefcase, Receipt, Star,
-  Database, Smartphone, Wallet, Settings2, Activity, Tags,
-  Zap, PiggyBank, Link2, Copy, Mail, Send, RefreshCw, Megaphone
+  Users, Trash2, LogOut, Phone, Car, Plane, MessageCircle, Search,
+  TrendingUp, MapPin, Loader2, Filter, LayoutDashboard, Plus, Building2, X,
+  Save, Clock, CheckCircle2, AlertCircle, PlaneLanding, PlaneTakeoff, XCircle, ChevronDown,
+  Download, Briefcase, Receipt, Star, Database, Smartphone, Wallet, Settings2,
+  Activity, Tags, Zap, Link2, Copy, Mail, Send, RefreshCw,
+  Megaphone,
 } from "lucide-react";
 
 function DashboardContent() {
@@ -1103,45 +1102,7 @@ function DashboardContent() {
   return (
     <div className="dark-ui-deep min-h-screen bg-[#0B1120] font-sans flex flex-col md:flex-row text-slate-100 antialiased selection:bg-blue-600/30">
 
-      {/* SIDEBAR */}
-      <aside className="w-full md:w-60 bg-[#0F1523] text-zinc-400 hidden md:flex flex-col sticky top-0 h-screen border-r border-white/[0.06] z-50 shrink-0">
-        <div className="px-6 py-7 flex items-center gap-3 text-white">
-          <div className="w-9 h-9 bg-blue-600/15 rounded-lg flex items-center justify-center border border-blue-500/30">
-            <Plane className="w-5 h-5 text-blue-400 rotate-45" />
-          </div>
-          <span className="font-black text-lg tracking-tight uppercase">OPS <span className="text-blue-500">CENTER</span></span>
-        </div>
-
-        <nav className="px-3 space-y-1 flex-grow mt-2 font-semibold text-[13px]">
-          <Link href="/admin" className="flex items-center gap-3 px-4 py-2.5 bg-blue-600 text-white rounded-lg transition-colors">
-            <LayoutDashboard className="w-4 h-4" /> Live Board
-          </Link>
-          <Link href="/admin/companies" className="flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:bg-white/[0.04] hover:text-white rounded-lg transition-colors">
-            <Building2 className="w-4 h-4 text-zinc-500" /> Partner Network
-          </Link>
-          <Link href="/admin/promos" className="flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:bg-white/[0.04] hover:text-white rounded-lg transition-colors">
-            <Tags className="w-4 h-4 text-zinc-500" /> Promo Manager
-          </Link>
-          <Link href="/admin/financials" className="flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:bg-white/[0.04] hover:text-white rounded-lg transition-colors">
-            <PiggyBank className="w-4 h-4 text-zinc-500" /> Financials
-          </Link>
-          <Link href="/admin/messages" className="flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:bg-white/[0.04] hover:text-white rounded-lg transition-colors">
-            <MessageCircle className="w-4 h-4 text-zinc-500" /> Messages
-          </Link>
-          <Link href="/admin/activity" className="flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:bg-white/[0.04] hover:text-white rounded-lg transition-colors">
-            <Activity className="w-4 h-4 text-zinc-500" /> Activity Ledger
-          </Link>
-          <Link href="/admin/settings" className="flex items-center gap-3 px-4 py-2.5 text-zinc-400 hover:bg-white/[0.04] hover:text-white rounded-lg transition-colors border-t border-white/[0.06] mt-3 pt-4">
-            <Settings2 className="w-4 h-4 text-zinc-500" /> Platform Settings
-          </Link>
-        </nav>
-
-        <div className="p-4">
-          <button onClick={() => supabase.auth.signOut().then(() => router.replace("/admin/login"))} className="flex items-center gap-3 text-[13px] font-semibold text-zinc-400 hover:text-red-400 transition-colors w-full text-left px-4 py-2.5 group rounded-lg border border-white/[0.06] hover:border-red-500/30">
-            <LogOut className="w-4 h-4 text-zinc-500 group-hover:text-red-500 transition-colors" /> Secure Logout
-          </button>
-        </div>
-      </aside>
+      <AdminSidebar />
 
       {/* PRIMARY WORKSPACE */}
       <main className="flex-1 p-4 md:p-8 w-full overflow-y-auto h-screen pb-32 md:pb-10 custom-scrollbar">
@@ -1569,17 +1530,7 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* 🟢 FIXED MOBILE BOTTOM NAV */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] px-2 pb-6 pt-2 bg-gradient-to-t from-[#0B1120] via-[#0B1120]/95 to-transparent pointer-events-none">
-          <nav className="max-w-md mx-auto bg-[#0F1523] border border-white/10 rounded-2xl h-20 flex items-center justify-around px-2 shadow-xl pointer-events-auto">
-            <Link href="/admin" className="flex flex-col items-center justify-center gap-1 text-blue-500 transition-all"><LayoutDashboard className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Live</span></Link>
-            <Link href="/admin/companies" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><Building2 className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Ops</span></Link>
-            <div className="relative -top-8"><button onClick={() => setShowManualModal(true)} className="w-14 h-14 bg-blue-600 hover:bg-blue-500 rounded-xl flex items-center justify-center border-4 border-[#0B1120] active:scale-95 transition-transform"><Plus className="w-6 h-6 text-white" /></button></div>
-            <Link href="/admin/financials" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><PiggyBank className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Finance</span></Link>
-            {/* 🟢 NEW SETTINGS TAB FOR MOBILE ADDED HERE */}
-            <Link href="/admin/settings" className="flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"><Settings2 className="w-5 h-5" /><span className="text-[8px] font-bold uppercase tracking-tighter">Settings</span></Link>
-          </nav>
-        </div>
+        <AdminMobileNav action={{ label: "New booking", Icon: Plus, onClick: () => setShowManualModal(true) }} />
       </main>
 
       {/* --- 🟢 MODAL: MANUAL BOOKING ENTRY --- */}

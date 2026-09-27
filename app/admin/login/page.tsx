@@ -1,152 +1,110 @@
 "use client";
 
-import { useState } from "react";
-import { supabase } from "@/app/lib/supabase"; // 🟢 Fixed import path
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { supabase } from "@/app/lib/supabase";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { 
-  ShieldCheck, 
-  Lock, 
-  Mail, 
-  Loader2, 
-  PlaneTakeoff,
-  ArrowLeft,
-  AlertTriangle,
-  Zap,
-} from "lucide-react";
+import { AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
+import Logo from "@/components/site/Logo";
 
-export default function AdminLogin() {
+const inputCls = "w-full h-12 rounded-lg border border-white/15 bg-[#0B1120] px-3.5 text-base text-white placeholder:text-slate-500 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/30";
+
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const params = useSearchParams();
+
+  // proxy.ts sends people here with ?redirect=/admin/… — go back there after
+  // signing in. Only admin paths, so the parameter can't be used to bounce
+  // someone to another site.
+  const redirect = params.get("redirect") || "";
+  const next = redirect.startsWith("/admin") && !redirect.startsWith("/admin/login") ? redirect : "/admin";
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanPass = password.trim();
-
-    // --- 🟢 STANDARD SUPABASE AUTH (100% Secure) ---
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({ 
-        email: cleanEmail, 
-        password: cleanPass 
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password: password.trim(),
       });
 
       if (authError) {
-        setError("Invalid credentials or unauthorized device.");
+        setError("That email and password don't match an admin account.");
         setLoading(false);
       } else {
-        router.push("/admin");
+        router.push(next);
       }
-    } catch (err) {
-      setError("Database Connection Offline. Please contact support.");
+    } catch {
+      setError("We couldn't reach the sign-in service. Please try again.");
       setLoading(false);
     }
   };
 
   return (
-    <main className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans selection:bg-blue-600 selection:text-white">
-      
-      {/* DECORATIVE BACKGROUND */}
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 pointer-events-none"></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
-
-      {/* RETURN TO PUBLIC SITE */}
-      <div className="absolute top-8 left-8 z-20">
-        <Link href="/" className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-[10px] font-black uppercase tracking-widest group">
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Public Site
-        </Link>
+    <form onSubmit={handleLogin} className="mt-6 space-y-4">
+      <div>
+        <label htmlFor="admin-email" className="block text-sm font-medium text-slate-300 mb-1.5">Email</label>
+        <input
+          id="admin-email"
+          type="email"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className={inputCls}
+          required
+        />
+      </div>
+      <div>
+        <label htmlFor="admin-password" className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+        <input
+          id="admin-password"
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className={inputCls}
+          required
+        />
       </div>
 
-      <div className="w-full max-w-md bg-slate-900/80 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl p-8 md:p-10 border border-white/10 relative z-10 animate-in fade-in zoom-in-95 duration-500">
-        
-        {/* LOGO & BRANDING */}
-        <div className="text-center mb-10">
-          <div className="w-20 h-20 bg-blue-600 text-white rounded-2xl flex items-center justify-center mb-6 mx-auto shadow-lg shadow-blue-600/30 relative">
-            <div className="absolute -top-2 -right-2 bg-slate-900 rounded-full p-1 border-2 border-slate-800">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            </div>
-            <PlaneTakeoff className="w-10 h-10" />
-          </div>
-          <h1 className="text-3xl font-black text-white tracking-tight flex items-center justify-center gap-2">
-            Ops<span className="text-blue-500">Center</span>
-          </h1>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mt-2">
-            Authorized Personnel Only
-          </p>
+      {error && (
+        <p role="alert" className="flex items-start gap-2 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2.5 text-sm text-red-200">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" /> {error}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full h-12 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold inline-flex items-center justify-center gap-2"
+      >
+        {loading ? <><Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" /> Signing in…</> : "Sign in"}
+      </button>
+    </form>
+  );
+}
+
+export default function AdminLogin() {
+  return (
+    <main className="min-h-screen bg-[#0B1120] flex flex-col items-center justify-center px-4 py-10 font-sans text-white">
+      <div className="w-full max-w-sm">
+        <Logo tone="dark" className="h-7 w-auto" priority />
+        <div className="mt-6 rounded-xl border border-white/10 bg-[#0F1523] p-6">
+          <h1 className="text-xl font-semibold">Admin sign in</h1>
+          <p className="mt-1 text-sm text-slate-400">For AeroPark Direct staff.</p>
+          <Suspense fallback={null}>
+            <LoginForm />
+          </Suspense>
         </div>
-
-        {/* LOGIN FORM */}
-        <form onSubmit={handleLogin} className="space-y-6 text-left">
-          
-          {/* EMAIL INPUT */}
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Agent Email</label>
-            <div className="relative group">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 z-20 pointer-events-none group-focus-within:text-blue-400 transition-colors" />
-              <input 
-                type="email" 
-                placeholder="info@xyz.co.uk" 
-                autoComplete="email"
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
-                className="!bg-slate-950 !pl-12 w-full pr-4 py-4 border border-slate-800 rounded-2xl font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all placeholder:text-slate-600 shadow-xl" 
-                required
-              />
-            </div>
-          </div>
-
-          {/* PASSWORD INPUT */}
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Secure Password</label>
-            <div className="relative group">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 z-20 pointer-events-none group-focus-within:text-blue-400 transition-colors" />
-              <input 
-                type="password" 
-                placeholder="••••••••" 
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)} 
-                className="!bg-slate-950 !pl-12 w-full pr-4 py-4 border border-slate-800 rounded-2xl font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all placeholder:text-slate-600 tracking-widest shadow-xl" 
-                required
-              />
-            </div>
-          </div>
-
-          {error && (
-            <div className="p-4 bg-red-500/10 rounded-xl border border-red-500/20 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
-              <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
-              <p className="text-red-400 text-[11px] font-bold leading-relaxed">{error}</p>
-            </div>
-          )}
-
-          <button 
-            type="submit" 
-            disabled={loading} 
-            className="w-full py-5 mt-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-blue-500 transition-all flex items-center justify-center gap-3 shadow-[0_10px_20px_-10px_rgba(37,99,235,0.5)] active:scale-95 disabled:opacity-70"
-          >
-            {loading ? (
-              <><Loader2 className="w-5 h-5 animate-spin" /> Verifying...</>
-            ) : (
-              <><ShieldCheck className="w-5 h-5" /> Authenticate Session</>
-            )}
-          </button>
-
-        </form>
-        
-        {/* FOOTER INFO */}
-        <div className="mt-8 text-center border-t border-white/10 pt-6 flex flex-col gap-3">
-          <p className="text-slate-500 font-bold text-[9px] uppercase tracking-widest flex items-center justify-center gap-1.5">
-            <Lock className="w-3 h-3" /> 256-bit Encrypted Connection
-          </p>
-          <div className="flex items-center justify-center gap-2 text-[10px] font-black text-amber-500/50 uppercase tracking-[0.2em]">
-            <Zap className="w-3 h-3" /> 
-          </div>
-        </div>
+        <Link href="/" className="mt-6 inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white">
+          <ArrowLeft className="w-4 h-4" aria-hidden="true" /> Back to the website
+        </Link>
       </div>
     </main>
   );
