@@ -1,7 +1,7 @@
 "use client";
 
 import { logger } from "@/app/lib/logger";
-import LaunchTimer from "@/components/LaunchTimer";
+import { AeroAvatar } from "@/components/AeroFeature";
 import BookingStepper from "@/components/BookingStepper";
 import ModifySearchModal from "@/components/ModifySearchModal";
 import { checkAvailability, getLaunchTimerConfig, type LaunchTimerConfig } from "../actions";
@@ -63,7 +63,7 @@ const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffec
 // the layout never shifts ("jumps") between loading and loaded states.
 function ResultsCardSkeleton() {
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 animate-pulse" aria-hidden="true">
+    <div className="bg-white border border-slate-200 rounded-xl p-5 md:p-6 animate-pulse" aria-hidden="true">
       <div className="flex items-center gap-4">
         <div className="w-16 h-16 rounded-2xl bg-slate-200 shrink-0" />
         <div className="flex-1 space-y-2.5">
@@ -81,26 +81,6 @@ function ResultsCardSkeleton() {
   );
 }
 
-
-// ─── AERO AVATAR ──────────────────────────────────────────────────────────────
-function AeroAvatar({ size = "md", thinking = false }: { size?: "sm" | "md" | "lg"; thinking?: boolean }) {
-  const s  = { sm: "w-9 h-9 rounded-xl",  md: "w-12 h-12 rounded-2xl", lg: "w-20 h-20 rounded-3xl" };
-  const ew = { sm: "w-1",                  md: "w-1.5",                  lg: "w-2" };
-  const eh = { sm: "h-2.5",                md: "h-3.5",                  lg: "h-6" };
-  const g  = { sm: "gap-1",                md: "gap-1.5",                lg: "gap-2" };
-  return (
-    <div className={`relative flex items-center justify-center shrink-0 ${s[size]}`}>
-      <div className={`absolute inset-0 bg-blue-500/40 blur-xl ${thinking ? "animate-pulse scale-110" : ""}`} />
-      <div className={`relative w-full h-full bg-gradient-to-br from-blue-400 via-blue-600 to-blue-700 flex items-center justify-center shadow-[0_0_25px_rgba(37,99,235,0.5)] overflow-hidden group border border-blue-300/30 ${s[size]}`}>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
-        <div className={`flex ${g[size]} z-10 ${thinking ? "animate-pulse" : ""}`}>
-          <div className={`${ew[size]} ${eh[size]} bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.9)]`} />
-          <div className={`${ew[size]} ${eh[size]} bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.9)]`} />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // NOTE: getBadgeIcon / getAvgRating moved to @/app/lib/domain; CompanyLogo,
 // DetailPanel and ParkingCard were extracted to @/components/results/* as part
@@ -183,14 +163,12 @@ function EmailQuoteCard({
 
   if (status === "sent") {
     return (
-      <div className="mt-6 bg-white border border-emerald-200 rounded-2xl p-6 sm:p-7 flex items-center gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0">
-          <CheckCircle2 className="w-6 h-6 text-emerald-600" />
-        </div>
+      <div className="mt-6 bg-white border border-emerald-200 rounded-xl p-5 sm:p-6 flex items-start gap-3">
+        <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" aria-hidden="true" />
         <div>
-          <p className="text-slate-900 font-black text-base">Quote sent — check your inbox</p>
+          <p className="text-slate-900 font-semibold">Quote sent. Check your inbox.</p>
           <p className="text-slate-500 text-sm mt-0.5">
-            We've emailed your {airport} quote. Your prices and free cancellation are held — book whenever you're ready.
+            We&apos;ve emailed your {airport} prices with a link back to them. Prices can change, so the link always shows the latest.
           </p>
         </div>
       </div>
@@ -198,16 +176,14 @@ function EmailQuoteCard({
   }
 
   return (
-    <div className="mt-6 bg-white border border-blue-200 rounded-2xl p-6 sm:p-7 shadow-sm relative overflow-hidden">
-      <div className="relative z-10 flex flex-col sm:flex-row sm:items-center gap-5">
+    <div className="mt-6 bg-white border border-slate-200 rounded-xl p-5 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="flex items-center gap-4 flex-1 min-w-0">
-          <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0">
-            <Mail className="w-6 h-6 text-blue-600" />
-          </div>
+          <Mail className="w-6 h-6 text-slate-400 shrink-0" aria-hidden="true" />
           <div className="min-w-0">
-            <p className="text-slate-900 font-black text-base leading-tight">Not ready to book? Email me this quote</p>
+            <p className="text-slate-900 font-semibold leading-tight">Not ready to book? Email yourself these prices</p>
             <p className="text-slate-500 text-sm mt-0.5">
-              We'll send your prices and a link to pick up exactly where you left off.
+              We&apos;ll send them with a link that brings you back to this search.
             </p>
           </div>
         </div>
@@ -218,12 +194,13 @@ function EmailQuoteCard({
             onChange={(e) => { setEmail(e.target.value); if (status === "error") setStatus("idle"); }}
             placeholder="your@email.com"
             autoComplete="email"
-            className="flex-1 bg-slate-50 border border-slate-300 focus:border-blue-500 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 outline-none transition-colors"
+            aria-label="Your email address"
+            className="w-full sm:flex-1 min-w-0 h-11 bg-white border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 rounded-lg px-3 text-base text-slate-900 placeholder-slate-400 outline-none"
           />
           <button
             type="submit"
             disabled={!valid || status === "sending"}
-            className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black uppercase tracking-widest text-[11px] rounded-xl transition-all active:scale-95 shrink-0"
+            className="inline-flex items-center justify-center gap-2 h-11 px-4 bg-[#0B1120] hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold text-sm rounded-lg shrink-0"
           >
             {status === "sending"
               ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending</>
@@ -232,7 +209,7 @@ function EmailQuoteCard({
         </form>
       </div>
       {status === "error" && (
-        <p className="relative z-10 text-rose-600 text-xs font-semibold mt-3 sm:text-right">{error}</p>
+        <p role="alert" className="text-red-600 text-sm mt-3 sm:text-right">{error}</p>
       )}
     </div>
   );
@@ -591,10 +568,19 @@ function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
 
   // Pure client-side view transform over the engine's authoritative output.
   // "recommended" keeps the engine's pinned order; price/rating only re-sort.
-  const visibleOperators = useMemo<PricedCompany[]>(
-    () => sortCompanies(processedCompanies as PricedCompany[], sortKey),
-    [processedCompanies, sortKey],
-  );
+  // An operator with no price (or sold out) can't be booked, so it never leads
+  // the list or wears "Recommended". Still-loading live rates keep their place
+  // so cards don't jump around while prices arrive.
+  const isBookable = useCallback((o: PricedCompany) => {
+    const soldOut = Boolean(isHeathrow ? o.lhr_sold_out : o.ltn_sold_out);
+    return !soldOut && (liveLoadingIds.has(o.id) || (o.calculatedPriceObj?.final ?? 0) > 0);
+  }, [isHeathrow, liveLoadingIds]);
+
+  const visibleOperators = useMemo<PricedCompany[]>(() => {
+    const sorted = sortCompanies(processedCompanies as PricedCompany[], sortKey);
+    return [...sorted.filter(isBookable), ...sorted.filter((o) => !isBookable(o))];
+  }, [processedCompanies, sortKey, isBookable]);
+  const bookableCount = visibleOperators.filter(isBookable).length;
 
   return (
     <div className="max-w-[1000px] mx-auto px-4 py-6 md:py-8">
@@ -612,58 +598,46 @@ function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
       />
 
       {/* Aero concierge — a status line, not a notification card */}
-      <div className="flex flex-col lg:flex-row gap-3 mb-8">
-        <div className="flex-1 flex items-center gap-3 py-1 min-w-0">
-          <button
-            type="button"
-            onClick={() => window.dispatchEvent(new Event("aero:open-chat"))}
-            aria-label="Ask Aero a question"
-            title="Ask Aero a question"
-            className="shrink-0 rounded-xl transition-transform hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-          >
-            <AeroAvatar size="sm" />
-          </button>
-          <div className="min-w-0">
-            <p className="text-slate-800 text-sm leading-snug">
-              <span className="font-bold text-blue-600 mr-1">Aero:</span>
-              {visibleOperators.length > 0
-                ? `${visibleOperators.length} operators available for your dates at ${isHeathrow ? "Heathrow" : "Luton"}.`
-                : "Scanning approved compounds..."}
-              {visibleOperators.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => window.dispatchEvent(new Event("aero:open-chat"))}
-                  className="ml-2 font-semibold text-blue-600 underline-offset-2 hover:underline"
-                >
-                  Ask Aero
-                </button>
-              )}
-            </p>
-            {aeroTip && <p className="text-slate-500 text-xs font-medium mt-1 leading-relaxed">{aeroTip}</p>}
-            {liveLoadingIds.size > 0 && (
-              <p className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 mt-1">
-                <Loader2 className="w-3 h-3 animate-spin" />
-                Updating live rates ({liveLoadingIds.size} remaining)…
-              </p>
+      <div className="flex items-start gap-3 mb-6">
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new Event("aero:open-chat"))}
+          aria-label="Ask Aero a question"
+          title="Ask Aero a question"
+          className="shrink-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+        >
+          <AeroAvatar className="w-8 h-8" />
+        </button>
+        <div className="min-w-0 text-sm leading-relaxed">
+          <p className="text-slate-800">
+            {loading
+              ? "Finding operators for your dates…"
+              : bookableCount > 0
+              ? `${bookableCount} ${bookableCount === 1 ? "operator has" : "operators have"} prices for your dates at ${isHeathrow ? "Heathrow" : "Luton"}.`
+              : `No operators have prices for these dates at ${isHeathrow ? "Heathrow" : "Luton"} yet.`}
+            {!loading && (
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new Event("aero:open-chat"))}
+                className="ml-2 font-semibold text-blue-700 underline-offset-4 hover:underline"
+              >
+                Ask Aero
+              </button>
             )}
-          </div>
+          </p>
+          {aeroTip && <p className="text-slate-600 mt-1">{aeroTip}</p>}
+          {liveLoadingIds.size > 0 && (
+            <p className="flex items-center gap-1.5 text-slate-500 mt-1">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+              Getting live prices from {liveLoadingIds.size} {liveLoadingIds.size === 1 ? "operator" : "operators"}…
+            </p>
+          )}
+          {timerConfig?.enabled && timerConfig.benefitValue && (
+            <p className="text-slate-500 mt-1">
+              Founding customer offer: <span className="font-medium text-slate-800">{timerConfig.benefitValue.split("+").map((x) => x.trim()).filter(Boolean).join(" + ")}</span>
+            </p>
+          )}
         </div>
-        {timerConfig?.enabled && (
-          <div className="lg:w-[300px] shrink-0">
-            <LaunchTimer
-              theme="light"
-              hours={timerConfig.hours}
-              slotsClaimed={timerConfig.slotsClaimed}
-              totalSlots={timerConfig.slotsTotal}
-              badge={timerConfig.badge}
-              title={timerConfig.title}
-              subtitle={timerConfig.subtitle}
-              benefitTitle={timerConfig.benefitTitle}
-              benefitValue={timerConfig.benefitValue}
-              benefitNote={timerConfig.benefitNote}
-            />
-          </div>
-        )}
       </div>
 
       {loading ? (
@@ -673,31 +647,29 @@ function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
           <ResultsCardSkeleton />
         </div>
       ) : visibleOperators.length === 0 ? (
-        <div className="text-center py-16 md:py-24 bg-white rounded-2xl border border-dashed border-slate-300 px-6">
+        <div className="text-center py-14 md:py-20 bg-white rounded-xl border border-slate-200 px-6">
           {!serviceType.toLowerCase().includes("meet") ? (
             <>
-              <div className="w-16 h-16 bg-slate-100 border border-slate-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Clock className="w-8 h-8 text-blue-600" />
-              </div>
-              <h3 className="text-2xl font-black text-slate-900 mb-3">
-                {serviceType.toLowerCase().includes("hotel") ? "Hotel & Parking" : "Park & Ride"} Coming Soon!
-              </h3>
-              <p className="text-slate-500 text-sm max-w-lg mx-auto mb-8">
-                We're onboarding top operators. In the meantime, our{" "}
-                <strong className="text-slate-900">Meet & Greet</strong> service is often the same price.
+              <Clock className="w-8 h-8 text-slate-400 mx-auto" aria-hidden="true" />
+              <h2 className="mt-4 text-xl font-semibold text-slate-900">
+                {serviceType.toLowerCase().includes("hotel") ? "Hotel & Parking" : "Park & Ride"} is coming soon here
+              </h2>
+              <p className="mt-2 text-slate-600 max-w-lg mx-auto">
+                We&apos;re adding operators. In the meantime, you can book Meet &amp; Greet for the same dates.
               </p>
               <button
+                type="button"
                 onClick={() => { const q = new URLSearchParams(searchParams.toString()); q.set("type", "meet-greet"); router.push(`/results?${q.toString()}`); }}
-                className="inline-flex items-center gap-3 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest text-xs rounded-xl transition-all active:scale-95"
+                className="mt-6 inline-flex items-center gap-2 h-11 px-5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg"
               >
-                <CarFront className="w-4 h-4" /> View Meet & Greet Prices
+                <CarFront className="w-4 h-4" aria-hidden="true" /> See Meet &amp; Greet prices
               </button>
             </>
           ) : (
             <>
-              <AlertCircle className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-              <h3 className="text-xl font-black text-slate-900">No Active Providers Found</h3>
-              <p className="text-slate-500 mt-2 text-sm max-w-md mx-auto">Try modifying your search dates or times.</p>
+              <AlertCircle className="w-8 h-8 text-slate-400 mx-auto" aria-hidden="true" />
+              <h2 className="mt-4 text-xl font-semibold text-slate-900">No operators available for these dates</h2>
+              <p className="text-slate-600 mt-2 max-w-md mx-auto">Try different dates or times, or call us on {COMPANY.phoneDisplay}.</p>
             </>
           )}
         </div>
@@ -715,7 +687,7 @@ function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
                 isHeathrow={isHeathrow}
                 promo={livePromo}
                 onSelect={handleBooking}
-                featured={sortKey === "recommended" && idx === 0}
+                featured={sortKey === "recommended" && idx === 0 && isBookable(operator)}
                 liveRateLoading={liveLoadingIds.has(operator.id)}
               />
             ))}
@@ -789,8 +761,8 @@ function ResultsLayout() {
 export default function ResultsPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center font-black text-slate-500 uppercase tracking-[0.2em] text-xs">
-        Aero is Initializing...
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center text-sm text-slate-500">
+        Loading prices…
       </div>
     }>
       <ResultsLayout />

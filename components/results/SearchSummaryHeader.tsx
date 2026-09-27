@@ -33,7 +33,7 @@ export function SearchSummaryHeader({
       type="button"
       onClick={onEdit}
       aria-label={`Change search: ${airport}, ${fmt(dropoff)} to ${fmt(pickup)}`}
-      className="group mb-4 flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left transition-colors hover:border-blue-300 touch-manipulation"
+      className="group mb-4 flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left transition-colors hover:border-blue-300 touch-manipulation"
     >
       <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1.5 text-sm">
         <span className="flex items-center gap-1.5 font-semibold text-slate-800"><MapPin className="h-3.5 w-3.5 text-blue-600" /> {airport}</span>
@@ -41,7 +41,7 @@ export function SearchSummaryHeader({
         <span className="flex items-center gap-1.5 text-slate-500"><Moon className="h-3.5 w-3.5 text-blue-600" /> {nights} {nights === 1 ? "day" : "days"}</span>
         <span className="rounded-md bg-blue-50 px-2 py-0.5 font-semibold text-blue-700 text-xs">{service}</span>
       </div>
-      <span className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-600 transition-colors group-hover:border-blue-500 group-hover:text-slate-900">
+      <span className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-600 transition-colors group-hover:border-blue-500 group-hover:text-slate-900">
         <Pencil className="h-3.5 w-3.5" /> Edit
       </span>
     </button>
