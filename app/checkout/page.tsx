@@ -24,10 +24,10 @@ import {
 
 // ─── STYLES ───────────────────────────────────────────────────────────────────
 
-const lightInputCls = "w-full h-12 bg-white border border-slate-300 rounded-lg px-3.5 text-base text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 outline-none touch-manipulation shadow-[0_0_0_1000px_#ffffff_inset] [-webkit-text-fill-color:#0f172a]";
+const lightInputCls = "w-full h-12 bg-white border border-slate-300 rounded-lg px-3.5 text-base text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 outline-none touch-manipulation shadow-[0_0_0_1000px_#ffffff_inset] [-webkit-text-fill-color:#0f172a] placeholder:[-webkit-text-fill-color:#94a3b8]";
 // UK number-plate yellow, so the registration field is recognisable at a glance.
-const plateInputCls = "w-full h-14 bg-[#fde047] border border-yellow-500 rounded-lg px-4 text-xl font-bold text-slate-900 text-center uppercase tracking-[0.15em] focus:border-blue-600 focus:ring-2 focus:ring-blue-600/30 outline-none placeholder:text-yellow-700/50 shadow-[0_0_0_1000px_#fde047_inset] [-webkit-text-fill-color:#0f172a] touch-manipulation";
-const darkInputCls = "w-full h-11 bg-white/5 border border-white/15 rounded-lg px-3 text-base text-white placeholder:text-slate-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/30 outline-none shadow-[0_0_0_1000px_#141b2d_inset] [-webkit-text-fill-color:white]";
+const plateInputCls = "w-full h-14 bg-[#fde047] border border-yellow-500 rounded-lg px-4 text-xl font-bold text-slate-900 text-center uppercase tracking-[0.15em] focus:border-blue-600 focus:ring-2 focus:ring-blue-600/30 outline-none placeholder:text-yellow-700/50 shadow-[0_0_0_1000px_#fde047_inset] [-webkit-text-fill-color:#0f172a] placeholder:[-webkit-text-fill-color:rgba(161,98,7,0.5)] touch-manipulation";
+const darkInputCls = "w-full h-11 bg-white/5 border border-white/15 rounded-lg px-3 text-base text-white placeholder:text-slate-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/30 outline-none shadow-[0_0_0_1000px_#141b2d_inset] [-webkit-text-fill-color:white] placeholder:[-webkit-text-fill-color:#64748b]";
 const labelCls = "block text-sm font-medium text-slate-700 mb-1.5";
 const errorInputCls = "border-red-500 focus:border-red-500 focus:ring-red-500/20";
 const errorTextCls = "mt-1.5 text-sm text-red-600";
