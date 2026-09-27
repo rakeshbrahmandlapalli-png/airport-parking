@@ -111,9 +111,9 @@ export default function RootLayout({
         {/* Promo banner — reads live from Promo Manager; renders nothing when no code is active, and never on /admin */}
         <PromoBanner />
 
-        <main className="relative w-full">
+        <div className="relative w-full">
           {children}
-        </main>
+        </div>
 
         {/* 24/7 AI Support Agent */}
         <Chatbot />

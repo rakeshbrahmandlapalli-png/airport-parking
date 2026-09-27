@@ -5,15 +5,17 @@ import AeroFeature from "@/components/AeroFeature";
 import { supabase } from "./lib/supabase";
 import { getLaunchTimerConfig } from "./actions";
 import {
-  User, Calendar, PlaneTakeoff, ShieldCheck, Star, CreditCard,
-  Menu, X, ChevronRight, Info, ChevronDown, Search, Car,
+  Calendar, PlaneTakeoff, ShieldCheck, CreditCard,
+  Info, ChevronDown, Search, Car,
   Mic, Sparkles, Loader2, ArrowRight, Plane, HelpCircle,
-  Timer, CheckCircle2, BadgeCheck, PhoneCall, AlertCircle, TrendingUp
+  Timer, CheckCircle2, BadgeCheck, PhoneCall, AlertCircle
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import MapModal from "@/components/MapModal";
 import PriceMatchModal from "@/components/PriceMatchModal";
+import SiteHeader from "@/components/site/SiteHeader";
+import SiteFooter from "@/components/site/SiteFooter";
 
 const addDays = (date: Date, days: number) => { const d = new Date(date); d.setDate(d.getDate() + days); return d.toISOString().split("T")[0]; };
 const toDateStr = (d: Date) => d.toISOString().split("T")[0];
@@ -97,7 +99,6 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
   // into highlighted segments. Null until loaded so we never flash a stale %.
   const [foundingOffer, setFoundingOffer] = useState<string | null>(null);
   const [now,              setNow]              = useState<Date | null>(null);
-  const [isMenuOpen,       setIsMenuOpen]       = useState(false);
   const [isMapOpen,        setIsMapOpen]        = useState(false);
   const [isPriceMatchOpen, setIsPriceMatchOpen] = useState(false);
   const [isLoaded,         setIsLoaded]         = useState(false);
@@ -289,6 +290,7 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@graph": schemaGraph }) }} />
 
+      <SiteHeader />
       <main suppressHydrationWarning className="light-ui min-h-[100dvh] bg-white font-sans antialiased selection:bg-blue-600 selection:text-white overflow-x-hidden">
 
         {/* 🟢 SUCCESS TOAST */}
@@ -297,76 +299,6 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
             <CheckCircle2 className="w-5 h-5" /> Search submitted! Finding operators...
           </div>
         )}
-
-        <nav aria-label="Main navigation" className={`sticky top-0 w-full z-[100] bg-white/80 backdrop-blur-xl border-b border-slate-200 transition-all duration-1000 ${isLoaded ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"}`}>
-          <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 md:h-24 flex items-center justify-between overflow-hidden md:overflow-visible">
-            <Link href="/" aria-label="AeroPark Direct - Airport Parking Home" className="flex items-center z-50 overflow-visible touch-manipulation [-webkit-tap-highlight-color:transparent]">
-              <Image src="/logo.png" alt="AeroPark Direct - Airport Parking Luton Heathrow" width={400} height={120} priority className="h-12 md:h-20 w-auto object-contain scale-[1.8] md:scale-[1.35] origin-left mix-blend-multiply -translate-x-4 md:translate-x-0 ml-6 md:ml-0" />
-            </Link>
-            <div className="hidden md:flex items-center gap-8">
-              <div className="relative group">
-                <button className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 group-hover:text-slate-900 transition-colors flex items-center gap-1.5 py-2 touch-manipulation">Parking <ChevronRight className="w-3 h-3 rotate-90 transition-transform duration-200 group-hover:rotate-[270deg]" aria-hidden="true" /></button>
-                <div className="absolute left-0 top-full pt-3 opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-200">
-                  <div className="bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-300/40 p-6 w-[460px] grid grid-cols-2 gap-x-10">
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 mb-3">Heathrow (LHR)</p>
-                      <div className="flex flex-col gap-2">
-                        <Link href="/heathrow-meet-and-greet" className="text-[13px] font-bold text-slate-600 hover:text-blue-600 transition-colors">Meet &amp; Greet</Link>
-                        <Link href="/heathrow-park-and-ride" className="text-[13px] font-bold text-slate-600 hover:text-blue-600 transition-colors">Park &amp; Ride</Link>
-                        <Link href="/heathrow-terminal-5-parking" className="text-[13px] font-bold text-slate-600 hover:text-blue-600 transition-colors">Terminal 5</Link>
-                        <Link href="/heathrow-terminal-4-parking" className="text-[13px] font-bold text-slate-600 hover:text-blue-600 transition-colors">Terminal 4</Link>
-                        <Link href="/heathrow-terminal-3-parking" className="text-[13px] font-bold text-slate-600 hover:text-blue-600 transition-colors">Terminal 3</Link>
-                        <Link href="/heathrow-terminal-2-parking" className="text-[13px] font-bold text-slate-600 hover:text-blue-600 transition-colors">Terminal 2</Link>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 mb-3">Luton (LTN)</p>
-                      <div className="flex flex-col gap-2">
-                        <Link href="/luton-meet-and-greet" className="text-[13px] font-bold text-slate-600 hover:text-blue-600 transition-colors">Meet &amp; Greet</Link>
-                        <Link href="/luton-park-and-ride" className="text-[13px] font-bold text-slate-600 hover:text-blue-600 transition-colors">Park &amp; Ride</Link>
-                        <Link href="/luton-airport-parking" className="text-[13px] font-bold text-slate-600 hover:text-blue-600 transition-colors">All Luton Parking</Link>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <a href="#services" className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 hover:text-slate-900 transition-colors relative group">Services<span className="absolute -bottom-2 left-0 w-0 h-[2px] bg-blue-600 transition-all duration-300 group-hover:w-full" /></a>
-              <Link href="/how-it-works" className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 hover:text-slate-900 transition-colors relative group">How it works<span className="absolute -bottom-2 left-0 w-0 h-[2px] bg-blue-600 transition-all duration-300 group-hover:w-full" /></Link>
-              <Link href="/about" className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 hover:text-slate-900 transition-colors relative group">About<span className="absolute -bottom-2 left-0 w-0 h-[2px] bg-blue-600 transition-all duration-300 group-hover:w-full" /></Link>
-              <div className="h-6 w-px bg-slate-200 ml-2" />
-              <Link href="/manage" className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.15em] text-white bg-slate-900 px-6 py-3 rounded-full hover:bg-blue-600 transition-all active:scale-95 ml-2 touch-manipulation"><User className="w-4 h-4" /> Manage Booking</Link>
-            </div>
-            <button onClick={() => setIsMenuOpen(true)} aria-label="Open navigation menu" className="md:hidden p-2.5 text-slate-900 bg-slate-100 rounded-xl active:scale-90 transition-transform relative z-50 touch-manipulation [-webkit-tap-highlight-color:transparent]"><Menu className="w-6 h-6" /></button>
-          </div>
-        </nav>
-
-        <div role="dialog" aria-modal="true" aria-label="Mobile navigation" className={`md:hidden fixed inset-0 z-[9999] bg-white transition-all duration-500 ease-in-out flex flex-col ${isMenuOpen ? "opacity-100 translate-x-0 visible" : "opacity-0 translate-x-full invisible pointer-events-none"}`}>
-          <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100 shrink-0">
-            <Link href="/" onClick={() => setIsMenuOpen(false)} className="flex items-center touch-manipulation [-webkit-tap-highlight-color:transparent]"><Image src="/logo.png" alt="AeroPark Direct" width={250} height={80} className="h-12 w-auto object-contain scale-[1.8] origin-left mix-blend-multiply -translate-x-4 ml-6" /></Link>
-            <button onClick={() => setIsMenuOpen(false)} aria-label="Close menu" className="p-3 text-slate-900 bg-slate-100 rounded-full touch-manipulation [-webkit-tap-highlight-color:transparent]"><X className="w-6 h-6" /></button>
-          </div>
-          <div className="flex flex-col px-8 py-12 gap-2 flex-grow overflow-y-auto">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Parking</p>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3 mb-10">
-              {[
-                { label: "Heathrow Meet & Greet", href: "/heathrow-meet-and-greet" },
-                { label: "Heathrow Park & Ride",  href: "/heathrow-park-and-ride" },
-                { label: "Heathrow Terminals",    href: "/heathrow-airport-parking" },
-                { label: "Luton Meet & Greet",    href: "/luton-meet-and-greet" },
-                { label: "Luton Park & Ride",     href: "/luton-park-and-ride" },
-                { label: "All Luton Parking",     href: "/luton-airport-parking" },
-              ].map((l) => (
-                <Link key={l.href} href={l.href} onClick={() => setIsMenuOpen(false)} className="text-sm font-bold text-slate-700 hover:text-blue-600 transition-colors touch-manipulation [-webkit-tap-highlight-color:transparent]">{l.label}</Link>
-              ))}
-            </div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Main Menu</p>
-            <a href="#services" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-2xl font-black text-slate-900 border-b border-slate-50 touch-manipulation [-webkit-tap-highlight-color:transparent]">Services <ChevronRight className="w-6 h-6 text-blue-500" /></a>
-            <Link href="/how-it-works" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-2xl font-black text-slate-900 border-b border-slate-50 touch-manipulation [-webkit-tap-highlight-color:transparent]">How it works <ChevronRight className="w-6 h-6 text-blue-500" /></Link>
-            <Link href="/about" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-2xl font-black text-slate-900 border-b border-slate-50 touch-manipulation [-webkit-tap-highlight-color:transparent]">About <ChevronRight className="w-6 h-6 text-blue-500" /></Link>
-            <Link href="/manage" onClick={() => setIsMenuOpen(false)} className="flex items-center justify-between py-6 text-2xl font-black text-slate-900 touch-manipulation [-webkit-tap-highlight-color:transparent]">Manage Trip <ChevronRight className="w-6 h-6 text-blue-500" /></Link>
-          </div>
-          <div className="p-8 pb-10 border-t border-slate-100 shrink-0"><Link href="/manage" onClick={() => setIsMenuOpen(false)} className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl text-lg flex items-center justify-center shadow-xl shadow-blue-200 active:scale-95 transition-transform touch-manipulation [-webkit-tap-highlight-color:transparent]">Sign In to Booking</Link></div>
-        </div>
 
         <section aria-label="Airport parking search" className="relative min-h-[100dvh] w-full flex items-center justify-center overflow-hidden bg-[#060A14] pt-24 pb-12 md:py-20">
           <div className="absolute inset-0 z-0 overflow-hidden">
@@ -660,82 +592,11 @@ export default function HomePage({ preset }: { preset?: HomePreset } = {}) {
           </div>
         </section>
 
-        <footer role="contentinfo" className="bg-[#0B1121] pt-14 md:pt-20 pb-8 md:pb-10 px-4 md:px-6 border-t border-white/5">
-          <div className="max-w-7xl mx-auto">
-
-            {/* Directory — links every parking page so they're crawlable and reachable, not orphaned */}
-            <nav aria-label="Parking directory" className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10 md:gap-x-10 pb-12 md:pb-14 border-b border-white/5">
-              {[
-                {
-                  heading: "Heathrow (LHR)",
-                  links: [
-                    { label: "Heathrow Airport Parking", href: "/heathrow-airport-parking" },
-                    { label: "Heathrow Meet & Greet",   href: "/heathrow-meet-and-greet" },
-                    { label: "Heathrow Park & Ride",    href: "/heathrow-park-and-ride" },
-                    { label: "Terminal 2 Parking",      href: "/heathrow-terminal-2-parking" },
-                    { label: "Terminal 3 Parking",      href: "/heathrow-terminal-3-parking" },
-                    { label: "Terminal 4 Parking",      href: "/heathrow-terminal-4-parking" },
-                    { label: "Terminal 5 Parking",      href: "/heathrow-terminal-5-parking" },
-                  ],
-                },
-                {
-                  heading: "Luton (LTN)",
-                  links: [
-                    { label: "Luton Airport Parking", href: "/luton-airport-parking" },
-                    { label: "Luton Meet & Greet",    href: "/luton-meet-and-greet" },
-                    { label: "Luton Park & Ride",     href: "/luton-park-and-ride" },
-                  ],
-                },
-                {
-                  heading: "Booking",
-                  links: [
-                    { label: "How It Works",    href: "/how-it-works" },
-                    { label: "Our Services",    href: "/services" },
-                    { label: "Price Guide",     href: "/airport-parking-price-guide" },
-                    { label: "Manage Booking",  href: "/manage" },
-                    // Listed on its own, not buried inside Manage Booking.
-                    // Someone who has deleted the confirmation email has no
-                    // other way in, and a cancellation nobody can find is what
-                    // turns into a chargeback.
-                    { label: "Cancel a Booking", href: "/cancel" },
-                  ],
-                },
-                {
-                  heading: "Company",
-                  links: [
-                    { label: "About Us",        href: "/about" },
-                    { label: "Contact",         href: "/contact" },
-                    { label: "Privacy Policy",  href: "/privacy" },
-                    { label: "Terms",           href: "/terms" },
-                  ],
-                },
-              ].map((col) => (
-                <div key={col.heading}>
-                  <h3 className="text-white font-black text-[10px] md:text-[11px] uppercase tracking-[0.2em] mb-5">{col.heading}</h3>
-                  <ul className="space-y-3">
-                    {col.links.map((l) => (
-                      <li key={l.href}>
-                        <Link href={l.href} className="text-slate-300/70 hover:text-white text-[13px] md:text-sm font-medium transition-colors touch-manipulation [-webkit-tap-highlight-color:transparent]">{l.label}</Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </nav>
-
-            {/* Legal bar */}
-            <div className="mt-8 md:mt-10 flex flex-col md:flex-row items-center justify-between gap-6 md:gap-4">
-              <Link href="/" aria-label="AeroPark Direct home" className="flex items-center w-full md:w-1/3 justify-center md:justify-start touch-manipulation [-webkit-tap-highlight-color:transparent]"><div className="bg-white px-2.5 py-1.5 rounded-lg shadow-sm"><Image src="/footer.jpg" alt="AeroPark Direct - Airport Parking UK" width={200} height={60} className="h-6 md:h-9 w-auto object-contain" /></div></Link>
-              <div className="text-slate-400/70 text-[10px] md:text-xs font-medium text-center w-full md:w-1/3 normal-case tracking-normal">Fully insured Meet &amp; Greet &amp; Park &amp; Ride at Luton &amp; Heathrow. <Link href="mailto:info@aeroparkdirect.co.uk" className="text-slate-300 hover:text-white font-bold transition-colors">Support</Link> &middot; <Link href="tel:+447868277648" className="text-slate-300 hover:text-white font-bold transition-colors">07868 277648</Link></div>
-              <div className="text-slate-500/70 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.15em] md:tracking-widest w-full md:w-1/3 text-center md:text-right">© {new Date().getFullYear()} AeroPark Direct Ltd</div>
-            </div>
-
-          </div>
-        </footer>
 
         <MapModal isOpen={isMapOpen} onClose={() => setIsMapOpen(false)} />
         <PriceMatchModal isOpen={isPriceMatchOpen} onClose={() => setIsPriceMatchOpen(false)} />
       </main>
+      <SiteFooter />
     </>
   );
 }

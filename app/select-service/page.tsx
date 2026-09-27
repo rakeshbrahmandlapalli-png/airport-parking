@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import Link from "next/link";
+import { FunnelHeader, FunnelFooter, funnelSlotClass } from "@/components/site/FunnelChrome";
 import { 
   Car, 
   Bus, 
@@ -12,7 +13,6 @@ import {
   ShieldCheck, 
   MapPin,
   ArrowLeft,
-  Plane,
   X,
   Lock
 } from "lucide-react";
@@ -138,27 +138,22 @@ function ServiceSelectionContent() {
   ];
 
   return (
-    <main suppressHydrationWarning className="min-h-[100dvh] bg-slate-50 font-sans antialiased overflow-x-hidden pb-16">
+    <main suppressHydrationWarning className="min-h-[100dvh] bg-slate-50 font-sans antialiased overflow-x-clip">
       
-      {/* PREMIUM DARK NAVBAR */}
-      <header className="sticky top-0 z-[100] bg-[#0A101D] border-b border-white/5 h-16 md:h-20 flex items-center px-4 md:px-8 justify-between shadow-2xl backdrop-blur-md">
-        <button onClick={openEditModal} className="text-slate-400 hover:text-white transition-colors flex items-center gap-2 group touch-manipulation cursor-pointer">
-          <ArrowLeft className="w-4 h-4 md:w-5 md:h-5 lg:group-hover:-translate-x-1 transition-transform" /> 
-          <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] hidden md:block">Edit Search</span>
-        </button>
-        
-        <Link href="/" className="flex items-center gap-1.5 md:gap-2 text-white font-black tracking-tighter text-xl md:text-2xl uppercase absolute left-1/2 -translate-x-1/2 group touch-manipulation">
-          <Plane className="w-5 h-5 md:w-7 md:h-7 text-blue-500 rotate-45 lg:group-hover:scale-110 transition-transform" />AEROPARK<span className="text-blue-500">DIRECT</span>
-        </Link>
-
-        {/* 🟢 FIXED: Button that opens the Edit Modal */}
-        <button onClick={openEditModal} className="text-right group touch-manipulation cursor-pointer">
-           <div className="flex flex-col items-end">
-              <span className="text-sm md:text-base font-black text-white tracking-widest leading-none mb-0.5 md:mb-1 group-hover:text-blue-400 transition-colors">{airportCode}</span>
-              <span className="text-[7px] md:text-[8px] font-black text-blue-500 uppercase tracking-[0.2em] leading-none">{dateDisplay}</span>
-           </div>
-        </button>
-      </header>
+      <FunnelHeader
+        left={
+          <button type="button" onClick={openEditModal} className={funnelSlotClass}>
+            <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Edit search</span>
+          </button>
+        }
+        right={
+          <button type="button" onClick={openEditModal} className="text-right text-sm leading-tight text-slate-600 hover:text-slate-900 whitespace-nowrap">
+            <span className="block font-semibold text-slate-900">{airportCode}</span>
+            <span className="hidden sm:block text-xs">{dateDisplay}</span>
+          </button>
+        }
+      />
 
       <div className="max-w-5xl mx-auto w-full pt-12 md:pt-16 px-4 sm:px-6 relative z-10">
         
@@ -290,6 +285,7 @@ function ServiceSelectionContent() {
           </div>
         </div>
       )}
+      <FunnelFooter />
     </main>
   );
 }

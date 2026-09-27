@@ -1,11 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import {
-  ArrowLeft, Plane, Mail, MessageSquare,
-  Clock, ShieldCheck, Zap, Send, CheckCircle2,
-  Globe, ArrowUpRight, Phone, MapPin
-} from "lucide-react";
+import SiteHeader from "@/components/site/SiteHeader";
+import SiteFooter from "@/components/site/SiteFooter";
+import { Mail, Phone, MapPin, CheckCircle2, Loader2 } from "lucide-react";
+import { COMPANY } from "@/app/lib/company";
 import { useState } from "react";
 
 export default function ContactPage() {
@@ -40,7 +38,7 @@ export default function ContactPage() {
       if (response.ok && data.success) {
         setIsSent(true);
       } else {
-        setErrorMessage(data.debug_msg || "Transmission failed. Please try again.");
+        setErrorMessage(data.debug_msg || "Your message could not be sent. Please try again, or email us directly.");
       }
     } catch (err) {
       setErrorMessage("Network error. Please check your connection.");
@@ -49,217 +47,126 @@ export default function ContactPage() {
     }
   };
 
+  const field = "w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-base text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20";
+  const label = "block text-sm font-medium text-slate-700 mb-1.5";
+
   return (
-    <main className="min-h-[100dvh] bg-[#05080F] text-white selection:bg-blue-500/30 overflow-x-hidden font-sans">
-      
-      {/* BACKGROUND AMBIENCE */}
-      <div className="fixed inset-0 z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 blur-[120px] rounded-full animate-pulse" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-600/10 blur-[120px] rounded-full" />
-      </div>
-
-      {/* NAVIGATION */}
-      <nav className="relative z-50 bg-[#05080F]/80 backdrop-blur-md border-b border-white/5 sticky top-0 h-16 md:h-20 flex items-center px-4 md:px-8 shadow-2xl">
-        <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-slate-400 hover:text-white transition-all text-[10px] md:text-xs font-black uppercase tracking-[0.2em] group">
-            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" /> 
-            <span className="hidden xs:inline">Return to Hangar</span>
-            <span className="xs:hidden">Back</span>
-          </Link>
-          
-          <Link href="/" className="flex items-center gap-1.5 md:gap-2 font-black tracking-tighter text-lg md:text-2xl uppercase">
-            <Plane className="w-5 h-5 md:w-6 md:h-6 text-blue-500 rotate-45" /> 
-            AERO<span className="text-blue-500">PARK</span>
-          </Link>
-
-          <div className="flex items-center gap-2 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-            <span className="text-[8px] md:text-[9px] font-black text-emerald-500 uppercase tracking-widest">Live</span>
+    <>
+      <SiteHeader />
+      <main className="bg-slate-50 text-slate-900 font-sans">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 py-12 md:py-20">
+          <div className="max-w-2xl mb-10 md:mb-14">
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Contact us</h1>
+            <p className="mt-3 text-base md:text-lg text-slate-600 leading-relaxed">
+              Questions about a Luton or Heathrow booking, or about parking with us? Call, email or send us a message.
+            </p>
           </div>
-        </div>
-      </nav>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 py-8 md:py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-16 items-start">
-          
-          {/* LEFT: INFORMATION CLUSTER */}
-          <div className="lg:col-span-5 space-y-8 md:space-y-12">
-            <div className="space-y-4 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-600/10 text-blue-400 border border-blue-500/20 rounded-full text-[10px] font-black uppercase tracking-[0.2em]">
-                <Globe className="w-3 h-3" /> Global Operations
-              </div>
-              <h1 className="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-[0.85] italic">
-                Get In <br />
-                <span className="text-blue-500 not-italic">Touch.</span>
-              </h1>
-              <p className="text-slate-400 text-sm md:text-lg font-medium max-w-md mx-auto lg:mx-0 leading-relaxed italic">
-                Experience priority assistance for your Luton and Heathrow bookings.
-              </p>
-            </div>
-
-            {/* CONTACT CARDS */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-              <div className="p-6 bg-white/[0.03] border border-white/10 rounded-[2rem]">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-                    <Mail className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Official Channel</span>
+          <div className="grid gap-8 lg:grid-cols-12 items-start">
+            <div className="lg:col-span-4 space-y-4">
+              <div className="rounded-xl border border-slate-200 bg-white p-5">
+                <div className="flex items-center gap-3 text-sm font-medium text-slate-500">
+                  <Phone className="w-4 h-4" aria-hidden="true" /> Phone
                 </div>
-                <p className="text-lg md:text-xl font-black text-white break-all tracking-tight">info@aeroparkdirect.co.uk</p>
+                <a href={COMPANY.phoneHref} className="mt-2 block text-lg font-semibold text-slate-900 hover:text-blue-700">
+                  {COMPANY.phoneDisplay}
+                </a>
+                <p className="mt-1 text-sm text-slate-500">Call or text.</p>
               </div>
 
-              <div className="p-6 bg-white/[0.03] border border-white/10 rounded-[2rem]">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-                    <Phone className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Call Or Text</span>
+              <div className="rounded-xl border border-slate-200 bg-white p-5">
+                <div className="flex items-center gap-3 text-sm font-medium text-slate-500">
+                  <Mail className="w-4 h-4" aria-hidden="true" /> Email
                 </div>
-                <a href="tel:+447868277648" className="text-lg md:text-xl font-black text-white tracking-tight hover:text-blue-400 transition-colors">07868 277648</a>
+                <a href={`mailto:${COMPANY.email}`} className="mt-2 block text-lg font-semibold text-slate-900 hover:text-blue-700 break-all">
+                  {COMPANY.email}
+                </a>
               </div>
 
-              {/* Registered office. Kept deliberately quieter than email and phone —
-                  it is a legal address, not somewhere a customer should drive to,
-                  and the operation runs out of Luton and Heathrow. It matches the
-                  Privacy and Terms pages and the LocalBusiness schema on the
-                  homepage, so a real address appears everywhere a person or a
-                  reviewer looks for one. */}
-              <div className="p-6 bg-white/[0.03] border border-white/10 rounded-[2rem]">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center">
-                    <MapPin className="w-5 h-5 text-slate-400" />
-                  </div>
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Registered Office</span>
+              {/* Registered office. It is a legal address, not somewhere a customer
+                  should drive to — the operation runs out of Luton and Heathrow.
+                  It matches the Privacy and Terms pages and the LocalBusiness
+                  schema on the homepage. */}
+              <div className="rounded-xl border border-slate-200 bg-white p-5">
+                <div className="flex items-center gap-3 text-sm font-medium text-slate-500">
+                  <MapPin className="w-4 h-4" aria-hidden="true" /> Registered office
                 </div>
-                <address className="not-italic text-base md:text-lg font-black text-white tracking-tight leading-snug">
+                <address className="mt-2 not-italic text-base text-slate-900 leading-relaxed">
                   66 Paul Street<br />
                   London EC2A 4NA<br />
                   United Kingdom
                 </address>
-                <p className="mt-3 text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed">
-                  AeroPark Direct Ltd &middot; Company No. 17211973
+                <p className="mt-2 text-sm text-slate-500">
+                  {COMPANY.name}, company no. {COMPANY.number}
                 </p>
               </div>
-
-              <div className="p-6 bg-white/[0.03] border border-white/10 rounded-[2rem]">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-slate-400" />
-                  </div>
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Average Wait</span>
-                </div>
-                <p className="text-lg md:text-xl font-black text-white italic tracking-tight">Rapid Response <span className="text-blue-500">&lt; 2hrs</span></p>
-              </div>
             </div>
-          </div>
 
-          {/* RIGHT: THE INQUIRY TERMINAL */}
-          <div className="lg:col-span-7 w-full">
-            <div className="bg-gradient-to-br from-white/[0.08] to-transparent backdrop-blur-2xl rounded-[2.5rem] md:rounded-[3.5rem] p-6 md:p-12 border border-white/10 shadow-2xl relative overflow-hidden">
-              
+            <div className="lg:col-span-8 rounded-xl border border-slate-200 bg-white p-6 md:p-8">
               {isSent ? (
-                <div className="py-20 text-center animate-in fade-in zoom-in duration-500">
-                  <div className="w-20 h-20 bg-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <CheckCircle2 className="w-10 h-10" />
-                  </div>
-                  <h3 className="text-3xl font-black uppercase tracking-tighter mb-2">Message Received</h3>
-                  <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Our crew will contact you shortly.</p>
-                  <button onClick={() => setIsSent(false)} className="mt-8 text-blue-500 font-black uppercase text-xs tracking-widest hover:underline decoration-2 underline-offset-4">Open New Terminal</button>
+                <div className="py-12 text-center">
+                  <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto" aria-hidden="true" />
+                  <h2 className="mt-4 text-xl font-semibold">Thanks, your message has been sent</h2>
+                  <p className="mt-2 text-slate-600">We&apos;ll reply to the email address you gave us.</p>
+                  <button
+                    type="button"
+                    onClick={() => setIsSent(false)}
+                    className="mt-6 text-sm font-medium text-blue-700 hover:underline underline-offset-4"
+                  >
+                    Send another message
+                  </button>
                 </div>
               ) : (
                 <>
-                  <div className="mb-10 flex justify-between items-end">
-                    <div>
-                      <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tighter">Inquiry Terminal</h3>
-                      <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] mt-1">Status: Ready for input</p>
-                    </div>
-                    <Zap className="w-6 h-6 text-blue-500/30 hidden sm:block animate-pulse" />
-                  </div>
+                  <h2 className="text-xl font-semibold">Send us a message</h2>
+                  <p className="mt-1 text-sm text-slate-500">If it&apos;s about an existing booking, include your booking reference.</p>
 
-                  <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                      <div className="space-y-2">
-                        <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Identity</label>
-                        <input 
-                          name="name"
-                          type="text" 
-                          required 
-                          className="w-full bg-white/[0.05] border border-white/10 rounded-2xl px-5 py-4 font-bold text-white outline-none focus:border-blue-500 focus:bg-white/[0.08] transition-all placeholder:text-slate-700 text-sm md:text-base" 
-                          placeholder="Your Name" 
-                        />
+                  <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <div>
+                        <label htmlFor="contact-name" className={label}>Name</label>
+                        <input id="contact-name" name="name" type="text" required autoComplete="name" className={field} />
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Secure Email</label>
-                        <input 
-                          name="email"
-                          type="email" 
-                          required 
-                          className="w-full bg-white/[0.05] border border-white/10 rounded-2xl px-5 py-4 font-bold text-white outline-none focus:border-blue-500 focus:bg-white/[0.08] transition-all placeholder:text-slate-700 text-sm md:text-base" 
-                          placeholder="Email Address" 
-                        />
+                      <div>
+                        <label htmlFor="contact-email" className={label}>Email</label>
+                        <input id="contact-email" name="email" type="email" required autoComplete="email" className={field} />
                       </div>
                     </div>
-                    
-                    <div className="space-y-2">
-                      <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Booking Ref <span className="text-slate-700">(Optional)</span></label>
-                      <input 
-                        name="reference"
-                        type="text" 
-                        className="w-full bg-white/[0.05] border border-white/10 rounded-2xl px-5 py-4 font-bold text-white outline-none focus:border-blue-500 focus:bg-white/[0.08] transition-all placeholder:text-slate-700 text-sm md:text-base" 
-                        placeholder="e.g. APD-99210" 
-                      />
+
+                    <div>
+                      <label htmlFor="contact-reference" className={label}>
+                        Booking reference <span className="font-normal text-slate-400">(optional)</span>
+                      </label>
+                      <input id="contact-reference" name="reference" type="text" placeholder="e.g. APD-99210" className={field} />
                     </div>
-                    
-                    <div className="space-y-2">
-                      <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Message Content</label>
-                      <textarea 
-                        name="message"
-                        rows={4} 
-                        required 
-                        className="w-full bg-white/[0.05] border border-white/10 rounded-2xl px-5 py-4 font-bold text-white outline-none focus:border-blue-500 focus:bg-white/[0.08] transition-all resize-none placeholder:text-slate-700 text-sm md:text-base" 
-                        placeholder="How can our crew assist you?"
-                      />
+
+                    <div>
+                      <label htmlFor="contact-message" className={label}>Message</label>
+                      <textarea id="contact-message" name="message" rows={5} required className={`${field} resize-y`} />
                     </div>
 
                     {errorMessage && (
-                       <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-[10px] font-black uppercase tracking-widest text-center">
-                         {errorMessage}
-                       </div>
+                      <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                        {errorMessage}
+                      </p>
                     )}
 
-                    <button 
+                    <button
                       disabled={isSubmitting}
-                      type="submit" 
-                      className="group w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white font-black rounded-2xl shadow-[0_15px_30px_rgba(37,99,235,0.2)] active:scale-[0.97] transition-all uppercase tracking-[0.25em] text-[10px] md:text-xs py-5 flex items-center justify-center gap-3 relative overflow-hidden"
+                      type="submit"
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-base font-semibold text-white hover:bg-blue-700 disabled:bg-slate-400"
                     >
-                      {isSubmitting ? (
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 animate-spin" /> Transmitting...
-                        </div>
-                      ) : (
-                        <>
-                          Send Message <Send className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
-                        </>
-                      )}
+                      {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
+                      {isSubmitting ? "Sending…" : "Send message"}
                     </button>
                   </form>
                 </>
               )}
             </div>
-            
-            {/* FOOTER INFO */}
-            <div className="mt-8 flex flex-wrap gap-6 justify-center lg:justify-start">
-              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500">
-                <ShieldCheck className="w-4 h-4 text-blue-500" /> End-to-End Encryption
-              </div>
-              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500">
-                <ArrowUpRight className="w-4 h-4 text-blue-500" /> Direct Admin Support
-              </div>
-            </div>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
+      <SiteFooter />
+    </>
   );
 }

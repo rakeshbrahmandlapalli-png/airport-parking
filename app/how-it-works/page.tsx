@@ -1,10 +1,11 @@
 "use client";
 
 import { 
-  Search, Star, Bot, CalendarCheck, Plane, Car, Phone, 
-  ArrowLeft, ChevronRight, CheckCircle2, ShieldCheck, Zap, Info
+  Search, Star, Bot, CalendarCheck, ShieldCheck, Zap
 } from "lucide-react";
 import Link from "next/link";
+import SiteHeader from "@/components/site/SiteHeader";
+import SiteFooter from "@/components/site/SiteFooter";
 import Image from "next/image";
 
 export default function HowItWorks() {
@@ -34,15 +35,7 @@ export default function HowItWorks() {
   return (
     <main className="min-h-screen bg-[#0A101D] text-white font-sans antialiased selection:bg-blue-600 selection:text-white">
       
-      {/* Header */}
-      <header className="sticky top-0 z-[100] bg-[#0A101D]/80 backdrop-blur-xl border-b border-white/5 h-20 flex items-center px-8 justify-between">
-        <Link href="/" className="text-slate-400 hover:text-white transition-colors flex items-center gap-2">
-          <ArrowLeft className="w-5 h-5" /> Back Home
-        </Link>
-        <div className="flex items-center gap-2 text-white font-black uppercase text-xl">
-          <Plane className="w-6 h-6 text-blue-500 rotate-45" />AEROPARK<span className="text-blue-500">DIRECT</span>
-        </div>
-      </header>
+      <SiteHeader />
 
       <div className="max-w-4xl mx-auto px-6 py-16">
         <h1 className="text-4xl md:text-5xl font-black mb-6 text-center tracking-tight">How It Works</h1>
@@ -103,6 +96,7 @@ export default function HowItWorks() {
           </div>
         </div>
       </div>
+      <SiteFooter />
     </main>
   );
 }

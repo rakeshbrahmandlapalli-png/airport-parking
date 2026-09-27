@@ -1,10 +1,12 @@
 "use client";
 
 import {
-  ArrowLeft, Plane, Sparkles, ShieldCheck, Tag, PlaneTakeoff,
+  Sparkles, ShieldCheck, Tag, PlaneTakeoff,
   Phone, CheckCircle2, ArrowRight, Star, MapPin
 } from "lucide-react";
 import Link from "next/link";
+import SiteHeader from "@/components/site/SiteHeader";
+import SiteFooter from "@/components/site/SiteFooter";
 
 export default function About() {
   const values = [
@@ -46,15 +48,7 @@ export default function About() {
   return (
     <main className="min-h-screen bg-[#0A101D] text-white font-sans antialiased selection:bg-blue-600 selection:text-white">
 
-      {/* Header */}
-      <header className="sticky top-0 z-[100] bg-[#0A101D]/80 backdrop-blur-xl border-b border-white/5 h-20 flex items-center px-8 justify-between">
-        <Link href="/" className="text-slate-400 hover:text-white transition-colors flex items-center gap-2">
-          <ArrowLeft className="w-5 h-5" /> Back Home
-        </Link>
-        <div className="flex items-center gap-2 text-white font-black uppercase text-xl">
-          <Plane className="w-6 h-6 text-blue-500 rotate-45" />AEROPARK<span className="text-blue-500">DIRECT</span>
-        </div>
-      </header>
+      <SiteHeader />
 
       <div className="max-w-4xl mx-auto px-6 py-16">
 
@@ -192,18 +186,7 @@ export default function About() {
         </section>
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-white/5 py-10 px-6">
-        <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-[11px] font-bold uppercase tracking-widest text-slate-500">
-          <nav className="flex flex-wrap justify-center gap-6">
-            <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
-            <Link href="/how-it-works" className="hover:text-white transition-colors">How it works</Link>
-            <Link href="mailto:info@aeroparkdirect.co.uk" className="hover:text-white transition-colors">Support</Link>
-          </nav>
-          <div className="text-slate-600">© {new Date().getFullYear()} AeroPark Direct Ltd</div>
-        </div>
-      </footer>
+      <SiteFooter />
     </main>
   );
 }

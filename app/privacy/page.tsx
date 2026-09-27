@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { ArrowLeft, Plane } from "lucide-react";
+import SiteHeader from "@/components/site/SiteHeader";
+import SiteFooter from "@/components/site/SiteFooter";
+import { Plane } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Company / controller details — single source of truth for the legal pages.
@@ -19,17 +21,7 @@ const LAST_UPDATED = "12 June 2026";
 export default function PrivacyPage() {
   return (
     <main className="min-h-screen bg-[#F8FAFC] selection:bg-blue-600 selection:text-white">
-      {/* Responsive Header */}
-      <nav className="bg-white border-b border-slate-200 h-20 flex items-center px-6 sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto w-full flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors font-bold text-sm touch-manipulation">
-            <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">Back to Home</span><span className="sm:hidden">Back</span>
-          </Link>
-          <div className="flex items-center gap-2 text-blue-600 font-black tracking-tighter text-lg sm:text-xl uppercase">
-            <Plane className="w-5 h-5 rotate-45" /> AEROPARK<span className="text-slate-900">DIRECT</span>
-          </div>
-        </div>
-      </nav>
+      <SiteHeader />
 
       {/* Content */}
       <div className="max-w-3xl mx-auto px-6 py-12 md:py-20">
@@ -214,6 +206,7 @@ export default function PrivacyPage() {
           </section>
         </div>
       </div>
+      <SiteFooter />
     </main>
   );
 }

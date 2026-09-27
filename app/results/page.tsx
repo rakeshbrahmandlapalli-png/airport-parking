@@ -7,10 +7,12 @@ import ModifySearchModal from "@/components/ModifySearchModal";
 import { checkAvailability, getLaunchTimerConfig, type LaunchTimerConfig } from "../actions";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-  Clock, ArrowLeft, Plane, AlertCircle, CarFront, CheckCircle2, Loader2,
+  Clock, ArrowLeft, Phone, AlertCircle, CarFront, CheckCircle2, Loader2,
   Mail, Send,
 } from "lucide-react";
 import Link from "next/link";
+import { FunnelHeader, FunnelFooter, funnelSlotClass } from "@/components/site/FunnelChrome";
+import { COMPANY } from "@/app/lib/company";
 import { Suspense, useState, useMemo, useEffect, useCallback, useRef, useLayoutEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { computePrice, calculateDays, loadPricingSettings, DEFAULT_SETTINGS, type PricingSettings } from "../lib/pricing";
@@ -741,15 +743,6 @@ function ResultsContent({ onEditSearch }: { onEditSearch: () => void }) {
 // context (dates · nights · service) + Edit now live in <SearchSummaryHeader/>,
 // so this no longer repeats the dates — it just keeps the airport visible while
 // the user scrolls the operator list.
-function AirportTitle() {
-  const searchParams = useSearchParams();
-  const airport = searchParams.get("airport") || "Luton (LTN)";
-  const code = airport.includes("Heathrow") ? "LHR" : "LTN";
-  return (
-    <span className="text-sm md:text-base font-black text-slate-900 tracking-widest leading-none">{code}</span>
-  );
-}
-
 // ─── LAYOUT ───────────────────────────────────────────────────────────────────
 function ResultsLayout() {
   const router       = useRouter();
@@ -766,26 +759,29 @@ function ResultsLayout() {
   }), [searchParams]);
 
   return (
-    <main suppressHydrationWarning className="min-h-screen bg-slate-50 font-sans antialiased pb-24 md:pb-32 selection:bg-blue-500/30 overflow-x-hidden relative">
-      <header className="sticky top-0 z-[100] bg-white border-b border-slate-200 h-16 md:h-20 flex items-center px-4 md:px-8 justify-between shadow-sm">
-        <Link href="/" className="text-slate-500 hover:text-slate-900 transition-colors flex items-center gap-2 group touch-manipulation">
-          <ArrowLeft className="w-4 h-4 md:w-5 md:h-5 lg:group-hover:-translate-x-1 transition-transform" />
-          <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] hidden md:block">Home</span>
-        </Link>
-        <Link href="/" className="flex items-center gap-1.5 md:gap-2 text-slate-900 font-black tracking-tighter text-xl md:text-2xl uppercase absolute left-1/2 -translate-x-1/2 touch-manipulation">
-          <Plane className="w-5 h-5 md:w-7 md:h-7 text-blue-600 rotate-45" /> AEROPARK<span className="text-blue-600">DIRECT</span>
-        </Link>
-        <button onClick={() => setIsEditModalOpen(true)} className="text-right touch-manipulation cursor-pointer">
-          <AirportTitle />
-        </button>
-      </header>
-      <div className="relative z-10"><ResultsContent onEditSearch={() => setIsEditModalOpen(true)} /></div>
+    <main suppressHydrationWarning className="min-h-screen bg-slate-50 font-sans antialiased selection:bg-blue-500/30 overflow-x-clip relative">
+      <FunnelHeader
+        left={
+          <Link href="/" className={funnelSlotClass}>
+            <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Home</span>
+          </Link>
+        }
+        right={
+          <a href={COMPANY.phoneHref} className={funnelSlotClass}>
+            <Phone className="w-4 h-4" aria-hidden="true" />
+            <span className="hidden md:inline">{COMPANY.phoneDisplay}</span>
+          </a>
+        }
+      />
+      <div className="relative z-10 pb-24 md:pb-32"><ResultsContent onEditSearch={() => setIsEditModalOpen(true)} /></div>
       <ModifySearchModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         onSearchUpdate={(qs) => { setIsEditModalOpen(false); router.push(`/results?${qs}`); }}
         currentSearch={currentSearch}
       />
+      <FunnelFooter />
     </main>
   );
 }

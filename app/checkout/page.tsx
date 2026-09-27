@@ -4,6 +4,7 @@ import { logger } from "@/app/lib/logger";
 import { Suspense, useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { FunnelHeader, FunnelFooter, funnelSlotClass } from "@/components/site/FunnelChrome";
 import { supabase } from "../lib/supabase";
 import { useLivePromo } from "../lib/useLivePromo";
 import {
@@ -18,7 +19,7 @@ import BookingStepper from "@/components/BookingStepper";
 import ModifySearchModal from "@/components/ModifySearchModal";
 import {
   ShieldCheck, ArrowLeft, Loader2, CarFront, User,
-  PlaneTakeoff, Plane, Lock, CreditCard, Calendar,
+  PlaneTakeoff, Lock, CreditCard, Calendar,
   Sparkles, Tag, AlertCircle, CheckCircle2, Coffee, Zap, Star,
   Settings2, Footprints, ChevronDown, AlertTriangle, Clock,
 } from "lucide-react";
@@ -1329,26 +1330,26 @@ export default function CheckoutPage() {
   return (
     <main
       suppressHydrationWarning
-      className="min-h-[100dvh] bg-[#F8FAFC] font-sans antialiased pb-24 selection:bg-blue-200 selection:text-blue-900 overflow-x-hidden relative"
+      className="min-h-[100dvh] bg-[#F8FAFC] font-sans antialiased selection:bg-blue-200 selection:text-blue-900 overflow-x-clip relative"
     >
-      <header className="sticky top-0 z-[100] bg-[#0A101D] border-b border-white/[0.06]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 md:h-20 flex items-center justify-between">
-          <Link href="/results" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group touch-manipulation">
-            <ArrowLeft className="w-4 h-4 md:w-5 md:h-5 lg:group-hover:-translate-x-1 transition-transform" />
-            <span className="text-[10px] font-black uppercase tracking-widest hidden md:block">Back to Packages</span>
+      <FunnelHeader
+        left={
+          <Link href="/results" className={funnelSlotClass}>
+            <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Back to results</span>
           </Link>
-          <Link href="/" className="flex items-center gap-1.5 md:gap-2 text-white font-black tracking-tighter text-lg md:text-xl uppercase absolute left-1/2 -translate-x-1/2 touch-manipulation">
-            <Plane className="w-5 h-5 md:w-6 md:h-6 text-blue-500 rotate-45" /> AEROPARK<span className="text-blue-500">DIRECT</span>
-          </Link>
-          <div className="flex items-center gap-2 text-emerald-400">
-            <Lock className="w-4 h-4" />
-            <span className="text-[10px] font-black uppercase tracking-widest hidden xs:block">Secure Checkout</span>
-          </div>
-        </div>
-      </header>
+        }
+        right={
+          <span className="flex items-center gap-2 text-sm font-medium text-slate-600">
+            <Lock className="w-4 h-4 text-emerald-600" aria-hidden="true" />
+            <span className="hidden sm:inline">Secure checkout</span>
+          </span>
+        }
+      />
       <Suspense fallback={<CheckoutSkeleton />}>
         <CheckoutContent />
       </Suspense>
+      <FunnelFooter />
     </main>
   );
 }
