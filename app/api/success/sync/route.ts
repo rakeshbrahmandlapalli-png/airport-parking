@@ -2,6 +2,7 @@ import { logger } from "@/app/lib/logger";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
+import { publicBooking, publicCompany } from "@/app/lib/manageBooking";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 const supabaseAdmin = createClient(
@@ -12,6 +13,27 @@ const supabaseAdmin = createClient(
 // Verifies a paid Stripe session and ensures the booking row exists, returning
 // the authoritative record. Replaces the old client-side anon upsert so the
 // bookings table can be fully locked down from the public key.
+// What the success page may see: the customer-facing fields, the customer's
+// own email and phone (for Google Ads enhanced conversions), and the operator's
+// name, phone numbers and instructions. Never the whole row.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function respond(row: any, created: boolean) {
+  let company = null;
+  if (row.company_id) {
+    const { data } = await supabaseAdmin
+      .from("companies")
+      .select("name, phone_number, phone_number_2, on_arrival, on_arrival_ltn, on_arrival_lhr, on_return, on_return_ltn, on_return_lhr")
+      .eq("id", row.company_id)
+      .maybeSingle();
+    company = publicCompany(data);
+  }
+  return NextResponse.json({
+    booking: { ...publicBooking(row), email: row.email, phone_number: row.phone_number },
+    company,
+    created,
+  });
+}
+
 export async function POST(req: Request) {
   let body: any;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid request." }, { status: 400 }); }
@@ -39,7 +61,7 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (existing) {
-      return NextResponse.json({ booking: existing, created: false });
+      return respond(existing, false);
     }
 
     // Same "was this actually bought as Exclusive" signal as the webhook's
@@ -104,7 +126,7 @@ export async function POST(req: Request) {
 
     // created = true only if THIS request inserted the row (so the client knows
     // whether to fire the fallback confirmation email).
-    return NextResponse.json({ booking: finalRow, created: finalRow.booking_ref === shortId });
+    return respond(finalRow, finalRow.booking_ref === shortId);
   } catch (err: any) {
     logger.error("success/sync error:", err?.message);
     return NextResponse.json({ error: "Verification failed." }, { status: 500 });
