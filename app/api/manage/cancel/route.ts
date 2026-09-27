@@ -3,27 +3,12 @@ import { createClient } from "@supabase/supabase-js";
 import { rateLimit, getClientIp } from "@/app/lib/rateLimit";
 import { sendCancellationAlerts } from "@/app/lib/mail";
 import { logger } from "@/app/lib/logger";
+import { findOwnedBooking, isInsideFreeWindow, publicBooking } from "@/app/lib/manageBooking";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
-
-/** The window promised on the About page: free cancellation up to 24h before
- *  drop-off. Enforced here as well as in the UI, because a button that is
- *  merely hidden is not a rule. */
-const FREE_WINDOW_HOURS = 24;
-
-/** Drop-off as a real moment, parsed the same way the manage page does it:
- *  the date is a plain YYYY-MM-DD and must be read as local, or a midnight
- *  booking shifts a day and the window is computed against the wrong date. */
-function dropoffMoment(booking: any): Date | null {
-  const raw = String(booking?.dropoff_date || "").split("T")[0];
-  const [y, m, d] = raw.split("-").map(Number);
-  if (!y || !m || !d) return null;
-  const [hh, mm] = String(booking?.dropoff_time || "00:00").split(":").map(Number);
-  return new Date(y, m - 1, d, hh || 0, mm || 0, 0, 0);
-}
 
 export async function POST(req: Request) {
   // Cancelling is destructive and low-frequency. Tighter than lookup.
@@ -54,16 +39,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { data: rows, error } = await supabaseAdmin
-      .from("bookings")
-      .select("*")
-      .eq("booking_ref", ref)
-      .ilike("full_name", `%${fullName}%`)
-      .order("created_at", { ascending: false })
-      .limit(1);
-
-    if (error) throw error;
-    const booking = rows && rows.length ? rows[0] : null;
+    const booking = await findOwnedBooking(supabaseAdmin, ref, fullName);
 
     // Generic, exactly as lookup does — never reveal which half was wrong.
     if (!booking) {
@@ -76,7 +52,7 @@ export async function POST(req: Request) {
     // Already done. Answer as a success so a double-click or a refresh does not
     // look like a failure to someone who is already anxious about their money.
     if (String(booking.status || "").toLowerCase() === "cancelled") {
-      return NextResponse.json({ booking, alreadyCancelled: true });
+      return NextResponse.json({ booking: publicBooking(booking), alreadyCancelled: true });
     }
 
     // Cancelling is ALWAYS allowed. An earlier version refused inside the
@@ -89,9 +65,7 @@ export async function POST(req: Request) {
     // is automatic and promised; inside it the booking still cancels but the
     // refund is reviewed, and the customer is told so plainly rather than
     // being blocked.
-    const drop = dropoffMoment(booking);
-    const hoursLeft = drop ? (drop.getTime() - Date.now()) / 3_600_000 : null;
-    const insideWindow = hoursLeft !== null && hoursLeft < FREE_WINDOW_HOURS;
+    const insideWindow = isInsideFreeWindow(booking);
 
     // Only `status`, matching what the admin dashboard writes. A timestamp
     // column would be useful here, but writing to one that does not exist would
@@ -121,7 +95,7 @@ export async function POST(req: Request) {
     // slot for a car that is no longer coming.
     await sendCancellationAlerts(updated || booking, company, { insideWindow });
 
-    return NextResponse.json({ booking: updated || booking, insideWindow });
+    return NextResponse.json({ booking: publicBooking(updated || booking), insideWindow });
   } catch (err) {
     logger.error("Cancellation failed:", err);
     return NextResponse.json(
