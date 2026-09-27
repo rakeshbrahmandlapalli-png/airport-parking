@@ -14,7 +14,7 @@ import {
   type TemplateId,
 } from "@/app/lib/messageTemplates";
 import { detectAirport, operatesAt, assignableTo, operatorLabel, AIRPORT_NAME } from "@/app/lib/airport";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AdminSidebar, AdminMobileNav } from "@/components/admin/AdminNav";
 
 import {
@@ -34,7 +34,9 @@ function DashboardContent() {
   const [isSaving, setIsSaving] = useState(false);
   
   // --- 2. SEARCH & FILTER STATE ---
-  const [searchTerm, setSearchTerm] = useState("");
+  // ?search=REF (e.g. "Open booking" on the Messages page) pre-fills the search.
+  const searchParams = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(() => searchParams.get("search") || "");
   const [airportFilter, setAirportFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [timeFilter, setTimeFilter] = useState("ALL"); 
