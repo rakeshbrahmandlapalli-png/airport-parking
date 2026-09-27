@@ -1,4 +1,5 @@
 import { logger } from "@/app/lib/logger";
+import type { SupabaseClient } from "@supabase/supabase-js";
 // app/lib/googleAds.ts
 //
 // Server-side Google Ads offline conversion upload (Click Conversions).
@@ -102,6 +103,9 @@ export function parseClickId(raw: string | null | undefined): { field: ClickIdFi
   if (!value) return null;
   const m = value.match(/^(wbraid|gbraid):(.+)$/);
   if (m) return { field: m[1] as ClickIdField, id: m[2] };
+  // Bookings made before click ids were tagged stored an iOS id bare. Those all
+  // start "0AAAA" (a real gclid never does); web clicks on iOS carry a wbraid.
+  if (/^0AAAA/.test(value)) return { field: "wbraid", id: value };
   return { field: "gclid", id: value };
 }
 
@@ -111,20 +115,31 @@ function formatConversionDateTime(d: Date): string {
   return iso.slice(0, 19).replace("T", " ") + "+00:00";
 }
 
+export interface ConversionUploadResult {
+  ok: boolean;
+  /** Google already holds a conversion for this order id — counted before, nothing to do. */
+  duplicate?: boolean;
+  /** Google's error text (or why the upload was skipped). */
+  error?: string;
+}
+
+// Google reports a repeat upload of the same order id / click as one of these.
+const DUPLICATE_ERROR = /DUPLICATE_ORDER_ID|CLICK_CONVERSION_ALREADY_EXISTS|already exists/i;
+
 /**
  * Upload one click conversion to Google Ads. Never throws — logs and returns
- * a boolean so the caller (webhook) is never broken by a tracking failure.
+ * the outcome so the caller (webhook) is never broken by a tracking failure.
  */
-export async function reportOfflineConversion(input: OfflineConversionInput): Promise<boolean> {
+export async function reportOfflineConversion(input: OfflineConversionInput): Promise<ConversionUploadResult> {
   const cfg = envConfig();
   if (!cfg) {
     logger.info("[GoogleAds] Offline conversion skipped — API env vars not configured.");
-    return false;
+    return { ok: false, error: "Google Ads API env vars not configured" };
   }
   const clickId = parseClickId(input.gclid);
   if (!clickId) {
     logger.info("[GoogleAds] Offline conversion skipped — no gclid on this booking.");
-    return false;
+    return { ok: false, error: "No click id on this booking" };
   }
 
   try {
@@ -160,22 +175,56 @@ export async function reportOfflineConversion(input: OfflineConversionInput): Pr
 
     if (!res.ok) {
       logger.error(`[GoogleAds] uploadClickConversions HTTP ${res.status}: ${text}`);
-      return false;
+      return { ok: false, error: `HTTP ${res.status}: ${text.slice(0, 500)}` };
     }
 
     // partialFailureError is surfaced in the 200 body, not the status code.
     let parsed: any;
     try { parsed = JSON.parse(text); } catch { parsed = null; }
     if (parsed?.partialFailureError) {
-      logger.error("[GoogleAds] partial failure:", JSON.stringify(parsed.partialFailureError));
-      return false;
+      const detail = JSON.stringify(parsed.partialFailureError);
+      if (DUPLICATE_ERROR.test(detail)) {
+        return { ok: true, duplicate: true };
+      }
+      logger.error("[GoogleAds] partial failure:", detail);
+      return { ok: false, error: String(parsed.partialFailureError.message || detail).slice(0, 500) };
     }
 
     logger.info(`[GoogleAds] Offline conversion uploaded: order=${input.orderId} value=${input.value}`);
-    return true;
+    return { ok: true };
   } catch (e: any) {
     logger.error("[GoogleAds] Offline conversion upload threw:", e?.message || e);
-    return false;
+    return { ok: false, error: String(e?.message || e).slice(0, 500) };
+  }
+}
+
+/**
+ * Record an upload attempt in admin_audit_logs so a failed conversion is
+ * visible (Activity feed, or a quick SQL query) instead of vanishing into the
+ * server logs. Pass a service-role client. Never throws.
+ */
+export async function logConversionUpload(
+  supabase: SupabaseClient,
+  entry: { orderId: string; bookingRef?: string | null; clickId: string; value: number; source: "webhook" | "resend" },
+  result: ConversionUploadResult
+): Promise<void> {
+  try {
+    const action = result.duplicate ? "already_counted" : result.ok ? "uploaded" : "failed";
+    await supabase.from("admin_audit_logs").insert([{
+      action_type: `ads.conversion.${action}`,
+      entity_type: "booking",
+      entity_id: entry.orderId,
+      metadata: {
+        label: `Google Ads conversion ${action.replace("_", " ")}${entry.bookingRef ? ` — ${entry.bookingRef}` : ""}`,
+        booking_ref: entry.bookingRef ?? null,
+        click_type: parseClickId(entry.clickId)?.field ?? null,
+        value: entry.value,
+        source: entry.source,
+        error: result.error ?? null,
+      },
+    }]);
+  } catch (e: any) {
+    logger.error("[GoogleAds] Could not record the upload result:", e?.message || e);
   }
 }
 
@@ -326,11 +375,22 @@ export async function checkGoogleAdsSetup(): Promise<GoogleAdsCheckResult> {
     }
 
     const ca = { id: String(row.id), name: String(row.name ?? ""), status: String(row.status ?? ""), type: String(row.type ?? "") };
-    const hints = ca.status === "ENABLED"
-      ? [`✓ Connected. Conversion action "${ca.name}" is ENABLED. Confirm it's set to Primary in Google Ads so it drives bidding.`]
-      : [`Connected, but conversion action "${ca.name}" status is ${ca.status} — set it to ENABLED/Primary in Google Ads.`];
+    // Server uploads (uploadClickConversions) only land on an "Import → from
+    // clicks" action. A website-tag action (WEBPAGE) rejects them, so every
+    // booking would silently go uncounted.
+    const isImportAction = ca.type === "UPLOAD_CLICKS";
+    const hints: string[] = [];
+    if (ca.status !== "ENABLED") {
+      hints.push(`Connected, but conversion action "${ca.name}" status is ${ca.status} — set it to ENABLED/Primary in Google Ads.`);
+    }
+    if (!isImportAction) {
+      hints.push(`Conversion action "${ca.name}" is type ${ca.type || "unknown"}, but server uploads need an import action (type UPLOAD_CLICKS). In Google Ads: Goals → Conversions → New → Import → "Other data sources or CRMs" → "Track conversions from clicks", then put that action's id in GOOGLE_ADS_CONVERSION_ACTION_ID.`);
+    }
+    if (hints.length === 0) {
+      hints.push(`✓ Connected. Conversion action "${ca.name}" is ENABLED and accepts uploads. Confirm it's set to Primary in Google Ads so it drives bidding.`);
+    }
 
-    return { ...base, accessibleCustomers, oauth: { ok: true }, api: { ok: true, conversionAction: ca }, ready: ca.status === "ENABLED", hints };
+    return { ...base, accessibleCustomers, oauth: { ok: true }, api: { ok: true, conversionAction: ca }, ready: ca.status === "ENABLED" && isImportAction, hints };
   } catch (e: any) {
     return {
       ...base,

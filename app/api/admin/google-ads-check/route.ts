@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
+import { getAdminUser } from "@/app/lib/adminAuth";
 import { checkGoogleAdsSetup } from "@/app/lib/googleAds";
 
 // ============================================================================
@@ -10,24 +9,8 @@ import { checkGoogleAdsSetup } from "@/app/lib/googleAds";
 // own error text only — never any secret values.
 // ============================================================================
 
-/** Resolve the logged-in admin from the request's session cookie. */
-async function requireAdmin(): Promise<boolean> {
-  try {
-    const cookieStore = await cookies();
-    const supa = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
-    );
-    const { data: { user } } = await supa.auth.getUser();
-    return !!user;
-  } catch {
-    return false;
-  }
-}
-
-export async function GET() {
-  if (!(await requireAdmin())) {
+export async function GET(req: Request) {
+  if (!(await getAdminUser(req))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const result = await checkGoogleAdsSetup();
