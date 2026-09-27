@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Building2, LogOut, Plane, Tags, Settings2,
   PiggyBank, Save, Loader2, Percent, ArrowLeft, Zap, Coffee,
   ShieldCheck, RefreshCw, CheckCircle2, AlertCircle, Gauge,
-  Clock, Users, Network, Tag, TriangleAlert, Activity, Eye, Download, MessageCircle
+  Clock, Network, Tag, TriangleAlert, Activity, Eye, Download, MessageCircle
 } from "lucide-react";
 
 // ─── SETTINGS KEYS + DEFAULTS ────────────────────────────────────────────────
@@ -19,16 +19,6 @@ const DEFAULTS: Record<string, string> = {
   fast_track_price: "8",
   lounge_price:     "35",
   price_tolerance:  "0.5",
-  slots_claimed:    "12",
-  slots_total:      "15",
-  timer_enabled:        "true",
-  timer_hours:          "72",
-  timer_badge:          "Live Launch Event",
-  timer_title:          "Founding Member Launch",
-  timer_subtitle:       "Secure your spot · 5% lifetime discount",
-  timer_benefit_title:  "Founding Members Get",
-  timer_benefit_value:  "5% Lifetime Discount",
-  timer_benefit_note:   "Plus priority access to new features",
   auto_surge_enabled:     "false",
   auto_surge_max_percent: "15",
 };
@@ -58,18 +48,6 @@ export default function SettingsPage() {
   const [fastTrackPrice, setFastTrackPrice] = useState(8);
   const [loungePrice,    setLoungePrice]    = useState(35);
   const [priceTolerance, setPriceTolerance] = useState(0.5);
-  const [slotsClaimed,   setSlotsClaimed]   = useState(12);
-  const [slotsTotal,     setSlotsTotal]     = useState(15);
-
-  // ── Launch timer state ──────────────────────────────────────────────────────
-  const [timerEnabled,      setTimerEnabled]      = useState(true);
-  const [timerHours,        setTimerHours]        = useState(72);
-  const [timerBadge,        setTimerBadge]        = useState("Live Launch Event");
-  const [timerTitle,        setTimerTitle]        = useState("Founding Member Launch");
-  const [timerSubtitle,     setTimerSubtitle]     = useState("Secure your spot · 5% lifetime discount");
-  const [timerBenefitTitle, setTimerBenefitTitle] = useState("Founding Members Get");
-  const [timerBenefitValue, setTimerBenefitValue] = useState("5% Lifetime Discount");
-  const [timerBenefitNote,  setTimerBenefitNote]  = useState("Plus priority access to new features");
 
   // ── Auto-surge state ────────────────────────────────────────────────────────
   const [autoSurgeEnabled, setAutoSurgeEnabled] = useState(false);
@@ -141,16 +119,6 @@ export default function SettingsPage() {
           fastTrackPrice: Number(get("fast_track_price"))  || 8,
           loungePrice:    Number(get("lounge_price"))      || 35,
           priceTolerance: Number(get("price_tolerance"))   || 0.5,
-          slotsClaimed:   Number(get("slots_claimed"))     || 12,
-          slotsTotal:     Number(get("slots_total"))       || 15,
-          timerEnabled:      get("timer_enabled") !== "false",
-          timerHours:        Number(get("timer_hours"))    || 72,
-          timerBadge:        get("timer_badge")         ?? DEFAULTS.timer_badge,
-          timerTitle:        get("timer_title")         ?? DEFAULTS.timer_title,
-          timerSubtitle:     get("timer_subtitle")      ?? DEFAULTS.timer_subtitle,
-          timerBenefitTitle: get("timer_benefit_title") ?? DEFAULTS.timer_benefit_title,
-          timerBenefitValue: get("timer_benefit_value") ?? DEFAULTS.timer_benefit_value,
-          timerBenefitNote:  get("timer_benefit_note")  ?? DEFAULTS.timer_benefit_note,
           autoSurgeEnabled:  get("auto_surge_enabled") === "true",
           autoSurgeMax:      Number(get("auto_surge_max_percent")) || 15,
           surgeExcluded:     (() => { try { return JSON.parse(get("auto_surge_excluded_ids") || "[]"); } catch { return []; } })() as string[],
@@ -162,16 +130,6 @@ export default function SettingsPage() {
         setFastTrackPrice(vals.fastTrackPrice);
         setLoungePrice(vals.loungePrice);
         setPriceTolerance(vals.priceTolerance);
-        setSlotsClaimed(vals.slotsClaimed);
-        setSlotsTotal(vals.slotsTotal);
-        setTimerEnabled(vals.timerEnabled);
-        setTimerHours(vals.timerHours);
-        setTimerBadge(vals.timerBadge);
-        setTimerTitle(vals.timerTitle);
-        setTimerSubtitle(vals.timerSubtitle);
-        setTimerBenefitTitle(vals.timerBenefitTitle);
-        setTimerBenefitValue(vals.timerBenefitValue);
-        setTimerBenefitNote(vals.timerBenefitNote);
         setAutoSurgeEnabled(vals.autoSurgeEnabled);
         setAutoSurgeMax(vals.autoSurgeMax);
         setSurgeExcluded(vals.surgeExcluded);
@@ -230,10 +188,10 @@ export default function SettingsPage() {
   // ─── UNSAVED CHANGE DETECTOR ──────────────────────────────────────────────
   useEffect(() => {
     if (loading) return;
-    const curr = { markupEnabled, markupPercent, fastTrackPrice, loungePrice, priceTolerance, slotsClaimed, slotsTotal, timerEnabled, timerHours, timerBadge, timerTitle, timerSubtitle, timerBenefitTitle, timerBenefitValue, timerBenefitNote, autoSurgeEnabled, autoSurgeMax, surgeExcludedKey: JSON.stringify([...surgeExcluded].sort()) };
+    const curr = { markupEnabled, markupPercent, fastTrackPrice, loungePrice, priceTolerance, autoSurgeEnabled, autoSurgeMax, surgeExcludedKey: JSON.stringify([...surgeExcluded].sort()) };
     const changed = Object.keys(curr).some(k => (curr as any)[k] !== initialRef.current[k]);
     setHasUnsaved(changed);
-  }, [markupEnabled, markupPercent, fastTrackPrice, loungePrice, priceTolerance, slotsClaimed, slotsTotal, timerEnabled, timerHours, timerBadge, timerTitle, timerSubtitle, timerBenefitTitle, timerBenefitValue, timerBenefitNote, autoSurgeEnabled, autoSurgeMax, surgeExcluded, loading]);
+  }, [markupEnabled, markupPercent, fastTrackPrice, loungePrice, priceTolerance, autoSurgeEnabled, autoSurgeMax, surgeExcluded, loading]);
 
   // ─── ⌘/Ctrl+S TO SAVE ──────────────────────────────────────────────────────
   // Ref keeps the handler pointing at the latest closure (avoids stale state).
@@ -275,16 +233,6 @@ export default function SettingsPage() {
       { key: "fast_track_price", value: fastTrackPrice.toString()  },
       { key: "lounge_price",     value: loungePrice.toString()     },
       { key: "price_tolerance",  value: priceTolerance.toString()  },
-      { key: "slots_claimed",    value: slotsClaimed.toString()    },
-      { key: "slots_total",      value: slotsTotal.toString()      },
-      { key: "timer_enabled",       value: timerEnabled.toString() },
-      { key: "timer_hours",         value: timerHours.toString()   },
-      { key: "timer_badge",         value: timerBadge              },
-      { key: "timer_title",         value: timerTitle              },
-      { key: "timer_subtitle",      value: timerSubtitle           },
-      { key: "timer_benefit_title", value: timerBenefitTitle       },
-      { key: "timer_benefit_value", value: timerBenefitValue       },
-      { key: "timer_benefit_note",  value: timerBenefitNote        },
       { key: "auto_surge_enabled",     value: autoSurgeEnabled.toString() },
       { key: "auto_surge_max_percent", value: autoSurgeMax.toString()     },
       { key: "auto_surge_excluded_ids", value: JSON.stringify(surgeExcluded) },
@@ -315,18 +263,16 @@ export default function SettingsPage() {
         return;
       }
 
-      initialRef.current = { markupEnabled, markupPercent, fastTrackPrice, loungePrice, priceTolerance, slotsClaimed, slotsTotal, timerEnabled, timerHours, timerBadge, timerTitle, timerSubtitle, timerBenefitTitle, timerBenefitValue, timerBenefitNote, autoSurgeEnabled, autoSurgeMax, surgeExcludedKey: JSON.stringify([...surgeExcluded].sort()) };
+      initialRef.current = { markupEnabled, markupPercent, fastTrackPrice, loungePrice, priceTolerance, autoSurgeEnabled, autoSurgeMax, surgeExcludedKey: JSON.stringify([...surgeExcluded].sort()) };
       setHasUnsaved(false);
       setSaved(true);
       setLastSaved(new Date());
       setTimeout(() => setSaved(false), 3000);
 
-      // Audit: diff EVERY settings field (pricing, timer, slots, copy) so any
+      // Audit: diff EVERY settings field so any
       // change — minor or major — lands in the activity ledger.
       const currentSnapshot: Record<string, unknown> = {
         markupEnabled, markupPercent, fastTrackPrice, loungePrice, priceTolerance,
-        slotsClaimed, slotsTotal, timerEnabled, timerHours, timerBadge, timerTitle,
-        timerSubtitle, timerBenefitTitle, timerBenefitValue, timerBenefitNote,
         autoSurgeEnabled, autoSurgeMax, surgeExcludedKey: JSON.stringify([...surgeExcluded].sort()),
       };
       const changes: Record<string, { before: unknown; after: unknown }> = {};
@@ -550,9 +496,7 @@ INSERT INTO settings (key, value) VALUES
   ('markup_percent',   '10'),
   ('fast_track_price', '8'),
   ('lounge_price',     '35'),
-  ('price_tolerance',  '0.5'),
-  ('slots_claimed',    '12'),
-  ('slots_total',      '15')
+  ('price_tolerance',  '0.5')
 ON CONFLICT (key) DO NOTHING;`}</pre>
             </div>
           </div>
@@ -681,110 +625,6 @@ ON CONFLICT (key) DO NOTHING;`}</pre>
               <div className="bg-[#0B1120] border border-white/[0.06] rounded-xl p-4 text-xs font-bold text-slate-400">
                 <span className="text-emerald-400 font-black">Example:</span> Customer sees £84.63. Server calculates £84.80. Diff = £0.17 → ✅ within tolerance.
               </div>
-            </div>
-          </div>
-
-          {/* ── SECTION 4: LAUNCH TIMER ───────────────────────────────────── */}
-          <div className="bg-[#0F1523] rounded-xl border border-white/[0.06] overflow-hidden">
-            <div className={sectionHeader}>
-              <div className="w-11 h-11 bg-rose-500/10 rounded-lg flex items-center justify-center shrink-0 border border-rose-500/20"><Users className="w-5 h-5 text-rose-400" /></div>
-              <div><h2 className="text-lg font-black text-white tracking-tight">Launch Timer & Slots</h2><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Founding Member scarcity on results page</p></div>
-            </div>
-
-            {/* Enable / disable the whole timer */}
-            <div className="p-5 md:p-6 border-b border-white/[0.06]">
-              <div className="flex items-center justify-between bg-[#0B1120] p-5 rounded-2xl border border-white/[0.06]">
-                <div>
-                  <p className="text-white font-black text-lg">Show Launch Timer</p>
-                  <p className="text-slate-400 text-xs mt-0.5">Toggle off to completely hide the timer card from the results page</p>
-                  <p className="text-[10px] font-bold text-slate-600 mt-1 uppercase tracking-widest">
-                    Currently: <span className={timerEnabled ? "text-emerald-400" : "text-red-400"}>{timerEnabled ? "VISIBLE" : "HIDDEN"}</span>
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setTimerEnabled(!timerEnabled)}
-                  aria-pressed={timerEnabled}
-                  className={`relative w-16 h-8 rounded-full transition-colors duration-300 shrink-0 focus:outline-none focus:ring-4 focus:ring-rose-500/30 ${timerEnabled ? "bg-rose-600" : "bg-slate-700"}`}
-                >
-                  <span className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-300 flex items-center justify-center ${timerEnabled ? "translate-x-8" : "translate-x-0"}`}>
-                    {timerEnabled ? <CheckCircle2 className="w-3.5 h-3.5 text-rose-600" /> : <AlertCircle className="w-3.5 h-3.5 text-slate-400" />}
-                  </span>
-                </button>
-              </div>
-            </div>
-
-            {/* All timer config — dimmed when hidden */}
-            <div className={`transition-opacity duration-300 ${!timerEnabled ? "opacity-30 pointer-events-none select-none" : ""}`}>
-
-            {/* Duration */}
-            <div className="p-5 md:p-6 border-b border-white/[0.06]">
-              <label className={labelCls}><Clock className="w-3 h-3 inline mr-1 text-rose-400" /> Countdown Duration (hours)</label>
-              <div className="flex items-center gap-3">
-                <input type="number" step="1" min="1" max="8760" value={timerHours} onChange={e => setTimerHours(Number(e.target.value) || 1)}
-                  className={`${inputCls} [-webkit-text-fill-color:#fb7185]`} />
-                <span className="text-sm font-black text-slate-500 shrink-0 whitespace-nowrap">≈ {Math.floor(timerHours / 24)}d {timerHours % 24}h</span>
-              </div>
-              <p className="text-[10px] text-slate-500 font-bold mt-2">Each visitor's countdown starts on first visit and runs for this many hours. Changing this restarts the countdown for everyone.</p>
-            </div>
-
-            {/* Editable text */}
-            <div className="p-5 md:p-6 border-b border-white/[0.06] space-y-5">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><Eye className="w-3.5 h-3.5" /> Timer Text</p>
-              <div>
-                <label className={labelCls}>Badge Label</label>
-                <input type="text" value={timerBadge} onChange={e => setTimerBadge(e.target.value)} className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Headline</label>
-                <input type="text" value={timerTitle} onChange={e => setTimerTitle(e.target.value)} className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Subtitle</label>
-                <input type="text" value={timerSubtitle} onChange={e => setTimerSubtitle(e.target.value)} className={inputCls} />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <label className={labelCls}>Benefit — Title</label>
-                  <input type="text" value={timerBenefitTitle} onChange={e => setTimerBenefitTitle(e.target.value)} className={inputCls} />
-                </div>
-                <div>
-                  <label className={labelCls}>Benefit — Value</label>
-                  <input type="text" value={timerBenefitValue} onChange={e => setTimerBenefitValue(e.target.value)} className={`${inputCls} [-webkit-text-fill-color:#4ade80]`} />
-                </div>
-              </div>
-              <div>
-                <label className={labelCls}>Benefit — Note</label>
-                <input type="text" value={timerBenefitNote} onChange={e => setTimerBenefitNote(e.target.value)} className={inputCls} />
-              </div>
-            </div>
-
-            <div className="p-5 md:p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div>
-                <label className={labelCls}><Users className="w-3 h-3 inline mr-1 text-rose-400" /> Slots Claimed</label>
-                <input type="number" step="1" min="0" value={slotsClaimed} onChange={e => setSlotsClaimed(Number(e.target.value) || 0)}
-                  className={`${inputCls} [-webkit-text-fill-color:#fb7185]`} />
-              </div>
-              <div>
-                <label className={labelCls}><Clock className="w-3 h-3 inline mr-1 text-rose-400" /> Total Slots</label>
-                <input type="number" step="1" min="1" value={slotsTotal} onChange={e => setSlotsTotal(Number(e.target.value) || 15)}
-                  className={inputCls} />
-              </div>
-              <div className="sm:col-span-2">
-                <div className="bg-[#0B1120] border border-white/[0.06] rounded-xl p-4">
-                  <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-2">
-                    <span className="text-slate-500">Availability</span>
-                    <span className={slotsClaimed >= slotsTotal ? "text-red-400" : "text-emerald-400"}>{Math.max(0, slotsTotal - slotsClaimed)} left of {slotsTotal}</span>
-                  </div>
-                  <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-rose-500 rounded-full transition-all duration-500" style={{ width: `${Math.min((slotsClaimed / Math.max(slotsTotal, 1)) * 100, 100)}%` }} />
-                  </div>
-                  <p className="text-[10px] text-slate-500 font-bold mt-2">
-                    {slotsClaimed >= slotsTotal ? "⚠️ All slots filled — timer shows SOLD OUT." : `Timer shows ${slotsTotal - slotsClaimed} spots left.`}
-                  </p>
-                </div>
-              </div>
-            </div>
             </div>
           </div>
 
