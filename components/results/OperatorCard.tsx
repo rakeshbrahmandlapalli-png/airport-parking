@@ -101,14 +101,17 @@ export function OperatorCard({
             ))}
           </ul>
 
-          {feesNote && (
-            <div className="mt-4 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3.5 py-3">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-              <p className="text-sm leading-snug text-amber-900"><span className="font-semibold">Paid on the day:</span> {feesNote}</p>
-            </div>
-          )}
 
           <OperatorDetailPanel operator={operator} isHeathrow={isHeathrow} />
+
+          {/* Mandatory extra fees stay visible next to the price (UK drip-pricing
+              rules), below the instructions link rather than above it. */}
+          {feesNote && (
+            <p className="mt-3 flex items-start gap-1.5 text-sm leading-snug text-amber-800">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden="true" />
+              <span><span className="font-semibold">Paid on the day:</span> {feesNote}</span>
+            </p>
+          )}
         </div>
 
         {/* ── RIGHT: price + CTA (CLS-locked) ── */}
