@@ -98,7 +98,6 @@ export default function AdminLogin() {
         <Logo tone="light" className="h-7 w-auto hidden admin-light:block" />
         <div className="mt-6 rounded-xl border border-fg/10 bg-panel p-6">
           <h1 className="text-xl font-semibold">Admin sign in</h1>
-          <p className="mt-1 text-sm text-fg-3">For AeroPark Direct staff.</p>
           <Suspense fallback={null}>
             <LoginForm />
           </Suspense>
