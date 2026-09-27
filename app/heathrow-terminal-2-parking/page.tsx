@@ -24,15 +24,15 @@ export default function HeathrowTerminal2ParkingPage() {
         h1Top: "Heathrow Terminal 2 Parking",
         h1Highlight: "Made Simple.",
         intro:
-          "Meet & Greet parking at Heathrow Terminal 2 (LHR T2), the Queen's Terminal. Drive straight to T2 departures, hand your keys to a vetted driver, and walk inside. No shuttle buses, no long-stay car park. Fully insured, free cancellation.",
+          "Meet & Greet parking at Heathrow Terminal 2 (LHR T2), the Queen's Terminal. Drive straight to T2 departures, hand your keys to a driver, and walk inside. No shuttle buses, no long-stay car park. Fully insured, free cancellation.",
         seoBlock: {
           eyebrow: "Heathrow Terminal 2 Parking Guide",
           heading: "Meet & Greet Parking at",
           highlight: "Heathrow Terminal 2",
           paragraphs: [
             "Terminal 2, the Queen's Terminal, is the Heathrow home of Star Alliance — carriers like United, Lufthansa, Swiss, Air Canada and Singapore Airlines all fly from here. It is a busy terminal, and the official T2 short-stay car park charges premium rates while the cheaper long-stay options leave you on a shuttle bus with your luggage.",
-            "Meet & Greet skips that. You drive straight to the T2 departures forecourt, a vetted driver takes your keys, and your car is parked in a secure compound while you fly. When you land at T2 you walk out to a waiting car rather than queueing for a bus.",
-            "Every operator we list for Terminal 2 is fully insured and audited before it goes live, with CCTV-monitored, fenced compounds and DBS-checked drivers who photograph your car at handover. Your return is matched to your live flight arrival, so the car is ready when you land, even if you touch down late. Search your dates above for a live T2 price in under a minute, with free cancellation up to 24 hours before drop-off and a Best Price Guarantee behind it.",
+            "Meet & Greet skips that. You drive straight to the T2 departures forecourt, a driver takes your keys, and your car is parked in a secure compound while you fly. When you land at T2 you walk out to a waiting car rather than queueing for a bus.",
+            "Every operator we list for Terminal 2 is fully insured, and you can see who will look after your car before you pay. Add your return flight number when you book so the operator knows when you're due back. Search your dates above for a live T2 price in under a minute, with free cancellation up to 24 hours before drop-off.",
           ],
           highlights: [
             { stat: "T2", label: "Drive straight to the Queen's Terminal departures. No shuttle." },
@@ -45,7 +45,7 @@ export default function HeathrowTerminal2ParkingPage() {
           { q: "Which airlines use Heathrow Terminal 2?", a: "Terminal 2, the Queen's Terminal, is the Star Alliance hub at Heathrow — including United, Lufthansa, Swiss, Austrian, SAS, Air Canada and Singapore Airlines, among others. Always check your airline's terminal on your booking before you travel." },
           { q: "How much does Meet & Greet parking cost at Terminal 2?", a: "It depends on your dates, length of stay and operator, and is typically below the official T2 short-stay rate. Enter your dates above for an exact live price — it takes under 10 seconds." },
           { q: "What if my flight back to T2 is delayed?", a: "Your operator tracks your inbound flight. If you land late, your car is still brought to Terminal 2 ready for you, with no extra charge for the delay." },
-          { q: "Is my car insured and secure while I'm away?", a: "Yes. Every operator we list for Terminal 2 is fully insured, audited by us before listing, and keeps vehicles in CCTV-monitored, fenced compounds. Drivers are DBS-checked and photograph your vehicle at handover." },
+          { q: "Is my car insured and secure while I'm away?", a: "Yes. Every operator we list for Terminal 2 is fully insured. You can see which operator will look after your car before you pay, and their contact details are in your confirmation email." },
           { q: "Can I cancel my Heathrow Terminal 2 parking booking?", a: "You can cancel at any time from the Manage Booking page — free of charge up to 24 hours before your drop-off time. Inside 24 hours the booking still cancels, and we review the refund and come back to you within one working day. To change your dates, please call your parking operator on the number in your confirmation email — they hold your space, so they are the only ones who can arrange it." },
         ],
       }}
