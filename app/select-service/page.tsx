@@ -2,289 +2,182 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
-import Link from "next/link";
 import { FunnelHeader, FunnelFooter, funnelSlotClass } from "@/components/site/FunnelChrome";
-import { 
-  Car, 
-  Bus, 
-  Hotel, 
-  ArrowRight, 
-  Clock, 
-  ShieldCheck, 
-  MapPin,
-  ArrowLeft,
-  X,
-  Lock
-} from "lucide-react";
+import ModifySearchModal from "@/components/ModifySearchModal";
+import { ArrowLeft, ArrowRight, Bus, Car, Check, Hotel, MapPin } from "lucide-react";
+
+type Service = {
+  id: string;
+  title: string;
+  tag?: string;
+  description: string;
+  Icon: typeof Car;
+  points: string[];
+  note: string;
+  disabled: boolean;
+};
 
 function ServiceSelectionContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Grab the search params from the hero section so we don't lose them
+  // Carry the search from the homepage through to the results page.
   const airport = searchParams.get("airport") || "Luton (LTN)";
   const dropoffDate = searchParams.get("dropoffDate") || "";
   const dropoffTime = searchParams.get("dropoffTime") || "";
   const pickupDate = searchParams.get("pickupDate") || "";
   const pickupTime = searchParams.get("pickupTime") || "";
 
-  // Helper to format dates for the top navbar
-  const formatShortDate = (dateStr: string) => {
-    if (!dateStr) return "";
-    const d = new Date(dateStr);
-    return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  const shortDate = (d: string) => {
+    const [y, m, day] = d.split("-").map(Number);
+    if (!y || !m || !day) return "";
+    return new Date(y, m - 1, day).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
   };
-
-  const dateDisplay = dropoffDate && pickupDate 
-    ? `${formatShortDate(dropoffDate)} - ${formatShortDate(pickupDate)}`
-    : "Dates not set";
+  const dateDisplay = dropoffDate && pickupDate ? `${shortDate(dropoffDate)} – ${shortDate(pickupDate)}` : "";
 
   const airportCode = airport.includes("Heathrow") ? "LHR" : "LTN";
-  // Park & Ride isn't live at Luton yet — show it as "Coming Soon" (like Hotel
-  // & Parking) only for LTN; it stays bookable for Heathrow.
+  const airportName = airportCode === "LHR" ? "Heathrow" : "Luton";
+  // Park & Ride isn't live at Luton yet; it's bookable at Heathrow.
   const isLuton = airportCode === "LTN";
 
-  // --- EDIT SEARCH MODAL STATE ---
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editAirport, setEditAirport] = useState(airport);
-  const [editDropDate, setEditDropDate] = useState(dropoffDate);
-  const [editDropTime, setEditDropTime] = useState(dropoffTime);
-  const [editPickDate, setEditPickDate] = useState(pickupDate);
-  const [editPickTime, setEditPickTime] = useState(pickupTime);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const currentSearch = { airport, dropDate: dropoffDate, dropTime: dropoffTime, pickDate: pickupDate, pickTime: pickupTime, type: "" };
 
-  const openEditModal = () => {
-    setEditAirport(airport);
-    setEditDropDate(dropoffDate);
-    setEditDropTime(dropoffTime);
-    setEditPickDate(pickupDate);
-    setEditPickTime(pickupTime);
-    setIsEditModalOpen(true);
-  };
-
-  const handleUpdateSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsEditModalOpen(false);
-    
-    // Update the URL with the new times so the page refreshes
-    const query = new URLSearchParams({
-      airport: editAirport,
-      dropoffDate: editDropDate,
-      dropoffTime: editDropTime,
-      pickupDate: editPickDate,
-      pickupTime: editPickTime,
-    }).toString();
-    
-    router.push(`/select-service?${query}`);
-  };
-
-  const handleSelect = (serviceType: string, disabled?: boolean) => {
-    if (disabled) return; // Prevent clicking on "Coming Soon" options
-
-    const query = new URLSearchParams({
-      airport,
-      dropoffDate,
-      dropoffTime,
-      pickupDate,
-      pickupTime,
-      type: serviceType, 
-    }).toString();
-
-    // Sends them to the actual pricing results page next
+  const handleSelect = (s: Service) => {
+    if (s.disabled) return;
+    const query = new URLSearchParams({ airport, dropoffDate, dropoffTime, pickupDate, pickupTime, type: s.id }).toString();
     router.push(`/results?${query}`);
   };
 
-  const services = [
+  const services: Service[] = [
     {
       id: "meet-greet",
       title: "Meet & Greet",
-      tag: "Most Convenient",
-      tagColor: "bg-blue-100 text-blue-700 border-blue-200",
-      description: "Compare top-rated providers. Drive straight to the terminal, hand your keys to a vetted professional, and head straight to check-in.",
-      icon: <Car className="w-7 h-7 text-blue-600" />,
-      iconBg: "bg-blue-50",
-      features: ["Compare trusted operators", "Drop off at terminal", "Perfect for families"],
-      time: "5 mins walk to terminal",
-      recommended: true,
-      disabled: false
+      tag: "Most popular",
+      description: "Drive to the terminal and hand your keys to a driver from the parking company. Your car is waiting for you there when you land.",
+      Icon: Car,
+      points: ["No shuttle bus", "Drop off and collect at the terminal", "Easiest with children or luggage"],
+      note: "Minutes from check-in",
+      disabled: false,
     },
     {
       id: "park-ride",
       title: "Park & Ride",
-      tag: isLuton ? "Coming Soon" : "Best Value",
-      tagColor: "bg-slate-100 text-slate-600 border-slate-200",
+      tag: isLuton ? "Coming soon" : "Lower price",
       description: isLuton
-        ? "We're onboarding trusted Park & Ride operators at Luton. Soon you'll be able to park off-site and shuttle to the terminal. In the meantime, our Meet & Greet service is often the same price."
-        : "Find the best deals on secure off-site parking. Park your vehicle and take a quick, comfortable shuttle bus to the terminal door.",
-      icon: <Bus className={`w-7 h-7 ${isLuton ? "text-slate-400" : "text-slate-500"}`} />,
-      iconBg: "bg-slate-50",
-      features: ["Vetted parking facilities", "Regular shuttle services", "Budget-friendly deals"],
-      time: isLuton ? "Available Shortly" : "5-10 min shuttle",
-      recommended: false,
-      disabled: isLuton
+        ? "Not available at Luton yet. Meet & Greet is often a similar price."
+        : "Park at a secure car park near the airport and take the shuttle bus to the terminal.",
+      Icon: Bus,
+      points: isLuton ? [] : ["Usually the cheapest option", "Regular shuttle to the terminal"],
+      note: isLuton ? "" : "Short shuttle ride",
+      disabled: isLuton,
     },
     {
       id: "hotel",
       title: "Hotel & Parking",
-      tag: "Coming Soon", // Changed
-      tagColor: "bg-slate-100 text-slate-500 border-slate-200", // Changed
-      description: "We are currently onboarding top-rated hotel partners. Soon you will be able to book a restful night's sleep with secure parking.", // Changed
-      icon: <Hotel className="w-7 h-7 text-slate-400" />, // Changed
-      iconBg: "bg-slate-50",
-      features: ["Top hotel brands", "Up to 15 days parking", "Wake up at the airport"],
-      time: "Available Shortly", // Changed
-      recommended: false,
-      disabled: true // 🟢 NEW FLAG
-    }
+      tag: "Coming soon",
+      description: "A night at an airport hotel with parking for your trip. Not available yet.",
+      Icon: Hotel,
+      points: [],
+      note: "",
+      disabled: true,
+    },
   ];
 
   return (
-    <main suppressHydrationWarning className="min-h-[100dvh] bg-slate-50 font-sans antialiased overflow-x-clip">
-      
+    <main suppressHydrationWarning className="min-h-[100dvh] bg-slate-50 font-sans antialiased overflow-x-clip flex flex-col">
       <FunnelHeader
         left={
-          <button type="button" onClick={openEditModal} className={funnelSlotClass}>
+          <button type="button" onClick={() => setIsEditOpen(true)} className={funnelSlotClass}>
             <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-            <span className="hidden sm:inline">Edit search</span>
+            <span className="hidden sm:inline">Change search</span>
           </button>
         }
         right={
-          <button type="button" onClick={openEditModal} className="text-right text-sm leading-tight text-slate-600 hover:text-slate-900 whitespace-nowrap">
+          <button type="button" onClick={() => setIsEditOpen(true)} className="text-right text-sm leading-tight text-slate-600 hover:text-slate-900 whitespace-nowrap">
             <span className="block font-semibold text-slate-900">{airportCode}</span>
-            <span className="hidden sm:block text-xs">{dateDisplay}</span>
+            {dateDisplay && <span className="hidden sm:block text-xs">{dateDisplay}</span>}
           </button>
         }
       />
 
-      <div className="max-w-5xl mx-auto w-full pt-12 md:pt-16 px-4 sm:px-6 relative z-10">
-        
-        {/* Header Section */}
-        <div className="text-center mb-10 md:mb-16">
-          <button onClick={openEditModal} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-200/50 text-slate-600 font-bold text-[10px] uppercase tracking-widest mb-6 hover:bg-slate-200 transition-colors cursor-pointer touch-manipulation">
-            <MapPin className="w-3 h-3" /> {airport}
+      <div className="flex-1 max-w-5xl mx-auto w-full pt-10 md:pt-14 pb-16 px-4 sm:px-6">
+        <div className="mb-8 md:mb-10">
+          <button
+            type="button"
+            onClick={() => setIsEditOpen(true)}
+            className="inline-flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900"
+          >
+            <MapPin className="w-4 h-4" aria-hidden="true" />
+            {airportName}{dateDisplay ? ` · ${dateDisplay}` : ""}
+            <span className="text-blue-700 underline underline-offset-4 ml-1">Change</span>
           </button>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4">
-            How would you like to park?
-          </h1>
-          <p className="text-slate-500 font-medium text-sm sm:text-base md:text-lg max-w-2xl mx-auto px-2">
-            Compare trusted parking providers that best fit your travel style. From premium terminal drop-offs to budget-friendly shuttles, we bring you the best options in one place.
+          <h1 className="mt-3 text-3xl md:text-4xl font-semibold tracking-tight text-slate-900">How would you like to park?</h1>
+          <p className="mt-2 text-base md:text-lg text-slate-600 max-w-2xl">
+            Choose a type of parking and we&apos;ll show you the operators and prices for your dates.
           </p>
         </div>
 
-        {/* Service Cards Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-6 w-full">
-          {services.map((service) => (
-            <div 
-              key={service.id}
-              onClick={() => handleSelect(service.id, service.disabled)}
-              className={`touch-manipulation bg-white rounded-2xl p-5 md:p-6 border shadow-sm transition-all duration-200 flex flex-col items-center text-center md:items-start md:text-left group relative [-webkit-tap-highlight-color:transparent] ${
-                service.disabled
-                  ? 'border-slate-100 opacity-70 grayscale-[30%] cursor-not-allowed'
-                  : service.recommended
-                    ? 'border-blue-600 hover:shadow-md cursor-pointer'
-                    : 'border-slate-200 hover:border-blue-600 hover:shadow-md cursor-pointer'
-              }`}
-            >
-              {/* Icon — grounded, colour-matched to the card accent */}
-              <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center shrink-0 mb-4 md:mb-5 ${service.iconBg}`}>
-                {service.icon}
-              </div>
-
-              {/* Title + integrated badge (inline, not a floating sticker) */}
-              <div className="flex items-center flex-wrap justify-center md:justify-start gap-x-2.5 gap-y-1.5 mb-2">
-                <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">
-                  {service.title}
-                </h3>
-                <span className={`inline-flex items-center px-2.5 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest ${service.tagColor}`}>
-                  {service.tag}
-                </span>
-              </div>
-
-              {/* Description + features grouped tightly (no hollow middle) */}
-              <p className="text-slate-500 text-xs sm:text-sm leading-snug mb-3">
-                {service.description}
-              </p>
-
-              {/* Features List */}
-              <ul className={`space-y-2 mb-5 md:mb-6 w-full ${service.disabled ? 'opacity-60' : ''}`}>
-                {service.features.map((feature, idx) => (
-                  <li key={idx} className="flex items-center justify-start gap-2.5 text-xs font-bold text-slate-700 text-left">
-                    <ShieldCheck className={`w-4 h-4 shrink-0 ${service.disabled ? 'text-slate-400' : 'text-blue-500 opacity-70'}`} />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              {/* Footer / Action */}
-              <div className="w-full pt-5 md:pt-6 border-t border-slate-100 flex items-center justify-between mt-auto">
-                <div className="flex items-center gap-1.5 md:gap-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">
-                  <Clock className="w-3.5 h-3.5 shrink-0" /> {service.time}
+        <ul className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {services.map((s) => (
+            <li key={s.id}>
+              <button
+                type="button"
+                onClick={() => handleSelect(s)}
+                disabled={s.disabled}
+                aria-disabled={s.disabled}
+                className={`group w-full h-full text-left rounded-xl border bg-white p-5 md:p-6 flex flex-col transition-colors ${
+                  s.disabled
+                    ? "border-slate-200 bg-slate-50 cursor-not-allowed"
+                    : "border-slate-300 hover:border-blue-600 focus-visible:border-blue-600 focus-visible:ring-2 focus-visible:ring-blue-600/20 outline-none"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <s.Icon className={`w-6 h-6 ${s.disabled ? "text-slate-400" : "text-blue-700"}`} aria-hidden="true" />
+                  {s.tag && (
+                    <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${s.disabled ? "bg-slate-200 text-slate-600" : "bg-blue-50 text-blue-800"}`}>
+                      {s.tag}
+                    </span>
+                  )}
                 </div>
-                <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                  service.disabled 
-                    ? 'bg-slate-100 text-slate-400' 
-                    : 'bg-slate-50 lg:group-hover:bg-blue-600 lg:group-hover:text-white'
-                }`}>
-                  {service.disabled ? <Lock className="w-3.5 h-3.5 md:w-4 md:h-4" /> : <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />}
-                </div>
-              </div>
-            </div>
+                <h2 className={`mt-4 text-xl font-semibold ${s.disabled ? "text-slate-500" : "text-slate-900"}`}>{s.title}</h2>
+                <p className={`mt-1.5 text-sm leading-relaxed ${s.disabled ? "text-slate-500" : "text-slate-600"}`}>{s.description}</p>
+
+                {s.points.length > 0 && (
+                  <ul className="mt-4 space-y-1.5">
+                    {s.points.map((pt) => (
+                      <li key={pt} className="flex items-start gap-2 text-sm text-slate-700">
+                        <Check className="w-4 h-4 mt-0.5 shrink-0 text-emerald-600" aria-hidden="true" /> {pt}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {!s.disabled && (
+                  <div className="mt-auto pt-5 flex items-center justify-between">
+                    <span className="text-sm text-slate-500">{s.note}</span>
+                    <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-700">
+                      See prices <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                    </span>
+                  </div>
+                )}
+              </button>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
 
-      {/* 🟢 THE NEW "EDIT SEARCH" MODAL */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 z-[200] bg-slate-950/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4">
-          <div className="bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl p-6 sm:p-8 shadow-2xl animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-8 duration-300 relative">
-            
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Modify Search</h2>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Update your travel details</p>
-              </div>
-              <button onClick={() => setIsEditModalOpen(false)} className="p-2.5 bg-slate-100 text-slate-600 rounded-full hover:bg-slate-200 transition-colors touch-manipulation">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleUpdateSearch} className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Departure Airport</label>
-                <select value={editAirport} onChange={(e)=>setEditAirport(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 font-black text-slate-900 text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 touch-manipulation">
-                  <option value="Luton (LTN)">Luton Airport (LTN)</option>
-                  <option value="Heathrow (LHR)">Heathrow Airport (LHR)</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 border-t border-slate-100 pt-4">
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Drop-off Date</label>
-                  <input type="date" value={editDropDate} onChange={(e)=>setEditDropDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3.5 font-bold text-slate-900 text-sm outline-none focus:border-blue-500 touch-manipulation" required />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Time</label>
-                  <input type="time" value={editDropTime} onChange={(e)=>setEditDropTime(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3.5 font-bold text-slate-900 text-sm outline-none focus:border-blue-500 touch-manipulation" required />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 pb-2">
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Pick-up Date</label>
-                  <input type="date" min={editDropDate} value={editPickDate} onChange={(e)=>setEditPickDate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3.5 font-bold text-slate-900 text-sm outline-none focus:border-blue-500 touch-manipulation" required />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Time</label>
-                  <input type="time" value={editPickTime} onChange={(e)=>setEditPickTime(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3.5 font-bold text-slate-900 text-sm outline-none focus:border-blue-500 touch-manipulation" required />
-                </div>
-              </div>
-
-              <button type="submit" className="w-full mt-6 py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl text-sm uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-500/30 touch-manipulation">
-                Update Search
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+      <ModifySearchModal
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        onSearchUpdate={(query) => {
+          setIsEditOpen(false);
+          const q = new URLSearchParams(query);
+          q.delete("type");
+          router.push(`/select-service?${q.toString()}`);
+        }}
+        currentSearch={currentSearch}
+      />
       <FunnelFooter />
     </main>
   );
@@ -292,7 +185,7 @@ function ServiceSelectionContent() {
 
 export default function SelectServicePage() {
   return (
-    <Suspense fallback={<div className="min-h-[100dvh] bg-slate-50 flex items-center justify-center font-bold text-slate-400 uppercase tracking-widest text-sm">Loading Options...</div>}>
+    <Suspense fallback={<div className="min-h-[100dvh] bg-slate-50" />}>
       <ServiceSelectionContent />
     </Suspense>
   );

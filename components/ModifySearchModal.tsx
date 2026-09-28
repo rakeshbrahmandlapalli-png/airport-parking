@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { X, ChevronDown, AlertCircle, Calendar, Clock } from "lucide-react";
+import { X, ChevronDown, AlertCircle } from "lucide-react";
 import { safeParseDate } from "@/app/lib/pricing";
 
 interface ModifySearchModalProps {
@@ -18,12 +18,12 @@ interface ModifySearchModalProps {
   };
 }
 
-const inputStyle =
-  "w-full bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white] placeholder:text-slate-500";
-const inputErrorStyle =
-  "w-full bg-[#1A2235] border border-red-500/60 hover:border-red-500/80 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none focus:ring-2 focus:ring-red-500/40 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white] placeholder:text-slate-500";
-const selectStyle =
-  "w-full appearance-none bg-[#1A2235] border border-slate-700/50 hover:border-blue-500/50 rounded-xl px-5 py-4 text-sm text-white font-bold outline-none cursor-pointer focus:ring-2 focus:ring-blue-500/50 transition-all shadow-[0_0_0_1000px_#1A2235_inset] [-webkit-text-fill-color:white]";
+// Same field style as the homepage search form.
+const fieldCls =
+  "w-full h-12 rounded-lg border bg-white px-3 text-base text-slate-900 outline-none focus:ring-2 [-webkit-text-fill-color:#0f172a]";
+const fieldOk = `${fieldCls} border-slate-300 focus:border-blue-600 focus:ring-blue-600/20`;
+const fieldErr = `${fieldCls} border-red-500 focus:border-red-600 focus:ring-red-600/20`;
+const labelCls = "block text-sm font-medium text-slate-700 mb-1.5";
 
 export default function ModifySearchModal({
   isOpen,
@@ -146,137 +146,68 @@ export default function ModifySearchModal({
   if (!isOpen) return null;
 
   return (
-    // FIX: clicking the backdrop closes the modal
     <div
-      className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex items-end sm:items-center justify-center p-4 sm:p-8 animate-in fade-in overflow-hidden"
+      className="fixed inset-0 z-[200] bg-slate-950/60 flex items-end sm:items-center justify-center sm:p-6"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       role="dialog"
       aria-modal="true"
-      aria-label="Modify search"
+      aria-labelledby="modify-search-title"
     >
-      <div className="bg-[#0F1523] border border-slate-800 w-full max-w-lg rounded-t-[2rem] sm:rounded-[2.5rem] p-8 sm:p-10 shadow-2xl animate-in slide-in-from-bottom-8 relative overflow-hidden">
-
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+      <div className="bg-white w-full max-w-lg rounded-t-xl sm:rounded-xl p-5 sm:p-6 pb-[calc(env(safe-area-inset-bottom)+20px)] sm:pb-6 max-h-[100dvh] overflow-y-auto">
+        <div className="flex items-start justify-between gap-4 mb-5">
           <div>
-            <h2 className="text-2xl font-black text-white tracking-tight">Modify Search</h2>
-            <p className="text-[10px] font-bold text-blue-500 mt-1 tracking-widest uppercase">Aero is ready to re-scan</p>
+            <h2 id="modify-search-title" className="text-xl font-semibold text-slate-900">Change your search</h2>
+            <p className="mt-1 text-sm text-slate-600">Prices are checked again for the new dates.</p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close modal"
-            className="p-3 bg-[#1A2235] text-slate-400 rounded-xl hover:text-white hover:bg-red-500/20 transition-colors border border-slate-700/50"
-          >
+          <button type="button" onClick={onClose} aria-label="Close" className="p-2 -mr-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} noValidate className="space-y-6">
-
-          {/* Airport */}
-          <div className="space-y-2">
-            <label htmlFor="modal-airport" className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1">
-              Departure Airport
-            </label>
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
+          <div>
+            <label htmlFor="modal-airport" className={labelCls}>Airport</label>
             <div className="relative">
-              <select
-                id="modal-airport"
-                value={editAirport}
-                onChange={e => setEditAirport(e.target.value)}
-                className={selectStyle}
-              >
+              <select id="modal-airport" value={editAirport} onChange={e => setEditAirport(e.target.value)} className={`${fieldOk} appearance-none pr-10 cursor-pointer`}>
                 <option value="Luton (LTN)">Luton Airport (LTN)</option>
                 <option value="Heathrow (LHR)">Heathrow Airport (LHR)</option>
               </select>
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 pointer-events-none" aria-hidden="true" />
             </div>
           </div>
 
-          {/* Drop-off row */}
-          <div className="grid grid-cols-2 gap-4 border-t border-slate-800/80 pt-6">
-            <div className="space-y-2">
-              <label htmlFor="modal-drop-date" className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1 flex items-center gap-1.5">
-                <Calendar className="w-3 h-3" /> Drop-off Date
-              </label>
-              <input
-                id="modal-drop-date"
-                type="date"
-                value={editDropDate}
-                min={today}
-                onChange={e => handleDropDateChange(e.target.value)}
-                className={`${dateError ? inputErrorStyle : inputStyle} [color-scheme:dark]`}
-                required
-              />
+          <fieldset>
+            <legend className={labelCls}>Drop-off</legend>
+            <div className="grid grid-cols-[1.4fr_1fr] gap-2">
+              <input id="modal-drop-date" type="date" aria-label="Drop-off date" value={editDropDate} min={today}
+                onChange={e => handleDropDateChange(e.target.value)} className={dateError ? fieldErr : fieldOk} required />
+              <input id="modal-drop-time" type="time" aria-label="Drop-off time" value={editDropTime}
+                onChange={e => { setEditDropTime(e.target.value); clearError(); }} className={fieldOk} required />
             </div>
-            <div className="space-y-2">
-              <label htmlFor="modal-drop-time" className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1 flex items-center gap-1.5">
-                <Clock className="w-3 h-3" /> Time
-              </label>
-              <input
-                id="modal-drop-time"
-                type="time"
-                value={editDropTime}
-                onChange={e => { setEditDropTime(e.target.value); clearError(); }}
-                className={`${inputStyle} [color-scheme:dark]`}
-                required
-              />
-            </div>
-          </div>
+          </fieldset>
 
-          {/* Pick-up row */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label htmlFor="modal-pick-date" className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1 flex items-center gap-1.5">
-                <Calendar className="w-3 h-3" /> Pick-up Date
-              </label>
-              <input
-                id="modal-pick-date"
-                type="date"
-                value={editPickDate}
-                min={editDropDate || today}
-                onChange={e => { setEditPickDate(e.target.value); clearError(); }}
-                className={`${dateError ? inputErrorStyle : inputStyle} [color-scheme:dark]`}
-                required
-              />
+          <fieldset>
+            <legend className={labelCls}>Pick-up</legend>
+            <div className="grid grid-cols-[1.4fr_1fr] gap-2">
+              <input id="modal-pick-date" type="date" aria-label="Pick-up date" value={editPickDate} min={editDropDate || today}
+                onChange={e => { setEditPickDate(e.target.value); clearError(); }} className={dateError ? fieldErr : fieldOk} required />
+              <input id="modal-pick-time" type="time" aria-label="Pick-up time" value={editPickTime}
+                onChange={e => { setEditPickTime(e.target.value); clearError(); }} className={fieldOk} required />
             </div>
-            <div className="space-y-2">
-              <label htmlFor="modal-pick-time" className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1 flex items-center gap-1.5">
-                <Clock className="w-3 h-3" /> Time
-              </label>
-              <input
-                id="modal-pick-time"
-                type="time"
-                value={editPickTime}
-                onChange={e => { setEditPickTime(e.target.value); clearError(); }}
-                className={`${inputStyle} [color-scheme:dark]`}
-                required
-              />
-            </div>
-          </div>
+          </fieldset>
 
-          {/* Inline date error — replaces alert() */}
           {dateError && (
-            <div className="flex items-center gap-2.5 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 animate-in fade-in duration-200">
-              <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-              <p className="text-xs font-bold text-red-400">{dateError}</p>
-            </div>
+            <p role="alert" className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" /> {dateError}
+            </p>
           )}
 
-          {/* Actions */}
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-black rounded-xl uppercase text-xs tracking-widest transition-all border border-slate-700 active:scale-95"
-            >
+          <div className="flex gap-2 pt-2">
+            <button type="button" onClick={onClose} className="h-12 px-5 rounded-lg border border-slate-300 bg-white text-slate-900 font-semibold hover:bg-slate-50">
               Cancel
             </button>
-            <button
-              type="submit"
-              className="flex-1 py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl uppercase text-xs tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-500/20"
-            >
-              Update &amp; Recalculate
+            <button type="submit" className="flex-1 h-12 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold">
+              Update search
             </button>
           </div>
         </form>
