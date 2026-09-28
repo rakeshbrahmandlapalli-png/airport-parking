@@ -107,6 +107,7 @@ export async function POST(req: Request) {
           : null,
       promo_code:        (m.promo_used && m.promo_used !== "None") ? m.promo_used : null,
       gclid:             m.gclid || null,
+      ad_consent:        m.ad_consent === "granted" || m.ad_consent === "denied" ? m.ad_consent : null,
       status:            "confirmed",
       fees_covered:      isExclusive,
     };

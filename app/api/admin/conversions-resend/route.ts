@@ -35,6 +35,8 @@ export async function POST(req: Request) {
     .not("gclid", "is", null)
     .neq("gclid", "")
     .not("status", "in", "(pending,cancelled)")
+    // Only customers who accepted advertising cookies may be sent to Google.
+    .eq("ad_consent", "granted")
     .gte("created_at", since)
     .order("created_at", { ascending: true });
 

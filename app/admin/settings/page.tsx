@@ -737,7 +737,7 @@ export default function SettingsPage() {
         <div className="max-w-3xl mt-6">
           <div className="bg-panel rounded-xl border border-fg/[0.06] overflow-hidden">
             <div className={sectionHeader}>
-              <div className="flex-1"><h2 className="text-base font-semibold text-fg">Google Ads conversions</h2><p className="text-sm text-fg-3 mt-0.5">Sends paid bookings back to Google Ads.</p></div>
+              <div className="flex-1"><h2 className="text-base font-semibold text-fg">Google Ads conversions</h2><p className="text-sm text-fg-3 mt-0.5">Sends paid bookings from ads back to Google Ads, for customers who accepted advertising cookies.</p></div>
               <div className="flex items-center gap-2 shrink-0">
                 <a href="/api/admin/conversions-export" download
                   className="flex items-center gap-2 px-4 py-2 bg-fg/[0.06] hover:bg-fg/[0.1] text-fg-2 border border-fg/[0.08] rounded-xl text-xs font-semibold transition-colors">
@@ -760,7 +760,7 @@ export default function SettingsPage() {
                     {adsResend.error === "Unauthorized" ? "Your sign-in has expired. Reload the page and sign in again." : adsResend.error}
                   </div>
                 ) : adsResend.count === 0 ? (
-                  <p className="text-fg-3 text-sm font-medium">No paid bookings with a Google Ads click in the last 89 days.</p>
+                  <p className="text-fg-3 text-sm font-medium">No bookings to send: none in the last 89 days came from an ad with the customer accepting advertising cookies.</p>
                 ) : (
                   <div className="space-y-2">
                     <p className="text-xs font-semibold text-fg-4">
