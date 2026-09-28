@@ -17,7 +17,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const DEFAULT_CONVERSION_NAME = "Native Stripe Purchase";
+// Must match an "Import > conversions from clicks" action in Google Ads.
+const DEFAULT_CONVERSION_NAME = "Booking (uploaded)";
 const TIMEZONE = "Europe/London";
 
 function csvField(v: string): string {
@@ -53,7 +54,9 @@ export async function GET(req: Request) {
     .from("bookings")
     .select("gclid, created_at, total_price, status")
     .not("gclid", "is", null)
-    .neq("status", "pending")
+    .not("status", "in", "(pending,cancelled)")
+    // Only customers who accepted advertising cookies may be sent to Google.
+    .eq("ad_consent", "granted")
     .gte("created_at", since)
     .order("created_at", { ascending: false });
 
@@ -67,7 +70,7 @@ export async function GET(req: Request) {
 
   const lines: string[] = [];
   lines.push(`Parameters:TimeZone=${TIMEZONE}`);
-  lines.push("Google Click ID,Conversion Name,Conversion Time,Conversion Value,Conversion Currency");
+  lines.push("Google Click ID,Conversion Name,Conversion Time,Conversion Value,Conversion Currency,Ad User Data Consent");
   for (const b of rows) {
     lines.push([
       csvField(String(b.gclid).trim()),
@@ -75,6 +78,7 @@ export async function GET(req: Request) {
       csvField(formatConversionTime(new Date(b.created_at))),
       (Number(b.total_price) || 0).toFixed(2),
       "GBP",
+      "Granted",
     ].join(","));
   }
 

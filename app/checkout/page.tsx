@@ -426,6 +426,13 @@ function CheckoutContent() {
       readCookie("ap_gclid") ||
       (wbraid ? `wbraid:${wbraid}` : "") ||
       (gbraid ? `gbraid:${gbraid}` : "");
+    // The visitor's advertising-cookie choice (components/CookieConsent.tsx).
+    // Only "granted" bookings are ever sent to Google Ads.
+    let adConsent = "";
+    try {
+      const c = JSON.parse(localStorage.getItem("apd_consent_v1") || "null");
+      if (c) adConsent = c.marketing ? "granted" : "denied";
+    } catch { /* private mode: unknown */ }
 
     try {
       const response = await fetch("/api/checkout", {
@@ -456,6 +463,7 @@ function CheckoutContent() {
             fast_track_count: String(fastTrackCount),
             lounge:         wantsLounge ? "yes" : "no",
             gclid,
+            ad_consent: adConsent,
             // FIX: removed duplicate camelCase keys — the route now normalises
             // everything via metaStr(); sending both keys caused ambiguity.
           },

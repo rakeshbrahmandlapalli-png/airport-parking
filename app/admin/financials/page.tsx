@@ -261,6 +261,26 @@ function FinancialsContent() {
     });
   }, [expenses, startDate, endDate]);
 
+  // Bookings that arrived with a Google Ads click id. Our own record, so it
+  // counts every one, whatever the customer chose on the cookie banner (only
+  // those who accepted are ever sent to Google). Ad spend = Marketing expenses.
+  const fromAds = useMemo(() => {
+    const rows = computed.filter((r) => String(r.gclid || "").trim() && (r.status || "").toLowerCase() !== "pending");
+    const spend = filteredExpenses
+      .filter((e) => String(e.category || "").toLowerCase() === "marketing")
+      .reduce((sum, e) => sum + Number(e.amount || 0), 0);
+    const taken = rows.reduce((sum, r) => sum + r.total, 0);
+    const profit = rows.reduce((sum, r) => sum + r.yourNet, 0);
+    return {
+      count: rows.length,
+      taken,
+      profit,
+      spend,
+      afterSpend: profit - spend,
+      sentToGoogle: rows.filter((r) => r.ad_consent === "granted").length,
+    };
+  }, [computed, filteredExpenses]);
+
   // ── Totals ──────────────────────────────────────────────────
   const totals = useMemo(() => {
     const baseTotals = computed.reduce(
@@ -671,6 +691,37 @@ function FinancialsContent() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* FROM GOOGLE ADS */}
+        <div className="mb-6 rounded-xl border border-fg/[0.08] bg-panel overflow-hidden">
+          <div className="px-5 py-4 border-b border-fg/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 className="text-base font-semibold text-fg">From Google Ads</h2>
+              <p className="text-sm text-fg-3">Bookings that came from an ad click, whether or not the customer accepted cookies.</p>
+            </div>
+            <button type="button" onClick={() => setShowExpenseModal(true)} className="text-sm text-blue-400 hover:underline underline-offset-4 self-start sm:self-auto">
+              Add ad spend
+            </button>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-5 divide-x divide-fg/[0.08]">
+            {[
+              { label: "Bookings from ads", value: `${fromAds.count}`, cls: "text-fg" },
+              { label: "Taken", value: `£${fromAds.taken.toFixed(2)}`, cls: "text-fg" },
+              { label: "Our profit", value: `£${fromAds.profit.toFixed(2)}`, cls: "text-fg" },
+              { label: "Ad spend", value: fromAds.spend ? `−£${fromAds.spend.toFixed(2)}` : "Not added", cls: "text-fg-2" },
+              { label: "Profit after ad spend", value: `${fromAds.afterSpend < 0 ? "−" : ""}£${Math.abs(fromAds.afterSpend).toFixed(2)}`, cls: fromAds.afterSpend < 0 ? "text-red-400" : "text-emerald-400" },
+            ].map((m) => (
+              <div key={m.label} className="p-4 md:p-5 border-t border-fg/[0.08] lg:border-t-0">
+                <p className="text-sm text-fg-3">{m.label}</p>
+                <p className={`mt-1 text-xl font-semibold tabular-nums ${m.cls}`}>{m.value}</p>
+              </div>
+            ))}
+          </div>
+          <p className="px-5 py-3 border-t border-fg/[0.08] bg-panel-2 text-xs text-fg-4">
+            Ad spend is your expenses in the Marketing category for this period: add each Google Ads bill as a Marketing expense.
+            {" "}{fromAds.sentToGoogle} of {fromAds.count} can be sent to Google (customer accepted advertising cookies).
+          </p>
         </div>
 
         <p className="mb-8 text-sm text-fg-3">

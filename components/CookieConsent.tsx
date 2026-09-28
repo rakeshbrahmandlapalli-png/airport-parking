@@ -79,8 +79,10 @@ export default function CookieConsent() {
   const pathname = usePathname() ?? "";
   const [open, setOpen] = useState(false);
   const [showPrefs, setShowPrefs] = useState(false);
-  const [analytics, setAnalytics] = useState(true);
-  const [marketing, setMarketing] = useState(true);
+  // Unticked until the visitor ticks them: pre-ticked boxes aren't valid
+  // consent under UK GDPR.
+  const [analytics, setAnalytics] = useState(false);
+  const [marketing, setMarketing] = useState(false);
 
   // On mount: apply any stored choice, otherwise show the banner.
   useEffect(() => {
@@ -97,8 +99,8 @@ export default function CookieConsent() {
     // Allow re-opening from a footer link, etc.
     const reopen = () => {
       const current = readStored();
-      setAnalytics(current ? current.analytics : true);
-      setMarketing(current ? current.marketing : true);
+      setAnalytics(current ? current.analytics : false);
+      setMarketing(current ? current.marketing : false);
       setShowPrefs(true);
       setOpen(true);
     };
@@ -131,7 +133,7 @@ export default function CookieConsent() {
     <label className={`flex items-center justify-between gap-4 ${disabled ? "opacity-50" : "cursor-pointer"}`}>
       <span>
         <span className="block text-[13px] font-medium text-white">{label}</span>
-        <span className="block text-[11px] leading-snug text-slate-400">{desc}</span>
+        <span className="block text-xs leading-snug text-slate-400">{desc}</span>
       </span>
       <input
         type="checkbox"
@@ -149,7 +151,7 @@ export default function CookieConsent() {
         <div className="p-4">
           <div className="flex items-center gap-2">
             <Cookie className="w-4 h-4 text-blue-400 shrink-0" aria-hidden="true" />
-            <h2 className="text-[13px] font-medium text-white">Cookies</h2>
+            <h2 className="text-sm font-semibold text-white">Help us keep prices low</h2>
             <button
               onClick={rejectAll}
               aria-label="Reject non-essential cookies and close"
@@ -159,39 +161,39 @@ export default function CookieConsent() {
             </button>
           </div>
 
-          <p className="mt-2 text-[12px] leading-relaxed text-slate-400">
-            We use essential cookies to run the site and, with your consent, analytics and advertising
-            cookies to improve it.{" "}
-            <Link href="/privacy" className="text-blue-400 hover:underline">Privacy Policy</Link>.
+          <p className="mt-2 text-[13px] leading-relaxed text-slate-300">
+            With your OK, we use cookies to see which of our ads lead to bookings, so we spend less on
+            advertising and can keep prices down. Booking works exactly the same either way.{" "}
+            <Link href="/privacy" className="text-blue-400 hover:underline">Privacy policy</Link>
           </p>
 
           {showPrefs && (
             <div className="mt-3 space-y-3 border-t border-slate-700/60 pt-3">
-              {toggleRow("Essential", "Required for booking and checkout. Always on.", true, undefined, true)}
-              {toggleRow("Analytics", "Google Analytics usage statistics.", analytics, setAnalytics)}
-              {toggleRow("Marketing", "Google Ads conversion measurement.", marketing, setMarketing)}
+              {toggleRow("Essential", "Needed for searching, booking and paying. Always on.", true, undefined, true)}
+              {toggleRow("Analytics", "Anonymous statistics on how the site is used (Google Analytics).", analytics, setAnalytics)}
+              {toggleRow("Advertising", "Tells Google which of our ads led to a booking.", marketing, setMarketing)}
             </div>
           )}
 
           <div className="mt-4 flex items-center gap-2">
             <button
               onClick={showPrefs ? savePrefs : acceptAll}
-              className="flex-1 h-9 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[12px] font-semibold transition-colors"
+              className="flex-1 h-10 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors"
             >
-              {showPrefs ? "Save" : "Accept"}
+              {showPrefs ? "Save choices" : "Accept"}
             </button>
             <button
               onClick={rejectAll}
-              className="flex-1 h-9 rounded-lg border border-slate-600 hover:border-slate-400 text-slate-200 text-[12px] font-semibold transition-colors"
+              className="flex-1 h-10 rounded-lg border border-slate-500 hover:border-slate-300 text-white text-sm font-semibold transition-colors"
             >
               Reject
             </button>
             {!showPrefs && (
               <button
                 onClick={() => setShowPrefs(true)}
-                className="h-9 px-2.5 text-slate-400 hover:text-white text-[12px] font-medium transition-colors"
+                className="h-10 px-2.5 text-slate-300 hover:text-white text-sm font-medium transition-colors"
               >
-                Manage
+                Choose
               </button>
             )}
           </div>

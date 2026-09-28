@@ -178,6 +178,9 @@ export async function reportOfflineConversion(input: OfflineConversionInput): Pr
           conversionValue: Number(input.value) || 0,
           currencyCode: input.currency || "GBP",
           orderId: input.orderId,
+          // Callers only upload bookings where the customer accepted
+          // advertising cookies (bookings.ad_consent = 'granted').
+          consent: { adUserData: "GRANTED" },
         },
       ],
       partialFailure: true,

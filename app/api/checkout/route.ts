@@ -399,6 +399,7 @@ async function createSession({
     fast_track_count: metaStr(metadata.fast_track_count, "0"),
     lounge:         metaStr(metadata.lounge, "no"),
     gclid:          metaStr(metadata.gclid),
+    ad_consent:     ["granted", "denied"].includes(String(metadata.ad_consent)) ? String(metadata.ad_consent) : "",
   };
 
   // Guard: Stripe allows max 50 metadata keys

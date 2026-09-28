@@ -173,6 +173,7 @@ export async function POST(req: Request) {
             ? Number(m.commission_percentage)
             : null,
         gclid: m.gclid || null,
+        ad_consent: m.ad_consent === "granted" || m.ad_consent === "denied" ? m.ad_consent : null,
         fees_covered: isExclusive,
       };
 
@@ -258,11 +259,13 @@ export async function POST(req: Request) {
           }).catch((err) => logger.error("[WEBHOOK] Twilio Trigger Failed:", err));
         }
 
-        // 🟢 Server-side Google Ads conversion — fires for EVERY paid booking,
+        // 🟢 Server-side Google Ads conversion — for paid bookings from an ad,
         // even if the shopper never returned to /success or blocks the tag.
+        // Only when the customer accepted advertising cookies: UK GDPR/PECR and
+        // Google's EU user consent policy don't allow uploading anyone else.
         // Uses Stripe session id as orderId so it dedupes with the client-side
         // conversion (which also passes session id as transaction_id).
-        if (m.gclid) {
+        if (m.gclid && m.ad_consent === "granted") {
           const value = Number(newBooking.total_price) || 0;
           const result = await reportOfflineConversion({
             gclid: m.gclid,
