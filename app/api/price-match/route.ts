@@ -17,8 +17,8 @@ export async function POST(req: Request) {
       // Use an email address tied to your verified aeroparkdirect.co.uk domain
       from: 'AeroPark Direct <info@aeroparkdirect.co.uk>',
       to: 'info@aeroparkdirect.co.uk',
-      subject: `Price Match Request: ${String(name || '').slice(0, 80)}`,
-      text: `New Price Match Request received via www.aeroparkdirect.co.uk\n\nCustomer Name: ${name}\nEmail: ${email}\nCompetitor Link/Quote: ${link}`,
+      subject: `Cheaper quote sent in: ${String(name || '').slice(0, 80)}`,
+      text: `A customer sent in a cheaper quote via "Seen it cheaper?" on www.aeroparkdirect.co.uk. Reply to them by email.\n\nName: ${name}\nEmail: ${email}\nOther quote: ${link}`,
     });
 
     return NextResponse.json({ success: true });

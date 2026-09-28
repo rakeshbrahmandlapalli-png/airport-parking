@@ -12,10 +12,10 @@ export default function TermsPage() {
       <SiteHeader />
 
       <div className="max-w-3xl mx-auto px-6 py-12 md:py-20">
-        <h1 className="text-3xl md:text-5xl font-black text-slate-900 mb-4 uppercase tracking-tight">Terms &amp; Conditions.</h1>
+        <h1 className="text-3xl md:text-4xl font-semibold text-slate-900 mb-4 tracking-tight">Terms and conditions</h1>
         <p className="text-slate-500 font-medium mb-12">Effective from: {EFFECTIVE_FROM}</p>
 
-        <div className="prose prose-slate max-w-none prose-headings:font-black prose-headings:uppercase prose-headings:tracking-tight space-y-10 text-slate-600 text-sm md:text-base leading-relaxed">
+        <div className="prose prose-slate max-w-none prose-headings:font-semibold prose-headings:text-slate-900 space-y-10 text-slate-600 text-sm md:text-base leading-relaxed">
 
           {/* WHO WE ARE */}
           <div className="bg-slate-100 p-6 md:p-8 rounded-2xl border border-slate-200">
