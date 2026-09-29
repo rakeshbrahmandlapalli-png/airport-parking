@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Activity, Building2, ExternalLink, LayoutDashboard, LogOut, Menu, MessageCircle,
+  Activity, BookOpen, Building2, ExternalLink, LayoutDashboard, LogOut, Menu, MessageCircle,
   PiggyBank, Settings2, Tags, X, type LucideIcon,
 } from "lucide-react";
 import Logo from "@/components/site/Logo";
@@ -23,6 +23,7 @@ const LINKS: { href: string; label: string; Icon: LucideIcon }[] = [
   { href: "/admin/promos",     label: "Promo codes",  Icon: Tags },
   { href: "/admin/financials", label: "Financials",   Icon: PiggyBank },
   { href: "/admin/messages",   label: "Messages",     Icon: MessageCircle },
+  { href: "/admin/guides",     label: "Guides",       Icon: BookOpen },
   { href: "/admin/activity",   label: "Activity log", Icon: Activity },
   { href: "/admin/settings",   label: "Settings",     Icon: Settings2 },
 ];
