@@ -24,6 +24,7 @@ export const LUTON_LINKS: NavLink[] = [
 export const MAIN_LINKS: NavLink[] = [
   { label: "Services", href: "/services" },
   { label: "How it works", href: "/how-it-works" },
+  { label: "Guides", href: "/guides" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
 ];
@@ -31,6 +32,7 @@ export const MAIN_LINKS: NavLink[] = [
 export const HELP_LINKS: NavLink[] = [
   { label: "How it works", href: "/how-it-works" },
   { label: "Price guide", href: "/airport-parking-price-guide" },
+  { label: "Parking guides", href: "/guides" },
   { label: "Manage a booking", href: "/manage" },
   // Listed on its own, not buried inside Manage Booking. Someone who has
   // deleted the confirmation email has no other way in, and a cancellation
