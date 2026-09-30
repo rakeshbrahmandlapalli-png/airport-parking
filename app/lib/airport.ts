@@ -66,6 +66,25 @@ const FALLBACK = {
 };
 
 /**
+ * AeroPark handles every cancellation and change itself, so an operator's own
+ * policy line ("Booking Cancellation/Amendments … email us 5 days before …")
+ * must never reach a customer: it contradicts our 24-hour free cancellation
+ * and sends them to the wrong people. Lines about a FLIGHT being cancelled
+ * ("we monitor your flight … even if it is cancelled") are kept.
+ */
+export function withoutOperatorCancellationPolicy(text: string): string {
+  const parts = text.split(/(<br\s*\/?>\s*|\r?\n)/i);
+  const out: string[] = [];
+  for (let i = 0; i < parts.length; i += 2) {
+    const seg = parts[i];
+    const sep = parts[i + 1] ?? "";
+    if (/\b(cancel\w*|amend\w*)\b/i.test(seg) && !/flight/i.test(seg)) continue;
+    out.push(seg + sep);
+  }
+  return out.join("").replace(/(\s|<br\s*\/?>)+$/i, "").trim();
+}
+
+/**
  * The arrival or return wording to show for THIS booking at THIS airport.
  *
  * Rules, in order:
@@ -102,12 +121,12 @@ export function instructionsFor(
       ? (code === "LTN" ? company.on_arrival_ltn : company.on_arrival_lhr)
       : (code === "LTN" ? company.on_return_ltn : company.on_return_lhr)) ?? "",
     ).trim();
-  if (specific) return { text: specific, source: "specific" };
+  if (specific) return { text: withoutOperatorCancellationPolicy(specific), source: "specific" };
 
   const generic = String((kind === "arrival" ? company.on_arrival : company.on_return) ?? "").trim();
   const serves = airportsOf(company);
   if (generic && serves.length === 1 && serves[0] === code) {
-    return { text: generic, source: "generic" };
+    return { text: withoutOperatorCancellationPolicy(generic), source: "generic" };
   }
   if (generic) {
     return {
