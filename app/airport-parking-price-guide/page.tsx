@@ -51,7 +51,7 @@ export default async function PriceGuidePage() {
   const [{ data: companies }, settings] = await Promise.all([
     supabase
       .from("companies")
-      .select("id, name, category, is_active, operates_at_luton, operates_at_heathrow, ltn_sold_out, lhr_sold_out, luton_price, heathrow_price, ltn_day2_price, lhr_day2_price, ltn_day5_price, lhr_day5_price, ltn_day8_price, lhr_day8_price, ltn_day11_price, lhr_day11_price, ltn_day14_price, lhr_day14_price, price_modifier, dynamic_surcharge_percent, api_token"),
+      .select("*"),
     loadPricingSettings(supabase).catch(() => DEFAULT_SETTINGS),
   ]);
 
