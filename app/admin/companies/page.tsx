@@ -4,6 +4,7 @@ import { logger } from "@/app/lib/logger";
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { supabase } from "@/app/lib/supabase";
 import { recordAdminAction } from "@/app/lib/audit-client";
+import { DAY_LIST_LENGTH, parseDayList, pivotsFromDayList, staticBase } from "@/app/lib/pricing";
 import { useRouter } from "next/navigation";
 import { AdminSidebar, AdminMobileNav } from "@/components/admin/AdminNav";
 import {
@@ -130,6 +131,11 @@ function getField(editing: any, fresh: any, key: string) {
 function setField(editing: any, setEditing: (v: any) => void, fresh: any, setFresh: (v: any) => void, key: string, value: any) {
   if (editing) setEditing({ ...editing, [key]: value });
   else setFresh({ ...fresh, [key]: value });
+}
+
+function setFields(editing: any, setEditing: (v: any) => void, fresh: any, setFresh: (v: any) => void, values: Record<string, any>) {
+  if (editing) setEditing({ ...editing, ...values });
+  else setFresh({ ...fresh, ...values });
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -506,6 +512,58 @@ function CompanyLogo({ logoUrl, name }: { logoUrl: string; name: string }) {
 }
 
 // ─── REVIEW SECTION ───────────────────────────────────────────────────────────
+// Exact price for each day (1-30). When set, it overrides the pivot table for
+// those stays and the pivots are worked out from it (see pivotsFromDayList).
+function DayPriceTable({ prices, onChange, makeStarterList, inputCls, labelCls }: {
+  prices: number[] | null;
+  onChange: (next: number[] | null) => void;
+  makeStarterList: () => number[];
+  inputCls: string;
+  labelCls: string;
+}) {
+  if (!prices) {
+    return (
+      <div className="bg-panel-2 p-6 rounded-2xl border border-fg/[0.08] flex flex-col md:flex-row md:items-center gap-4">
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-fg">Price for each day (1&ndash;30)</p>
+          <p className="text-xs text-fg-4 mt-1">Off. Prices between the days above are worked out proportionally. Turn this on to set an exact total for every stay from 1 to 30 days.</p>
+        </div>
+        <button type="button" onClick={() => onChange(makeStarterList())} className="px-4 py-3 rounded-xl text-xs font-semibold border border-fg/[0.12] bg-panel-3 text-fg hover:border-fg/[0.18] transition-colors flex items-center justify-center gap-2">
+          <Plus className="w-3.5 h-3.5" /> Set a price for each day
+        </button>
+      </div>
+    );
+  }
+  const list = Array.from({ length: DAY_LIST_LENGTH }, (_, i) => prices[i] ?? 0);
+  const missing = list.filter(p => !(p > 0)).length;
+  return (
+    <div className="bg-panel-2 p-6 rounded-2xl border border-fg/[0.08]">
+      <div className="flex flex-col md:flex-row md:items-start gap-4 mb-5">
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-fg">Price for each day (1&ndash;30)</p>
+          <p className="text-xs text-fg-4 mt-1">The exact total charged for each length of stay. The Day 1 price and the price table above are filled in from this list; stays over 30 days carry on at the average daily rate of days 22&ndash;30.</p>
+        </div>
+        <button type="button" onClick={() => { if (window.confirm("Stop using a price for each day? Prices will go back to being worked out from the price table above.")) onChange(null); }} className="px-4 py-3 rounded-xl text-xs font-semibold border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors flex items-center justify-center gap-2">
+          <Trash2 className="w-3.5 h-3.5" /> Turn off
+        </button>
+      </div>
+      {missing > 0 && (
+        <p className="text-xs text-amber-400 mb-4 flex items-center gap-2"><AlertCircle className="w-3.5 h-3.5 shrink-0" /> {missing} day{missing === 1 ? " has" : "s have"} no price, so {missing === 1 ? "it falls" : "they fall"} back to the price table.</p>
+      )}
+      <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-6 gap-3">
+        {list.map((price, i) => (
+          <div key={i} className="space-y-1.5">
+            <label className={`${labelCls} !mb-0 !text-xs`}>Day {i + 1}</label>
+            <input type="number" step="0.01" min="0" inputMode="decimal" value={price || ""} placeholder="0.00"
+              onChange={e => { const next = [...list]; next[i] = parseFloat(e.target.value) || 0; onChange(next); }}
+              className={`${inputCls} !py-2.5 !px-3 !text-emerald-400 [-webkit-text-fill-color:currentColor]`} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ReviewSection({ airport, color, reviews, onAdd, onRemove, onUpdate }: {
   airport: "ltn" | "lhr"; color: "blue" | "purple";
   reviews: Review[]; onAdd: () => void; onRemove: (idx: number) => void; onUpdate: (idx: number, field: keyof Review, value: any) => void;
@@ -1447,7 +1505,7 @@ export default function AdminCompaniesPage() {
                         {getField(editingCompany, newCompany, "operates_at_luton") && (
                           <>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-fg/[0.08] pb-8">
-                              <div className="space-y-2"><label className={labelCls}>Day 1 price (£)</label><input type="number" step="0.01" value={getField(editingCompany, newCompany, "luton_price") || 0} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "luton_price", parseFloat(e.target.value) || 0)} className={`${inputCls} !text-2xl !text-blue-400 [-webkit-text-fill-color:currentColor]`} /></div>
+                              <div className="space-y-2"><label className={labelCls}>Day 1 price (£)</label><input type="number" step="0.01" value={getField(editingCompany, newCompany, "luton_price") || 0} readOnly={!!parseDayList(getField(editingCompany, newCompany, "ltn_day_prices"))} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "luton_price", parseFloat(e.target.value) || 0)} className={`${inputCls} read-only:opacity-60 !text-2xl !text-blue-400 [-webkit-text-fill-color:currentColor]`} /></div>
                               <div className="flex flex-col gap-3 pt-6">
                                 <button type="button" onClick={() => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "ltn_sold_out", !getField(editingCompany, newCompany, "ltn_sold_out"))} className={`flex-1 py-3 rounded-xl text-xs font-semibold border transition-colors flex items-center justify-center gap-2 ${getField(editingCompany, newCompany, "ltn_sold_out") ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-panel-3 text-fg-3 border-fg/[0.12] hover:border-fg/[0.18]"}`}><AlertOctagon className="w-3.5 h-3.5" /> Mark Sold Out</button>
                                 <button type="button" onClick={() => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "ltn_featured", !getField(editingCompany, newCompany, "ltn_featured"))} className={`flex-1 py-3 rounded-xl text-xs font-semibold border transition-colors flex items-center justify-center gap-2 ${getField(editingCompany, newCompany, "ltn_featured") ? "bg-amber-500/20 text-amber-400 border-amber-500/30" : "bg-panel-3 text-fg-3 border-fg/[0.12] hover:border-fg/[0.18]"}`}><Award className="w-3.5 h-3.5" /> Featured Provider</button>
@@ -1458,10 +1516,17 @@ export default function AdminCompaniesPage() {
                               <p className="text-xs text-fg-4 mb-5">The total price for each length of stay. Stays in between are priced proportionally.</p>
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 {[{ label: "Day 2 total", key: "ltn_day2_price" }, { label: "Day 5 total", key: "ltn_day5_price" }, { label: "Day 8 total", key: "ltn_day8_price" }, { label: "Day 11 total", key: "ltn_day11_price" }, { label: "Day 14 total", key: "ltn_day14_price" }, { label: "Day 17 total", key: "ltn_day17_price" }, { label: "Day 22 total", key: "ltn_day22_price" }, { label: "Day 32 total", key: "ltn_day32_price" }].map(pivot => (
-                                  <div key={pivot.key} className="space-y-2"><label className={labelCls}>{pivot.label} (£)</label><input type="number" step="0.01" value={getField(editingCompany, newCompany, pivot.key) || 0} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, pivot.key, parseFloat(e.target.value) || 0)} className={`${inputCls} !py-3 !text-emerald-400 [-webkit-text-fill-color:currentColor]`} /></div>
+                                  <div key={pivot.key} className="space-y-2"><label className={labelCls}>{pivot.label} (£)</label><input type="number" step="0.01" value={getField(editingCompany, newCompany, pivot.key) || 0} readOnly={!!parseDayList(getField(editingCompany, newCompany, "ltn_day_prices"))} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, pivot.key, parseFloat(e.target.value) || 0)} className={`${inputCls} read-only:opacity-60 !py-3 !text-emerald-400 [-webkit-text-fill-color:currentColor]`} /></div>
                                 ))}
                               </div>
                             </div>
+                            <DayPriceTable
+                              prices={parseDayList(getField(editingCompany, newCompany, "ltn_day_prices"))}
+                              onChange={next => setFields(editingCompany, setEditingCompany, newCompany, setNewCompany, next ? { ltn_day_prices: next, ...pivotsFromDayList(next, true) } : { ltn_day_prices: null })}
+                              makeStarterList={() => Array.from({ length: DAY_LIST_LENGTH }, (_, i) => Math.round(staticBase({ ...(editingCompany || newCompany), ltn_day_prices: null }, true, i + 1) * 100) / 100)}
+                              inputCls={inputCls}
+                              labelCls={labelCls}
+                            />
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8 border-t border-fg/[0.08]">
                               <div className="space-y-2"><label className={labelCls}>Arrival instructions (HTML)</label><textarea rows={5} value={getField(editingCompany, newCompany, "on_arrival_ltn") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "on_arrival_ltn", e.target.value)} className={textareaCls} /></div>
                               <div className="space-y-2"><label className={labelCls}>Return instructions (HTML)</label><textarea rows={5} value={getField(editingCompany, newCompany, "on_return_ltn") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "on_return_ltn", e.target.value)} className={textareaCls} /></div>
@@ -1494,7 +1559,7 @@ export default function AdminCompaniesPage() {
                         {getField(editingCompany, newCompany, "operates_at_heathrow") && (
                           <>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-fg/[0.08] pb-8">
-                              <div className="space-y-2"><label className={labelCls}>Day 1 price (£)</label><input type="number" step="0.01" value={getField(editingCompany, newCompany, "heathrow_price") || 0} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "heathrow_price", parseFloat(e.target.value) || 0)} className={`${inputCls} !text-2xl !text-purple-400 [-webkit-text-fill-color:currentColor]`} /></div>
+                              <div className="space-y-2"><label className={labelCls}>Day 1 price (£)</label><input type="number" step="0.01" value={getField(editingCompany, newCompany, "heathrow_price") || 0} readOnly={!!parseDayList(getField(editingCompany, newCompany, "lhr_day_prices"))} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "heathrow_price", parseFloat(e.target.value) || 0)} className={`${inputCls} read-only:opacity-60 !text-2xl !text-purple-400 [-webkit-text-fill-color:currentColor]`} /></div>
                               <div className="flex flex-col gap-3 pt-6">
                                 <button type="button" onClick={() => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "lhr_sold_out", !getField(editingCompany, newCompany, "lhr_sold_out"))} className={`flex-1 py-3 rounded-xl text-xs font-semibold border transition-colors flex items-center justify-center gap-2 ${getField(editingCompany, newCompany, "lhr_sold_out") ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-panel-3 text-fg-3 border-fg/[0.12] hover:border-fg/[0.18]"}`}><AlertOctagon className="w-3.5 h-3.5" /> Mark Sold Out</button>
                                 <button type="button" onClick={() => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "lhr_featured", !getField(editingCompany, newCompany, "lhr_featured"))} className={`flex-1 py-3 rounded-xl text-xs font-semibold border transition-colors flex items-center justify-center gap-2 ${getField(editingCompany, newCompany, "lhr_featured") ? "bg-amber-500/20 text-amber-400 border-amber-500/30" : "bg-panel-3 text-fg-3 border-fg/[0.12] hover:border-fg/[0.18]"}`}><Award className="w-3.5 h-3.5" /> Featured Provider</button>
@@ -1505,10 +1570,17 @@ export default function AdminCompaniesPage() {
                               <p className="text-xs text-fg-4 mb-5">The total price for each length of stay.</p>
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 {[{ label: "Day 2 total", key: "lhr_day2_price" }, { label: "Day 5 total", key: "lhr_day5_price" }, { label: "Day 8 total", key: "lhr_day8_price" }, { label: "Day 11 total", key: "lhr_day11_price" }, { label: "Day 14 total", key: "lhr_day14_price" }, { label: "Day 17 total", key: "lhr_day17_price" }, { label: "Day 22 total", key: "lhr_day22_price" }, { label: "Day 32 total", key: "lhr_day32_price" }].map(pivot => (
-                                  <div key={pivot.key} className="space-y-2"><label className={labelCls}>{pivot.label} (£)</label><input type="number" step="0.01" value={getField(editingCompany, newCompany, pivot.key) || 0} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, pivot.key, parseFloat(e.target.value) || 0)} className={`${inputCls} !py-3 !text-emerald-400 [-webkit-text-fill-color:currentColor]`} /></div>
+                                  <div key={pivot.key} className="space-y-2"><label className={labelCls}>{pivot.label} (£)</label><input type="number" step="0.01" value={getField(editingCompany, newCompany, pivot.key) || 0} readOnly={!!parseDayList(getField(editingCompany, newCompany, "lhr_day_prices"))} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, pivot.key, parseFloat(e.target.value) || 0)} className={`${inputCls} read-only:opacity-60 !py-3 !text-emerald-400 [-webkit-text-fill-color:currentColor]`} /></div>
                                 ))}
                               </div>
                             </div>
+                            <DayPriceTable
+                              prices={parseDayList(getField(editingCompany, newCompany, "lhr_day_prices"))}
+                              onChange={next => setFields(editingCompany, setEditingCompany, newCompany, setNewCompany, next ? { lhr_day_prices: next, ...pivotsFromDayList(next, false) } : { lhr_day_prices: null })}
+                              makeStarterList={() => Array.from({ length: DAY_LIST_LENGTH }, (_, i) => Math.round(staticBase({ ...(editingCompany || newCompany), lhr_day_prices: null }, false, i + 1) * 100) / 100)}
+                              inputCls={inputCls}
+                              labelCls={labelCls}
+                            />
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8 border-t border-fg/[0.08]">
                               <div className="space-y-2"><label className={labelCls}>Arrival instructions (HTML)</label><textarea rows={5} value={getField(editingCompany, newCompany, "on_arrival_lhr") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "on_arrival_lhr", e.target.value)} className={textareaCls} /></div>
                               <div className="space-y-2"><label className={labelCls}>Return instructions (HTML)</label><textarea rows={5} value={getField(editingCompany, newCompany, "on_return_lhr") || ""} onChange={e => setField(editingCompany, setEditingCompany, newCompany, setNewCompany, "on_return_lhr", e.target.value)} className={textareaCls} /></div>
