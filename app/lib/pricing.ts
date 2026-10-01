@@ -155,9 +155,25 @@ export function interpolateTier(
   return p32 + ((p32 - p22) / 10) * (duration - 32);
 }
 
+// ── Exact day-by-day price list (optional) ───────────────────────────────────
+// lhr_day_prices / ltn_day_prices: JSON array of totals, index 0 = 1 day.
+// Used as-is for any duration it covers; longer stays fall back to the pivots.
+function dayListPrice(company: any, isLuton: boolean, duration: number): number | null {
+  let list = isLuton ? company?.ltn_day_prices : company?.lhr_day_prices;
+  if (typeof list === "string") {
+    try { list = JSON.parse(list); } catch { return null; }
+  }
+  if (!Array.isArray(list) || duration < 1 || duration > list.length) return null;
+  const price = Number(list[duration - 1]);
+  return price > 0 ? price : null;
+}
+
 // ── Compute base price from manual pivots (Luton/Heathrow specific) ──────────
 function staticBase(company: any, isLuton: boolean, duration: number): number {
-  const pick = (lhrKey: string, ltnKey: string, fb: number) => 
+  const listed = dayListPrice(company, isLuton, duration);
+  if (listed !== null) return listed;
+
+  const pick = (lhrKey: string, ltnKey: string, fb: number) =>
     parsePrice(isLuton ? company[ltnKey] : company[lhrKey], fb);
   
   const p1 = parsePrice(isLuton ? company.luton_price : company.heathrow_price, 0);
