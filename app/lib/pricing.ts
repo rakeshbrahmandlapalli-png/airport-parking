@@ -158,18 +158,38 @@ export function interpolateTier(
 // ── Exact day-by-day price list (optional) ───────────────────────────────────
 // lhr_day_prices / ltn_day_prices: JSON array of totals, index 0 = 1 day.
 // Used as-is for any duration it covers; longer stays fall back to the pivots.
-function dayListPrice(company: any, isLuton: boolean, duration: number): number | null {
-  let list = isLuton ? company?.ltn_day_prices : company?.lhr_day_prices;
+export const DAY_LIST_LENGTH = 30;
+
+export function parseDayList(raw: any): number[] | null {
+  let list = raw;
   if (typeof list === "string") {
     try { list = JSON.parse(list); } catch { return null; }
   }
-  if (!Array.isArray(list) || duration < 1 || duration > list.length) return null;
-  const price = Number(list[duration - 1]);
+  return Array.isArray(list) && list.length > 0 ? list.map(v => Number(v) || 0) : null;
+}
+
+function dayListPrice(company: any, isLuton: boolean, duration: number): number | null {
+  const list = parseDayList(isLuton ? company?.ltn_day_prices : company?.lhr_day_prices);
+  if (!list || duration < 1 || duration > list.length) return null;
+  const price = list[duration - 1];
   return price > 0 ? price : null;
 }
 
+// Pivot fields that match a full 30-day list, so the Day 1 price shown in
+// admin/listings agrees with it and stays past day 30 carry on at the list's
+// average daily rate for days 22-30.
+export function pivotsFromDayList(list: number[], isLuton: boolean): Record<string, number> {
+  const at = (day: number) => Math.round((Number(list[day - 1]) || 0) * 100) / 100;
+  const pre = isLuton ? "ltn" : "lhr";
+  const out: Record<string, number> = { [isLuton ? "luton_price" : "heathrow_price"]: at(1) };
+  for (const d of [2, 5, 8, 11, 14, 17, 22]) out[`${pre}_day${d}_price`] = at(d);
+  const daily = (at(30) - at(22)) / 8;
+  out[`${pre}_day32_price`] = Math.round((at(30) + 2 * daily) * 100) / 100;
+  return out;
+}
+
 // ── Compute base price from manual pivots (Luton/Heathrow specific) ──────────
-function staticBase(company: any, isLuton: boolean, duration: number): number {
+export function staticBase(company: any, isLuton: boolean, duration: number): number {
   const listed = dayListPrice(company, isLuton, duration);
   if (listed !== null) return listed;
 
