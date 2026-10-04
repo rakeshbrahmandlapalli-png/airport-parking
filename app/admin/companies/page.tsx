@@ -716,7 +716,7 @@ export default function AdminCompaniesPage() {
         entityType: "company",
         metadata: { label: newCompany.name, after: "onboarded" },
       });
-      closeModal(); setNewCompany({ ...defaultCompany });
+      doClose(); setNewCompany({ ...defaultCompany });
       await fetchCompanies();
       showToast(`${newCompany.name} onboarded successfully!`, "success");
     } catch (error: any) { showToast("Error adding partner: " + error.message, "error"); } finally { setIsSaving(false); }
@@ -761,7 +761,9 @@ export default function AdminCompaniesPage() {
       setHasUnsavedChanges(false);
       await fetchCompanies();
       showToast(`${editingCompany.name} saved successfully!`, "success");
-      closeModal();
+      // Saved, so close outright: closeModal() would read this render's stale
+      // hasUnsavedChanges (still true) and ask to discard what was just saved.
+      doClose();
     } catch (error: any) { showToast("Error updating partner: " + error.message, "error"); } finally { setIsSaving(false); }
   };
 
