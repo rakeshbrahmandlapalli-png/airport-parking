@@ -95,6 +95,7 @@ export default function PrivacyPage() {
                   <tr><td className="border border-slate-200 px-3 py-2">Customer support and handling complaints</td><td className="border border-slate-200 px-3 py-2">Legitimate interests</td></tr>
                   <tr><td className="border border-slate-200 px-3 py-2">Optional marketing emails and review requests</td><td className="border border-slate-200 px-3 py-2">Consent</td></tr>
                   <tr><td className="border border-slate-200 px-3 py-2">Analytics and advertising cookies (e.g. Google)</td><td className="border border-slate-200 px-3 py-2">Consent</td></tr>
+                  <tr><td className="border border-slate-200 px-3 py-2">Site experience analytics (Microsoft Clarity)</td><td className="border border-slate-200 px-3 py-2">Legitimate interests</td></tr>
                   <tr><td className="border border-slate-200 px-3 py-2">Keeping transaction records for tax and accounting</td><td className="border border-slate-200 px-3 py-2">Legal obligation</td></tr>
                 </tbody>
               </table>
@@ -112,6 +113,7 @@ export default function PrivacyPage() {
               <li><strong>Resend</strong> &mdash; sending transactional emails (confirmations, receipts).</li>
               <li><strong>Twilio</strong> &mdash; sending SMS booking notifications, where used.</li>
               <li><strong>Google</strong> &mdash; website analytics and advertising conversion measurement (only with your cookie consent).</li>
+              <li><strong>Microsoft</strong> &mdash; Microsoft Clarity, which records how visitors use our pages (clicks, scrolling, heatmaps and session replays) so we can fix problems and improve the site.</li>
               <li><strong>Vercel</strong> &mdash; hosting for this website.</li>
               <li><strong>Airport authorities</strong> &mdash; we may share your VRM with London Luton Airport Operations Limited (LLAOL) or Heathrow Airport Limited (HAL) for Automatic Number Plate Recognition (ANPR) barrier access.</li>
               <li><strong>Authorities &amp; advisers</strong> &mdash; law enforcement, regulators or our professional advisers where we are legally required or permitted to do so.</li>
@@ -133,9 +135,10 @@ export default function PrivacyPage() {
           {/* COOKIES */}
           <section>
             <h2 className="text-xl md:text-2xl text-slate-900 mb-4 border-l-4 border-blue-600 pl-4">6. Cookies &amp; Tracking</h2>
-            <p>We use cookies and similar technologies for two purposes:</p>
+            <p>We use cookies and similar technologies for three purposes:</p>
             <ul className="list-disc pl-5 mt-2 space-y-2">
               <li><strong>Essential cookies</strong> &mdash; required for the site and checkout to function. These do not need consent.</li>
+              <li><strong>Site experience analytics</strong> &mdash; Microsoft Clarity records how visitors use our pages (clicks, scrolling and session replays) so we can find and fix problems. It runs for all visitors and sets its own cookies (such as <code>_clck</code>, <code>_clsk</code> and <code>MUID</code>), based on our legitimate interest in keeping the site working well.</li>
               <li><strong>Analytics &amp; advertising cookies</strong> &mdash; such as Google Ads/Analytics, used to measure performance and ad conversions. We only set these <strong>with your consent</strong>.</li>
             </ul>
             <p className="mt-3">You can withdraw consent or manage cookies at any time through your browser settings, or via any cookie-preferences control provided on our site.</p>
