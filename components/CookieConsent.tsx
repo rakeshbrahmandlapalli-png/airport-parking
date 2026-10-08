@@ -163,7 +163,8 @@ export default function CookieConsent() {
 
           <p className="mt-2 text-[13px] leading-relaxed text-slate-300">
             With your OK, we use cookies to see which of our ads lead to bookings, so we spend less on
-            advertising and can keep prices down. Booking works exactly the same either way.{" "}
+            advertising and can keep prices down. Booking works exactly the same either way. We use
+            Microsoft Clarity for all visitors to see how the site is used and fix problems.{" "}
             <Link href="/privacy" className="text-blue-400 hover:underline">Privacy policy</Link>
           </p>
 
