@@ -366,3 +366,44 @@ export function renderReceiptText(p: ReceiptHtmlParams): string {
   ];
   return L.join("\n");
 }
+
+/** Holding email for AeroPark Exclusive bookings: paid, operator not assigned yet. */
+export function renderExclusiveHoldingEmail(p: { name: unknown; totalPrice: unknown; bookingRef: unknown }): { html: string; text: string } {
+  const price = Number(p.totalPrice);
+  const priceText = Number.isFinite(price) ? `£${price.toFixed(2)}` : "";
+  const first = String(p.name ?? "").trim().split(/\s+/)[0];
+  const html = emailShell({
+    title: "Booking confirmed",
+    kicker: `Booking ${String(p.bookingRef ?? "")}`,
+    heading: "Booking confirmed: AeroPark Exclusive",
+    preheader: "We have your booking and payment. Your driver details follow shortly.",
+    bodyHtml:
+      emailSection(
+        paragraph(`Dear ${esc(first || "customer")},`) +
+          paragraph(`Thank you for booking with us. We have received your booking${priceText ? ` and your payment of <strong>${esc(priceText)}</strong>` : ""}.`) +
+          detailTable([["Reference", esc(p.bookingRef)]])
+      ) +
+      emailSection(
+        noteBox(
+          "What happens next",
+          "We are matching your vehicle with one of our vetted parking partners for your dates. We will email and text you your driver's phone number and the exact meeting point well before you travel. Your airport drop-off and barrier fees are covered by us."
+        )
+      ) +
+      emailSection(paragraph("If you need anything in the meantime, reply to this email and it comes straight to us.")),
+  });
+  const text = [
+    "Booking confirmed: AeroPark Exclusive",
+    "",
+    `Dear ${first || "customer"},`,
+    "",
+    `We have received your booking${priceText ? ` and your payment of ${priceText}` : ""}.`,
+    `Reference: ${String(p.bookingRef ?? "")}`,
+    "",
+    "What happens next: we are matching your vehicle with one of our vetted parking partners for your dates. We will email and text you your driver's phone number and the exact meeting point well before you travel. Your airport drop-off and barrier fees are covered by us.",
+    "",
+    "Reply to this email if you need anything in the meantime.",
+    "",
+    "AeroPark Direct Ltd. Registered in England and Wales, company number 17211973.",
+  ].join("\n");
+  return { html, text };
+}

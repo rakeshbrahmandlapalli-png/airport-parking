@@ -1,6 +1,7 @@
 import { logger } from "@/app/lib/logger";
 import { NextResponse } from "next/server";
 import { sendBookingReceipt, sendProviderNotification, sendReviewRequest } from "@/app/lib/mail";
+import { renderExclusiveHoldingEmail } from "@/app/lib/receiptEmail";
 import { sendReviewRequestSMS } from "@/app/lib/twilio";
 import { Resend } from "resend";
 import { createClient } from '@supabase/supabase-js';
@@ -183,25 +184,13 @@ export async function POST(req: Request) {
       // Exclusive bookings get a "matching in progress" holding email rather
       // than the standard receipt with immediate instructions.
       if (isExclusive && !isAmendment) {
+        const holding = renderExclusiveHoldingEmail({ name: booking.full_name, totalPrice: booking.total_price, bookingRef: booking.booking_ref });
         const result = await resend.emails.send({
           from: 'AeroPark Direct <bookings@aeroparkdirect.co.uk>',
           to: targetEmail,
-          subject: `Booking Confirmed: AeroPark Direct Exclusive`,
-          html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-              <h2 style="color: #2563eb;">Booking Confirmed: AeroPark Exclusive</h2>
-              <p>Dear ${escapeHtml(booking.full_name)},</p>
-              <p>Thank you for choosing the VIP standard! We have successfully received your booking and payment of <strong>£${escapeHtml(booking.total_price)}</strong>.</p>
-
-              <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;">
-                <h3 style="margin-top: 0;">What happens next?</h3>
-                <p>Our concierge team is currently matching your vehicle with one of our top-rated, fully-vetted parking partners for your dates.</p>
-                <p>We will email and text you your dedicated VIP driver's contact number and exact terminal meeting point <strong>very soon</strong>, well ahead of your travel date.</p>
-                <p>Rest assured, your airport barrier and drop-off fees are fully covered by us!</p>
-              </div>
-              <p><strong>Booking Reference:</strong> ${escapeHtml(booking.booking_ref)}</p>
-            </div>
-          `
+          subject: `Booking confirmed: AeroPark Exclusive`,
+          html: holding.html,
+          text: holding.text,
         });
 
         if (result.error) return NextResponse.json({ error: "Resend rejected the request" }, { status: 403 });
