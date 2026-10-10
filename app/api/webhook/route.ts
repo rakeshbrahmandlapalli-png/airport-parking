@@ -7,6 +7,7 @@ import { sendBookingReceipt, sendAmendmentAlerts, sendProviderNotification } fro
 import { createClient } from "@supabase/supabase-js";
 import { triggerMissingFlightAlert, sendBookingConfirmationSMS } from "@/app/lib/twilio";
 import { Resend } from "resend";
+import { renderExclusiveHoldingEmail } from "@/app/lib/receiptEmail";
 import { reportOfflineConversion, logConversionUpload } from "@/app/lib/googleAds";
 import { notifyNewBooking } from "@/app/lib/push";
 
@@ -201,24 +202,13 @@ export async function POST(req: Request) {
         if (webhookWon) {
           if (isExclusive) {
             // Send the holding email for VIPs (no instructions yet)
+            const holding = renderExclusiveHoldingEmail({ name: newBooking.full_name, totalPrice: newBooking.total_price, bookingRef: newBooking.booking_ref });
             await resend.emails.send({
               from: 'AeroPark Direct <bookings@aeroparkdirect.co.uk>',
               to: newBooking.email,
-              subject: `Booking Confirmed: AeroPark Direct Exclusive 👑`,
-              html: `
-                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-                  <h2 style="color: #2563eb;">Booking Confirmed: AeroPark Exclusive</h2>
-                  <p>Dear ${newBooking.full_name},</p>
-                  <p>Thank you for choosing the VIP standard! We have successfully received your booking and payment of <strong>£${newBooking.total_price}</strong>.</p>
-                  <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;">
-                    <h3 style="margin-top: 0;">What happens next?</h3>
-                    <p>Our concierge team is currently matching your vehicle with one of our top-rated, fully-vetted parking partners for your dates.</p>
-                    <p>We will email and text you your dedicated VIP driver's contact number and exact terminal meeting point <strong>very soon</strong>, well ahead of your travel date.</p>
-                    <p>Rest assured, your airport barrier and drop-off fees are fully covered by us!</p>
-                  </div>
-                  <p><strong>Booking Reference:</strong> ${newBooking.booking_ref}</p>
-                </div>
-              `
+              subject: `Booking confirmed: AeroPark Exclusive`,
+              html: holding.html,
+              text: holding.text,
             }).catch((err) => logger.error("[WEBHOOK] VIP Customer Email Failed:", err));
             logger.info(`[WEBHOOK] Sent VIP holding email to customer for ${newBooking.booking_ref}`);
           } else {

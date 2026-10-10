@@ -5,6 +5,10 @@ import { createServerClient } from "@supabase/ssr";
 import { Resend } from "resend";
 import { logger } from "@/app/lib/logger";
 import { logAdminAction } from "@/app/lib/admin-logger";
+import { emailShell, emailSection, paragraph, detailTable, emailButton, emailTokens } from "@/app/lib/receiptEmail";
+
+const escMail = (v: unknown) =>
+  String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 // ============================================================================
 // /api/admin/payment-link — mint a Stripe Checkout link from the admin Live
@@ -196,38 +200,26 @@ function buildPayLinkEmail(p: {
   firstName: string; url: string; price: number; bookingRef: string;
   airport: string; serviceType: string; dropDate: string; pickDate: string;
 }): string {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Complete your booking</title></head>
-<body style="margin:0;padding:0;background-color:#eef2f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">Secure payment link for your ${p.airport} parking — £${p.price.toFixed(2)}.</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#eef2f7;"><tr><td align="center" style="padding:32px 16px;">
-  <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%;background-color:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 10px 30px rgba(15,23,42,0.10);">
-    <tr><td style="height:5px;background-color:#2563eb;background-image:linear-gradient(90deg,#2563eb,#3b82f6,#10b981);font-size:0;">&nbsp;</td></tr>
-    <tr><td style="background-color:#0b1220;padding:30px 32px;text-align:center;">
-      <p style="margin:0;font-size:24px;font-weight:900;letter-spacing:-0.5px;color:#ffffff;">AEROPARK<span style="color:#3b82f6;">DIRECT</span></p>
-      <p style="margin:7px 0 0;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#64748b;font-weight:700;">Premium Airport Parking</p>
-    </td></tr>
-    <tr><td style="padding:36px 32px 8px;text-align:center;">
-      <h1 style="margin:0 0 10px;font-size:23px;font-weight:900;color:#0f172a;">Hi ${p.firstName}, your booking is ready.</h1>
-      <p style="margin:0;font-size:14px;line-height:1.6;color:#475569;">Our team has prepared your parking reservation. Review the details below and pay securely to confirm your space.</p>
-    </td></tr>
-    <tr><td style="padding:24px 32px 0;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;"><tr><td style="padding:20px 22px;">
-        <p style="margin:0 0 6px;font-size:13px;color:#475569;"><strong style="color:#0f172a;">Reference:</strong> ${p.bookingRef}</p>
-        <p style="margin:0 0 6px;font-size:13px;color:#475569;"><strong style="color:#0f172a;">Airport:</strong> ${p.airport}</p>
-        <p style="margin:0 0 6px;font-size:13px;color:#475569;"><strong style="color:#0f172a;">Service:</strong> ${p.serviceType}</p>
-        <p style="margin:0;font-size:13px;color:#475569;"><strong style="color:#0f172a;">Dates:</strong> ${p.dropDate} → ${p.pickDate}</p>
-      </td></tr></table>
-    </td></tr>
-    <tr><td style="padding:24px 32px 8px;">
-      <a href="${p.url}" style="display:block;text-align:center;background-color:#2563eb;background-image:linear-gradient(90deg,#2563eb,#3b82f6);color:#ffffff;text-decoration:none;padding:19px 24px;border-radius:14px;font-weight:900;font-size:17px;">🔒 Pay £${p.price.toFixed(2)} Securely</a>
-      <p style="margin:12px 0 0;text-align:center;font-size:11px;color:#94a3b8;">Powered by Stripe · Bank-level encryption · Link valid for 24 hours</p>
-    </td></tr>
-    <tr><td style="padding:22px 32px 30px;text-align:center;">
-      <p style="margin:0;font-size:12px;color:#94a3b8;">Questions? Just reply to this email or contact <a href="mailto:info@aeroparkdirect.co.uk" style="color:#2563eb;font-weight:700;text-decoration:none;">info@aeroparkdirect.co.uk</a></p>
-    </td></tr>
-  </table>
-</td></tr></table>
-</body></html>`;
+  return emailShell({
+    title: "Complete your booking",
+    kicker: `Booking ${p.bookingRef}`,
+    heading: `${p.firstName}, your booking is ready to pay`,
+    preheader: `Secure payment link for your ${p.airport} parking, £${p.price.toFixed(2)}.`,
+    bodyHtml:
+      emailSection(
+        paragraph("We have prepared your parking reservation. Check the details below, then pay securely to confirm your space.") +
+          detailTable([
+            ["Reference", escMail(p.bookingRef)],
+            ["Airport", escMail(p.airport)],
+            ["Service", escMail(p.serviceType)],
+            ["Drop-off", escMail(p.dropDate)],
+            ["Pick-up", escMail(p.pickDate)],
+            ["Total", `£${p.price.toFixed(2)}`],
+          ])
+      ) +
+      emailSection(
+        emailButton(p.url, `Pay £${p.price.toFixed(2)} securely`) +
+          `<p style="margin:12px 0 0;font-family:${emailTokens.FONT};font-size:12px;line-height:1.6;color:${emailTokens.MUTED};">Payment is handled by Stripe. This link is valid for 24 hours. Questions? Reply to this email or contact info@aeroparkdirect.co.uk.</p>`
+      ),
+  });
 }

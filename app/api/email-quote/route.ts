@@ -2,6 +2,7 @@ import { logger } from "@/app/lib/logger";
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { rateLimit, getClientIp } from "@/app/lib/rateLimit";
+import { emailShell, emailSection, paragraph, detailTable, emailButton, noteBox } from "@/app/lib/receiptEmail";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -9,6 +10,9 @@ const BASE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ||
   process.env.NEXT_PUBLIC_BASE_URL ||
   "https://www.aeroparkdirect.co.uk";
+
+const esc = (v: unknown) =>
+  String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 const isEmail = (v: unknown): v is string =>
   typeof v === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
@@ -73,52 +77,50 @@ export async function POST(req: Request) {
     if (serviceType) params.set("type", serviceType);
     const resultsUrl = `${BASE_URL}/results?${params.toString()}`;
 
-    const summaryRow = (label: string, value: string) => `
-      <tr>
-        <td style="padding:10px 0;border-bottom:1px solid #eef2f7;font-size:13px;color:#64748b;font-weight:600;">${label}</td>
-        <td style="padding:10px 0;border-bottom:1px solid #eef2f7;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${value}</td>
-      </tr>`;
+    const priceNum = parseFloat(String(fromPrice).replace(/[^0-9.]/g, ""));
+    const priceText = Number.isFinite(priceNum) && priceNum > 0 ? `£${priceNum.toFixed(2)}` : "";
+    const dropText = `${fmtDate(dropoffDate)}${dropoffTime ? `, ${dropoffTime}` : ""}`;
+    const pickText = `${fmtDate(pickupDate)}${pickupTime ? `, ${pickupTime}` : ""}`;
 
-    const priceLine = fromPrice
-      ? `<p style="margin:4px 0 0;font-size:14px;color:#10b981;font-weight:800;">Prices from £${String(
-          fromPrice
-        ).replace(/[^0-9.]/g, "")}</p>`
-      : "";
+    const customerHtml = emailShell({
+      title: "Your parking quote",
+      kicker: "Quote",
+      heading: priceText ? `Your quote: from ${priceText}` : "Your parking quote",
+      preheader: `${service} at ${airport}, ${dropText} to ${pickText}.`,
+      bodyHtml:
+        emailSection(
+          paragraph(`Thanks for searching with AeroPark Direct. Here is a summary of your ${esc(service)} quote for ${esc(airport)}.`) +
+            detailTable([
+              ["Airport", esc(airport)],
+              ["Service", esc(service)],
+              ["Drop-off", esc(dropText)],
+              ["Pick-up", esc(pickText)],
+              ["Price", priceText ? `from ${esc(priceText)}` : ""],
+            ])
+        ) +
+        emailSection(emailButton(resultsUrl, "View live prices and book")) +
+        emailSection(
+          noteBox(
+            "Please note",
+            "Prices are live and can change with availability. This quote is a guide based on your search. Reply to this email if you need a hand."
+          )
+        ),
+    });
 
-    const customerHtml = `
-      <div style="background:#f1f5f9;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;">
-        <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(15,23,42,0.08);">
-          <div style="background:#0b1220;padding:28px 28px 24px;">
-            <p style="margin:0;color:#60a5fa;font-size:11px;letter-spacing:2px;font-weight:800;text-transform:uppercase;">AeroPark Direct</p>
-            <h1 style="margin:8px 0 0;color:#ffffff;font-size:22px;font-weight:800;">Your parking quote is ready</h1>
-            ${priceLine}
-          </div>
-          <div style="padding:28px;">
-            <p style="margin:0 0 18px;font-size:14px;color:#334155;line-height:1.6;">
-              Thanks for searching with AeroPark Direct. Here's a summary of your ${service} quote for ${airport}. Prices are live and your free cancellation still applies — tap below to view today's rates and book in under 60 seconds.
-            </p>
-            <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
-              ${summaryRow("Airport", airport)}
-              ${summaryRow("Service", service)}
-              ${summaryRow("Drop-off", `${fmtDate(dropoffDate)}${dropoffTime ? ` · ${dropoffTime}` : ""}`)}
-              ${summaryRow("Pick-up", `${fmtDate(pickupDate)}${pickupTime ? ` · ${pickupTime}` : ""}`)}
-            </table>
-            <a href="${resultsUrl}" style="display:block;text-align:center;background:#2563eb;color:#ffffff;text-decoration:none;font-weight:800;font-size:15px;padding:16px;border-radius:12px;letter-spacing:0.5px;">
-              View Live Prices &amp; Book →
-            </a>
-            <p style="margin:18px 0 0;font-size:12px;color:#94a3b8;text-align:center;line-height:1.6;">
-              Fully insured operators · Free cancellation · Secure CCTV parking<br/>
-              Prices may change with availability. This quote is a guide based on your search.
-            </p>
-          </div>
-          <div style="background:#f8fafc;padding:18px 28px;border-top:1px solid #eef2f7;">
-            <p style="margin:0;font-size:11px;color:#94a3b8;text-align:center;">
-              AeroPark Direct · Luton &amp; Heathrow Airport Parking<br/>
-              Need help? Reply to this email or contact info@aeroparkdirect.co.uk
-            </p>
-          </div>
-        </div>
-      </div>`;
+    const customerText = [
+      priceText ? `Your quote: from ${priceText}` : "Your parking quote",
+      "",
+      `Airport: ${airport}`,
+      `Service: ${service}`,
+      `Drop-off: ${dropText}`,
+      `Pick-up: ${pickText}`,
+      "",
+      `View live prices and book: ${resultsUrl}`,
+      "",
+      "Prices are live and can change with availability. This quote is a guide based on your search.",
+      "",
+      "AeroPark Direct Ltd. Registered in England and Wales, company number 17211973.",
+    ].join("\n");
 
     // Send the quote to the customer.
     try {
@@ -127,6 +129,7 @@ export async function POST(req: Request) {
         to: cleanEmail,
         subject: `Your ${service} quote for ${airport} — AeroPark Direct`,
         html: customerHtml,
+        text: customerText,
       });
     } catch (err) {
       logger.error("email-quote: failed to send customer email", err);
@@ -141,16 +144,16 @@ export async function POST(req: Request) {
       await resend.emails.send({
         from: "AeroPark System <system@aeroparkdirect.co.uk>",
         to: "info@aeroparkdirect.co.uk",
-        subject: `New quote lead: ${cleanEmail} (${airport})`,
+        subject: `New quote lead: ${cleanEmail} (${String(airport).replace(/[\r\n]/g, " ")})`,
         html: `
           <div style="font-family:Arial,sans-serif;font-size:14px;color:#0f172a;">
             <h2 style="margin:0 0 12px;">New "Email me this quote" lead</h2>
-            <p style="margin:4px 0;"><strong>Email:</strong> ${cleanEmail}</p>
-            <p style="margin:4px 0;"><strong>Airport:</strong> ${airport}</p>
-            <p style="margin:4px 0;"><strong>Service:</strong> ${service}</p>
-            <p style="margin:4px 0;"><strong>Drop-off:</strong> ${fmtDate(dropoffDate)} ${dropoffTime}</p>
-            <p style="margin:4px 0;"><strong>Pick-up:</strong> ${fmtDate(pickupDate)} ${pickupTime}</p>
-            <p style="margin:12px 0 0;"><a href="${resultsUrl}">${resultsUrl}</a></p>
+            <p style="margin:4px 0;"><strong>Email:</strong> ${esc(cleanEmail)}</p>
+            <p style="margin:4px 0;"><strong>Airport:</strong> ${esc(airport)}</p>
+            <p style="margin:4px 0;"><strong>Service:</strong> ${esc(service)}</p>
+            <p style="margin:4px 0;"><strong>Drop-off:</strong> ${esc(dropText)}</p>
+            <p style="margin:4px 0;"><strong>Pick-up:</strong> ${esc(pickText)}</p>
+            <p style="margin:12px 0 0;"><a href="${esc(resultsUrl)}">${esc(resultsUrl)}</a></p>
           </div>`,
       });
     } catch (err) {
