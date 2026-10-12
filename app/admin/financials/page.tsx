@@ -181,6 +181,18 @@ function FinancialsContent() {
     return commissionFor(b.company_id);
   };
 
+  // An exit/barrier fee AeroPark has promised to cover (booking.fees_covered). It
+  // is split out of the commissionable parking value and paid to the operator in
+  // full, commission-free — exactly as app/lib/mail.ts computeProviderPayout does,
+  // so the provider email, financials and remittance invoice always agree.
+  const coveredFeeFor = (b: any) => {
+    if (!b.fees_covered || !b.company_id) return 0;
+    const c = companies.find((x) => x.id === b.company_id);
+    if (!c) return 0;
+    const isLuton = /LTN|luton/i.test(String(b.airport || ""));
+    return Number((isLuton ? c.ltn_fees_amount : c.lhr_fees_amount) || 0);
+  };
+
   const nameFor = (companyId: string | null) => {
     if (!companyId) return "Aero Direct";
     const c = companies.find((x) => x.id === companyId);
@@ -232,10 +244,11 @@ function FinancialsContent() {
         // Net the attendant fee out of the parking value BEFORE commission, so the
         // operator never sees it and their payout matches the remittance invoice
         // and provider email exactly (commission is charged on the reduced base).
-        const parkingGross = Math.max(0, total - addOns - attendantCommission);
+        const coveredFee = coveredFeeFor(b);
+        const parkingGross = Math.max(0, total - addOns - attendantCommission - coveredFee);
         const commPct = commissionPctForBooking(b);
         const yourCommission = parkingGross * (commPct / 100);
-        const operatorPayout = Math.max(0, parkingGross - yourCommission);
+        const operatorPayout = Math.max(0, parkingGross - yourCommission) + coveredFee;
         const stripeFee = total > 0 ? total * STRIPE_PERCENT + STRIPE_FIXED : 0;
         const yourNet = yourCommission + addOns + attendantCommission - stripeFee;
         return {
@@ -356,11 +369,12 @@ function FinancialsContent() {
         const addOns = Number(b.fast_track_count || 0) * fastTrackPrice;
         const rawParkingGross = Math.max(0, total - addOns);
         const attendantCommission = Number(b.attendant_commission || 0);
-        // Net the attendant fee out of the parking value so the provider's
-        // remittance reconciles and never reveals the fee as a line item.
-        const parkingGross = Math.max(0, rawParkingGross - attendantCommission);
+        const coveredFee = coveredFeeFor(b);
+        // Net the attendant fee and any covered exit/barrier fee out of the parking
+        // value (the covered fee is paid back in full below, commission-free).
+        const parkingGross = Math.max(0, rawParkingGross - attendantCommission - coveredFee);
         const commPct = commissionPctForBooking(b);
-        const operatorPayout = parkingGross - parkingGross * (commPct / 100);
+        const operatorPayout = parkingGross - parkingGross * (commPct / 100) + coveredFee;
         return {
           ref: b.booking_ref || b.id,
           operatorName: nameFor(b.company_id),
