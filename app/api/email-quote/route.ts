@@ -79,10 +79,10 @@ export async function POST(req: Request) {
         <td style="padding:10px 0;border-bottom:1px solid #eef2f7;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${value}</td>
       </tr>`;
 
-    const priceLine = fromPrice
-      ? `<p style="margin:4px 0 0;font-size:14px;color:#10b981;font-weight:800;">Prices from £${String(
-          fromPrice
-        ).replace(/[^0-9.]/g, "")}</p>`
+    // Round to pennies: the client sends a raw float (e.g. 83.19999999999999).
+    const fromAmount = Number(String(fromPrice).replace(/[^0-9.]/g, ""));
+    const priceLine = Number.isFinite(fromAmount) && fromAmount > 0
+      ? `<p style="margin:4px 0 0;font-size:14px;color:#10b981;font-weight:800;">Prices from £${fromAmount.toFixed(2)}</p>`
       : "";
 
     const customerHtml = `
