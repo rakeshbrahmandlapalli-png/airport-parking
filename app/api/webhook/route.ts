@@ -265,17 +265,21 @@ export async function POST(req: Request) {
         // Google's EU user consent policy don't allow uploading anyone else.
         // Uses Stripe session id as orderId so it dedupes with the client-side
         // conversion (which also passes session id as transaction_id).
-        if (m.gclid && m.ad_consent === "granted") {
+        // Without a click id (cookie lost / blocked) the hashed email + phone
+        // still let Google match the sale (enhanced conversions for leads).
+        if (m.ad_consent === "granted") {
           const value = Number(newBooking.total_price) || 0;
           const result = await reportOfflineConversion({
             gclid: m.gclid,
+            email: newBooking.email,
+            phone: newBooking.phone_number,
             value,
             currency: "GBP",
             orderId: session.id,
           });
           await logConversionUpload(
             supabase,
-            { orderId: session.id, bookingRef: newBooking.booking_ref, clickId: m.gclid, value, source: "webhook" },
+            { orderId: session.id, bookingRef: newBooking.booking_ref, clickId: m.gclid || "", value, source: "webhook" },
             result
           );
         }

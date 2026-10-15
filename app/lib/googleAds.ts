@@ -1,5 +1,6 @@
 import { logger } from "@/app/lib/logger";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createHash } from "crypto";
 // app/lib/googleAds.ts
 //
 // Server-side Google Ads offline conversion upload (Click Conversions).
@@ -29,8 +30,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 const GOOGLE_ADS_API_VERSION = process.env.GOOGLE_ADS_API_VERSION || "v23";
 
 interface OfflineConversionInput {
-  /** Stored click id: a gclid, or "wbraid:…" / "gbraid:…". */
-  gclid: string;
+  /** Stored click id: a gclid, or "wbraid:…" / "gbraid:…". Optional when email/phone are given (enhanced conversions for leads). */
+  gclid?: string | null;
+  /** Customer email / phone — hashed (SHA-256) here before upload. Consent-granted bookings only. */
+  email?: string | null;
+  phone?: string | null;
   value: number;
   currency?: string;
   /** Stripe session id — used as orderId so client + server dedupe to one conversion. */
@@ -109,6 +113,28 @@ export function parseClickId(raw: string | null | undefined): { field: ClickIdFi
   return { field: "gclid", id: value };
 }
 
+const sha256 = (v: string) => createHash("sha256").update(v).digest("hex");
+
+/** Hashed user identifiers per Google's normalisation rules (enhanced conversions). */
+export function buildUserIdentifiers(email?: string | null, phone?: string | null) {
+  const ids: Record<string, string>[] = [];
+  let e = String(email || "").trim().toLowerCase();
+  if (e.includes("@")) {
+    const [local, domain] = e.split("@");
+    if (domain === "gmail.com" || domain === "googlemail.com") e = `${local.replace(/\./g, "")}@gmail.com`;
+    ids.push({ hashedEmail: sha256(e) });
+  }
+  let p = String(phone || "").replace(/[^\d+]/g, "");
+  if (p && p !== "N/A") {
+    if (p.startsWith("00")) p = "+" + p.slice(2);
+    else if (p.startsWith("0")) p = "+44" + p.slice(1);
+    else if (p.startsWith("44")) p = "+" + p;
+    else if (!p.startsWith("+")) p = "+" + p;
+    if (p.replace(/\D/g, "").length >= 8) ids.push({ hashedPhoneNumber: sha256(p) });
+  }
+  return ids;
+}
+
 /** Format a Date as Google Ads requires: "yyyy-MM-dd HH:mm:ss+00:00". */
 function formatConversionDateTime(d: Date): string {
   const iso = d.toISOString();          // 2026-06-04T12:00:00.000Z
@@ -161,9 +187,10 @@ export async function reportOfflineConversion(input: OfflineConversionInput): Pr
     return { ok: false, error: "Google Ads API env vars not configured" };
   }
   const clickId = parseClickId(input.gclid);
-  if (!clickId) {
-    logger.info("[GoogleAds] Offline conversion skipped — no gclid on this booking.");
-    return { ok: false, error: "No click id on this booking" };
+  const userIdentifiers = buildUserIdentifiers(input.email, input.phone);
+  if (!clickId && userIdentifiers.length === 0) {
+    logger.info("[GoogleAds] Offline conversion skipped — no click id or customer identifiers on this booking.");
+    return { ok: false, error: "No click id or customer identifiers on this booking" };
   }
 
   try {
@@ -172,7 +199,8 @@ export async function reportOfflineConversion(input: OfflineConversionInput): Pr
     const body = {
       conversions: [
         {
-          [clickId.field]: clickId.id,
+          ...(clickId ? { [clickId.field]: clickId.id } : {}),
+          ...(userIdentifiers.length ? { userIdentifiers } : {}),
           conversionAction: `customers/${cfg.customerId}/conversionActions/${cfg.conversionActionId}`,
           conversionDateTime: formatConversionDateTime(input.when || new Date()),
           conversionValue: Number(input.value) || 0,

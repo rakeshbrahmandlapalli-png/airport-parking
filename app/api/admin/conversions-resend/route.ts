@@ -31,9 +31,7 @@ export async function POST(req: Request) {
   const since = new Date(Date.now() - WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const { data, error } = await supabase
     .from("bookings")
-    .select("booking_ref, gclid, created_at, total_price, stripe_session_id")
-    .not("gclid", "is", null)
-    .neq("gclid", "")
+    .select("booking_ref, gclid, email, phone_number, created_at, total_price, stripe_session_id")
     .not("status", "in", "(pending,cancelled)")
     // Only customers who accepted advertising cookies may be sent to Google.
     .eq("ad_consent", "granted")
@@ -50,6 +48,8 @@ export async function POST(req: Request) {
     const value = Number(b.total_price) || 0;
     const result = await reportOfflineConversion({
       gclid: b.gclid,
+      email: b.email,
+      phone: b.phone_number,
       value,
       currency: "GBP",
       orderId,
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     });
     await logConversionUpload(
       supabase,
-      { orderId, bookingRef: b.booking_ref, clickId: b.gclid, value, source: "resend" },
+      { orderId, bookingRef: b.booking_ref, clickId: b.gclid || "", value, source: "resend" },
       result
     );
     results.push({
