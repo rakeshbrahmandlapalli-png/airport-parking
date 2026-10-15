@@ -90,6 +90,11 @@ export default function RootLayout({
                 security_storage: 'granted',
                 wait_for_update: 500
               });
+              // Keep the ad click id on internal links while ad_storage is denied
+              // and until it's granted, so a visitor who accepts cookies on a
+              // later page still gets attributed; redact ad data when denied.
+              gtag('set', 'url_passthrough', true);
+              gtag('set', 'ads_data_redaction', true);
               try {
                 var c = JSON.parse(localStorage.getItem('apd_consent_v1') || 'null');
                 if (c) {
@@ -138,7 +143,7 @@ export default function RootLayout({
             __html: `
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
-              gtag('config', 'AW-18163936640');
+              gtag('config', 'AW-18163936640', { allow_enhanced_conversions: true });
             `,
           }}
         />
